@@ -30,17 +30,24 @@ class ModeActivity : AppCompatActivity() {
         val allGames = ManifestParser.scanGames(this)
         Log.d(TAG, "Total games scanned: ${allGames.size}")
 
-        val filteredGames = allGames.filter { it.minPlayers <= playerCount && it.maxPlayers >= playerCount }
+        val filteredGames = allGames.filter { game ->
+            if (playerCount == 1) {
+                (game.maxPlayers == 1) || (game.aiSupport == "full" && game.maxPlayers >= 2)
+            } else {
+                game.minPlayers <= playerCount && game.maxPlayers >= playerCount
+            }
+        }
         Log.d(TAG, "Filtered games for $playerCount P: ${filteredGames.size}")
 
         recyclerView.adapter = GameAdapter(filteredGames) { game ->
-            android.util.Log.d(TAG, "Game tile clicked: ${game.id}")
-            if (game.maxPlayers <= 1) {
-                // Instant launch for single-player games
+            android.util.Log.d(TAG, "Game tile clicked: ${game.id}, playerCount=$playerCount, maxPlayers=${game.maxPlayers}")
+            if (playerCount == 1 && game.maxPlayers == 1) {
+                android.util.Log.d(TAG, "Instant launch for 1P game: ${game.id}")
                 launchGame(game, "solo", "medium", game.minPlayers)
             } else {
-                // Launch configuration sheet for multiplayer/AI games
-                LaunchSheet(this, game) { mode, skill, players ->
+                android.util.Log.d(TAG, "Showing LaunchSheet for game: ${game.id}")
+                LaunchSheet(this, game, playerCount) { mode, skill, players ->
+                    android.util.Log.d(TAG, "LaunchSheet callback: mode=$mode, skill=$skill, players=$players")
                     launchGame(game, mode, skill, players)
                 }.show()
             }

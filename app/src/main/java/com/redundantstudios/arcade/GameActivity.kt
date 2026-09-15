@@ -54,6 +54,8 @@ class GameActivity : AppCompatActivity() {
             val skill = intent.getStringExtra("skill") ?: "medium"
             val players = intent.getIntExtra("players", 1)
 
+            android.util.Log.d("GameActivity", "Launching game $gameId: mode=$mode, skill=$skill, players=$players")
+
             loadUrl("file:///android_asset/games/$gameId/index.html?mode=$mode&skill=$skill&players=$players")
         }
 
