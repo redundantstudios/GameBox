@@ -23,6 +23,9 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    buildFeatures {
+        buildConfig true
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -37,4 +40,11 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+    // AdMob & UMP
+    implementation 'com.google.android.gms:play-services-ads:23.6.0'
+    implementation 'com.google.android.ump:user-messaging-platform:3.1.0'
+
+    // Splash Screen
+    implementation 'androidx.core:core-splashscreen:1.0.1'
 }
