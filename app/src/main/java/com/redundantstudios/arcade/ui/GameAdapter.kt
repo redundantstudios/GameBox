@@ -39,6 +39,12 @@ class GameAdapter(
             onGameClick(game)
         }
 
+        holder.itemView.post {
+            val w = holder.itemView.width
+            val h = holder.itemView.height
+            android.util.Log.d("GameAdapter", "gameTile w=$w h=$h")
+        }
+
         // Press animation: scale 0.93 snap
         holder.itemView.setOnTouchListener { v, event ->
             when (event.action) {

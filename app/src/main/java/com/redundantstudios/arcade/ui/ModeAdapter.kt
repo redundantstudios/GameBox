@@ -38,6 +38,12 @@ class ModeAdapter(
             onModeClick(mode)
         }
 
+        holder.itemView.post {
+            val w = holder.itemView.width
+            val h = holder.itemView.height
+            android.util.Log.d("ModeAdapter", "modeCard w=$w h=$h")
+        }
+
         holder.itemView.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
