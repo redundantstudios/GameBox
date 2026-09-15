@@ -32,7 +32,7 @@ class GameAdapter(
     override fun onBindViewHolder(holder: GameViewHolder, position: Int) {
         val game = games[position]
         holder.title.text = game.title
-        holder.players.text = game.players.toString()
+        holder.players.text = "${game.maxPlayers}P"
         holder.tileRoot.setCardBackgroundColor(Color.parseColor(game.tileColor))
 
         holder.itemView.setOnClickListener {

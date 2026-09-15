@@ -1,0 +1,20 @@
+<resources>
+    <!-- Radii -->
+    <dimen name="radius_tile">14dp</dimen>
+    <dimen name="radius_pill">999dp</dimen>
+    <dimen name="radius_card">12dp</dimen>
+
+    <!-- Spacing -->
+    <dimen name="spacing_grid_margin">16dp</dimen>
+    <dimen name="spacing_tile_margin">8dp</dimen>
+    <dimen name="spacing_badge_margin">8dp</dimen>
+    <dimen name="spacing_title_margin">8dp</dimen>
+
+    <!-- Typography -->
+    <dimen name="text_title_size">18sp</dimen>
+    <dimen name="text_label_size">9sp</dimen>
+
+    <!-- Tile Proportions -->
+    <!-- Aspect ratio 1 : 0.92. For a width W, height is W * 0.92 -->
+    <!-- In a 2-column grid, the width is (screenWidth - 32dp - 16dp)/2 -->
+</resources>

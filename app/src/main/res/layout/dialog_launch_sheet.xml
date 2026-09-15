@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#FFFFFF">
+
+    <TextView
+        android:id="@+id/sheetTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Game Title"
+        android:textAlignment="center"
+        android:textColor="#1C1E24"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btnSolo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Solo"
+        android:backgroundTint="#1C1E24"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnPass"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Pass &amp; Play"
+        android:backgroundTint="#FFFFFF"
+        android:textColor="#1C1E24"
+        app:strokeColor="#1C1E24"
+        app:strokeWidth="1dp" />
+
+</LinearLayout>
