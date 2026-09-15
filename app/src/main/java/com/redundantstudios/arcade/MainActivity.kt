@@ -1,4 +1,4 @@
-package com.arcade
+package com.redundantstudios.arcade
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity

@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.arcade'
+    namespace 'com.redundantstudios.arcade'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.arcade"
+        applicationId "com.redundantstudios.arcade"
         minSdk 24
         targetSdk 34
         versionCode 1
