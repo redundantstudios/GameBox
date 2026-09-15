@@ -2,6 +2,8 @@ package com.redundantstudios.arcade
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -71,16 +73,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateGrid(games: List<GameManifest>) {
-        adapter = GameAdapter(games) { game ->
-            if (game.maxPlayers <= 1) {
-                launchGame(game, "solo", "medium", game.minPlayers)
-            } else {
-                LaunchSheet(this, game) { mode, skill, players ->
-                    launchGame(game, mode, skill, players)
-                }.show()
+        val recyclerView = findViewById<RecyclerView>(R.id.gamesRecyclerView)
+        val emptyState = findViewById<TextView>(R.id.emptyStateText)
+
+        if (games.isEmpty()) {
+            recyclerView.visibility = View.GONE
+            emptyState.visibility = View.VISIBLE
+        } else {
+            recyclerView.visibility = View.VISIBLE
+            emptyState.visibility = View.GONE
+            adapter = GameAdapter(games) { game ->
+                if (game.maxPlayers <= 1) {
+                    launchGame(game, "solo", "medium", game.minPlayers)
+                } else {
+                    LaunchSheet(this, game) { mode, skill, players ->
+                        launchGame(game, mode, skill, players)
+                    }.show()
+                }
             }
+            recyclerView.adapter = adapter
         }
-        findViewById<RecyclerView>(R.id.gamesRecyclerView).adapter = adapter
     }
 
     private fun launchGame(game: GameManifest, mode: String, skill: String, players: Int) {
