@@ -41,8 +41,11 @@ class GameAdapter(
 
         holder.itemView.post {
             val w = holder.itemView.width
-            val h = holder.itemView.height
-            android.util.Log.d("GameAdapter", "gameTile w=$w h=$h")
+            if (w > 0) {
+                holder.itemView.layoutParams.height = (w * 0.92).toInt()
+                holder.itemView.requestLayout()
+            }
+            android.util.Log.d("GameAdapter", "gameTile w=$w h=${holder.itemView.height}")
         }
 
         // Press animation: scale 0.93 snap

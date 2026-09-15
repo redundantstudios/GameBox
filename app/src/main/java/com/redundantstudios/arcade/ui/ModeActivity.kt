@@ -35,23 +35,14 @@ class ModeActivity : AppCompatActivity() {
 
         recyclerView.adapter = GameAdapter(filteredGames) { game ->
             android.util.Log.d(TAG, "Game tile clicked: ${game.id}")
-            if (game.id == "testred") {
-                // Instant launch for testred
+            if (game.maxPlayers <= 1) {
+                // Instant launch for single-player games
                 launchGame(game, "solo", "medium", game.minPlayers)
-            } else if (game.id == "testblue") {
-                // Mandatory sheet for testblue
+            } else {
+                // Launch configuration sheet for multiplayer/AI games
                 LaunchSheet(this, game) { mode, skill, players ->
                     launchGame(game, mode, skill, players)
                 }.show()
-            } else {
-                // Default behavior for other games
-                if (game.maxPlayers <= 1) {
-                    launchGame(game, "solo", "medium", game.minPlayers)
-                } else {
-                    LaunchSheet(this, game) { mode, skill, players ->
-                        launchGame(game, mode, skill, players)
-                    }.show()
-                }
             }
         }
 

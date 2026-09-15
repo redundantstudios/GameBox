@@ -35,13 +35,17 @@ class ModeAdapter(
         holder.card.setCardBackgroundColor(Color.parseColor(mode.color))
 
         holder.itemView.setOnClickListener {
+            android.util.Log.d("ModeAdapter", "Mode card clicked: ${mode.playerCount}P")
             onModeClick(mode)
         }
 
         holder.itemView.post {
             val w = holder.itemView.width
-            val h = holder.itemView.height
-            android.util.Log.d("ModeAdapter", "modeCard w=$w h=$h")
+            if (w > 0) {
+                holder.itemView.layoutParams.height = (w * 1).toInt() // 1:1 ratio
+                holder.itemView.requestLayout()
+            }
+            android.util.Log.d("ModeAdapter", "modeCard w=$w h=${holder.itemView.height}")
         }
 
         holder.itemView.setOnTouchListener { v, event ->

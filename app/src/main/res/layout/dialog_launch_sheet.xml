@@ -28,10 +28,32 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Solo Mode"
-            android:textSize="14sp"
+            android:text="SOLO VS AI"
+            android:textSize="11sp"
             android:textStyle="bold"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textColor="#7A7F88"
             android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TOTAL PENS ON BENCH: "
+                android:textSize="14sp" />
+
+            <Spinner
+                android:id="@+id/soloPlayerSpinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
 
         <Spinner
             android:id="@+id/skillSpinner"
@@ -43,7 +65,7 @@
             android:id="@+id/btnSolo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Play Solo (vs AI)"
+            android:text="PLAY SOLO"
             android:backgroundTint="#1C1E24"
             android:textColor="#FFFFFF" />
     </LinearLayout>
@@ -58,22 +80,38 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pass &amp; Play"
-            android:textSize="14sp"
+            android:text="PASS &amp; PLAY"
+            android:textSize="11sp"
             android:textStyle="bold"
+            android:textAllCaps="true"
+            android:letterSpacing="0.05"
+            android:textColor="#7A7F88"
             android:layout_marginBottom="8dp" />
 
-        <Spinner
-            android:id="@+id/playerSpinner"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="HUMANS: "
+                android:textSize="14sp" />
+
+            <Spinner
+                android:id="@+id/playerSpinner"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
 
         <Button
             android:id="@+id/btnPass"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Start Game"
+            android:text="START PASS &amp; PLAY"
             android:backgroundTint="#FFFFFF"
             android:textColor="#1C1E24"
             app:strokeColor="#1C1E24"

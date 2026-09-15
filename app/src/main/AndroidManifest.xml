@@ -30,7 +30,6 @@
             android:theme="@style/Theme.Shell" />
         <activity
             android:name=".GameActivity"
-            android:screenOrientation="portrait"
             android:theme="@style/Theme.Shell" />
     </application>
 

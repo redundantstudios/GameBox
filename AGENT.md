@@ -10,3 +10,11 @@ Every new phase must begin by re-running the acceptance checks of the previous p
 1. Run previous phase's build and test suite.
 2. Report "Pass/Fail" for each previous core requirement.
 3. Proceed to new implementation only after regression is cleared.
+
+## Build Pipeline
+The ONLY build command is `BUILD.bat`.
+Every build ends with a fresh `shell-debug.apk` in the project root — its timestamp is the proof of freshness. Never install an APK without checking its timestamp first:
+`adb shell date` vs `dir shell-debug.apk`
+
+## Build Gate
+NO phase may end its REVIEW REQUEST without a passing `BUILD.bat` + fresh APK timestamp. A phase that does not compile did not happen.
