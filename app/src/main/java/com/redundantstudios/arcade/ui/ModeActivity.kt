@@ -1,0 +1,50 @@
+package com.redundantstudios.arcade.ui
+
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.redundantstudios.arcade.GameActivity
+import com.redundantstudios.arcade.R
+import com.redundantstudios.arcade.model.GameManifest
+import com.redundantstudios.arcade.util.ManifestParser
+
+class ModeActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_mode)
+
+        val playerCount = intent.getIntExtra("player_count", 1)
+        val titleText = findViewById<TextView>(R.id.modeTitle)
+        titleText.text = "$playerCount Player Games"
+
+        val recyclerView = findViewById<RecyclerView>(R.id.gamesRecyclerView)
+        recyclerView.layoutManager = GridLayoutManager(this, 2)
+
+        val allGames = ManifestParser.scanGames(this)
+        val filteredGames = allGames.filter { it.minPlayers <= playerCount && it.maxPlayers >= playerCount }
+
+        recyclerView.adapter = GameAdapter(filteredGames) { game ->
+            if (game.maxPlayers <= 1) {
+                launchGame(game, "solo", "medium", game.minPlayers)
+            } else {
+                LaunchSheet(this, game) { mode, skill, players ->
+                    launchGame(game, mode, skill, players)
+                }.show()
+            }
+        }
+    }
+
+    private fun launchGame(game: GameManifest, mode: String, skill: String, players: Int) {
+        val intent = Intent(this, GameActivity::class.java).apply {
+            putExtra("game_id", game.id)
+            putExtra("mode", mode)
+            putExtra("skill", skill)
+            putExtra("players", players)
+        }
+        startActivity(intent)
+    }
+}

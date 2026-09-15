@@ -18,23 +18,76 @@
         android:textStyle="bold"
         android:layout_marginBottom="24dp" />
 
-    <Button
-        android:id="@+id/btnSolo"
+    <LinearLayout
+        android:id="@+id/soloContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Solo"
-        android:backgroundTint="#1C1E24"
-        android:textColor="#FFFFFF"
-        android:layout_marginBottom="12dp" />
+        android:orientation="vertical"
+        android:layout_marginBottom="24dp">
 
-    <Button
-        android:id="@+id/btnPass"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Solo Mode"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <Spinner
+            android:id="@+id/skillSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnSolo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Play Solo (vs AI)"
+            android:backgroundTint="#1C1E24"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/passContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Pass &amp; Play"
-        android:backgroundTint="#FFFFFF"
-        android:textColor="#1C1E24"
-        app:strokeColor="#1C1E24"
-        app:strokeWidth="1dp" />
+        android:orientation="vertical"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pass &amp; Play"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <Spinner
+            android:id="@+id/playerSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnPass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Start Game"
+            android:backgroundTint="#FFFFFF"
+            android:textColor="#1C1E24"
+            app:strokeColor="#1C1E24"
+            app:strokeWidth="1dp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/noSoloNote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Solo mode not supported"
+        android:textAlignment="center"
+        android:textColor="#7A7F88"
+        android:textSize="12sp"
+        android:visibility="gone" />
 
 </LinearLayout>
