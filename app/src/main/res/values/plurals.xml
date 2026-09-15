@@ -1,0 +1,6 @@
+<resources>
+    <plurals name="player_count">
+        <item quantity="one">%d PLAYER</item>
+        <item quantity="other">%d PLAYERS</item>
+    </plurals>
+</resources>

@@ -31,7 +31,7 @@ class ModeAdapter(
     override fun onBindViewHolder(holder: ModeViewHolder, position: Int) {
         val mode = modes[position]
         holder.number.text = mode.playerCount.toString()
-        holder.label.text = "${mode.playerCount} PLAYER"
+        holder.label.text = holder.itemView.context.resources.getQuantityString(R.plurals.player_count, mode.playerCount, mode.playerCount)
         holder.card.setCardBackgroundColor(Color.parseColor(mode.color))
 
         holder.itemView.setOnClickListener {
