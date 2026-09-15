@@ -8,6 +8,7 @@ import android.widget.Button
 import android.widget.Spinner
 import android.widget.ArrayAdapter
 import android.widget.TextView
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.model.GameManifest
@@ -31,7 +32,17 @@ class LaunchSheet(
         val passContainer = view.findViewById<View>(R.id.passContainer)
         val noSoloNote = view.findViewById<TextView>(R.id.noSoloNote)
 
+        android.util.Log.d("LaunchSheet", "sheet: id=${game.id} min=${game.minPlayers} max=${game.maxPlayers} ai=${game.aiSupport} soloVisible=${game.minPlayers <= 1} passVisible=${game.maxPlayers >= 2}")
+
         title.text = game.title
+
+        dialog.setContentView(view)
+        dialog.show()
+        (dialog.window?.decorView?.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet) as? android.view.ViewGroup)?.let { sheet ->
+            val behavior = BottomSheetBehavior.from(sheet)
+            behavior.state = BottomSheetBehavior.STATE_EXPANDED
+            behavior.skipCollapsed = true
+        }
 
         // Skill Selector
         val skills = arrayOf("Easy", "Medium", "Hard")
