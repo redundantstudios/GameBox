@@ -2,6 +2,7 @@ package com.redundantstudios.arcade.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -13,6 +14,8 @@ import com.redundantstudios.arcade.model.GameManifest
 import com.redundantstudios.arcade.util.ManifestParser
 
 class ModeActivity : AppCompatActivity() {
+    private val TAG = "ModeActivity"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_mode)
@@ -25,16 +28,35 @@ class ModeActivity : AppCompatActivity() {
         recyclerView.layoutManager = GridLayoutManager(this, 2)
 
         val allGames = ManifestParser.scanGames(this)
+        Log.d(TAG, "Total games scanned: ${allGames.size}")
+
         val filteredGames = allGames.filter { it.minPlayers <= playerCount && it.maxPlayers >= playerCount }
+        Log.d(TAG, "Filtered games for $playerCount P: ${filteredGames.size}")
 
         recyclerView.adapter = GameAdapter(filteredGames) { game ->
-            if (game.maxPlayers <= 1) {
+            android.util.Log.d(TAG, "Game tile clicked: ${game.id}")
+            if (game.id == "testred") {
+                // Instant launch for testred
                 launchGame(game, "solo", "medium", game.minPlayers)
-            } else {
+            } else if (game.id == "testblue") {
+                // Mandatory sheet for testblue
                 LaunchSheet(this, game) { mode, skill, players ->
                     launchGame(game, mode, skill, players)
                 }.show()
+            } else {
+                // Default behavior for other games
+                if (game.maxPlayers <= 1) {
+                    launchGame(game, "solo", "medium", game.minPlayers)
+                } else {
+                    LaunchSheet(this, game) { mode, skill, players ->
+                        launchGame(game, mode, skill, players)
+                    }.show()
+                }
             }
+        }
+
+        recyclerView.post {
+            Log.d(TAG, "RecyclerView dimensions: w=${recyclerView.width} h=${recyclerView.height}")
         }
     }
 

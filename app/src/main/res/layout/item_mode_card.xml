@@ -11,22 +11,8 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintDimensionRatio="H,1:1"
+        android:layout_height="match_parent"
         android:padding="16dp">
-
-        <TextView
-            android:id="@+id/modeNumber"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
-            android:textSize="80sp"
-            android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:text="1" />
 
         <TextView
             android:id="@+id/modeLabel"
@@ -37,10 +23,25 @@
             android:textSize="12sp"
             android:textStyle="bold"
             android:textAllCaps="true"
-            app:layout_constraintTop_toBottomOf="@id/modeNumber"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginTop="4dp" />
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:id="@+id/modeNumber"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            app:autoSizeTextType="uniform"
+            app:autoSizeMinTextSize="40sp"
+            app:autoSizeMaxTextSize="80sp"
+            app:layout_constraintBottom_toTopOf="@id/modeLabel"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:text="1" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

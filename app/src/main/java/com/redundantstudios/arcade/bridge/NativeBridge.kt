@@ -5,12 +5,12 @@ import android.content.SharedPreferences
 import android.os.Vibrator
 import android.os.VibrationEffect
 import android.os.Build
+import android.os.VibratorManager
 import android.webkit.JavascriptInterface
 import android.util.Log
 
 class NativeBridge(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("studio_games", Context.MODE_PRIVATE)
-    private val vibrator: Vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
 
     @JavascriptInterface
     fun save(key: String, json: String) {
@@ -27,6 +27,15 @@ class NativeBridge(private val context: Context) {
 
     @JavascriptInterface
     fun haptic(ms: Int) {
+        Log.d("NativeBridge", "Haptic request: ${ms}ms")
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val manager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            manager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(ms.toLong(), VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
@@ -37,11 +46,8 @@ class NativeBridge(private val context: Context) {
 
     @JavascriptInterface
     fun showRewardedAd(callback: String) {
-        // S3 Placeholder: Immediately grant reward
         Log.d("NativeBridge", "Rewarded ad requested. Callback: $callback")
-        // We need a reference to the WebView to execute JS
-        // This is handled via a callback to the Activity
-        NativeBridgeContext.callback?.invoke(callback, "granted")
+        NativeBridgeContext.adHandler?.invoke(callback)
     }
 
     @JavascriptInterface
@@ -54,4 +60,5 @@ class NativeBridge(private val context: Context) {
 object NativeBridgeContext {
     var callback: ((String, String) -> Unit)? = null
     var exitHandler: (() -> Unit)? = null
+    var adHandler: ((String) -> Unit)? = null
 }
