@@ -22,37 +22,52 @@ object ManifestParser {
                     val indexFile = "games/$dir/index.html"
                     val inputStream = assetManager.open(indexFile)
                     val reader = BufferedReader(InputStreamReader(inputStream))
-                    val firstLine = reader.readLine()
+
+                    // Read first 10 lines to find manifest (handles both single-line
+                    // and multi-line comment formats)
+                    val lines = mutableListOf<String>()
+                    var line: String?
+                    var foundManifest = false
+                    for (i in 0 until 10) {
+                        line = reader.readLine() ?: break
+                        lines.add(line)
+                        if (line.contains("STUDIO_GAME_MANIFEST")) {
+                            foundManifest = true
+                            break
+                        }
+                    }
                     inputStream.close()
 
-                    if (firstLine != null && firstLine.contains("STUDIO_GAME_MANIFEST:")) {
-                        val jsonString = firstLine
-                            .substringAfter("STUDIO_GAME_MANIFEST:")
-                            .substringBefore(" -->")
-                            .trim()
+                    if (!foundManifest) continue
 
-                        val json = JSONObject(jsonString)
+                    val manifestText = lines.joinToString("") { it.trim() }
+                    val jsonStart = manifestText.indexOf("STUDIO_GAME_MANIFEST") + "STUDIO_GAME_MANIFEST".length
+                    val jsonStr = manifestText.substring(jsonStart).trim()
+                        .removePrefix(":")
+                        .removePrefix("<!--")
+                        .removePrefix("-->")
+                        .trim()
 
-                        // Validate mandatory fields
-                        val id = json.optString("id", "")
-                        val title = json.optString("title", "")
-                        if (id.isEmpty() || title.isEmpty()) {
-                            Log.e(TAG, "Invalid manifest in $dir: missing id or title")
-                            continue
-                        }
+                    val json = JSONObject(jsonStr)
 
-                        games.add(GameManifest(
-                            id = id,
-                            title = title,
-                            orientation = json.optString("orientation", "portrait"),
-                            minPlayers = json.optInt("minPlayers", 1),
-                            maxPlayers = json.optInt("maxPlayers", 1),
-                            aiSupport = json.optString("aiSupport", "none"),
-                            online = json.optBoolean("online", false),
-                            tileColor = json.optString("tileColor", "#FFFFFF"),
-                            version = json.optString("version", "1.0.0")
-                        ))
+                    val id = json.optString("id", "")
+                    val title = json.optString("title", "")
+                    if (id.isEmpty() || title.isEmpty()) {
+                        Log.e(TAG, "Invalid manifest in $dir: missing id or title")
+                        continue
                     }
+
+                    games.add(GameManifest(
+                        id = id,
+                        title = title,
+                        orientation = json.optString("orientation", "portrait"),
+                        minPlayers = json.optInt("minPlayers", 1),
+                        maxPlayers = json.optInt("maxPlayers", 1),
+                        aiSupport = json.optString("aiSupport", "none"),
+                        online = json.optBoolean("online", false),
+                        tileColor = json.optString("tileColor", "#FFFFFF"),
+                        version = json.optString("version", "1.0.0")
+                    ))
                 } catch (e: Exception) {
                     Log.e(TAG, "Error parsing manifest in $dir: ${e.message}")
                 }

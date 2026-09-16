@@ -4,13 +4,30 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Vibrator
 import android.os.VibrationEffect
-import android.os.Build
-import android.os.VibratorManager
-import android.webkit.JavascriptInterface
 import android.util.Log
 
 class NativeBridge(private val context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("studio_games", Context.MODE_PRIVATE)
+    private val hapticsEnabled: Boolean
+        get() = prefs.getString("shell:settings", "")?.let { json ->
+            try {
+                android.util.JsonReader(java.io.StringReader(json)).apply {
+                    beginObject()
+                    var haptics = true
+                    while (hasNext()) {
+                        val name = nextName()
+                        when (name) {
+                            "haptics" -> haptics = nextBoolean()
+                        }
+                    }
+                    endObject()
+                    close()
+                }
+                haptics
+            } catch (e: Exception) {
+                true
+            }
+        } ?: true
 
     @JavascriptInterface
     fun save(key: String, json: String) {
@@ -26,8 +43,16 @@ class NativeBridge(private val context: Context) {
     }
 
     @JavascriptInterface
+    fun getSetting(key: String): String? {
+        return prefs.getString(key, null)
+    }
+
+    @JavascriptInterface
     fun haptic(ms: Int) {
-        Log.d("NativeBridge", "Haptic request: ${ms}ms")
+        if (!hapticsEnabled) {
+            Log.d("NativeBridge", "Haptic suppressed: haptics master-off")
+            return
+        }
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val manager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
             manager.defaultVibrator
@@ -54,11 +79,4 @@ class NativeBridge(private val context: Context) {
     fun exitGame() {
         NativeBridgeContext.exitHandler?.invoke()
     }
-}
-
-// Simple singleton to hold handlers for async JS calls
-object NativeBridgeContext {
-    var callback: ((String, String) -> Unit)? = null
-    var exitHandler: (() -> Unit)? = null
-    var adHandler: ((String) -> Unit)? = null
 }

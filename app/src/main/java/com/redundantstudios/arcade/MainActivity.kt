@@ -3,7 +3,6 @@ package com.redundantstudios.arcade
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.GridLayoutManager
@@ -16,6 +15,7 @@ import com.redundantstudios.arcade.model.GameMode
 import com.redundantstudios.arcade.ui.ModeAdapter
 import com.redundantstudios.arcade.ui.ModeActivity
 import com.redundantstudios.arcade.util.ManifestParser
+import com.redundantstudios.arcade.SettingsActivity
 
 class MainActivity : AppCompatActivity() {
     private lateinit var allGames: List<GameManifest>
@@ -27,6 +27,10 @@ class MainActivity : AppCompatActivity() {
 
         UMPConsentManager(this).gatherConsent {
             MobileAds.initialize(this) {}
+        }
+
+        findViewById<View>(R.id.btnSettings).setOnClickListener {
+            SettingsActivity.start(this)
         }
 
         val modeRecyclerView = findViewById<RecyclerView>(R.id.modeRecyclerView)
