@@ -3,6 +3,7 @@ package com.redundantstudios.arcade
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import android.os.Build
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -49,6 +50,10 @@ class GameActivity : AppCompatActivity() {
             webViewClient = WebViewClient()
 
             addJavascriptInterface(NativeBridge(this@GameActivity), "NativeBridge")
+
+            if (Build.VERSION.SDK_INT >= 26) {
+                webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANCE_HIGH, false)
+            }
 
             val mode = intent.getStringExtra("mode") ?: "solo"
             val skill = intent.getStringExtra("skill") ?: "medium"
