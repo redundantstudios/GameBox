@@ -52,7 +52,8 @@ class GameActivity : AppCompatActivity() {
             addJavascriptInterface(NativeBridge(this@GameActivity), "NativeBridge")
 
             if (Build.VERSION.SDK_INT >= 26) {
-                webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANCE_HIGH, false)
+                // WebView.RENDERER_PRIORITY_IMPORTANCE_HIGH = 1
+                webView.setRendererPriorityPolicy(1, false)
             }
 
             val mode = intent.getStringExtra("mode") ?: "solo"
