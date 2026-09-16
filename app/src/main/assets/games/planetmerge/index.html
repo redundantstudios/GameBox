@@ -602,10 +602,12 @@ function tryQueueMerge(a,b,pair){
   mergeQueue.push({a,b,pair});
 }
 function processMerges(){
-  while(mergeQueue.length){
+  let count=0;
+  while(mergeQueue.length && count<2){
     const m=mergeQueue.shift();const a=m.a,b=m.b,pair=m.pair;
     if(a.plugin.dead||b.plugin.dead){merging.delete(a.id);merging.delete(b.id);continue;}
     doMerge(a,b,pair);
+    count++;
   }
 }
 let sweepTick=0;
@@ -809,11 +811,13 @@ function burst(x,y,lvl,n){
     parts.push({type:'dot',x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,
       r:1.6+Math.random()*2.4+lvl*0.22,c,life:380+Math.random()*320,max:700,rot:Math.random()*TAU});
   }
-  for(let i=0;i<nStar;i++){
-    const a=Math.random()*TAU,sp=2+Math.random()*2.5;
-    parts.push({type:'star',x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1.4,
-      r:4+Math.random()*3+lvl*0.3,c:Math.random()<0.5?'#ffd75e':P.light,
-      life:450+Math.random()*250,max:700,rot:Math.random()*TAU,vrot:(Math.random()-0.5)*0.2});
+  if(parts.length<=150){
+    for(let i=0;i<nStar;i++){
+      const a=Math.random()*TAU,sp=2+Math.random()*2.5;
+      parts.push({type:'star',x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1.4,
+        r:4+Math.random()*3+lvl*0.3,c:Math.random()<0.5?'#ffd75e':P.light,
+        life:450+Math.random()*250,max:700,rot:Math.random()*TAU,vrot:(Math.random()-0.5)*0.2});
+    }
   }
   if(parts.length>240)parts.splice(0,parts.length-240);
 }

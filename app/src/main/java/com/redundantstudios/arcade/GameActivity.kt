@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.os.Build
+import android.view.WindowManager
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -24,6 +25,8 @@ class GameActivity : AppCompatActivity() {
 
         adMobManager = AdMobManager(this)
         adMobManager.loadRewardedAd()
+
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         val gameId = intent.getStringExtra("game_id") ?: return
 
