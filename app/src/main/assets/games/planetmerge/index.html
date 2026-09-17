@@ -101,69 +101,49 @@ body{
 #chainWrap canvas.pop{animation:chainpop .55s cubic-bezier(.34,1.56,.64,1)}
 @keyframes chainpop{40%{transform:scale(1.55) translateY(-4px)}}
 .overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;
-  background:rgba(210,225,195,.55);backdrop-filter:blur(7px);opacity:0;pointer-events:none;transition:opacity .35s}
+  background:linear-gradient(135deg,#ffeef8 0%,#eefaff 100%);opacity:0;pointer-events:none;transition:opacity .35s}
 .overlay.show{opacity:1;pointer-events:auto}
 .card{text-align:center;padding:30px 26px 28px;border-radius:30px;max-width:min(88vw,360px);
   background:#fff8e9;border:3px solid #f3dfb4;box-shadow:0 24px 60px rgba(110,70,30,.3);
   transform:scale(.9);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
 .overlay.show .card{transform:scale(1)}
-.big-title{font:700 40px/1.08 var(--font);letter-spacing:.1em;color:#7a4a2a}
+.intro-main{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;text-align:center}
+.intro-back-btn{position:fixed;top:24px;left:24px;width:48px;height:48px;border-radius:50%;border:none;background:#fff;color:#a58a68;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:all .2s;z-index:21}
+.intro-back-btn:active{transform:scale(0.9);box-shadow:0 2px 6px rgba(0,0,0,0.1)}
+.intro-back-btn svg{width:24px;height:24px}
+.intro-bg-deco{position:absolute;inset:0;pointer-events:none;z-index:-1;overflow:hidden}
+.deco-planet{position:absolute;width:300px;height:300px;border-radius:50%;opacity:.15;filter:blur(40px);background:radial-gradient(circle,#ee6fa8,#fff)}
+.p1{top:-50px;right:-50px;background:radial-gradient(circle,#ee6fa8,#fff)}
+.p2{bottom:-100px;left:-100px;background:radial-gradient(circle,#7a4a2a,#fff)}
+.p3{top:20%;left:10%;width:150px;height:150px;background:radial-gradient(circle,#f5d259,#fff)}
+.big-title{font:700 56px/1.08 var(--font);letter-spacing:.1em;color:#7a4a2a;margin:0}
 .big-title em{font-style:normal;color:#ee6fa8}
-.tag{margin-top:10px;color:#a58a68;font:400 14px var(--font)}
-.diffRow{display:flex;gap:8px;justify-content:center;margin-top:16px}
-.dpill{cursor:pointer;font:600 13px/1 var(--font);letter-spacing:.06em;padding:9px 18px;border-radius:999px;
+.tag{margin:16px 0;color:#a58a68;font:500 18px var(--font)}
+.diffRow{display:flex;gap:12px;justify-content:center;margin:32px 0}
+.dpill{cursor:pointer;font:600 15px/1 var(--font);letter-spacing:.06em;padding:12px 24px;border-radius:999px;
   border:2px solid #ecd9b4;background:#fff;color:#a58a68;box-shadow:0 3px 0 rgba(120,90,60,.14);transition:transform .08s}
 .dpill:active{transform:translateY(2px)}
 .dpill.sel{background:#ee6fa8;border-color:#ee6fa8;color:#fff;box-shadow:0 3px 0 #c94d86,0 8px 18px rgba(180,60,110,.28)}
-#evoStrip{display:flex;align-items:flex-end;justify-content:center;gap:5px;margin:22px 0 2px;flex-wrap:wrap}
-#evoStrip canvas{filter:drop-shadow(0 3px 4px rgba(90,60,30,.25))}
-.play{margin-top:18px;font:600 20px var(--font);letter-spacing:.1em;padding:14px 54px;border-radius:999px;border:none;cursor:pointer;
+.play-zone{display:flex;align-items:center;gap:16px;justify-content:center;margin-top:24px}
+.play{font:600 24px var(--font);letter-spacing:.1em;padding:16px 64px;border-radius:999px;border:none;cursor:pointer;
   background:#ee6fa8;color:#fff;box-shadow:0 6px 0 #c94d86,0 12px 24px rgba(180,60,110,.35);
   transition:transform .1s,box-shadow .1s}
 .play:active{transform:translateY(5px);box-shadow:0 1px 0 #c94d86}
 .play[disabled]{opacity:.6;cursor:wait}
-.mini{margin-top:14px;font:400 12px var(--font);color:#b09877}
-#bootMsg{margin-top:12px;font:500 13px/1.5 var(--font);color:#d64545;display:none}
-.over-title{font:700 30px var(--font);letter-spacing:.16em;color:#f25a5a}
-.result{margin:16px 0 2px}
-.result span{display:block;font:500 11px var(--font);letter-spacing:.2em;color:#b09877;text-transform:uppercase}
-.result b{font:700 46px/1.1 var(--font);color:#ee6fa8}
-.result.sub{margin-top:6px}
-.result.sub b{font-size:22px;color:#7a4a2a}
-#adBack{position:fixed;inset:0;z-index:29;display:none;background:rgba(70,50,30,.25)}
-#adBack.show{display:block}
-#adPop{position:fixed;z-index:30;left:50%;top:120px;transform:translateX(-50%) translateY(-8px) scale(.95);opacity:0;
-  pointer-events:none;width:min(78vw,270px);background:#fff8e9;border:3px solid #f3dfb4;border-radius:22px;
-  box-shadow:0 18px 40px rgba(110,70,30,.35);padding:16px 16px 14px;text-align:center;transition:.22s cubic-bezier(.34,1.56,.64,1)}
-#adPop.show{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0) scale(1)}
-#adTitle{font:600 17px var(--font);color:#7a4a2a}
-#adSub{margin-top:4px;font:400 12.5px var(--font);color:#a58a68}
-#adRow{margin-top:12px;display:flex;gap:8px}
-#adWatch{flex:1.4;font:600 12.5px var(--font);letter-spacing:.04em;color:#fff;background:#ee6fa8;border:none;border-radius:999px;
-  padding:10px 6px;cursor:pointer;box-shadow:0 4px 0 #c94d86}
-#adWatch:active{transform:translateY(3px);box-shadow:0 1px 0 #c94d86}
-#adNo{flex:1;font:600 12.5px var(--font);color:#a58a68;background:#f2e7cf;border:none;border-radius:999px;padding:10px 6px;cursor:pointer;box-shadow:0 4px 0 #ddc9a3}
-#adNo:active{transform:translateY(3px);box-shadow:0 1px 0 #ddc9a3}
-#toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));z-index:40;pointer-events:none;white-space:nowrap;
-  background:rgba(56,47,42,.94);color:#fff;font:500 13px var(--font);
-  padding:10px 18px;border-radius:999px;opacity:0;transform:translateX(-50%) translateY(18px);transition:.3s;
-  box-shadow:0 8px 20px rgba(60,40,20,.3)}
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.title-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.back-btn,.help-btn{background:none;border:none;cursor:pointer;padding:8px;color:#a58a68;transition:color .2s}
-.back-btn:hover,.help-btn:hover{color:#ee6fa8}
-.back-btn svg,.help-btn svg{width:24px;height:24px}
-.help-btn{font:700 18px var(--font);width:32px;height:32px;border-radius:50%;border:2px solid #ecd9b4;display:flex;align-items:center;justify-content:center}
-.tut-card{padding:40px 30px}
-#tutContent{text-align:center;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px}
-.tut-img{width:160px;height:160px;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,0.1)}
-.tut-txt{font:600 18px var(--font);color:#7a4a2a;line-height:1.4}
-.tut-footer{display:flex;align-items:center;justify-content:space-between;margin-top:32px}
-.tut-dots{display:flex;gap:8px}
-.tut-dot{width:8px;height:8px;border-radius:50%;background:#ecd9b4;transition:all .3s}
-.tut-dot.active{background:#ee6fa8;width:20px;border-radius:4px}
-.tut-nav{display:flex;gap:12px}
-.tut-btn{background:#fff;border:2px solid #ecd9b4;color:#a58a68;font:700 14px var(--font);padding:8px 16px;border-radius:999px;cursor:pointer;transition:all .2s}
+.help-btn{font:700 22px var(--font);width:48px;height:48px;border-radius:50%;border:2px solid #ecd9b4;background:#fff;color:#a58a68;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
+.help-btn:active{transform:scale(0.9)}
+.tut-full-page{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;text-align:center}
+.tut-content{padding:0 40px}
+.tut-img{width:220px;height:220px;border-radius:30px;box-shadow:0 12px 32px rgba(0,0,0,0.15);margin-bottom:32px}
+.tut-txt{font:600 22px var(--font);color:#7a4a2a;line-height:1.4}
+.tut-footer{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:400px;margin-top:48px}
+.tut-dots{display:flex;gap:12px}
+.tut-dot{width:10px;height:10px;border-radius:50%;background:#ecd9b4;transition:all .3s}
+.tut-dot.active{background:#ee6fa8;width:24px;border-radius:5px}
+.tut-nav{display:flex;gap:16px}
+.tut-btn{background:#fff;border:2px solid #ecd9b4;color:#a58a68;font:700 16px var(--font);padding:12px 24px;border-radius:999px;cursor:pointer;transition:all .2s}
 .tut-btn:hover{background:#fdfbf7;border-color:#ee6fa8;color:#ee6fa8}
 </style>
 </head>
@@ -218,14 +198,16 @@ body{
 </div>
 
 <div class="overlay show" id="introOverlay">
-  <div class="card">
-    <div class="title-header">
-      <button class="back-btn" id="introBack" aria-label="Back">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-      </button>
-      <h2 class="big-title">PLANET<br><em>MERGE</em></h2>
-      <button class="help-btn" id="helpBtn" aria-label="Help">?</button>
-    </div>
+  <button class="intro-back-btn" id="introBack" aria-label="Back">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+  </button>
+  <div class="intro-bg-deco">
+    <div class="deco-planet p1"></div>
+    <div class="deco-planet p2"></div>
+    <div class="deco-planet p3"></div>
+  </div>
+  <div class="intro-main">
+    <h2 class="big-title">PLANET<br><em>MERGE</em></h2>
     <p class="tag">Merge the planets. Build your universe.</p>
     <div id="evoStrip"></div>
     <div class="diffRow" id="diffRow">
@@ -233,13 +215,20 @@ body{
       <button class="dpill sel" data-diff="NORMAL">NORMAL</button>
       <button class="dpill" data-diff="HARD">HARD</button>
     </div>
-    <button class="play" id="playBtn" disabled>LOADING&hellip;</button>
+    <div class="play-zone">
+      <button class="play" id="playBtn" disabled>LOADING&hellip;</button>
+      <button class="help-btn" id="helpBtn" aria-label="Help">?</button>
+    </div>
   </div>
 </div>
 
 <div class="overlay" id="tutorialOverlay">
-  <div class="card tut-card">
-    <div id="tutContent"></div>
+  <div class="tut-full-page">
+    <div id="tutContent">
+      <img id="tutImg" class="tut-img">
+      <h3 id="tutTitle"></h3>
+      <p id="tutText" class="tut-txt"></p>
+    </div>
     <div class="tut-footer">
       <div class="tut-dots" id="tutDots"></div>
       <div class="tut-nav">
@@ -341,7 +330,7 @@ const TUTORIAL_DATA = [
 let tutIdx = 0;
 function updateTut() {
   const data = TUTORIAL_DATA[tutIdx];
-  if(!$('#tutTitle']) return;
+  if(!$('#tutTitle')) return;
   $('#tutTitle').innerText = data.title;
   $('#tutText').innerText = data.text;
   $('#tutImg').src = data.img;
@@ -351,11 +340,17 @@ function updateTut() {
 }
 
 function showTutorial(force = false) {
-  if (!force && store.get('pm:tutorialSeen')) return;
+  console.log('showTutorial: force=', force, 'seen=', store.get('pm:tutorialSeen'), 'overlay=', !!$('#tutorialOverlay'));
+  if (!force && store.get('pm:tutorialSeen')) {
+    console.log('showTutorial: early return (seen)');
+    return;
+  }
   tutIdx = 0;
   updateTut();
-  $('#tutorialOverlay').classList.add('show');
-  $('#gameCanvas').style.pointerEvents = 'none';
+  const overlay = $('#tutorialOverlay');
+  if (overlay) overlay.classList.add('show');
+  const gameCanvas = $('#game');
+  if (gameCanvas) gameCanvas.style.pointerEvents = 'none';
 }
 
 function nextTut() {
@@ -367,17 +362,26 @@ function prevTut() {
 }
 
 function finishTut() {
-  $('#tutorialOverlay').classList.remove('show');
-  $('#gameCanvas').style.pointerEvents = 'auto';
+  console.log('finishTut: overlay=', !!$('#tutorialOverlay'), 'game=', !!$('#game'));
+  const overlay = $('#tutorialOverlay');
+  if (overlay) overlay.classList.remove('show');
+  const gameCanvas = $('#game');
+  if (gameCanvas) gameCanvas.style.pointerEvents = 'auto';
   store.set('pm:tutorialSeen', '1');
 }
 
 function introBack() {
+  console.log('introBack: bridge=', !!window.NativeBridge, 'studio=', typeof Studio, 'exit=', typeof Studio?.exitGame);
+  if (!window.Studio || !Studio.exitGame) {
+    console.log('introBack: early return (no Studio/exitGame)');
+    return;
+  }
   if (window.Studio && Studio.exitGame) Studio.exitGame();
   else alert("Exiting game...");
 }
 
 function openHelp() {
+  console.log('openHelp: calling showTutorial(true)');
   showTutorial(true);
 }
 
@@ -1236,7 +1240,7 @@ function draw(t){
    HUD
 ============================================================ */
 const scoreVal=$('scoreVal'),bestVal=$('bestVal'),undoBtn=$('undoBtn'),eraseBtn=$('eraseBtn');
-const undoN=$('undoN'),eraseN=$('eraseN'),overOverlay=$('overOverlay'),startOverlay=$('startOverlay');
+const undoN=$('undoN'),eraseN=$('eraseN'),overOverlay=$('overOverlay'),startOverlay=$('introOverlay');
 const finalScore=$('finalScore'),finalBest=$('finalBest');
 const playBtn=$('playBtn'),diffTag=$('diffTag');
 bestVal.textContent=best;
@@ -1348,15 +1352,24 @@ on(window,'keydown',onKey);
 /* ============================================================
    BUTTONS
 ============================================================ */
-on(playBtn,'click',()=>{SFX.ensure();SFX.click();startOverlay.classList.remove('show');resetGame();});
-on($('againBtn'),'click',()=>{SFX.ensure();SFX.click();resetGame();});
+on(playBtn,'click',()=>{
+  console.log('playBtn: startOverlay=', !!startOverlay, 'playBtn=', !!playBtn);
+  if(!startOverlay){
+    console.log('playBtn: early return (no startOverlay)');
+    return;
+  }
+  SFX.ensure();SFX.click();startOverlay.classList.remove('show');resetGame();
+});
+on($('againBtn'),'click',()=>{const el=$('againBtn');if(!el)return;SFX.ensure();SFX.click();resetGame();});
 on($('resetBtn'),'click',()=>{
   if(state==='start')return;SFX.ensure();SFX.click();resetGame();toast('New game');
 });
 on($('backBtn'),'click',()=>{
+  if(!startOverlay)return;
   SFX.ensure();SFX.click();
   state='start';startOverlay.classList.add('show');updateHUD();
 });
+on($('introBack'),'click',introBack);
 on(undoBtn,'click',()=>{
   if(state==='over'||state==='start')return;
   SFX.ensure();SFX.click();
@@ -1472,12 +1485,6 @@ window.Game={
 /* ============================================================
    INIT
 ============================================================ */
-  if($('#introBack')) $('#introBack').onclick = introBack;
-  if($('#helpBtn')) $('#helpBtn').onclick = openHelp;
-  if($('#tutPrev')) $('#tutPrev').onclick = prevTut;
-  if($('#tutNext')) $('#tutNext').onclick = nextTut;
-  showTutorial();
-
 (function init(){
   buildChain($('chainWrap'),false);
   buildChain($('evoStrip'),true);
