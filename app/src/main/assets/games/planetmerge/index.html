@@ -149,6 +149,22 @@ body{
   padding:10px 18px;border-radius:999px;opacity:0;transform:translateX(-50%) translateY(18px);transition:.3s;
   box-shadow:0 8px 20px rgba(60,40,20,.3)}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.title-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.back-btn,.help-btn{background:none;border:none;cursor:pointer;padding:8px;color:#a58a68;transition:color .2s}
+.back-btn:hover,.help-btn:hover{color:#ee6fa8}
+.back-btn svg,.help-btn svg{width:24px;height:24px}
+.help-btn{font:700 18px var(--font);width:32px;height:32px;border-radius:50%;border:2px solid #ecd9b4;display:flex;align-items:center;justify-content:center}
+.tut-card{padding:40px 30px}
+#tutContent{text-align:center;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px}
+.tut-img{width:160px;height:160px;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,0.1)}
+.tut-txt{font:600 18px var(--font);color:#7a4a2a;line-height:1.4}
+.tut-footer{display:flex;align-items:center;justify-content:space-between;margin-top:32px}
+.tut-dots{display:flex;gap:8px}
+.tut-dot{width:8px;height:8px;border-radius:50%;background:#ecd9b4;transition:all .3s}
+.tut-dot.active{background:#ee6fa8;width:20px;border-radius:4px}
+.tut-nav{display:flex;gap:12px}
+.tut-btn{background:#fff;border:2px solid #ecd9b4;color:#a58a68;font:700 14px var(--font);padding:8px 16px;border-radius:999px;cursor:pointer;transition:all .2s}
+.tut-btn:hover{background:#fdfbf7;border-color:#ee6fa8;color:#ee6fa8}
 </style>
 </head>
 <body>
@@ -201,19 +217,36 @@ body{
   <div id="chainWrap"></div>
 </div>
 
-<div class="overlay show" id="startOverlay">
+<div class="overlay show" id="introOverlay">
   <div class="card">
-    <h2 class="big-title">PLANET<br><em>MERGE</em></h2>
+    <div class="title-header">
+      <button class="back-btn" id="introBack" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <h2 class="big-title">PLANET<br><em>MERGE</em></h2>
+      <button class="help-btn" id="helpBtn" aria-label="Help">?</button>
+    </div>
     <p class="tag">Merge the planets. Build your universe.</p>
+    <div id="evoStrip"></div>
     <div class="diffRow" id="diffRow">
       <button class="dpill" data-diff="EASY">EASY</button>
       <button class="dpill sel" data-diff="NORMAL">NORMAL</button>
       <button class="dpill" data-diff="HARD">HARD</button>
     </div>
-    <div id="evoStrip"></div>
     <button class="play" id="playBtn" disabled>LOADING&hellip;</button>
-    <p class="mini">Match two identical planets &middot; don't cross the dashed line</p>
-    <p id="bootMsg"></p>
+  </div>
+</div>
+
+<div class="overlay" id="tutorialOverlay">
+  <div class="card tut-card">
+    <div id="tutContent"></div>
+    <div class="tut-footer">
+      <div class="tut-dots" id="tutDots"></div>
+      <div class="tut-nav">
+        <button id="tutPrev" class="tut-btn">←</button>
+        <button id="tutNext" class="tut-btn">NEXT</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -256,7 +289,8 @@ const Studio = (() => {
       const b=bridge(); if(!b) return;
       window.__studioAdCb = function(result){ if(result==='granted') onReward(); };
       b.showRewardedAd('__studioAdCb');
-    } }
+    } },
+    exitGame:()=>{ const b=bridge(); if(b) b.exitGame(); }
   };
 })();
 </script>
@@ -271,6 +305,7 @@ const Studio = (() => {
 function bootGame(){
 const {Engine,Bodies,Body,Composite,Events,Query} = Matter;
 const $=id=>document.getElementById(id);
+
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const TAU=Math.PI*2;
 const now=()=>performance.now();
@@ -287,7 +322,7 @@ function updateGradients(g){
 const DPR=(function(){
   const q=new URLSearchParams(location.search).get('dpr');
   if(q) return Math.min(2,Math.max(1,parseFloat(q)));
-  return 1;
+  return Math.min(1.5,window.devicePixelRatio||1);
 })();
 function easeOutBack(x){const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2);}
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -296,6 +331,56 @@ const store={
   get(k){return Studio.load(k);},
   set(k,v){Studio.save(k,v);}
 };
+
+const TUTORIAL_DATA = [
+  {title: "Merge Planets", text: "Drop similar planets to merge them into larger ones!", img: "https://cdn-icons-png.flaticon.com/512/2530/2530065.png"},
+  {title: "Watch the Line", text: "Keep your planets below the danger line to stay in the game.", img: "https://cdn-icons-png.flaticon.com/512/1828/1828854.png"},
+  {title: "Reach the Sun", text: "Merge your way up to the Sun for the ultimate score!", img: "https://cdn-icons-png.flaticon.com/512/2530/2530017.png"}
+];
+
+let tutIdx = 0;
+function updateTut() {
+  const data = TUTORIAL_DATA[tutIdx];
+  if(!$('#tutTitle']) return;
+  $('#tutTitle').innerText = data.title;
+  $('#tutText').innerText = data.text;
+  $('#tutImg').src = data.img;
+  document.querySelectorAll('.tut-dot').forEach((dot, i) => dot.classList.toggle('active', i === tutIdx));
+  $('#tutPrev').style.visibility = tutIdx === 0 ? 'hidden' : 'visible';
+  $('#tutNext').innerText = tutIdx === TUTORIAL_DATA.length - 1 ? 'Start!' : 'Next';
+}
+
+function showTutorial(force = false) {
+  if (!force && store.get('pm:tutorialSeen')) return;
+  tutIdx = 0;
+  updateTut();
+  $('#tutorialOverlay').classList.add('show');
+  $('#gameCanvas').style.pointerEvents = 'none';
+}
+
+function nextTut() {
+  if (tutIdx < TUTORIAL_DATA.length - 1) { tutIdx++; updateTut(); } else { finishTut(); }
+}
+
+function prevTut() {
+  if (tutIdx > 0) { tutIdx--; updateTut(); }
+}
+
+function finishTut() {
+  $('#tutorialOverlay').classList.remove('show');
+  $('#gameCanvas').style.pointerEvents = 'auto';
+  store.set('pm:tutorialSeen', '1');
+}
+
+function introBack() {
+  if (window.Studio && Studio.exitGame) Studio.exitGame();
+  else alert("Exiting game...");
+}
+
+function openHelp() {
+  showTutorial(true);
+}
+
 const saturnCache={};
 
 /* ---- sim loop state: declared top-level, before any use ---- */
@@ -981,7 +1066,7 @@ function layout(){
   let w=Math.min(availW,432);let h=w*BH/BW;
   if(h>availH){h=Math.max(280,availH);w=h*BW/BH;}
   wrap.style.width=w+'px';wrap.style.height=h+'px';
-  boardCvs.width=Math.round(w*DPR);boardCvs.height=Math.round(h*DPR);
+  boardCvs.width=Math.round(w*1);boardCvs.height=Math.round(h*1);
   cvs.width=Math.round(w*DPR);cvs.height=Math.round(h*DPR);
   view.S=cvs.width/BW;
   updateGradients(ctx);
@@ -1008,13 +1093,14 @@ function drawPlanetAt(g,lvl,x,y,r,angle,t){
   }
   if(lvl===8){
     if(!saturnCache[r]){
-      const c=makeCanvas(r*2*2,r*2*2);const cx=c.getContext('2d');
-      cx.translate(r*2,r*2);cx.rotate(0);cx.drawImage(SURF[7],-r,-r,2*r,2*r);
-      drawRings(cx,0,0,r);
-      saturnCache[r]=c;
+      const bC=makeCanvas(r*2,r*2);const bG=bC.getContext('2d');
+      bG.translate(r,r);bG.rotate(0);bG.drawImage(SURF[7],-r,-r,2*r,2*r);
+      const rC=makeCanvas(r*5.6*2,r*5.6*2);const rG=rC.getContext('2d');
+      rG.translate(r*5.6,r*5.6);rG.rotate(0);drawRings(rG,0,0,r);
+      saturnCache[r]={body:bC,rings:rC};
     }
-    const s=saturnCache[r];
-    g.save();g.translate(x,y);g.rotate(angle);g.drawImage(s,-r*2,-r*2,r*4,r*4);g.restore();
+    const s=saturnCache[r].body;
+    g.save();g.translate(x,y);g.rotate(angle);g.drawImage(s,-r,-r,2*r,2*r);g.restore();
   }else{
     g.save();g.translate(x,y);g.rotate(angle);g.drawImage(SURF[lvl-1],-r,-r,2*r,2*r);g.restore();
   }
@@ -1122,6 +1208,11 @@ function draw(t){
   const ga=0.12+0.06*Math.sin(t*0.005)+(near?0.1:0);
   g.globalAlpha=ga;g.fillStyle=cachedGradients.dg;g.fillRect(0,CFG.dangerY-52,BW,52);
   g.globalAlpha=1;
+  for(const b of planetBodies)if(b.plugin.lvl===8){
+    const r=b.circleRadius;const s=saturnCache[r].rings;
+    g.save();g.translate(b.position.x,b.position.y);g.rotate(b.angle);
+    g.drawImage(s,-r*5.6,-r*5.6,r*11.2,r*11.2);g.restore();
+  }
   for(const b of planetBodies)drawBody(g,b,t);
   drawParticles(g);
   drawFloats(g);
@@ -1381,6 +1472,12 @@ window.Game={
 /* ============================================================
    INIT
 ============================================================ */
+  if($('#introBack')) $('#introBack').onclick = introBack;
+  if($('#helpBtn')) $('#helpBtn').onclick = openHelp;
+  if($('#tutPrev')) $('#tutPrev').onclick = prevTut;
+  if($('#tutNext')) $('#tutNext').onclick = nextTut;
+  showTutorial();
+
 (function init(){
   buildChain($('chainWrap'),false);
   buildChain($('evoStrip'),true);
