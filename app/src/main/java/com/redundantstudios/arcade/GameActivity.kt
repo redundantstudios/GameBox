@@ -23,6 +23,8 @@ class GameActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        WebView.setWebContentsDebuggingEnabled(true)
+
         adMobManager = AdMobManager(this)
         adMobManager.loadRewardedAd()
 
@@ -48,6 +50,8 @@ class GameActivity : AppCompatActivity() {
                 allowContentAccess = true
                 allowFileAccessFromFileURLs = false
                 allowUniversalAccessFromFileURLs = false
+                useWideViewPort = true
+                loadWithOverviewMode = true
             }
 
             webViewClient = WebViewClient()
