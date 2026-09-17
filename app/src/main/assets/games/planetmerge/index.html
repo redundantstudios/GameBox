@@ -1087,6 +1087,15 @@ function landingY(x,r){
 function drawRings(g,x,y,r){
   const w=r*5.6;g.drawImage(RINGS,x-w/2,y-w/2,w,w);
 }
+function ensureSaturnCache(r){
+  if(!saturnCache[r]){
+    const bC=makeCanvas(r*2,r*2);const bG=bC.getContext('2d');
+    bG.translate(r,r);bG.rotate(0);bG.drawImage(SURF[7],-r,-r,2*r,2*r);
+    const rC=makeCanvas(r*5.6*2,r*5.6*2);const rG=rC.getContext('2d');
+    rG.translate(r*5.6,r*5.6);rG.rotate(0);drawRings(rG,0,0,r);
+    saturnCache[r]={body:bC,rings:rC};
+  }
+}
 function drawPlanetAt(g,lvl,x,y,r,angle,t){
   const P=PLANETS[lvl-1];
   if(P.sun){const gp=1+0.05*Math.sin(t*0.003);const gs=r*4.4*gp;
@@ -1096,13 +1105,7 @@ function drawPlanetAt(g,lvl,x,y,r,angle,t){
     }
   }
   if(lvl===8){
-    if(!saturnCache[r]){
-      const bC=makeCanvas(r*2,r*2);const bG=bC.getContext('2d');
-      bG.translate(r,r);bG.rotate(0);bG.drawImage(SURF[7],-r,-r,2*r,2*r);
-      const rC=makeCanvas(r*5.6*2,r*5.6*2);const rG=rC.getContext('2d');
-      rG.translate(r*5.6,r*5.6);rG.rotate(0);drawRings(rG,0,0,r);
-      saturnCache[r]={body:bC,rings:rC};
-    }
+    ensureSaturnCache(r);
     const s=saturnCache[r].body;
     g.save();g.translate(x,y);g.rotate(angle);g.drawImage(s,-r,-r,2*r,2*r);g.restore();
   }else{
@@ -1203,37 +1206,44 @@ function renderBoardLayer(){
   g.strokeStyle='rgba(255,235,210,.28)';g.lineWidth=2;g.stroke();
 }
 function draw(t){
-  const g=ctx;
-  g.setTransform(view.S,0,0,view.S,0,0);
-  g.clearRect(0,0,BW,BH);
-  if(shakeMag>0)g.translate((Math.random()*2-1)*shakeMag,(Math.random()*2-1)*shakeMag*0.7);
-  let near=false;
-  for(const b of planetBodies)if(b.position.y-b.circleRadius<CFG.dangerY+55){near=true;break;}
-  const ga=0.12+0.06*Math.sin(t*0.005)+(near?0.1:0);
-  g.globalAlpha=ga;g.fillStyle=cachedGradients.dg;g.fillRect(0,CFG.dangerY-52,BW,52);
-  g.globalAlpha=1;
-  for(const b of planetBodies)if(b.plugin.lvl===8){
-    const r=b.circleRadius;const s=saturnCache[r].rings;
-    g.save();g.translate(b.position.x,b.position.y);g.rotate(b.angle);
-    g.drawImage(s,-r*5.6,-r*5.6,r*11.2,r*11.2);g.restore();
-  }
-  for(const b of planetBodies)drawBody(g,b,t);
-  drawParticles(g);
-  drawFloats(g);
-  if((state==='ready'||state==='aiming')&&!eraseMode)drawGuide(g,t);
-  drawDangerLine(g,t);
-  if((state==='ready'||state==='aiming')&&!eraseMode){
-    const lvl=queue[0];
-    if(lvl){
-      const P=PLANETS[lvl-1],r=RADII[lvl-1];
-      const x=clamp(dropX,WALL+r+2,BW-WALL-r-2),y=CFG.dropY-6+Math.sin(t*0.0035)*3;
-      const vis=easeOutBack(clamp((t-readyAt)/240,0,1));
-      drawPlanetAt(g,lvl,x,y,Math.max(0.5,r*vis),t*0.0005,t);
-      g.strokeStyle='rgba(255,255,255,'+(0.55+0.25*Math.sin(t*0.006))+')';
-      g.lineWidth=3;g.beginPath();g.arc(x,y,r+5+Math.sin(t*0.006)*2,0,TAU);g.stroke();
+  try {
+    const g=ctx;
+    g.setTransform(view.S,0,0,view.S,0,0);
+    g.clearRect(0,0,BW,BH);
+    if(shakeMag>0)g.translate((Math.random()*2-1)*shakeMag,(Math.random()*2-1)*shakeMag*0.7);
+    let near=false;
+    for(const b of planetBodies)if(b.position.y-b.circleRadius<CFG.dangerY+55){near=true;break;}
+    const ga=0.12+0.06*Math.sin(t*0.005)+(near?0.1:0);
+    g.globalAlpha=ga;g.fillStyle=cachedGradients.dg;g.fillRect(0,CFG.dangerY-52,BW,52);
+    g.globalAlpha=1;
+    for(const b of planetBodies)if(b.plugin.lvl===8){
+      const r=b.circleRadius;ensureSaturnCache(r);const s=saturnCache[r].rings;
+      g.save();g.translate(b.position.x,b.position.y);g.rotate(b.angle);
+      g.drawImage(s,-r*5.6,-r*5.6,r*11.2,r*11.2);g.restore();
+    }
+    for(const b of planetBodies)drawBody(g,b,t);
+    drawParticles(g);
+    drawFloats(g);
+    if((state==='ready'||state==='aiming')&&!eraseMode)drawGuide(g,t);
+    drawDangerLine(g,t);
+    if((state==='ready'||state==='aiming')&&!eraseMode){
+      const lvl=queue[0];
+      if(lvl){
+        const P=PLANETS[lvl-1],r=RADII[lvl-1];
+        const x=clamp(dropX,WALL+r+2,BW-WALL-r-2),y=CFG.dropY-6+Math.sin(t*0.0035)*3;
+        const vis=easeOutBack(clamp((t-readyAt)/240,0,1));
+        drawPlanetAt(g,lvl,x,y,Math.max(0.5,r*vis),t*0.0005,t);
+        g.strokeStyle='rgba(255,255,255,'+(0.55+0.25*Math.sin(t*0.006))+')';
+        g.lineWidth=3;g.beginPath();g.arc(x,y,r+5+Math.sin(t*0.006)*2,0,TAU);g.stroke();
+      }
+    }
+    if(flashA>0){g.globalAlpha=flashA;g.fillStyle='#fff6e4';g.fillRect(-24,-24,BW+48,BH+48);g.globalAlpha=1;}
+  } catch(e) {
+    if(!window.lastRenderError || window.lastRenderError !== e.message) {
+      console.error("Render crash:", e);
+      window.lastRenderError = e.message;
     }
   }
-  if(flashA>0){g.globalAlpha=flashA;g.fillStyle='#fff6e4';g.fillRect(-24,-24,BW+48,BH+48);g.globalAlpha=1;}
 }
 
 /* ============================================================
