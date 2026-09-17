@@ -1113,11 +1113,13 @@ function roundRectPath(g,x,y,w,h,r){
 const appEl=$('app');
 function layout(){
   const chain=$('chainWrap');
-  const availW=Math.min(innerWidth-16,440);
-  const availH=innerHeight-appEl.querySelector('.row.top').offsetHeight
+  const hdr=appEl.querySelector('.row.top');
+  const availW=Math.min(Math.round(innerWidth * 0.86), 440);
+  const availH=innerHeight-hdr.offsetHeight
     -appEl.querySelector('.row.tools').offsetHeight-chain.offsetHeight-44;
   let w=Math.min(availW,432);let h=w*BH/BW;
   if(h>availH){h=Math.max(280,availH);w=h*BW/BH;}
+  w=Math.min(w,hdr.clientWidth-20);h=w*BH/BW;
   wrap.style.width=w+'px';wrap.style.height=h+'px';
   boardCvs.width=Math.round(w*1);boardCvs.height=Math.round(h*1);
   cvs.width=Math.round(w*DPR);cvs.height=Math.round(h*DPR);

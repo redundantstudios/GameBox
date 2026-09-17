@@ -132,7 +132,7 @@ class AdMobManager(private val activity: Activity) {
 
     fun loadBannerAd(container: ViewGroup, onLoaded: (() -> Unit)? = null) {
         val adView = AdView(activity).apply {
-            setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(activity, AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdUnitWidth(activity)))
+            setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(activity, activity.resources.displayMetrics.widthPixels))
             adUnitId = "ca-app-pub-3940256099942544/6300978111"
             adListener = object : AdListener() {
                 override fun onAdLoaded() {

@@ -51,6 +51,24 @@ class NativeBridge(private val context: Context) {
     }
 
     @JavascriptInterface
+    fun showInterstitial(callback: String) {
+        Log.d("NativeBridge", "Interstitial ad requested. Callback: $callback")
+        NativeBridgeContext.interstitialHandler?.invoke(callback)
+    }
+
+    @JavascriptInterface
+    fun showBanner() {
+        Log.d("NativeBridge", "Show banner requested")
+        NativeBridgeContext.bannerHandler?.invoke(true)
+    }
+
+    @JavascriptInterface
+    fun hideBanner() {
+        Log.d("NativeBridge", "Hide banner requested")
+        NativeBridgeContext.bannerHandler?.invoke(false)
+    }
+
+    @JavascriptInterface
     fun exitGame() {
         NativeBridgeContext.exitHandler?.invoke()
     }
@@ -61,4 +79,6 @@ object NativeBridgeContext {
     var callback: ((String, String) -> Unit)? = null
     var exitHandler: (() -> Unit)? = null
     var adHandler: ((String) -> Unit)? = null
+    var interstitialHandler: ((String) -> Unit)? = null
+    var bannerHandler: ((Boolean) -> Unit)? = null
 }

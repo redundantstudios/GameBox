@@ -100,7 +100,7 @@ class GameActivity : AppCompatActivity() {
         setContentView(rootLayout)
 
         webView.post {
-            android.util.Log.d("ViewportProof", "WebView width: ${webView.width}px, density: ${resources.displayMetrics.density}")
+            android.util.Log.d("VP", "webViewPx=${webView.width}, density=${resources.displayMetrics.density}")
         }
 
         adMobManager.loadBannerAd(bannerContainer) {
