@@ -82,7 +82,8 @@ body{
 #queueCvs{display:block}
 #boardWrap{position:relative;margin:0 auto;border-radius:24px;
   box-shadow:0 18px 44px rgba(96,58,26,.28)}
-#game{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#boardLayer,#game{position:absolute;inset:0;width:100%;height:100%;display:block}
+#game{touch-action:none;cursor:grab}
 #announce{position:absolute;top:16%;left:0;right:0;text-align:center;font:600 30px var(--font);letter-spacing:.1em;
   color:#7a4a2a;text-shadow:0 2px 0 rgba(255,255,255,.7),0 6px 18px rgba(120,70,20,.25);opacity:0;pointer-events:none}
 #announce.show{animation:ann 1.5s cubic-bezier(.22,1,.36,1) forwards}
@@ -191,6 +192,7 @@ body{
   </div>
 
   <div id="boardWrap">
+    <canvas id="boardLayer"></canvas>
     <canvas id="game"></canvas>
     <div id="announce"></div>
     <div id="eraseBanner">Tap a planet to erase &middot; tap the broom to cancel</div>
@@ -285,7 +287,7 @@ function updateGradients(g){
 const DPR=(function(){
   const q=new URLSearchParams(location.search).get('dpr');
   if(q) return Math.min(2,Math.max(1,parseFloat(q)));
-  return 1; // Test A: hardcoded 1
+  return 1;
 })();
 function easeOutBack(x){const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2);}
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -294,6 +296,7 @@ const store={
   get(k){return Studio.load(k);},
   set(k,v){Studio.save(k,v);}
 };
+const saturnCache={};
 
 /* ---- sim loop state: declared top-level, before any use ---- */
 let last=0,acc=0,rafId=0,destroyed=false,paused=false;
@@ -805,6 +808,7 @@ function resetGame(){
   queue=[];for(let i=0;i<4;i++)queue.push(genLevel());
   discovered.clear();for(let i=0;i<4;i++)discover(queue[i]);
   qa.reset(queue);
+  renderBoardLayer();
   dropX=BW/2;targetX=BW/2;eraseMode=false;hoverBody=null;
   closeAdPop();
   boardLive=true;
@@ -954,7 +958,7 @@ function discover(lvl){
 /* ============================================================
    RENDERING
 ============================================================ */
-const wrap=$('boardWrap'),cvs=$('game'),ctx=cvs.getContext('2d');
+const wrap=$('boardWrap'),boardCvs=$('boardLayer'),boardCtx=boardCvs.getContext('2d'),cvs=$('game'),ctx=cvs.getContext('2d');
 const view={S:1};
 let PAT=null;
 function buildPattern(){
@@ -977,9 +981,11 @@ function layout(){
   let w=Math.min(availW,432);let h=w*BH/BW;
   if(h>availH){h=Math.max(280,availH);w=h*BW/BH;}
   wrap.style.width=w+'px';wrap.style.height=h+'px';
+  boardCvs.width=Math.round(w*DPR);boardCvs.height=Math.round(h*DPR);
   cvs.width=Math.round(w*DPR);cvs.height=Math.round(h*DPR);
   view.S=cvs.width/BW;
   updateGradients(ctx);
+  renderBoardLayer();
 }
 function landingY(x,r){
   let y=BH-WALL-r;
@@ -1000,8 +1006,18 @@ function drawPlanetAt(g,lvl,x,y,r,angle,t){
       g.drawImage(GLOW,x-gs/2,y-gs/2,gs,gs);g.restore();
     }
   }
-  if(lvl===8)drawRings(g,x,y,r);
-  g.save();g.translate(x,y);g.rotate(angle);g.drawImage(SURF[lvl-1],-r,-r,2*r,2*r);g.restore();
+  if(lvl===8){
+    if(!saturnCache[r]){
+      const c=makeCanvas(r*2*2,r*2*2);const cx=c.getContext('2d');
+      cx.translate(r*2,r*2);cx.rotate(0);cx.drawImage(SURF[7],-r,-r,2*r,2*r);
+      drawRings(cx,0,0,r);
+      saturnCache[r]=c;
+    }
+    const s=saturnCache[r];
+    g.save();g.translate(x,y);g.rotate(angle);g.drawImage(s,-r*2,-r*2,r*4,r*4);g.restore();
+  }else{
+    g.save();g.translate(x,y);g.rotate(angle);g.drawImage(SURF[lvl-1],-r,-r,2*r,2*r);g.restore();
+  }
 }
 function drawBody(g,b,t){
   const lvl=b.plugin.lvl,r=b.circleRadius,x=b.position.x,y=b.position.y;
@@ -1079,33 +1095,38 @@ function drawFloats(g){
   }
   g.globalAlpha=1;
 }
-function draw(t){
-  const g=ctx;
+function renderBoardLayer(){
+  const g=boardCtx;
   g.setTransform(view.S,0,0,view.S,0,0);
   g.clearRect(0,0,BW,BH);
-  if(shakeMag>0)g.translate((Math.random()*2-1)*shakeMag,(Math.random()*2-1)*shakeMag*0.7);
   roundRectPath(g,1,1,BW-2,BH-2,22);
   g.fillStyle='#b25c3d';g.fill();
   g.save();roundRectPath(g,WALL,WALL,BW-WALL*2,BH-WALL*2,14);g.clip();
   g.fillStyle='#f7e5b2';g.fillRect(0,0,BW,BH);
   if(PAT){g.fillStyle=PAT;g.fillRect(WALL,WALL,BW-WALL*2,BH-WALL*2);}
-  let near=false;
-  for(const b of planetBodies)if(b.position.y-b.circleRadius<CFG.dangerY+55){near=true;break;}
-  const ga=0.12+0.06*Math.sin(t*0.005)+(near?0.1:0);
-  g.globalAlpha=ga;g.fillStyle=cachedGradients.dg;g.fillRect(0,CFG.dangerY-52,BW,52);
-  for(const b of planetBodies)drawBody(g,b,t);
-  drawParticles(g);
-  drawFloats(g);
-  if((state==='ready'||state==='aiming')&&!eraseMode)drawGuide(g,t);
-  drawDangerLine(g,t);
   g.fillStyle=cachedGradients.ts;g.fillRect(WALL,WALL,BW-WALL*2,30);
   g.fillStyle=cachedGradients.bs;g.fillRect(WALL,BH-WALL-26,BW-WALL*2,26);
-  g.globalAlpha=1;
   g.restore();
   roundRectPath(g,WALL-1.5,WALL-1.5,BW-WALL*2+3,BH-WALL*2+3,15);
   g.strokeStyle='#8f4a2c';g.lineWidth=3;g.stroke();
   roundRectPath(g,2.5,2.5,BW-5,BH-5,20);
   g.strokeStyle='rgba(255,235,210,.28)';g.lineWidth=2;g.stroke();
+}
+function draw(t){
+  const g=ctx;
+  g.setTransform(view.S,0,0,view.S,0,0);
+  g.clearRect(0,0,BW,BH);
+  if(shakeMag>0)g.translate((Math.random()*2-1)*shakeMag,(Math.random()*2-1)*shakeMag*0.7);
+  let near=false;
+  for(const b of planetBodies)if(b.position.y-b.circleRadius<CFG.dangerY+55){near=true;break;}
+  const ga=0.12+0.06*Math.sin(t*0.005)+(near?0.1:0);
+  g.globalAlpha=ga;g.fillStyle=cachedGradients.dg;g.fillRect(0,CFG.dangerY-52,BW,52);
+  g.globalAlpha=1;
+  for(const b of planetBodies)drawBody(g,b,t);
+  drawParticles(g);
+  drawFloats(g);
+  if((state==='ready'||state==='aiming')&&!eraseMode)drawGuide(g,t);
+  drawDangerLine(g,t);
   if((state==='ready'||state==='aiming')&&!eraseMode){
     const lvl=queue[0];
     if(lvl){
