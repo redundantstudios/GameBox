@@ -36,7 +36,7 @@ body{
   color:#5c4632;font-family:var(--font);overflow:hidden;
   user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none;
 }
-#bg{position:fixed;inset:0;z-index:0}
+#bg{display:none;position:fixed;inset:0;z-index:0}
 #app{position:relative;z-index:1;height:100vh;height:100dvh;max-width:470px;margin:0 auto;display:flex;flex-direction:column;
   padding:calc(8px + env(safe-area-inset-top)) 10px calc(8px + env(safe-area-inset-bottom));gap:8px}
 .row{display:flex;align-items:center;gap:10px}
@@ -272,7 +272,21 @@ const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const TAU=Math.PI*2;
 const now=()=>performance.now();
-const DPR=Math.min(2,window.devicePixelRatio||1);
+const cachedGradients={};
+function updateGradients(g){
+  cachedGradients.dg=g.createLinearGradient(0,CFG.dangerY-52,0,CFG.dangerY);
+  cachedGradients.dg.addColorStop(0,'rgba(226,87,76,0)');cachedGradients.dg.addColorStop(1,'rgba(226,87,76,1)');
+  cachedGradients.ts=g.createLinearGradient(0,WALL,0,WALL+30);
+  cachedGradients.ts.addColorStop(0,'rgba(120,70,25,.16)');cachedGradients.ts.addColorStop(1,'rgba(120,70,25,0)');
+  cachedGradients.bs=g.createLinearGradient(0,BH-WALL-26,0,BH-WALL);
+  cachedGradients.bs.addColorStop(0,'rgba(120,70,25,0)');cachedGradients.bs.addColorStop(1,'rgba(120,70,25,.14)');
+}
+
+const DPR=(function(){
+  const q=new URLSearchParams(location.search).get('dpr');
+  if(q) return Math.min(2,Math.max(1,parseFloat(q)));
+  return 1; // Test A: hardcoded 1
+})();
 function easeOutBack(x){const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2);}
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
 /* persistence via Studio SDK — same "pm:*" keys */
@@ -554,7 +568,7 @@ function drawBG(t){
    PHYSICS WORLD — exactly 3 static bodies (left wall, right
    wall, full-width floor). Corner bumper circles removed.
 ============================================================ */
-const engine=Engine.create({enableSleeping:false});
+const engine=Engine.create({enableSleeping:true});
 engine.gravity.y=CFG.gravity;
 if(engine.world&&engine.world.gravity)engine.world.gravity.y=CFG.gravity;
 engine.positionIterations=8;engine.velocityIterations=6;
@@ -965,6 +979,7 @@ function layout(){
   wrap.style.width=w+'px';wrap.style.height=h+'px';
   cvs.width=Math.round(w*DPR);cvs.height=Math.round(h*DPR);
   view.S=cvs.width/BW;
+  updateGradients(ctx);
 }
 function landingY(x,r){
   let y=BH-WALL-r;
@@ -980,8 +995,11 @@ function drawRings(g,x,y,r){
 function drawPlanetAt(g,lvl,x,y,r,angle,t){
   const P=PLANETS[lvl-1];
   if(P.sun){const gp=1+0.05*Math.sin(t*0.003);const gs=r*4.4*gp;
-    g.save();g.globalCompositeOperation='lighter';g.globalAlpha=0.8;
-    g.drawImage(GLOW,x-gs/2,y-gs/2,gs,gs);g.restore();}
+    if(x+gs/2>-2*r && x-gs/2<BW+2*r && y+gs/2>-2*r && y-gs/2<BH+2*r){
+      g.save();g.globalCompositeOperation='lighter';g.globalAlpha=0.8;
+      g.drawImage(GLOW,x-gs/2,y-gs/2,gs,gs);g.restore();
+    }
+  }
   if(lvl===8)drawRings(g,x,y,r);
   g.save();g.translate(x,y);g.rotate(angle);g.drawImage(SURF[lvl-1],-r,-r,2*r,2*r);g.restore();
 }
@@ -990,7 +1008,7 @@ function drawBody(g,b,t){
   const age=t-b.plugin.spawn,vis=age<240?easeOutBack(clamp(age/240,0,1)):1;
   const rr=Math.max(0.5,r*vis);
   g.globalAlpha=0.5;
-  g.drawImage(SHADOW,x-rr*1.05+r*0.1,y-rr*0.95+r*0.22,rr*2.1,rr*1.9);
+  // g.drawImage(SHADOW,x-rr*1.05+r*0.1,y-rr*0.95+r*0.22,rr*2.1,rr*1.9);
   g.globalAlpha=1;
   drawPlanetAt(g,lvl,x,y,rr,b.angle,t);
   if(b.plugin.danger>0){
@@ -1074,24 +1092,15 @@ function draw(t){
   let near=false;
   for(const b of planetBodies)if(b.position.y-b.circleRadius<CFG.dangerY+55){near=true;break;}
   const ga=0.12+0.06*Math.sin(t*0.005)+(near?0.1:0);
-  const dg=g.createLinearGradient(0,CFG.dangerY-52,0,CFG.dangerY);
-  dg.addColorStop(0,'rgba(226,87,76,0)');dg.addColorStop(1,'rgba(226,87,76,'+ga+')');
-  g.fillStyle=dg;g.fillRect(0,CFG.dangerY-52,BW,52);
-  for(const b of planetBodies)if(b.plugin.lvl===8){
-    const age=t-b.plugin.spawn,vis=age<240?easeOutBack(clamp(age/240,0,1)):1;
-    drawRings(g,b.position.x,b.position.y,Math.max(0.5,b.circleRadius*vis));
-  }
+  g.globalAlpha=ga;g.fillStyle=cachedGradients.dg;g.fillRect(0,CFG.dangerY-52,BW,52);
   for(const b of planetBodies)drawBody(g,b,t);
   drawParticles(g);
   drawFloats(g);
   if((state==='ready'||state==='aiming')&&!eraseMode)drawGuide(g,t);
   drawDangerLine(g,t);
-  const ts=g.createLinearGradient(0,WALL,0,WALL+30);
-  ts.addColorStop(0,'rgba(120,70,25,.16)');ts.addColorStop(1,'rgba(120,70,25,0)');
-  g.fillStyle=ts;g.fillRect(WALL,WALL,BW-WALL*2,30);
-  const bs=g.createLinearGradient(0,BH-WALL-26,0,BH-WALL);
-  bs.addColorStop(0,'rgba(120,70,25,0)');bs.addColorStop(1,'rgba(120,70,25,.14)');
-  g.fillStyle=bs;g.fillRect(WALL,BH-WALL-26,BW-WALL*2,26);
+  g.fillStyle=cachedGradients.ts;g.fillRect(WALL,WALL,BW-WALL*2,30);
+  g.fillStyle=cachedGradients.bs;g.fillRect(WALL,BH-WALL-26,BW-WALL*2,26);
+  g.globalAlpha=1;
   g.restore();
   roundRectPath(g,WALL-1.5,WALL-1.5,BW-WALL*2+3,BH-WALL*2+3,15);
   g.strokeStyle='#8f4a2c';g.lineWidth=3;g.stroke();
@@ -1323,7 +1332,7 @@ function loop(t){
     dropX+=(tx-dropX)*Math.min(1,dt*0.02);
   }
   updateFX(dt);
-  drawBG(simClock);
+  //drawBG(simClock);
   draw(simClock);
   qa.draw(simClock);
 }
