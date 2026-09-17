@@ -1133,16 +1133,28 @@ function landingY(x,r){
   }
   return Math.max(CFG.dropY,y);
 }
-function drawRings(g,x,y,r){
-  const w=r*5.6;g.drawImage(RINGS,x-w/2,y-w/2,w,w);
+function drawRings(g,x,y,r,half){
+  const w=r*5.6;
+  g.save();
+  g.translate(x,y);
+  if(half==='back'){
+    g.beginPath(); g.rect(-w/2, -w/2, w, w/2); g.clip();
+  }else{
+    g.beginPath(); g.rect(-w/2, 0, w, w/2); g.clip();
+  }
+  g.drawImage(RINGS,-w/2,-w/2,w,w);
+  g.restore();
 }
 function ensureSaturnCache(r){
   if(!saturnCache[r]){
     const bC=makeCanvas(r*2,r*2);const bG=bC.getContext('2d');
     bG.translate(r,r);bG.rotate(0);bG.drawImage(SURF[7],-r,-r,2*r,2*r);
-    const rC=makeCanvas(r*5.6*2,r*5.6*2);const rG=rC.getContext('2d');
-    rG.translate(r*5.6,r*5.6);rG.rotate(0);drawRings(rG,0,0,r);
-    saturnCache[r]={body:bC,rings:rC};
+    const rw=r*5.6;
+    const rB=makeCanvas(rw*2,rw*2);const rBG=rB.getContext('2d');
+    rBG.translate(rw,rw);rBG.rotate(0);drawRings(rBG, 0, r*0.09, r, 'back');
+    const rF=makeCanvas(rw*2,rw*2);const rFG=rF.getContext('2d');
+    rFG.translate(rw,rw);rFG.rotate(0);drawRings(rFG, 0, r*0.09, r, 'front');
+    saturnCache[r]={body:bC, ringsBack:rB, ringsFront:rF};
   }
 }
 function drawPlanetAt(g,lvl,x,y,r,angle,t){
@@ -1165,10 +1177,18 @@ function drawBody(g,b,t){
   const lvl=b.plugin.lvl,r=b.circleRadius,x=b.position.x,y=b.position.y;
   const age=t-b.plugin.spawn,vis=age<240?easeOutBack(clamp(age/240,0,1)):1;
   const rr=Math.max(0.5,r*vis);
-  g.globalAlpha=0.5;
-  // g.drawImage(SHADOW,x-rr*1.05+r*0.1,y-rr*0.95+r*0.22,rr*2.1,rr*1.9);
-  g.globalAlpha=1;
-  drawPlanetAt(g,lvl,x,y,rr,b.angle,t);
+  if(lvl===8){
+    ensureSaturnCache(rr);
+    const s=saturnCache[rr];
+    g.save();g.translate(x,y);g.rotate(b.angle);
+    g.drawImage(s.ringsBack,-rr*5.6,-rr*5.6,rr*11.2,rr*11.2);
+    g.drawImage(s.body,-rr,-rr,2*rr,2*rr);
+    g.drawImage(s.ringsFront,-rr*5.6,-rr*5.6,rr*11.2,rr*11.2);
+    g.restore();
+  }else{
+    g.globalAlpha=1;
+    drawPlanetAt(g,lvl,x,y,rr,b.angle,t);
+  }
   if(b.plugin.danger>0){
     const k=Math.min(1,b.plugin.danger/CFG.dangerTime);
     g.strokeStyle='rgba(226,87,76,'+(0.35+0.5*k*(0.6+0.4*Math.sin(t*0.02)))+')';

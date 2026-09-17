@@ -22,6 +22,8 @@ class GameActivity : AppCompatActivity() {
     private var currentGame: GameManifest? = null
     private lateinit var adMobManager: AdMobManager
     private lateinit var bannerContainer: FrameLayout
+    private var bannerRequestedVisible = false
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,7 +102,12 @@ class GameActivity : AppCompatActivity() {
             android.util.Log.d("ViewportProof", "WebView width: ${webView.width}px, density: ${resources.displayMetrics.density}")
         }
 
-        adMobManager.loadBannerAd(bannerContainer)
+        adMobManager.loadBannerAd(bannerContainer) {
+            runOnUiThread {
+                Log.d("BannerState", "Ad loaded. Applying requested visibility: $bannerRequestedVisible")
+                bannerContainer.visibility = if (bannerRequestedVisible) android.view.View.VISIBLE else android.view.View.GONE
+            }
+        }
 
         NativeBridgeContext.exitHandler = { finish() }
         NativeBridgeContext.callback = { jsFuncName, result ->
@@ -127,6 +134,7 @@ class GameActivity : AppCompatActivity() {
         }
         NativeBridgeContext.bannerHandler = { show ->
             runOnUiThread {
+                bannerRequestedVisible = show
                 bannerContainer.visibility = if (show) android.view.View.VISIBLE else android.view.View.GONE
             }
         }
