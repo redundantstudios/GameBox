@@ -8,4 +8,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="studio_background">#F3F4F6</color>
     <color name="studio_ink">#1C1E24</color>
+    <color name="brand_black">#1A1A1A</color>
 </resources>

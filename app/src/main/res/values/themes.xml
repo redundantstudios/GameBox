@@ -8,11 +8,11 @@
         <item name="colorOnSecondary">@color/black</item>
         <item name="android:statusBarColor">#FAFAFA</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowBackground">@color/studio_background</item>
+        <item name="android:windowBackground">@color/brand_black</item>
     </style>
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/studio_ink</item>
+        <item name="windowSplashScreenBackground">@color/brand_black</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
         <item name="postSplashScreenTheme">@style/Theme.Shell</item>
     </style>
