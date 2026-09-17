@@ -8,6 +8,8 @@ import android.view.WindowManager
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import com.redundantstudios.arcade.ads.AdMobManager
 import com.redundantstudios.arcade.bridge.NativeBridge
@@ -19,6 +21,7 @@ class GameActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var currentGame: GameManifest? = null
     private lateinit var adMobManager: AdMobManager
+    private lateinit var bannerContainer: FrameLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +30,7 @@ class GameActivity : AppCompatActivity() {
 
         adMobManager = AdMobManager(this)
         adMobManager.loadRewardedAd()
+        adMobManager.loadInterstitialAd()
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
@@ -37,10 +41,30 @@ class GameActivity : AppCompatActivity() {
 
         setupOrientation(currentGame?.orientation ?: "portrait")
 
-        webView = WebView(this).apply {
+        // Root layout to accommodate banner
+        val rootLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             layoutParams = android.view.ViewGroup.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        val bannerContainer = FrameLayout(this).apply {
+            layoutParams = android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setBackgroundColor(android.graphics.Color.parseColor("#F3F4F6"))
+            visibility = android.view.View.GONE
+        }
+        this.bannerContainer = bannerContainer
+
+        webView = WebView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1.0f
             )
 
             settings.apply {
@@ -50,8 +74,9 @@ class GameActivity : AppCompatActivity() {
                 allowContentAccess = true
                 allowFileAccessFromFileURLs = false
                 allowUniversalAccessFromFileURLs = false
-                useWideViewPort = true
-                loadWithOverviewMode = true
+                useWideViewPort = false
+                loadWithOverviewMode = false
+                textZoom = 100
             }
 
             webViewClient = WebViewClient()
@@ -67,7 +92,15 @@ class GameActivity : AppCompatActivity() {
             loadUrl("file:///android_asset/games/$gameId/index.html?mode=$mode&skill=$skill&players=$players")
         }
 
-        setContentView(webView)
+        rootLayout.addView(webView)
+        rootLayout.addView(bannerContainer)
+        setContentView(rootLayout)
+
+        webView.post {
+            android.util.Log.d("ViewportProof", "WebView width: ${webView.width}px, density: ${resources.displayMetrics.density}")
+        }
+
+        adMobManager.loadBannerAd(bannerContainer)
 
         NativeBridgeContext.exitHandler = { finish() }
         NativeBridgeContext.callback = { jsFuncName, result ->
@@ -84,6 +117,18 @@ class GameActivity : AppCompatActivity() {
                     NativeBridgeContext.callback?.invoke(callback, "closed")
                 }
             )
+        }
+        NativeBridgeContext.interstitialHandler = { callback ->
+            adMobManager.showInterstitialAd(
+                onAdClosed = {
+                    NativeBridgeContext.callback?.invoke(callback, "closed")
+                }
+            )
+        }
+        NativeBridgeContext.bannerHandler = { show ->
+            runOnUiThread {
+                bannerContainer.visibility = if (show) android.view.View.VISIBLE else android.view.View.GONE
+            }
         }
     }
 

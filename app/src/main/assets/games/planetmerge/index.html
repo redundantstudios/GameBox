@@ -66,7 +66,6 @@ body{
   display:grid;place-items:center;color:#fff;transition:transform .08s,box-shadow .08s,opacity .2s}
 .pbtn svg{width:46%;height:46%}
 .pbtn:active{transform:translateY(4px);box-shadow:0 1px 0 #c94d86,0 4px 10px rgba(180,60,110,.3)}
-.pbtn[disabled]{opacity:.45;pointer-events:none}
 .pbtn.active{background:#f25a5a;box-shadow:0 5px 0 #c93a3a,0 10px 20px rgba(200,60,60,.3)}
 .pbtn.empty{opacity:.55}
 .pbtn.empty::after{content:'+AD';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
@@ -275,9 +274,51 @@ const Studio = (() => {
     /* addJavascriptInterface transports strings/numbers only — we pass a
        global callback NAME; the Kotlin side invokes window.__studioAdCb */
     ads:{ rewarded(placement,onReward){
+      const b=bridge(); if(b) {
+        const cbName = `__studioAdCb_${placement}`;
+        window[cbName] = function(result){
+          onReward(result);
+          delete window[cbName];
+        };
+        b.showRewardedAd(cbName);
+        return;
+      }
+      if(window.CrazyGames?.SDK?.ad) {
+        window.CrazyGames.SDK.ad.requestRewardedAd({
+          onComplete: () => onReward('granted'),
+          onClose: () => onReward('closed')
+        });
+        return;
+      }
+      if(!window.CrazyGames){
+        const s=document.createElement('script');s.src='https://sdk.crazygames.com/crazygames-sdk.js';document.head.appendChild(s);
+      }
+      onReward('closed');
+    },
+    interstitial(callback){
+      const b=bridge(); if(b) {
+        const cbName = callback || 'interstitialCb';
+        window[cbName] = function(result){
+          if(typeof callback === 'function') callback(result);
+          delete window[cbName];
+        };
+        b.showInterstitial(cbName);
+        return;
+      }
+      if(window.CrazyGames?.SDK?.ad) {
+        window.CrazyGames.SDK.ad.requestInterstitial();
+        if(typeof callback === 'function') callback('closed');
+        return;
+      }
+      if(!window.CrazyGames){
+        const s=document.createElement('script');s.src='https://sdk.crazygames.com/crazygames-sdk.js';document.head.appendChild(s);
+      }
+      if(typeof callback === 'function') callback('closed');
+    },
+    banner(action){
       const b=bridge(); if(!b) return;
-      window.__studioAdCb = function(result){ if(result==='granted') onReward(); };
-      b.showRewardedAd('__studioAdCb');
+      if(action==='show') b.showBanner();
+      else if(action==='hide') b.hideBanner();
     } },
     exitGame:()=>{ const b=bridge(); if(b) b.exitGame(); }
   };
@@ -292,7 +333,13 @@ const Studio = (() => {
 <script>
 'use strict';
 function bootGame(){
-const {Engine,Bodies,Body,Composite,Events,Query} = Matter;
+  Studio.ads.banner('hide');
+  if(!window.NativeBridge) {
+    const backBtn = $('#introBack');
+    if(backBtn) backBtn.style.display = 'none';
+  }
+  console.log('ViewportProof: innerWidth=' + window.innerWidth + ', clientWidth=' + document.documentElement.clientWidth);
+  const {Engine,Bodies,Body,Composite,Events,Query} = Matter;
 const $=id=>document.getElementById(id);
 
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
@@ -872,6 +919,7 @@ function dangerCheck(dt){
   }
 }
 function gameOver(){
+  Studio.ads.banner('hide');
   if(state==='over')return;
   state='over';eraseMode=false;hoverBody=null;boardLive=false;
   closeAdPop();
@@ -886,6 +934,7 @@ function gameOver(){
   overShowAt=simClock+650;
 }
 function resetGame(){
+  Studio.ads.banner('show');
   activeDiff=pendingDiff;
   setDiffTag();
   while(planetBodies.length)destroyBody(planetBodies[0]);
@@ -1267,10 +1316,8 @@ function updateHUD(){
   scoreVal.textContent=score;bestVal.textContent=best;
   undoN.textContent=undos;eraseN.textContent=erases;
   const canUndo=snapshots.length>0&&state!=='over'&&state!=='start';
-  undoBtn.disabled=!canUndo;
   undoBtn.classList.toggle('empty',canUndo&&undos<=0);
   const canErase=state!=='over'&&state!=='start';
-  eraseBtn.disabled=!canErase;
   eraseBtn.classList.toggle('empty',canErase&&erases<=0);
   eraseBtn.classList.toggle('active',eraseMode);
   wrap.classList.toggle('erasing',eraseMode);
@@ -1402,8 +1449,12 @@ on($('adWatch'),'click',()=>{
   const kind=adKind;closeAdPop();
   if(!kind)return;
   if(!window.NativeBridge){toast('No ad available right now');return;}
-  Studio.ads.rewarded(kind,function(){
+  Studio.ads.rewarded(kind,function(result){
     if(destroyed)return;
+    if(result !== 'granted'){
+      toast('No reward — ad not completed');
+      return;
+    }
     if(kind==='undo'){undos++;toast('+1 Undo!');}
     else{erases++;toast('+1 Erase!');}
     updateHUD();
@@ -1457,6 +1508,7 @@ function loop(t){
     if(state==='dropping'&&simClock>=dropReadyAt){state='ready';readyAt=simClock;updateHUD();}
     if(state==='over'&&overShowAt&&simClock>=overShowAt){
       overShowAt=0;overOverlay.classList.add('show');
+      Studio.ads.interstitial();
     }
     if(state==='ready'||state==='aiming'||state==='dropping'){
       dangerCheck(dt);
