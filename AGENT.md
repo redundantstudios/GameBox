@@ -16,5 +16,12 @@ The ONLY build command is `BUILD.bat`.
 Every build ends with a fresh `shell-debug.apk` in the project root — its timestamp is the proof of freshness. Never install an APK without checking its timestamp first:
 `adb shell date` vs `dir shell-debug.apk`
 
+## Syntax Verification
+All inlined JavaScript in HTML files must be verified for parse-ability before any build.
+- Use the delivery gate script: `node -e "const fs=require('fs');const s=fs.readFileSync('path/to/file','utf8');const m=[...s.matchAll(/<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/g)];m.forEach((x,i)=>{try{new Function(x[1])}catch(e){console.log('SYNTAX FAIL script#'+i+': '+e.message);process.exit(1)}});console.log('ALL SCRIPTS PARSE OK')"`
+- Any "SYNTAX FAIL" is a hard block on deployment.
+- This check must be reported as "Pass" in the REVIEW REQUEST.
+
 ## Build Gate
 NO phase may end its REVIEW REQUEST without a passing `BUILD.bat` + fresh APK timestamp. A phase that does not compile did not happen.
+Every phase that adds new API calls must end with a compile check and quote the import lines added.

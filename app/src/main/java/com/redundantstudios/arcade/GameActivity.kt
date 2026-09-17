@@ -10,6 +10,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.redundantstudios.arcade.ads.AdMobManager
 import com.redundantstudios.arcade.bridge.NativeBridge
