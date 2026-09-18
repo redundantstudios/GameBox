@@ -333,6 +333,7 @@ const Studio = (() => {
 <script>
 'use strict';
 function bootGame(){
+  const $=id=>document.getElementById(id);
   Studio.ads.banner('hide');
   if(!window.NativeBridge) {
     const backBtn = $('#introBack');
@@ -340,7 +341,6 @@ function bootGame(){
   }
   console.log('ViewportProof: innerWidth=' + window.innerWidth + ', clientWidth=' + document.documentElement.clientWidth);
   const {Engine,Bodies,Body,Composite,Events,Query} = Matter;
-const $=id=>document.getElementById(id);
 
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const TAU=Math.PI*2;
@@ -456,6 +456,7 @@ const CFG={
   scores:[10,20,40,80,160,320,640,1280,2560],
   supernovaScore:5000,
   comboWindow:1100, comboBonus:0.5,
+  boardWidthRatio:0.86,
 };
 const DIFF={
   EASY:[38,30,20,12],
@@ -1115,18 +1116,22 @@ const appEl=$('app');
 function layout(){
   const chain=$('chainWrap');
   const hdr=appEl.querySelector('.row.top');
-  const availW=Math.min(Math.round(innerWidth * 0.86), 440);
+  const viewportW=Math.min(innerWidth,appEl.clientWidth+20);
+  const availW=Math.min(Math.round(viewportW*CFG.boardWidthRatio), 440);
   const availH=innerHeight-hdr.offsetHeight
     -appEl.querySelector('.row.tools').offsetHeight-chain.offsetHeight-44;
   let w=Math.min(availW,432);let h=w*BH/BW;
   if(h>availH){h=Math.max(280,availH);w=h*BW/BH;}
-  w=Math.min(w,hdr.clientWidth-20);h=w*BH/BW;
+  w=Math.min(w,Math.max(0,appEl.clientWidth-20));
+  w=Math.round(w);h=w*BH/BW;
   wrap.style.width=w+'px';wrap.style.height=h+'px';
-  boardCvs.width=Math.round(w*1);boardCvs.height=Math.round(h*1);
+  wrap.style.marginLeft='auto';wrap.style.marginRight='auto';
+  boardCvs.width=Math.round(w*DPR);boardCvs.height=Math.round(h*DPR);
   cvs.width=Math.round(w*DPR);cvs.height=Math.round(h*DPR);
   view.S=cvs.width/BW;
   updateGradients(ctx);
   renderBoardLayer();
+  console.log('[PM] layout: innerW='+innerWidth+', boardW='+w+', boardRect=' + JSON.stringify(wrap.getBoundingClientRect()));
 }
 function landingY(x,r){
   let y=BH-WALL-r;
@@ -1586,9 +1591,10 @@ window.Game={
   var msg=document.getElementById('bootMsg');
   var pb=document.getElementById('playBtn');
   function fatal(m){
-    msg.textContent=m;msg.style.display='block';
-    pb.disabled=false;pb.textContent='RELOAD';
-    pb.onclick=function(){location.reload();};
+    console.error('[PM] fatal:',m);
+    if(msg){msg.textContent=m;msg.style.display='block';}
+    if(pb){pb.disabled=false;pb.textContent='RELOAD';
+      pb.onclick=function(){location.reload();};}
   }
   window.addEventListener('error',function(e){
     if(window.__pmBooted)return;
