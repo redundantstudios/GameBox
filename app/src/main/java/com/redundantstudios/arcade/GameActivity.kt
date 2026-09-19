@@ -29,6 +29,10 @@ class GameActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Defensive: GameActivity can be cold-started directly (deep link/adb) — settings must exist
+        com.redundantstudios.arcade.util.SettingsManager.init(this)
+        com.redundantstudios.arcade.util.SettingsManager.applyTheme()
+
         WebView.setWebContentsDebuggingEnabled(true)
 
         adMobManager = AdMobManager(this)
