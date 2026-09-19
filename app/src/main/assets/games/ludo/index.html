@@ -294,14 +294,22 @@ const BASE_ORG = (function(){
 // block that left them looking scattered / overlapping.
 const BASE_SLOTS= [[2.07,3],[2.69,3],[3.31,3],[3.93,3]];
 const FIN_DIR   = [[0,1],[-1,0],[0,-1],[1,0]];
-const FIN_SPOTS = [];
-(function(){
-  // single narrow line along the seat's finish direction (no overlaps, no triangle)
+// Finished pawns line up INSIDE the seat's own centre triangle — the "home"
+// every pawn races to (the middle of the board). The row sits 1.10 cells out
+// from the centre (the fat part of the triangle) and the four pawns are 0.50
+// cells apart across it, so they read as one tidy line on the board grid with
+// no overlap — clear of the centre star and of the neighbouring seats' rows.
+const FIN_SPOTS = (function(){
+  const out=[];
   for(let p=0;p<4;p++){
-    const d=FIN_DIR[p], arr=[];
-    for(let i=0;i<4;i++) arr.push([7.5+d[0]*(0.62+i*0.62), 7.5+d[1]*(0.62+i*0.62)]);
-    FIN_SPOTS.push(arr);
+    const d=FIN_DIR[p], ax=-d[1], ay=d[0], row=[];
+    for(let i=0;i<4;i++){
+      const o=(i-1.5)*0.50;
+      row.push([7.5+d[0]*1.10+ax*o, 7.5+d[1]*1.10+ay*o]);
+    }
+    out.push(row);
   }
+  return out;
 })();
 const ARROWS = [[50,0,-1,0],[11,1,0,1],[24,0,1,2],[37,-1,0,3]];
 const STACK_OFF = [
@@ -1237,7 +1245,9 @@ function buildCaches(){
   // WIN PATHS — segmented stepping stones: lighter-but-saturated fill + dark
   // outline per tile so they never read as one stripe crossing to a corner.
   for(let p=0;p<4;p++){
-    c.fillStyle=lighten(PDEFS[p].c,0.14);
+    // EXACT seat colour (not a lighter tint) so the home strip, the base house
+    // and the pawns are all literally the same colour.
+    c.fillStyle=PDEFS[p].c;
     c.strokeStyle=PDEFS[p].dk; c.lineWidth=2;
     for(const hc of HOME_COL[p]){
       rr(c,bx(hc.x)+1.4,by(hc.y)+1.4,cell-2.8,cell-2.8,3); c.fill(); c.stroke();
@@ -1518,8 +1528,10 @@ function drawBoardPawns(){
     const seat=G.players[pi].seat;
     for(const p of G.players[pi].pawns){
       if(p.state!=='FINISHED'||hasFlight(pi,p.id)) continue;
-      const celebrate=(G.phase==='OVER'&&pi===G.order[0])?1+0.09*Math.abs(Math.sin(simTime*4+p.id)):1;
-      drawPawnAt(ctx,pxOf(FIN_SPOTS[seat][p.id][0]),pyOf(FIN_SPOTS[seat][p.id][1]),cell*0.27,PDEFS[seat],{num:p.id,alpha:dim(pi),scale:celebrate});
+      // celebrate on WALL clock: simTime runs at GAME_SPEED for the 10X bot test,
+      // which made the winning pawns look like they were vibrating apart.
+      const celebrate=(G.phase==='OVER'&&pi===G.order[0])?1+0.07*Math.abs(Math.sin(performance.now()/1000*2.2+p.id)):1;
+      drawPawnAt(ctx,pxOf(FIN_SPOTS[seat][p.id][0]),pyOf(FIN_SPOTS[seat][p.id][1]),cell*0.20,PDEFS[seat],{num:p.id,alpha:dim(pi),scale:celebrate});
     }
   }
   const groups=new Map();
@@ -1776,8 +1788,18 @@ function drawVictory(){
   ctx.fillStyle=CFG.colors.panel; rr(ctx,x,y,pw,ph,22); ctx.fill();
   ctx.strokeStyle=CFG.colors.gold; ctx.lineWidth=2; rr(ctx,x,y,pw,ph,22); ctx.stroke();
   ctx.strokeStyle=CFG.colors.btnStroke; ctx.lineWidth=1; rr(ctx,x+3,y+3,pw-6,ph-6,19); ctx.stroke();
-  // winner crest: two slow breathing rings + one steady pawn (no jitter)
+  // winner crest: a slow gold sunburst + two breathing rings, with a pawn that
+  // pops in once and then holds perfectly still (no shake at any game speed).
   const cy=y+58;
+  ctx.save();
+  ctx.globalAlpha=fade*0.45;
+  ctx.translate(W/2,cy); ctx.rotate(now*0.35);
+  ctx.fillStyle=CFG.colors.gold;
+  for(let i=0;i<12;i++){
+    ctx.rotate(TAU/12);
+    ctx.beginPath(); ctx.moveTo(0,-33); ctx.lineTo(9,-52); ctx.lineTo(-9,-52); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
   ctx.save();
   ctx.globalAlpha=fade*(0.30+0.14*Math.sin(now*2.0));
   ctx.strokeStyle=CFG.colors.gold; ctx.lineWidth=3;
@@ -1785,7 +1807,8 @@ function drawVictory(){
   ctx.globalAlpha=fade*(0.16+0.09*Math.sin(now*2.0+1.1));
   ctx.beginPath(); ctx.arc(W/2,cy,45,0,TAU); ctx.stroke();
   ctx.restore();
-  drawPawnAt(ctx,W/2,cy,30,d,{num:null,scale:1+0.035*Math.sin(now*2.0)});
+  if(t<3.0) spawnConfetti();          // keep the sky full for the first beats
+  drawPawnAt(ctx,W/2,cy,30,d,{num:null,scale:1+0.10*pop});
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.font='900 28px '+FONT; ctx.fillStyle=lighten(d.c,0.25);
   ctx.fillText(G.players[first].label+' WINS!',W/2,y+114);
