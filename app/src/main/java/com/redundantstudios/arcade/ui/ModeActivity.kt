@@ -41,16 +41,9 @@ class ModeActivity : AppCompatActivity() {
 
         recyclerView.adapter = GameAdapter(filteredGames) { game ->
             android.util.Log.d(TAG, "Game tile clicked: ${game.id}, playerCount=$playerCount, maxPlayers=${game.maxPlayers}")
-            if (playerCount == 1 && game.maxPlayers == 1) {
-                android.util.Log.d(TAG, "Instant launch for 1P game: ${game.id}")
-                launchGame(game, "solo", "medium", game.minPlayers)
-            } else {
-                android.util.Log.d(TAG, "Showing LaunchSheet for game: ${game.id}")
-                LaunchSheet(this, game, playerCount) { mode, skill, players ->
-                    android.util.Log.d(TAG, "LaunchSheet callback: mode=$mode, skill=$skill, players=$players")
-                    launchGame(game, mode, skill, players)
-                }.show()
-            }
+
+            // Direct launch: skip LaunchSheet and pass the selected mode count directly to the game
+            launchGame(game, "pass", "medium", playerCount)
         }
 
         recyclerView.post {
