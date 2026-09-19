@@ -367,10 +367,11 @@ function runTasks(){ for(let i=tasks.length-1;i>=0;i--){ if(simTime>=tasks[i].t)
 ============================================================ */
 const SFX=(()=>{
   let ctx=null, master=null; const last={};
+  function volScale(){ const v=(typeof store.volume==='number')?store.volume:100; return Math.max(0,Math.min(1,v/100)); }
   function init(){
     if(ctx) return;
     const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
-    ctx=new AC(); master=ctx.createGain(); master.gain.value=CFG.audio.master; master.connect(ctx.destination);
+    ctx=new AC(); master=ctx.createGain(); master.gain.value=CFG.audio.master*volScale(); master.connect(ctx.destination);
   }
   function tone(f,o){
     o=o||{}; const t0=ctx.currentTime+(o.delay||0);
@@ -413,24 +414,26 @@ const SFX=(()=>{
     if(last[name]&&now-last[name]<CFG.audio.debounceMs) return;
     last[name]=now; lib[name](arg);
   }
-  return { init, play, resume(){ if(ctx&&ctx.state==='suspended') ctx.resume(); }, close(){ try{ if(ctx){ctx.close(); ctx=null;} }catch(e){} } };
+  function setVolume(v){ if(typeof v==='number') store.volume=v; if(master) master.gain.value=CFG.audio.master*volScale(); }
+  return { init, play, setVolume, resume(){ if(ctx&&ctx.state==='suspended') ctx.resume(); }, close(){ try{ if(ctx){ctx.close(); ctx=null;} }catch(e){} } };
 })();
 function haptic(k){ if(!store.haptics) return; Studio.haptic(k); }
 
 /* ============================================================
    PERSISTENCE (Studio only)
 ============================================================ */
-let store={ sound:true, haptics:true, games:0, wins:0, theme:'classic', pass:{} };
+let store={ sound:true, haptics:true, volume:100, games:0, wins:0, theme:'classic', pass:{} };
 function loadStore(){
   try{ const s=Studio.load('ludo:save'); if(s) store=Object.assign(store,JSON.parse(s)); }catch(e){}
   if(!store.pass||typeof store.pass!=='object') store.pass={};
   if(Studio.settings){
     if(typeof Studio.settings.sound==='boolean') store.sound=Studio.settings.sound;
     if(typeof Studio.settings.haptics==='boolean') store.haptics=Studio.settings.haptics;
+    if(typeof Studio.settings.volume==='number') store.volume=Studio.settings.volume;
   }
 }
 function saveStore(){ try{ Studio.save('ludo:save',JSON.stringify(store)); }catch(e){} }
-function syncShell(){ try{ Studio.save('shell:settings',JSON.stringify({sound:store.sound,haptics:store.haptics})); if(Studio.settings){Studio.settings.sound=store.sound; Studio.settings.haptics=store.haptics;} }catch(e){} }
+function syncShell(){ try{ Studio.save('shell:settings',JSON.stringify({sound:store.sound,haptics:store.haptics,volume:store.volume})); if(Studio.settings){Studio.settings.sound=store.sound; Studio.settings.haptics=store.haptics; Studio.settings.volume=store.volume;} }catch(e){} }
 
 function themeId(){ return THEMES[store.theme]?store.theme:'classic'; }
 function applyTheme(id){
@@ -2271,6 +2274,14 @@ window.Game={
   pause(){ if(G.screen==='game') paused=true; },
   resume(){ paused=false; lastT=0; },
   setMuted(m){ store.sound=!m; syncShell(); saveStore(); },
+  /** Called by the shell when the player changes sound / haptics / volume. */
+  setSettings(s){
+    if(!s) return;
+    if(typeof s.sound==='boolean') store.sound=s.sound;
+    if(typeof s.haptics==='boolean') store.haptics=s.haptics;
+    if(typeof s.volume==='number') SFX.setVolume(s.volume);
+    syncShell(); saveStore();
+  },
   destroy(){
     try{ cancelAnimationFrame(raf); }catch(e){}
     window.removeEventListener('resize',resize);
@@ -2308,6 +2319,12 @@ function boot(){
     const pc=clamp(parseInt(qp.get('players'),10)||4,2,4);
     AUTO={skill,pc};
   }
+  // Launched from a "N PLAYER GAMES" page: open the setup screen with that
+  // player count already chosen (pass & play) so play starts in one tap.
+  let PRESELECT=null;
+  if(qp.get('mode')==='pass'){
+    PRESELECT={ pc:clamp(parseInt(qp.get('players'),10)||4,2,4), team:qp.get('team')==='1' };
+  }
   resize();
   window.addEventListener('resize',resize);
   window.addEventListener('keydown',onKey);
@@ -2317,7 +2334,15 @@ function boot(){
   else cv.addEventListener('mousedown',onPointer);
   cv.addEventListener('touchstart',onTouch,{passive:false});
   if(AUTO) newGame('ai',AUTO.skill,AUTO.pc);
-  else goMenu();
+  else {
+    goMenu();
+    if(PRESELECT){
+      MENU.mode='pass';
+      MENU.count=PRESELECT.team?4:PRESELECT.pc;
+      MENU.team=PRESELECT.team;
+      MENU.step='setup';
+    }
+  }
   raf=requestAnimationFrame(tick);
 }
 try{ boot(); }

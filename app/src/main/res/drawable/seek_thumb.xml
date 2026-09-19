@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Design-ref chunky slider thumb: cream knob with a thick dark border -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/studio_border_dark" />
+        </shape>
+    </item>
+    <item android:left="3dp" android:top="3dp" android:right="3dp" android:bottom="3dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/studio_surface" />
+            <stroke android:width="3dp" android:color="@color/studio_accent" />
+        </shape>
+    </item>
+</layer-list>

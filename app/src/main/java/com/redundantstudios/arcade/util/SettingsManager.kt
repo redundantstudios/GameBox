@@ -7,6 +7,10 @@ import androidx.appcompat.app.AppCompatDelegate
 object SettingsManager {
     private const val PREFS_NAME = "studio_settings"
 
+    /** Must match NativeBridge's store — games read `shell:settings` from it. */
+    private const val GAME_STORE = "studio_games"
+    private const val GAME_SETTINGS_KEY = "shell:settings"
+
     // Keys
     private const val KEY_SOUND_ENABLED = "sound_enabled"
     private const val KEY_SOUND_VOLUME = "sound_volume"
@@ -14,6 +18,7 @@ object SettingsManager {
     private const val KEY_HAPTIC_PROFILE = "haptic_profile"
     private const val KEY_AUDIO_PRESET = "audio_preset"
     private const val KEY_APP_THEME = "app_theme"
+    private const val KEY_DEVELOPER_MODE = "developer_mode"
 
     private lateinit var prefs: SharedPreferences
 
@@ -49,6 +54,15 @@ object SettingsManager {
         get() = prefs.getString(KEY_APP_THEME, "Light") ?: "Light"
         set(value) = prefs.edit().putString(KEY_APP_THEME, value).apply()
 
+    /**
+     * Developer mode: when on, games are launched with `dev=1`, which is what
+     * exposes test-only tools inside a game (e.g. Ludo's bot speed test).
+     * Off by default so real players never see them.
+     */
+    var developerMode: Boolean
+        get() = prefs.getBoolean(KEY_DEVELOPER_MODE, false)
+        set(value) = prefs.edit().putBoolean(KEY_DEVELOPER_MODE, value).apply()
+
     /** Apply the saved theme app-wide. Must be called before super.onCreate(). */
     fun applyTheme() {
         AppCompatDelegate.setDefaultNightMode(
@@ -64,4 +78,30 @@ object SettingsManager {
                "&haptic=${hapticProfile.lowercase()}" +
                "&preset=${audioPreset.lowercase()}"
     }
+
+    /** Same payload as [getSettingsQueryString] but as JSON, for live pushes. */
+    fun getSettingsJson(): String {
+        return org.json.JSONObject().apply {
+            put("sound", soundEnabled)
+            put("volume", soundVolume)
+            put("haptics", vibrationEnabled)
+            put("haptic", hapticProfile.lowercase())
+            put("preset", audioPreset.lowercase())
+        }.toString()
+    }
+
+    /**
+     * Games read their shell-provided settings from the shared game store under
+     * the key `shell:settings` (see the Studio shim inside each game).
+     * Writing it here means a settings change takes effect in every game.
+     */
+    fun syncToGameStore(context: Context) {
+        context.getSharedPreferences(GAME_STORE, Context.MODE_PRIVATE)
+            .edit()
+            .putString(GAME_SETTINGS_KEY, getSettingsJson())
+            .apply()
+    }
+
+    /** Changes whenever any setting is edited — lets callers detect staleness. */
+    fun signature(): String = getSettingsJson()
 }

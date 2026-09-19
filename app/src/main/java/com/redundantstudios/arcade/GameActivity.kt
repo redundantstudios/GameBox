@@ -24,6 +24,7 @@ class GameActivity : AppCompatActivity() {
     private lateinit var adMobManager: AdMobManager
     private lateinit var bannerContainer: FrameLayout
     private var bannerRequestedVisible = false
+    private var loadedSettingsSignature: String = ""
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,9 +97,16 @@ class GameActivity : AppCompatActivity() {
 
             android.util.Log.d("GameActivity", "Launching game $gameId: mode=$mode, skill=$skill, players=$players")
 
+            // Hand the current shell settings to the game store so every game
+            // starts with the player's real sound/haptics choices.
+            com.redundantstudios.arcade.util.SettingsManager.syncToGameStore(this@GameActivity)
+            loadedSettingsSignature = com.redundantstudios.arcade.util.SettingsManager.signature()
+
             val settingsQuery = com.redundantstudios.arcade.util.SettingsManager.getSettingsQueryString()
-            // Dev flag: debug builds expose the in-game dev panel (e.g. Ludo 10x speed)
-            val devFlag = if (BuildConfig.DEBUG) "&dev=1" else ""
+            // Test tools (e.g. Ludo's bot speed test) exist only when the player
+            // has switched on Developer mode in Settings.
+            val devFlag =
+                if (com.redundantstudios.arcade.util.SettingsManager.developerMode) "&dev=1" else ""
             loadUrl("file:///android_asset/games/$gameId/index.html?mode=$mode&skill=$skill&players=$players&$settingsQuery$devFlag")
         }
 
@@ -165,6 +173,20 @@ class GameActivity : AppCompatActivity() {
         super.onResume()
         adMobManager.loadRewardedAd()
         adMobManager.loadInterstitialAd()
+
+        // If the player changed sound/haptics while the game was paused, push the
+        // new values straight into the running game.
+        com.redundantstudios.arcade.util.SettingsManager.syncToGameStore(this)
+        val signature = com.redundantstudios.arcade.util.SettingsManager.signature()
+        if (loadedSettingsSignature.isNotEmpty() && signature != loadedSettingsSignature) {
+            loadedSettingsSignature = signature
+            val json = com.redundantstudios.arcade.util.SettingsManager.getSettingsJson()
+            webView.evaluateJavascript(
+                "if(window.Game&&Game.setSettings){Game.setSettings($json);}",
+                null
+            )
+        }
+
         webView.evaluateJavascript("Game.resume && Game.resume();", null)
     }
 

@@ -4,8 +4,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/studio_background"
-    android:padding="24dp">
+    android:background="@drawable/bg_shell"
+    android:paddingStart="@dimen/screen_margin"
+    android:paddingEnd="@dimen/screen_margin"
+    android:paddingTop="@dimen/screen_margin"
+    android:paddingBottom="@dimen/screen_margin">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
@@ -37,9 +40,14 @@
                 android:layout_height="wrap_content"
                 android:text="SETTINGS"
                 android:textColor="@color/studio_on_background"
-                android:textSize="@dimen/text_display_size"
+                android:textSize="28sp"
                 android:textStyle="bold"
                 android:textAllCaps="true"
+                android:letterSpacing="0.04"
+                android:shadowColor="#33FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="3"
+                android:shadowRadius="0"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
@@ -51,265 +59,295 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginTop="16dp"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintBottom_toBottomOf="parent"
-        android:layout_marginTop="24dp">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingBottom="16dp">
 
-            <!-- Audio Section: Grouped in one square -->
+            <!-- ================= AUDIO ================= -->
             <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="AUDIO"
-                android:textColor="@color/studio_border"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:textAllCaps="true"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp"/>
+                style="@style/SectionLabel"
+                android:text="Audio" />
 
-            <com.google.android.material.card.MaterialCardView
+            <com.redundantstudios.arcade.ui.ChunkyCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="@dimen/radius_card"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/studio_border_dark"
-                app:strokeWidth="@dimen/border_thickness"
-                android:backgroundTint="@color/studio_surface"
-                android:layout_marginBottom="24dp">
+                android:layout_marginBottom="22dp"
+                app:ccColor="@color/studio_surface"
+                app:ccBorderColor="@color/studio_border_dark"
+                app:ccShadowColor="@color/studio_border_dark"
+                app:ccCornerRadius="@dimen/radius_card"
+                app:ccBorderWidth="@dimen/border_thickness"
+                app:ccShadowOffset="5dp">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp">
-                        <TextView
-                            android:id="@+id/tvSoundLabel"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Master Sound"
-                            android:textColor="@color/studio_on_background"
-                            android:textStyle="bold"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"/>
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/switchSound"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            app:thumbTint="@color/switch_thumb"
-                            app:trackTint="@color/switch_track"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"/>
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content">
-                        <TextView
-                            android:id="@+id/tvVolumeLabel"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Volume"
-                            android:textColor="@color/studio_on_background"
-                            android:textStyle="bold"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"/>
-                        <SeekBar
-                            android:id="@+id/seekVolume"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:max="100"
-                            android:progressTint="@color/studio_accent"
-                            android:progressBackgroundTint="@color/studio_muted"
-                            android:thumbTint="@color/studio_accent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toEndOf="@id/tvVolumeLabel"
-                            app:layout_constraintTop_toTopOf="parent"
-                            android:layout_marginStart="16dp"/>
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Haptics Section: Grouped in one square -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="HAPTICS"
-                android:textColor="@color/studio_border"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:textAllCaps="true"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp"/>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="@dimen/radius_card"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/studio_border_dark"
-                app:strokeWidth="@dimen/border_thickness"
-                android:backgroundTint="@color/studio_surface"
-                android:layout_marginBottom="24dp">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Vibration"
-                            android:textColor="@color/studio_on_background"
-                            android:textStyle="bold"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"/>
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/switchVibe"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            app:thumbTint="@color/switch_thumb"
-                            app:trackTint="@color/switch_track"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"/>
-                    </androidx.constraintlayout.widget.ConstraintLayout>
+                    android:padding="18dp">
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Haptic Profile"
-                        android:textColor="@color/studio_on_background"
+                        android:text="MASTER SOUND"
+                        android:textColor="@color/studio_on_surface"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        android:layout_marginBottom="12dp"/>
-                    <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/toggleHaptic"
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05" />
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:singleSelection="true"
-                        app:selectionRequired="true">
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
 
-                        <Button
-                            android:id="@+id/toggleHapticSoft"
-                            style="?attr/materialButtonOutlinedStyle"
+                        <com.redundantstudios.arcade.ui.SelectCard
+                            android:id="@+id/selSoundOn"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="58dp"
                             android:layout_weight="1"
-                            android:layout_marginEnd="6dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:paddingTop="12dp"
-                            android:paddingBottom="12dp"
-                            android:text="SOFT"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/haptic_btn_text"
-                            app:backgroundTint="@color/haptic_btn_bg"
-                            app:strokeColor="@color/haptic_btn_stroke"
-                            app:strokeWidth="2dp"
-                            app:cornerRadius="14dp"
-                            app:rippleColor="#22388E3C"/>
+                            android:layout_marginEnd="5dp"
+                            app:scText="ON" />
 
-                        <Button
-                            android:id="@+id/toggleHapticCrisp"
-                            style="?attr/materialButtonOutlinedStyle"
+                        <com.redundantstudios.arcade.ui.SelectCard
+                            android:id="@+id/selSoundOff"
                             android:layout_width="0dp"
-                            android:layout_height="wrap_content"
+                            android:layout_height="58dp"
                             android:layout_weight="1"
-                            android:layout_marginEnd="6dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:paddingTop="12dp"
-                            android:paddingBottom="12dp"
-                            android:text="CRISP"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/haptic_btn_text"
-                            app:backgroundTint="@color/haptic_btn_bg"
-                            app:strokeColor="@color/haptic_btn_stroke"
-                            app:strokeWidth="2dp"
-                            app:cornerRadius="14dp"
-                            app:rippleColor="#22388E3C"/>
-
-                        <Button
-                            android:id="@+id/toggleHapticHeavy"
-                            style="?attr/materialButtonOutlinedStyle"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:paddingTop="12dp"
-                            android:paddingBottom="12dp"
-                            android:text="HEAVY"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:textColor="@color/haptic_btn_text"
-                            app:backgroundTint="@color/haptic_btn_bg"
-                            app:strokeColor="@color/haptic_btn_stroke"
-                            app:strokeWidth="2dp"
-                            app:cornerRadius="14dp"
-                            app:rippleColor="#22388E3C"/>
-                    </com.google.android.material.button.MaterialButtonToggleGroup>
+                            android:layout_marginStart="5dp"
+                            app:scText="OFF" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
 
-            <!-- Interface Section: Grouped in one square -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="INTERFACE"
-                android:textColor="@color/studio_border"
-                android:textSize="11sp"
-                android:textStyle="bold"
-                android:textAllCaps="true"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="12dp"/>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="@dimen/radius_card"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/studio_border_dark"
-                app:strokeWidth="@dimen/border_thickness"
-                android:backgroundTint="@color/studio_surface"
-                android:layout_marginBottom="24dp">
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp">
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Dark Theme"
-                        android:textColor="@color/studio_on_background"
+                        android:text="VOLUME"
+                        android:textColor="@color/studio_on_surface"
+                        android:textSize="15sp"
                         android:textStyle="bold"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"/>
-                    <com.google.android.material.switchmaterial.SwitchMaterial
-                        android:id="@+id/switchTheme"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        app:thumbTint="@color/switch_thumb"
-                        app:trackTint="@color/switch_track"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"/>
-                </androidx.constraintlayout.widget.ConstraintLayout>
-            </com.google.android.material.card.MaterialCardView>
+                        android:textAllCaps="true"
+                        android:letterSpacing="0.05"
+                        android:layout_marginTop="20dp" />
 
+                    <SeekBar
+                        android:id="@+id/seekVolume"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:max="100"
+                        android:progress="80"
+                        android:maxHeight="14dp"
+                        android:minHeight="14dp"
+                        android:splitTrack="false"
+                        android:progressDrawable="@drawable/seek_progress"
+                        android:thumb="@drawable/seek_thumb" />
+                </LinearLayout>
+            </com.redundantstudios.arcade.ui.ChunkyCardView>
+
+            <!-- ================= FEEDBACK ================= -->
+            <TextView
+                style="@style/SectionLabel"
+                android:text="Feedback" />
+
+            <com.redundantstudios.arcade.ui.ChunkyCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="22dp"
+                app:ccColor="@color/studio_surface"
+                app:ccBorderColor="@color/studio_border_dark"
+                app:ccShadowColor="@color/studio_border_dark"
+                app:ccCornerRadius="@dimen/radius_card"
+                app:ccBorderWidth="@dimen/border_thickness"
+                app:ccShadowOffset="5dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        style="@style/RowLabel"
+                        android:text="Vibration" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
+                        <com.redundantstudios.arcade.ui.SelectCard
+                            android:id="@+id/selVibeOn"
+                            android:layout_width="0dp"
+                            android:layout_height="58dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="5dp"
+                            app:scText="On" />
+
+                        <com.redundantstudios.arcade.ui.SelectCard
+                            android:id="@+id/selVibeOff"
+                            android:layout_width="0dp"
+                            android:layout_height="58dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="5dp"
+                            app:scText="Off" />
+                    </LinearLayout>
+
+                    <TextView
+                        style="@style/RowLabel"
+                        android:text="Haptic feel"
+                        android:layout_marginTop="20dp" />
+
+                    <TextView
+                        style="@style/RowHint"
+                        android:text="How strong the buzz feels in games"
+                        android:layout_marginTop="2dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
+                        <com.redundantstudios.arcade.ui.SelectCard
+                            android:id="@+id/selHapticSoft"
+                            android:layout_width="0dp"
+                            android:layout_height="62dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            app:scText="Soft"
+                            app:scSubText="Gentle" />
+
+                        <com.redundantstudios.arcade.ui.SelectCard
+                            android:id="@+id/selHapticCrisp"
+                            android:layout_width="0dp"
+                            android:layout_height="62dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            app:scText="Crisp"
+                            app:scSubText="Balanced" />
+
+                        <com.redundantstudios.arcade.ui.SelectCard
+                            android:id="@+id/selHapticHeavy"
+                            android:layout_width="0dp"
+                            android:layout_height="62dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="4dp"
+                            app:scText="Heavy"
+                            app:scSubText="Strong" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.redundantstudios.arcade.ui.ChunkyCardView>
+
+            <!-- ================= INTERFACE ================= -->
+            <TextView
+                style="@style/SectionLabel"
+                android:text="Interface" />
+
+            <com.redundantstudios.arcade.ui.ChunkyCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="22dp"
+                app:ccColor="@color/studio_surface"
+                app:ccBorderColor="@color/studio_border_dark"
+                app:ccShadowColor="@color/studio_border_dark"
+                app:ccCornerRadius="@dimen/radius_card"
+                app:ccBorderWidth="@dimen/border_thickness"
+                app:ccShadowOffset="5dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        style="@style/RowLabel"
+                        android:text="Theme" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
+                        <com.redundantstudios.arcade.ui.SelectCard
+                            android:id="@+id/selThemeLight"
+                            android:layout_width="0dp"
+                            android:layout_height="58dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="5dp"
+                            app:scText="Light" />
+
+                        <com.redundantstudios.arcade.ui.SelectCard
+                            android:id="@+id/selThemeDark"
+                            android:layout_width="0dp"
+                            android:layout_height="58dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="5dp"
+                            app:scText="Dark" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:background="@color/studio_muted"
+                        android:layout_marginTop="18dp"
+                        android:layout_marginBottom="18dp" />
+
+                    <TextView
+                        style="@style/RowLabel"
+                        android:text="Developer mode" />
+
+                    <TextView
+                        style="@style/RowHint"
+                        android:text="Adds in-game test tools (bot speed test)"
+                        android:layout_marginTop="2dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="10dp">
+
+                        <com.redundantstudios.arcade.ui.SelectCard
+                            android:id="@+id/selDevOn"
+                            android:layout_width="0dp"
+                            android:layout_height="58dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="5dp"
+                            app:scText="On" />
+
+                        <com.redundantstudios.arcade.ui.SelectCard
+                            android:id="@+id/selDevOff"
+                            android:layout_width="0dp"
+                            android:layout_height="58dp"
+                            android:layout_weight="1"
+                            android:layout_marginStart="5dp"
+                            app:scText="Off" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.redundantstudios.arcade.ui.ChunkyCardView>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:layout_marginTop="4dp"
+                android:text="Redundant Studios · v1.0"
+                android:textColor="@color/studio_border"
+                android:textSize="12sp"
+                android:textStyle="bold" />
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>
+
