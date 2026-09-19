@@ -3,19 +3,19 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/studio_muted"
-    android:padding="24dp">
+    android:background="@color/studio_background"
+    android:padding="@dimen/screen_margin">
 
     <!-- Header with title and settings gear -->
     <TextView
         android:id="@+id/title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Redundant Studios v2"
-        android:textColor="@color/studio_ink"
-        android:textSize="28sp"
-        android:layout_marginBottom="16dp"
+        android:text="REDUNDANT STUDIOS"
+        android:textColor="@color/studio_on_background"
+        android:textSize="@dimen/text_display_size"
         android:textStyle="bold"
+        android:textAllCaps="true"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -35,14 +35,14 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/title"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="@dimen/spacing_section_gap"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/footer"
         app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
         app:spanCount="2"
         android:clipToPadding="false"
-        android:padding="16dp" />
+        android:padding="@dimen/standard_spacing" />
 
     <!-- Footer -->
     <LinearLayout
@@ -51,7 +51,7 @@
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="horizontal"
-        android:paddingBottom="16dp"
+        android:paddingBottom="@dimen/standard_spacing"
         android:paddingTop="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -61,19 +61,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Redundant Studios · v1.0"
-            android:textColor="#888888"
+            android:textColor="@color/studio_muted"
             android:textSize="12sp" />
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/debugMarker"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="DEBUG_UI_V2"
-        android:textColor="@android:color/holo_red_dark"
-        android:layout_marginTop="8dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/footer" />
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>
