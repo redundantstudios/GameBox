@@ -267,16 +267,10 @@ const BASE_SLOTS= [[2,2],[4,2],[2,4],[4,4]];
 const FIN_DIR   = [[0,1],[-1,0],[0,-1],[1,0]];
 const FIN_SPOTS = [];
 (function(){
-  // 3+1 pyramid layout: no two finished pawns overlap
+  // single narrow line along the seat's finish direction (no overlaps, no triangle)
   for(let p=0;p<4;p++){
-    const d=FIN_DIR[p], px=-d[1], py=d[0], arr=[];
-    let i=0;
-    outer:
-    for(const dd of [0.55,1.05,1.55]) for(const s of [-0.56,0,0.56]){
-      if(i>=4) break outer;
-      arr.push([7.5+d[0]*dd+px*s, 7.5+d[1]*dd+py*s]); i++;
-    }
-    while(arr.length<4) arr.push([7.5+d[0]*1.05, 7.5+d[1]*1.05]);
+    const d=FIN_DIR[p], arr=[];
+    for(let i=0;i<4;i++) arr.push([7.5+d[0]*(0.62+i*0.62), 7.5+d[1]*(0.62+i*0.62)]);
     FIN_SPOTS.push(arr);
   }
 })();
@@ -673,7 +667,6 @@ function resolveLanding(pi,pid){
         G.winner=G.order[0];
         after(0.8,showVictory);
       }
-      return;
     }
   }
   const six=DICE.value>=6&&CFG.dice.extraTurnOnSix;
@@ -1437,6 +1430,24 @@ function update(dt){
    RENDER — game
 ============================================================ */
 let uiButtons=[];
+function drawRankOverlays(){
+  if(!Array.isArray(G.order)) return;
+  G.order.forEach((pi,ri)=>{
+    const seat=G.players[pi].seat, b=BASE_ORG[seat];
+    const x=boardX+b[0]*cell, y=boardY+b[1]*cell, wq=cell*6;
+    ctx.save();
+    ctx.fillStyle='rgba(0,0,0,0.42)'; rr(ctx,x,y,wq,wq,cell*0.75); ctx.fill();
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='900 '+Math.round(cell*0.9)+'px '+FONT;
+    ctx.fillStyle='#ffffff';
+    ctx.fillText('\uD83C\uDFC6',x+wq/2,y+wq/2-cell*1.15);
+    const tag=ri===0?'1ST':ri===1?'2ND':ri===2?'3RD':(ri+1)+'TH';
+    ctx.font='900 '+Math.round(cell*1.15)+'px '+FONT;
+    ctx.fillStyle=CFG.colors.gold;
+    ctx.fillText(tag,x+wq/2,y+wq/2+cell*0.35);
+    ctx.restore();
+  });
+}
 function drawBasePulse(){
   if(G.phase==='OVER') return;
   const seat=seatOf(G.cur), d=PDEFS[seat], b=BASE_ORG[seat];
@@ -1493,22 +1504,6 @@ function drawBoardPawns(){
       const celebrate=(G.phase==='OVER'&&pi===G.order[0])?1+0.09*Math.abs(Math.sin(simTime*4+p.id)):1;
       drawPawnAt(ctx,pxOf(FIN_SPOTS[seat][p.id][0]),pyOf(FIN_SPOTS[seat][p.id][1]),cell*0.27,PDEFS[seat],{num:p.id,alpha:dim(pi),scale:celebrate});
     }
-  }
-  if(Array.isArray(G.order)){
-    G.order.forEach((piq,ri)=>{
-      const seatq=G.players[piq].seat;
-      for(const pq of G.players[piq].pawns){
-        if(pq.state!=='FINISHED'||hasFlight(piq,pq.id)) continue;
-        const fxq=pxOf(FIN_SPOTS[seatq][pq.id][0]), fyq=pyOf(FIN_SPOTS[seatq][pq.id][1]);
-        ctx.save();
-        ctx.fillStyle='#ffffff'; ctx.strokeStyle=PDEFS[seatq].c; ctx.lineWidth=2;
-        ctx.beginPath(); ctx.arc(fxq,fyq-cell*0.30,cell*0.16,0,TAU); ctx.fill(); ctx.stroke();
-        ctx.fillStyle=PDEFS[seatq].c; ctx.font='900 '+Math.round(cell*0.22)+'px '+FONT;
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText(String(ri+1),fxq,fyq-cell*0.29);
-        ctx.restore();
-      }
-    });
   }
   const groups=new Map();
   for(let pi=0;pi<G.count;pi++) for(const p of G.players[pi].pawns){
@@ -1748,10 +1743,8 @@ function drawPause(){
   ctx.font='900 24px '+FONT; ctx.fillStyle='#fff'; ctx.fillText('PAUSED',W/2,y+50);
   uiBtn('tgl-sound',x+22,y+86,pw-44,42,'SOUND: '+(store.sound?'ON':'OFF'),{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
   uiBtn('tgl-haptic',x+22,y+136,pw-44,42,'HAPTICS: '+(store.haptics?'ON':'OFF'),{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
-  if(DEV_MODE) uiBtn('dev-speed',x+22,y+186,pw-44,42,'DEV SPEED: x'+GAME_SPEED,{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
-  const ry=DEV_MODE?y+236:y+196;
-  uiBtn('resume',x+22,ry,pw-44,54,'RESUME',{bg:CFG.colors.tile,fg:'#fff',fs:17,r:16,shadow:true});
-  uiBtn('to-menu',x+22,ry+66,pw-44,44,'MAIN MENU',{bg:CFG.colors.btn,fg:'#fff',fs:14,r:14});
+  uiBtn('resume',x+22,y+196,pw-44,54,'RESUME',{bg:CFG.colors.tile,fg:'#fff',fs:17,r:16,shadow:true});
+  uiBtn('to-menu',x+22,y+262,pw-44,44,'MAIN MENU',{bg:CFG.colors.btn,fg:'#fff',fs:14,r:14});
 }
 function renderGame(){
   ctx.fillStyle=CFG.colors.table; ctx.fillRect(0,0,W,H);
@@ -1762,6 +1755,7 @@ function renderGame(){
   drawBasePulse();
   drawBoardPawns();
   ctx.restore();
+  drawRankOverlays();
   drawTrays();
   drawBanner();
   drawTexts();
@@ -1866,6 +1860,7 @@ function renderMenu(){
     ['2','3','4'].forEach((s2,i)=>uiBtn('count:'+s2,W/2-bw/2+i*(w3+8),y,w3,42,s2+' PLAYERS',sel(MENU.count===+s2)));
     y+=42+28;
     if(MENU.mode) uiBtn('start',W/2-110,y,220,56,'START MATCH',{bg:CFG.colors.tile,fg:'#fff',fs:18,r:18,shadow:true});
+    if(MENU.mode) uiBtn('test-10x',W/2-110,y+68,220,44,'10X BOT TEST',{bg:CFG.colors.btn,fg:'#fff',fs:14,r:14});
     uiBtn('menu-root',12,12,92,38,'BACK',{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
   }
   ctx.font='600 13px '+FONT; ctx.fillStyle='rgba(255,255,255,.5)';
@@ -2059,6 +2054,11 @@ function handleAction(id){
       break;
     }
     case 'dev-speed': GAME_SPEED=(GAME_SPEED===1)?10:1; SFX.play('click'); break;
+    case 'test-10x':
+      GAME_SPEED=10; SFX.play('click');
+      newGame('ai','normal',4);
+      G.players[0].human=false; G.players[0].label='BOT A';
+      break;
     case 'tgl-sound': store.sound=!store.sound; syncShell(); saveStore(); SFX.play('click'); break;
     case 'tgl-haptic': store.haptics=!store.haptics; syncShell(); saveStore(); SFX.play('click'); haptic('light'); break;
   }
