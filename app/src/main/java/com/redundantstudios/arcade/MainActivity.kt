@@ -16,6 +16,7 @@ import com.redundantstudios.arcade.model.GameMode
 import com.redundantstudios.arcade.ui.ModeAdapter
 import com.redundantstudios.arcade.ui.ModeActivity
 import com.redundantstudios.arcade.util.ManifestParser
+import com.redundantstudios.arcade.SettingsActivity
 
 class MainActivity : AppCompatActivity() {
     private lateinit var allGames: List<GameManifest>
@@ -25,12 +26,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        com.redundantstudios.arcade.util.SettingsManager.init(this)
+
         UMPConsentManager(this).gatherConsent {
             MobileAds.initialize(this) {}
         }
 
         val modeRecyclerView = findViewById<RecyclerView>(R.id.modeRecyclerView)
         modeRecyclerView.layoutManager = GridLayoutManager(this, 2)
+
+        findViewById<View>(R.id.btnSettings).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
 
         allGames = ManifestParser.scanGames(this)
 
