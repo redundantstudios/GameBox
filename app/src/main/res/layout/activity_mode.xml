@@ -44,6 +44,3 @@
         android:padding="@dimen/standard_spacing" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-
-
-</androidx.constraintlayout.widget.ConstraintLayout>
