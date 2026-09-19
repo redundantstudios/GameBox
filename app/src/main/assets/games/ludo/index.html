@@ -87,6 +87,12 @@ const CFG = {
   colors: {}
 };
 
+/* DEV: 10x gameplay for testing (toggle in pause menu when dev=1 query param) */
+let GAME_SPEED=1;
+let DEV_MODE=false;
+try{ DEV_MODE=new URLSearchParams(location.search).get('dev')==='1'; }catch(_){}
+
+
 /* ============================================================
    THEMES
 ============================================================ */
@@ -261,9 +267,16 @@ const BASE_SLOTS= [[2,2],[4,2],[2,4],[4,4]];
 const FIN_DIR   = [[0,1],[-1,0],[0,-1],[1,0]];
 const FIN_SPOTS = [];
 (function(){
+  // 3+1 pyramid layout: no two finished pawns overlap
   for(let p=0;p<4;p++){
     const d=FIN_DIR[p], px=-d[1], py=d[0], arr=[];
-    for(const dd of [0.62,1.3]) for(const s of [-0.5,0.5]) arr.push([7.5+d[0]*dd+px*s, 7.5+d[1]*dd+py*s]);
+    let i=0;
+    outer:
+    for(const dd of [0.55,1.05,1.55]) for(const s of [-0.56,0,0.56]){
+      if(i>=4) break outer;
+      arr.push([7.5+d[0]*dd+px*s, 7.5+d[1]*dd+py*s]); i++;
+    }
+    while(arr.length<4) arr.push([7.5+d[0]*1.05, 7.5+d[1]*1.05]);
     FIN_SPOTS.push(arr);
   }
 })();
@@ -432,7 +445,7 @@ function newGame(mode,skill,count){
     G.players.push({ seat, human, label, finished:0, lastRoll:0,
       pawns:[0,1,2,3].map(id=>({id,state:'HOME',rel:-1,cx:0,cy:0,lift:0,squash:0,bump:0,moving:false})) });
   });
-  G.cur=0; G.winner=-1; G.legal=[]; G.phase='IDLE';
+  G.cur=0; G.winner=-1; G.legal=[]; G.phase='IDLE'; G.order=[];
   DICE.value=0; DICE.face=6; DICE.final=6; DICE.rolling=false; DICE.t=0;
   DICE.rot=0; DICE.lift=0; DICE.dx=0; DICE.sx=1; DICE.sy=1; DICE.bounce=0; DICE.lastH=-1;
   paused=false; FX.fade=1; G.screen='game';
@@ -442,7 +455,7 @@ function newGame(mode,skill,count){
 }
 function goMenu(){
   cancelTasks(); resetFx();
-  paused=false; G.screen='menu'; G.phase='IDLE'; G.winner=-1; G.legal=[];
+  paused=false; G.screen='menu'; G.phase='IDLE'; G.winner=-1; G.legal=[]; G.order=[];
   ACTIVE_SEATS=[0,1,2,3]; buildCaches();
   MENU.step='root'; MENU.mode='ai';
   menuStart=simTime; menuDiceUntil=simTime+1.0; menuFace=1+Math.floor(rng()*6);
@@ -510,14 +523,15 @@ function threat(g,pi){
    TURN MACHINE
 ============================================================ */
 function beginTurn(){
-  if(G.screen!=='game'||G.winner>=0) return;
+  if(G.screen!=='game'||G.players.every(pl=>pl.finished>=4)) return;
+  if(isOut(G.cur)){ G.cur=(G.cur+1)%G.count; if(G.players.every(pl=>pl.finished>=4)) return; }
   G.phase='ROLL'; G.legal=[];
   SFX.play('turn');
   const pl=G.players[G.cur];
   if(!pl.human) after(rand(CFG.turn.aiThinkMin,CFG.turn.aiThinkMax),()=>{ if(G.phase==='ROLL') doRoll(); });
 }
 function doRoll(){
-  if(G.screen!=='game'||G.phase!=='ROLL'||paused) return;
+  if(G.screen!=='game'||G.phase!=='ROLL'||paused||isOut(G.cur)) return;
   G.phase='ROLLING';
   DICE.final=1+Math.floor(rng()*CFG.dice.faces);
   DICE.face0=DICE.face||1+Math.floor(rng()*6);
@@ -557,14 +571,15 @@ function onRolled(){
     after(rand(0.45,0.85),()=>{ if(G.phase==='SELECT') aiSelect(G.legal); });
   }
 }
+function isOut(pi){ return Array.isArray(G.order)&&G.order.includes(pi); }
 function endTurn(extra){
-  if(G.screen!=='game'||G.winner>=0) return;
+  if(G.screen!=='game'||G.players.every(pl=>pl.finished>=4)) return;
   if(extra){ beginTurn(); return; }
   G.cur=(G.cur+1)%G.count;
   beginTurn();
 }
 function selectPawn(pid,force){
-  if(G.screen!=='game'||G.phase!=='SELECT'||paused) return;
+  if(G.screen!=='game'||G.phase!=='SELECT'||paused||isOut(G.cur)) return;
   if(!force&&!G.players[G.cur].human) return;
   if(!G.legal.includes(pid)){ SFX.play('invalid'); return; }
   G.phase='MOVING';
@@ -587,7 +602,7 @@ function startMove(pi,pid){
   const pts=[{x:from.x,y:from.y}], rels=[];
   if(launching){ const q=posOfRel(seat,0); pts.push(q); rels.push(0); }
   else for(let r=p.rel+1;r<=p.rel+DICE.value;r++){ const q=posOfRel(seat,r); pts.push(q); rels.push(r); }
-  FX.mover={pi,pid,pts,rels,t:0,dur:CFG.pawn.stepDuration*(pts.length-1),lastSeg:0,trail:[]};
+  FX.mover={pi,pid,pts,rels,t:0,dur:CFG.pawn.stepDuration*(pts.length-1)/GAME_SPEED,lastSeg:0,trail:[]};
 }
 function resolveLanding(pi,pid){
   const pl=G.players[pi], p=pl.pawns[pid], seat=pl.seat;
@@ -645,7 +660,21 @@ function resolveLanding(pi,pid){
     addRing(cp.x,cp.y,cell*0.2,cell*1.2,'#ffffff',2.5);
     floatText('PAWN '+(pid+1)+' HOME!',cp.x,cp.y-cell*2.2,CFG.colors.gold);
     SFX.play('finish'); haptic('medium');
-    if(pl.finished>=4){ G.winner=pi; after(0.8,showVictory); return; }
+    if(pl.finished>=4){
+      // Player completed: record their rank and keep the match going
+      if(!G.order) G.order=[];
+      if(!G.order.includes(pi)){
+        G.order.push(pi);
+        const rk=G.order.length;
+        const tr=trayRect(seat);
+        floatText((rk===1?'1ST':rk===2?'2ND':rk===3?'3RD':rk+'TH')+' PLACE!',tr.x+tr.w/2,tr.y-14,CFG.colors.gold);
+      }
+      if(G.order.length>=G.count){
+        G.winner=G.order[0];
+        after(0.8,showVictory);
+      }
+      return;
+    }
   }
   const six=DICE.value>=6&&CFG.dice.extraTurnOnSix;
   const extra=six||(capturedAny&&CFG.dice.extraTurnOnCapture)||(finished&&CFG.dice.extraTurnOnFinish);
@@ -657,7 +686,8 @@ function resolveLanding(pi,pid){
   after(wait,()=>endTurn(extra));
 }
 function showVictory(){
-  if(G.winner<0) return;
+  if(!Array.isArray(G.order)||!G.order.length) return;
+  G.winner=G.order[0];
   G.phase='OVER';
   FX.boardBounce=1;
   FX.confettiUntil=simTime+CFG.fx.victory;
@@ -710,7 +740,6 @@ function aiSelect(legal){
     }
   }
   G.players[pi].pawns[pick].bump=1;
-  SFX.play('select');
   after(rand(0.35,0.6),()=>{ if(G.phase==='SELECT') selectPawn(pick,true); });
 }
 
@@ -1322,7 +1351,7 @@ function updateDice(dt){
       DICE.sy+=0.08*st; DICE.sx-=0.04*st;
     }
     DICE.rot=DICE.rotTotal*easeOutCubic(DICE.t/total);
-    if(h!==DICE.lastH){ DICE.lastH=h; SFX.play('thock'); }
+    if(h!==DICE.lastH){ DICE.lastH=h; }
     DICE.face=h===0?DICE.face0:(h===1?DICE.mid1:DICE.mid2);
   }else{
     DICE.lift=0; DICE.dx=0;
@@ -1446,7 +1475,7 @@ function drawBoardPawns(){
   drawTileHighlights();
   const isLegal=pid=>G.phase==='SELECT'&&G.legal.includes(pid);
   const pulse=()=>1+0.05*Math.sin(simTime*8);
-  const dim=pi=>(G.phase==='OVER'&&pi!==G.winner)?0.5:1;
+  const dim=pi=>(G.phase==='OVER'&&!G.order.includes(pi))?0.5:1;
   for(let pi=0;pi<G.count;pi++){
     const seat=G.players[pi].seat;
     for(const p of G.players[pi].pawns){
@@ -1461,9 +1490,25 @@ function drawBoardPawns(){
     const seat=G.players[pi].seat;
     for(const p of G.players[pi].pawns){
       if(p.state!=='FINISHED'||hasFlight(pi,p.id)) continue;
-      const celebrate=(G.phase==='OVER'&&pi===G.winner)?1+0.09*Math.abs(Math.sin(simTime*4+p.id)):1;
+      const celebrate=(G.phase==='OVER'&&pi===G.order[0])?1+0.09*Math.abs(Math.sin(simTime*4+p.id)):1;
       drawPawnAt(ctx,pxOf(FIN_SPOTS[seat][p.id][0]),pyOf(FIN_SPOTS[seat][p.id][1]),cell*0.27,PDEFS[seat],{num:p.id,alpha:dim(pi),scale:celebrate});
     }
+  }
+  if(Array.isArray(G.order)){
+    G.order.forEach((piq,ri)=>{
+      const seatq=G.players[piq].seat;
+      for(const pq of G.players[piq].pawns){
+        if(pq.state!=='FINISHED'||hasFlight(piq,pq.id)) continue;
+        const fxq=pxOf(FIN_SPOTS[seatq][pq.id][0]), fyq=pyOf(FIN_SPOTS[seatq][pq.id][1]);
+        ctx.save();
+        ctx.fillStyle='#ffffff'; ctx.strokeStyle=PDEFS[seatq].c; ctx.lineWidth=2;
+        ctx.beginPath(); ctx.arc(fxq,fyq-cell*0.30,cell*0.16,0,TAU); ctx.fill(); ctx.stroke();
+        ctx.fillStyle=PDEFS[seatq].c; ctx.font='900 '+Math.round(cell*0.22)+'px '+FONT;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(String(ri+1),fxq,fyq-cell*0.29);
+        ctx.restore();
+      }
+    });
   }
   const groups=new Map();
   for(let pi=0;pi<G.count;pi++) for(const p of G.players[pi].pawns){
@@ -1668,22 +1713,31 @@ function drawConfetti(){
 }
 function drawVictory(){
   ctx.fillStyle='#000000'; ctx.globalAlpha=0.66; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
-  const pw=Math.min(330,Math.max(160,W-40)), ph=352, x=W/2-pw/2, y=H/2-ph/2;
+  const pw=Math.min(330,Math.max(160,W-40)), ph=420, x=W/2-pw/2, y=H/2-ph/2;
   ctx.fillStyle=CFG.colors.panel; rr(ctx,x,y,pw,ph,22); ctx.fill();
   ctx.strokeStyle=CFG.colors.btnStroke; ctx.lineWidth=1.5; rr(ctx,x,y,pw,ph,22); ctx.stroke();
-  const d=PDEFS[seatOf(G.winner)], human=G.players[G.winner].human;
-  drawPawnAt(ctx,W/2,y+60,30,d,{num:null,scale:1+0.07*Math.abs(Math.sin(simTime*4))});
+  const first=G.order[0];
+  const d=PDEFS[seatOf(first)], human=G.players[first].human;
+  drawPawnAt(ctx,W/2,y+56,30,d,{num:null,scale:1+0.07*Math.abs(Math.sin(simTime*4))});
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.font='900 30px '+FONT; ctx.fillStyle=lighten(d.c,0.25);
-  ctx.fillText(human?'YOU WIN!':G.players[G.winner].label+' WINS!',W/2,y+122);
+  ctx.fillText(human?'YOU WIN!':G.players[first].label+' WINS!',W/2,y+116);
   ctx.font='600 12px '+FONT; ctx.fillStyle='rgba(255,255,255,.7)';
-  ctx.fillText('ALL FOUR PAWNS HOME',W/2,y+146);
+  ctx.fillText('FINAL STANDINGS',W/2,y+140);
   for(let k=0;k<4;k++){
-    const cs=20, cx=W/2-(4*cs+3*10)/2+k*(cs+10);
-    drawChip(cx,y+160,cs,d,'FINISHED',k,false);
+    const cs=18, cx=W/2-(4*cs+3*10)/2+k*(cs+10);
+    drawChip(cx,y+154,cs,d,'FINISHED',k,false);
   }
-  uiBtn('rematch',x+22,y+202,pw-44,54,'REMATCH',{bg:d.c,fg:'#fff',fs:17,r:16,shadow:true});
-  uiBtn('to-menu',x+22,y+268,pw-44,46,'MAIN MENU',{bg:CFG.colors.btn,fg:'#fff',fs:14,r:14});
+  G.order.forEach((piq,ri)=>{
+    const yq=y+184+ri*24;
+    const tag=ri===0?'1ST':ri===1?'2ND':ri===2?'3RD':(ri+1)+'TH';
+    ctx.font='800 13px '+FONT; ctx.fillStyle=PDEFS[G.players[piq].seat].c; ctx.textAlign='left';
+    ctx.fillText(tag, x+34, yq);
+    ctx.font='600 13px '+FONT; ctx.fillStyle='#ffffff';
+    ctx.fillText(G.players[piq].human&&G.mode==='ai'?'YOU':G.players[piq].label, x+76, yq);
+  });
+  uiBtn('rematch',x+22,y+288,pw-44,54,'REMATCH',{bg:d.c,fg:'#fff',fs:17,r:16,shadow:true});
+  uiBtn('to-menu',x+22,y+354,pw-44,46,'MAIN MENU',{bg:CFG.colors.btn,fg:'#fff',fs:14,r:14});
 }
 function drawPause(){
   ctx.fillStyle='#000000'; ctx.globalAlpha=0.66; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
@@ -1694,8 +1748,10 @@ function drawPause(){
   ctx.font='900 24px '+FONT; ctx.fillStyle='#fff'; ctx.fillText('PAUSED',W/2,y+50);
   uiBtn('tgl-sound',x+22,y+86,pw-44,42,'SOUND: '+(store.sound?'ON':'OFF'),{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
   uiBtn('tgl-haptic',x+22,y+136,pw-44,42,'HAPTICS: '+(store.haptics?'ON':'OFF'),{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
-  uiBtn('resume',x+22,y+196,pw-44,54,'RESUME',{bg:CFG.colors.tile,fg:'#fff',fs:17,r:16,shadow:true});
-  uiBtn('to-menu',x+22,y+262,pw-44,44,'MAIN MENU',{bg:CFG.colors.btn,fg:'#fff',fs:14,r:14});
+  if(DEV_MODE) uiBtn('dev-speed',x+22,y+186,pw-44,42,'DEV SPEED: x'+GAME_SPEED,{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
+  const ry=DEV_MODE?y+236:y+196;
+  uiBtn('resume',x+22,ry,pw-44,54,'RESUME',{bg:CFG.colors.tile,fg:'#fff',fs:17,r:16,shadow:true});
+  uiBtn('to-menu',x+22,ry+66,pw-44,44,'MAIN MENU',{bg:CFG.colors.btn,fg:'#fff',fs:14,r:14});
 }
 function renderGame(){
   ctx.fillStyle=CFG.colors.table; ctx.fillRect(0,0,W,H);
@@ -2002,6 +2058,7 @@ function handleAction(id){
       }else begin();
       break;
     }
+    case 'dev-speed': GAME_SPEED=(GAME_SPEED===1)?10:1; SFX.play('click'); break;
     case 'tgl-sound': store.sound=!store.sound; syncShell(); saveStore(); SFX.play('click'); break;
     case 'tgl-haptic': store.haptics=!store.haptics; syncShell(); saveStore(); SFX.play('click'); haptic('light'); break;
   }
@@ -2025,6 +2082,7 @@ function tick(now){
   let dt=(now-lastT)/1000; lastT=now;
   if(dt>0.05) dt=0.05;
   fps=fps*0.9+(1/Math.max(dt,1e-4))*0.1;
+  dt*=GAME_SPEED;
   if(window.innerWidth!==W||window.innerHeight!==H) resize();
   uiButtons=[];
   if(!paused){
