@@ -7,23 +7,27 @@
     android:layout_height="wrap_content"
     android:layout_margin="@dimen/spacing_tile_margin"
     app:cardCornerRadius="@dimen/radius_tile"
-    app:cardElevation="0dp">
+    app:cardElevation="@dimen/elevation_card"
+    app:strokeColor="@color/studio_border"
+    app:strokeWidth="@dimen/border_thickness">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintDimensionRatio="H,1:0.92"
-        android:padding="@dimen/spacing_title_margin">
+        android:padding="@dimen/internal_padding">
 
         <TextView
             android:id="@+id/playersBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@android:color/white"
-            android:paddingStart="6dp"
-            android:paddingEnd="6dp"
+            android:background="@color/studio_surface"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
             android:text="1P"
-            android:textColor="#1C1E24"
+            android:textColor="@color/studio_on_surface"
             android:textSize="@dimen/text_label_size"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
@@ -42,7 +46,8 @@
             android:textAlignment="center"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginBottom="12dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
