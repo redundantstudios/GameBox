@@ -91,7 +91,7 @@ def generate_assets():
         round_path = f'app/src/main/res/mipmap-{name}/ic_launcher_round.png'
         round_icon.convert('RGB').save(round_path)
 
-    # 4. Splash Logo
+    # 4. Splash Logo (padded to safe circle so Android 12+ round mask never clips it)
     img_full = Image.open(source_path).convert('RGBA')
     datas_f = img_full.getdata()
     newData_f = []
@@ -102,14 +102,22 @@ def generate_assets():
             newData_f.append(item)
     img_full.putdata(newData_f)
 
-    # Scale to ~1152px wide
-    target_w = 1152
+    canvas = 1152
+    inner = int(canvas * 0.66)
     aspect = img_full.height / img_full.width
-    img_full = img_full.resize((target_w, int(target_w * aspect)), Image.Resampling.LANCZOS)
+    if aspect >= 1:
+        img_full = img_full.resize((int(inner / aspect), inner), Image.Resampling.LANCZOS)
+    else:
+        img_full = img_full.resize((inner, int(inner * aspect)), Image.Resampling.LANCZOS)
+
+    splash = Image.new('RGBA', (canvas, canvas), (0, 0, 0, 0))
+    off_x = (canvas - img_full.width) // 2
+    off_y = (canvas - img_full.height) // 2
+    splash.paste(img_full, (off_x, off_y), img_full)
 
     splash_path = 'app/src/main/res/drawable/splash_logo.png'
     os.makedirs(os.path.dirname(splash_path), exist_ok=True)
-    img_full.save(splash_path)
+    splash.save(splash_path)
 
     print("All assets generated successfully")
 
