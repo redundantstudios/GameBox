@@ -93,7 +93,9 @@ class GameActivity : AppCompatActivity() {
             android.util.Log.d("GameActivity", "Launching game $gameId: mode=$mode, skill=$skill, players=$players")
 
             val settingsQuery = com.redundantstudios.arcade.util.SettingsManager.getSettingsQueryString()
-            loadUrl("file:///android_asset/games/$gameId/index.html?mode=$mode&skill=$skill&players=$players&$settingsQuery")
+            // Dev flag: debug builds expose the in-game dev panel (e.g. Ludo 10x speed)
+            val devFlag = if (BuildConfig.DEBUG) "&dev=1" else ""
+            loadUrl("file:///android_asset/games/$gameId/index.html?mode=$mode&skill=$skill&players=$players&$settingsQuery$devFlag")
         }
 
         rootLayout.addView(webView)
