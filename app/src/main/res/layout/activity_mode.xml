@@ -35,7 +35,7 @@
                 android:id="@+id/modeTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🎮 PICK YOUR PLAYERS 🎮"
+                android:text="PICK YOUR PLAYERS"
                 android:textColor="@color/studio_on_background"
                 android:textSize="@dimen/text_display_size"
                 android:textStyle="bold"

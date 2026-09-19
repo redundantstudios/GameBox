@@ -34,7 +34,7 @@ class ModeActivity : AppCompatActivity() {
 
         val playerCount = intent.getIntExtra("player_count", 1)
         val titleText = findViewById<TextView>(R.id.modeTitle)
-        titleText.text = "🎮 $playerCount Player Games"
+        titleText.text = "$playerCount Player Games"
 
         val recyclerView = findViewById<RecyclerView>(R.id.gamesRecyclerView)
         recyclerView.layoutManager = GridLayoutManager(this, 2)
