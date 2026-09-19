@@ -11,7 +11,7 @@
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@android:drawable/ic_menu_revert"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
         android:contentDescription="Back"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
