@@ -5,3 +5,4 @@ app/build/
 local.properties
 .idea/
 .DS_Store
+\n# Local artifacts\nshell-debug.apk\n*.log\nbuild_log.txt\nuiautomator_dump.xml\ntmp_*\npm_diff.txt\n.DS_Store
