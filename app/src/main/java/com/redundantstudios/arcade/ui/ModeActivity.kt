@@ -46,8 +46,9 @@ class ModeActivity : AppCompatActivity() {
             launchGame(game, "pass", "medium", playerCount)
         }
 
-        recyclerView.post {
-            Log.d(TAG, "RecyclerView dimensions: w=${recyclerView.width} h=${recyclerView.height}")
+        val btnBack = findViewById<android.widget.Button>(R.id.btnBack)
+        btnBack.setOnClickListener {
+            finish()
         }
     }
 

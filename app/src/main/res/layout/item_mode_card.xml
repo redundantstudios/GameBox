@@ -5,30 +5,28 @@
     android:id="@+id/modeCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="12dp"
-    app:cardCornerRadius="14dp"
-    app:cardElevation="4dp">
+    android:layout_margin="@dimen/spacing_tile_margin"
+    app:cardCornerRadius="@dimen/radius_tile"
+    app:cardElevation="@dimen/elevation_card"
+    app:strokeColor="@color/studio_border"
+    app:strokeWidth="@dimen/border_thickness">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="12dp">
+        android:layout_height="wrap_content"
+        android:padding="@dimen/internal_padding">
 
         <TextView
             android:id="@+id/modeNumber"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:textColor="#FFFFFF"
             android:textStyle="bold"
-            app:autoSizeTextType="uniform"
-            app:autoSizeMinTextSize="40sp"
-            app:autoSizeMaxTextSize="80sp"
+            android:textSize="48sp"
             app:layout_constraintBottom_toTopOf="@id/modeLabel"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            android:layout_marginStart="20dp"
-            android:layout_marginTop="20dp"
             android:text="1" />
 
         <TextView
@@ -37,14 +35,14 @@
             android:layout_height="wrap_content"
             android:text="PLAYER"
             android:textColor="#FFFFFF"
-            android:textSize="11sp"
+            android:textSize="@dimen/text_label_size"
             android:textStyle="bold"
             android:textAllCaps="true"
-            android:letterSpacing="0.012"
+            android:letterSpacing="0.1"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginBottom="20dp"
-            android:layout_marginStart="20dp" />
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginBottom="4dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
