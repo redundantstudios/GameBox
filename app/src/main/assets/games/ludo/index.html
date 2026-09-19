@@ -444,8 +444,12 @@ function applyTheme(id){
 /* ============================================================
    GAME STATE
 ============================================================ */
-const G={ screen:'menu', mode:null, skill:'normal', count:4, players:[], cur:0, phase:'IDLE', legal:[], winner:-1 };
-const MENU={ step:'root', mode:'ai', skill:'normal', count:4 };
+const G={ screen:'menu', mode:null, skill:'normal', count:4, players:[], cur:0, phase:'IDLE', legal:[], winner:-1, team:false, winnerTeam:null, matchOver:false };
+const MENU={ step:'root', mode:'ai', skill:'normal', count:4, team:false };
+// 2v2 teams are the two OPPOSITE seats: bottom-left + top-right vs top-left +
+// bottom-right, so partners never sit next to each other.
+function teamOf(pi){ const s=(G.players[pi]&&G.players[pi].seat)||0; return (s===0||s===2)?0:1; }
+function teamName(t){ return 'TEAM '+(t?'B':'A'); }
 const DICE={ value:0, face:6, final:6, face0:6, mid1:3, mid2:5,
              rolling:false, t:0, rot:0, rotTotal:0, lift:0, dx:0, sx:1, sy:1,
              bounce:0, s:52, hopH:[24,15,8], wanderPx:4, wphase:0, lastH:-1 };
@@ -453,6 +457,7 @@ const FX={ mover:null, flights:[], parts:[], parts2:[], texts:[], rings:[], popu
            upsell:null, fakeAd:null, inter:null,
            hitStop:0, boardBounce:0, confettiUntil:0, fade:0, noMove:0, victoryAt:0 };
 let paused=false, lastT=0, fps=60, menuStart=0, menuDiceUntil=0, menuFace=6, DEBUG=false, raf=0;
+let rawDt=1/60;      // unscaled frame time — for effect particles that must ignore GAME_SPEED
 let ACTIVE_SEATS=[0,1,2,3];
 
 const seatOf=i=>G.players[i].seat;
@@ -461,12 +466,13 @@ function resetFx(){
   FX.mover=null; FX.flights=[]; FX.parts=[]; FX.parts2=[]; FX.texts=[]; FX.rings=[]; FX.popup=null; FX.upsell=null;
   FX.hitStop=0; FX.boardBounce=0; FX.confettiUntil=0; FX.noMove=0; FX.victoryAt=0;
 }
-function newGame(mode,skill,count){
+function newGame(mode,skill,count,team){
   cancelTasks(); resetFx();
   // theme pass accounting: expired pass falls back to classic; active pass consumes one play
   if(!themeUnlocked(store.theme)) applyTheme('classic');
   if(store.theme!=='classic'&&getPass(store.theme)){ getPass(store.theme).plays--; saveStore(); }
   G.mode=mode; G.skill=skill; G.count=count; G.players=[];
+  G.team=!!team&&count===4; G.winnerTeam=null; G.matchOver=false;
   const seats=SEAT_PLAN[count]||SEAT_PLAN[4];
   ACTIVE_SEATS=seats.slice();
   seats.forEach((seat,idx)=>{
@@ -487,6 +493,7 @@ function goMenu(){
   cancelTasks(); resetFx();
   GAME_SPEED=1;   // the 10X BOT TEST is per-match; normal play stays real-time
   paused=false; G.screen='menu'; G.phase='IDLE'; G.winner=-1; G.legal=[]; G.order=[];
+  G.team=false; G.winnerTeam=null; G.matchOver=false;
   ACTIVE_SEATS=[0,1,2,3]; buildCaches();
   MENU.step='root'; MENU.mode='ai';
   menuStart=simTime; menuDiceUntil=simTime+1.0; menuFace=1+Math.floor(rng()*6);
@@ -527,6 +534,7 @@ function moveInfo(pi,pid,d){
     if(!SAFE.has(g)){
       for(let q=0;q<G.count;q++){
         if(q===pi) continue;
+        if(G.team&&teamOf(q)===teamOf(pi)) continue;   // partners never capture each other
         for(const op of G.players[q].pawns){
           if(op.state==='TRACK'&&!op.moving&&op.rel<=50&&(START[G.players[q].seat]+op.rel)%52===g) captures=true;
         }
@@ -554,6 +562,7 @@ function threat(g,pi){
    TURN MACHINE
 ============================================================ */
 function beginTurn(){
+  if(G.matchOver) return;
   if(G.screen!=='game'||allDone()) return;
   // Skip EVERY finished player, not just one: with 2+ ranked players a single
   // step could hand the turn back to a finisher and freeze the match.
@@ -609,6 +618,7 @@ function onRolled(){
 function isOut(pi){ return Array.isArray(G.order)&&G.order.includes(pi); }
 function allDone(){ return G.players.every(pl=>pl.finished>=4); }
 function endTurn(extra){
+  if(G.matchOver) return;
   if(G.screen!=='game'||G.players.every(pl=>pl.finished>=4)) return;
   if(extra){ beginTurn(); return; }
   G.cur=(G.cur+1)%G.count;
@@ -658,6 +668,7 @@ function resolveLanding(pi,pid){
     if(!onSafe){
       for(let q=0;q<G.count;q++){
         if(q===pi) continue;
+        if(G.team&&teamOf(q)===teamOf(pi)) continue;   // partners never capture each other
         for(const op of G.players[q].pawns){
           if(op.state==='TRACK'&&!op.moving&&op.rel<=50&&(START[G.players[q].seat]+op.rel)%52===g){
             capturedAny=true;
@@ -699,20 +710,26 @@ function resolveLanding(pi,pid){
     floatText('PAWN '+(pid+1)+' HOME!',cp.x,cp.y-cell*2.2,CFG.colors.gold);
     SFX.play('finish'); haptic('medium');
     if(pl.finished>=4){
-      // Player completed: record their rank and keep the match going
+      // Player completed: record their rank, celebrate their house, play on
       if(!G.order) G.order=[];
       if(!G.order.includes(pi)){
         G.order.push(pi);
         const rk=G.order.length;
         const tr=trayRect(seat);
         floatText((rk===1?'1ST':rk===2?'2ND':rk===3?'3RD':rk+'TH')+' PLACE!',tr.x+tr.w/2,tr.y-14,CFG.colors.gold);
+        // one-shot colour-paper bomb over the house that just finished
+        const org=BASE_ORG[seat], hc=boardPxOf(org[0]+3,org[1]+3);
+        paperBomb(hc.x,hc.y,44,190,[PDEFS[seat].c,PDEFS[seat].lt,CFG.colors.gold,'#ffffff']);
       }
-      // Only one player can still be racing: give them the final place and
-      // close the match (nobody wants to watch a lone player jog home).
+      // 2v2: the match ends the moment a TEAM has both partners home.
+      // Solo: it ends when only one racer is left.
       const left=G.players.map((_,i)=>i).filter(i=>!G.order.includes(i));
-      if(left.length<=1){
+      const doneTeam=G.team?[0,1].find(t=>G.players.every((_,i)=>teamOf(i)!==t||G.order.includes(i))):undefined;
+      if(doneTeam!==undefined||left.length<=1){
+        G.matchOver=true;
+        G.winnerTeam=G.team?doneTeam:null;
         left.forEach(i=>G.order.push(i));
-        G.winner=G.order[0];
+        G.winner=G.team?G.order.find(i=>teamOf(i)===G.winnerTeam):G.order[0];
         after(0.8,showVictory);
       }
     }
@@ -728,14 +745,18 @@ function resolveLanding(pi,pid){
 }
 function showVictory(){
   if(!Array.isArray(G.order)||!G.order.length) return;
-  G.winner=G.order[0];
+  G.winner=G.team?G.order.find(i=>teamOf(i)===G.winnerTeam):G.order[0];
   G.phase='OVER';
+  G.matchOver=true;
   FX.victoryAt=performance.now()/1000;   // popup animates on the wall clock, not the sim clock
   FX.boardBounce=1;
-  FX.confettiUntil=simTime+CFG.fx.victory;
-  const cp=boardPxOf(7.5,7.5);
-  addRing(cp.x,cp.y,cell*0.3,cell*7,PDEFS[seatOf(G.winner)].c,4,0.9);
-  addRing(cp.x,cp.y,cell*0.3,cell*5,CFG.colors.gold,3,0.7);
+  // BIG one-shot colour-paper bomb for the winner card — same idea as the little
+  // one a house gets, just a much bigger charge. Fired once, never repeated.
+  const d0=PDEFS[seatOf(G.winner)];
+  paperBomb(W/2,H/2-58,120,380,[d0.c,d0.lt,CFG.colors.gold,'#ffffff']);
+  const cw=Math.min(330,Math.max(160,W-40));
+  paperBomb(W/2-cw*0.34,H/2+30,46,270,[CFG.colors.gold,'#ffffff',d0.c]);
+  paperBomb(W/2+cw*0.34,H/2+30,46,270,[CFG.colors.gold,'#ffffff',d0.c]);
   SFX.play('win'); haptic('success');
   if(G.mode==='ai'&&G.players[G.winner].human){ store.wins++; saveStore(); }
 }
@@ -758,6 +779,7 @@ function scoreMove(pi,pid,d,w){
     const g=(START[seat]+target)%52;
     for(let q=0;q<G.count;q++){
       if(q===pi) continue;
+      if(G.team&&teamOf(q)===teamOf(pi)) continue;   // a partner is never a target
       const qs=G.players[q].seat;
       for(const op of G.players[q].pawns){
         if(op.state==='TRACK'&&op.rel<=50&&(START[qs]+op.rel)%52===g) s+=(55+op.rel*0.4)*w;
@@ -804,9 +826,22 @@ function dust(x,y){
 }
 function addRing(x,y,r0,r1,c,lw,ttl){ FX.rings.push({x,y,r0,r1,c,lw,t:0,ttl:ttl||CFG.fx.ringTime}); }
 function floatText(str,x,y,c){ FX.texts.push({str,x,y,c,t:0,ttl:1.0}); }
-function spawnConfetti(){
-  if(FX.parts2.length>260) return;
-  for(let i=0;i<8;i++) FX.parts2.push({x:rng()*W,y:-14,vx:(rng()*2-1)*40,vy:60+rng()*130,rot:rng()*TAU,vr:(rng()*2-1)*6,t:0,ttl:2.4+rng(),s:5+rng()*5,c:PDEFS[Math.floor(rng()*4)].c});
+/* One-shot colour-paper bomb: a single burst of paper that flies out of (x,y)
+   and falls under gravity, then is gone for good — it never loops. Called once
+   with a small charge when a house gets all four pawns home, and once with a
+   big charge when the victory card appears. */
+function paperBomb(x,y,n,power,colors){
+  if(FX.parts2.length>420) return;
+  const pal=(colors&&colors.length)?colors:[PDEFS[0].c,PDEFS[1].c,PDEFS[2].c,PDEFS[3].c];
+  for(let i=0;i<n;i++){
+    const a=rng()*TAU, sp=power*(0.30+rng()*0.85);
+    FX.parts2.push({
+      x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp-power*0.5,
+      rot:rng()*TAU, vr:(rng()*2-1)*11,
+      g:power*1.6, t:0, ttl:1.25+rng()*1.0, wall:true,
+      s:5+rng()*6, c:pal[Math.floor(rng()*pal.length)]
+    });
+  }
 }
 function hasFlight(pi,pid){ return FX.flights.some(f=>f.pi===pi&&f.pid===pid); }
 function pl_p(pi,pid){ return G.players[pi].pawns[pid]; }
@@ -1428,7 +1463,7 @@ function update(dt){
     updateMover(dt);
     for(let i=FX.flights.length-1;i>=0;i--){ const f=FX.flights[i]; f.t+=dt/f.dur; if(f.t>=1) FX.flights.splice(i,1); }
     for(let i=FX.parts.length-1;i>=0;i--){ const p=FX.parts[i]; p.t+=dt; if(p.t>=p.ttl){FX.parts.splice(i,1);continue;} p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=p.g*dt; }
-    for(let i=FX.parts2.length-1;i>=0;i--){ const p=FX.parts2[i]; p.t+=dt; if(p.t>=p.ttl){FX.parts2.splice(i,1);continue;} p.x+=(p.vx+Math.sin(p.t*4+p.rot)*30)*dt; p.y+=p.vy*dt; p.rot+=p.vr*dt; }
+    for(let i=FX.parts2.length-1;i>=0;i--){ const p=FX.parts2[i], pdt=p.wall?rawDt:dt; p.t+=pdt; if(p.t>=p.ttl){FX.parts2.splice(i,1);continue;} if(p.g) p.vy+=p.g*pdt; p.x+=(p.vx+Math.sin(p.t*4+p.rot)*30)*pdt; p.y+=p.vy*pdt; p.rot+=p.vr*pdt; }
     for(let i=FX.texts.length-1;i>=0;i--){ const t=FX.texts[i]; t.t+=dt; t.y-=28*dt; if(t.t>=t.ttl) FX.texts.splice(i,1); }
     for(let i=FX.rings.length-1;i>=0;i--){ const r=FX.rings[i]; r.t+=dt; if(r.t>=r.ttl) FX.rings.splice(i,1); }
     FX.boardBounce=Math.max(0,FX.boardBounce-dt*0.8);
@@ -1438,14 +1473,8 @@ function update(dt){
       p.squash=Math.max(0,p.squash-dt*5);
       p.bump=Math.max(0,p.bump-dt*4);
     }
-    if(G.phase==='OVER'&&simTime<FX.confettiUntil){
-      spawnConfetti();
-      if(rng()<0.06){
-        const seat=seatOf(G.winner), org=BASE_ORG[seat];
-        const gp=boardPxOf(org[0]+1+rng()*4,org[1]+1+rng()*4);
-        burst(gp.x,gp.y,rng()<0.5?PDEFS[seat].c:CFG.colors.gold,5);
-      }
-    }
+    // (no looping celebration: the colour-paper bombs are one-shot, fired when a
+    // house completes and when the victory card appears)
   }
 }
 
@@ -1455,25 +1484,11 @@ function update(dt){
 let uiButtons=[];
 function drawRankOverlays(){
   if(!Array.isArray(G.order)) return;
-  const wk=performance.now()/1000;   // wall clock: the show must not speed up at 10X
   G.order.forEach((pi,ri)=>{
     const seat=G.players[pi].seat, b=BASE_ORG[seat];
     const x=boardX+b[0]*cell, y=boardY+b[1]*cell, wq=cell*6;
     ctx.save();
     ctx.fillStyle='rgba(0,0,0,0.42)'; rr(ctx,x,y,wq,wq,cell*0.75); ctx.fill();
-    // ---- small celebration on the house that got all four pawns home ----
-    // one gold ripple leaving the house, plus six twinkling sparks around it
-    const rip=(wk*0.5+ri*0.33)%1, e=rip*cell*1.3;
-    ctx.globalAlpha=(1-rip)*0.85;
-    ctx.strokeStyle=CFG.colors.gold; ctx.lineWidth=3;
-    rr(ctx,x-e,y-e,wq+e*2,wq+e*2,cell*0.75); ctx.stroke();
-    for(let i=0;i<6;i++){
-      const a=wk*1.4+i*TAU/6, rd=wq*0.60;
-      const sx=x+wq/2+Math.cos(a)*rd, sy=y+wq/2+Math.sin(a)*rd*0.92;
-      ctx.globalAlpha=0.35+0.6*Math.abs(Math.sin(wk*2.6+i*1.1));
-      ctx.fillStyle=CFG.colors.gold; star(ctx,sx,sy,Math.max(2,cell*0.17)); ctx.fill();
-    }
-    ctx.globalAlpha=1;
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.font='900 '+Math.round(cell*0.9)+'px '+FONT;
     ctx.fillStyle='#ffffff';
@@ -1482,6 +1497,11 @@ function drawRankOverlays(){
     ctx.font='900 '+Math.round(cell*1.15)+'px '+FONT;
     ctx.fillStyle=CFG.colors.gold;
     ctx.fillText(tag,x+wq/2,y+wq/2+cell*0.35);
+    if(G.team){
+      ctx.font='800 '+Math.round(cell*0.42)+'px '+FONT;
+      ctx.fillStyle='rgba(255,255,255,.8)';
+      ctx.fillText(teamName(teamOf(pi)),x+wq/2,y+wq/2+cell*1.15);
+    }
     ctx.restore();
   });
 }
@@ -1563,7 +1583,7 @@ function drawBoardPawns(){
     const t=Math.min(1,f.t), e=easeOutQuad(t);
     const x=pxOf(lerp(f.from.x,f.to.x,e));
     const y=pyOf(lerp(f.from.y,f.to.y,e))-Math.sin(Math.PI*t)*(f.type==='capture'?cell*2:cell*0.8);
-    const r=f.type==='finish'?lerp(cell*CFG.pawn.radius,cell*0.27,e):cell*CFG.pawn.radius;
+    const r=f.type==='finish'?lerp(cell*CFG.pawn.radius,cell*0.20,e):cell*CFG.pawn.radius;
     drawPawnAt(ctx,x,y,r,PDEFS[G.players[f.pi].seat],{num:G.players[f.pi].pawns[f.pid].id,rot:f.type==='capture'?f.rot+t*9:0,alpha:dim(f.pi)});
   }
   if(FX.mover){
@@ -1612,6 +1632,15 @@ function drawTrays(){
     ctx.fillStyle=CFG.colors.trayInk;
     ctx.font='800 11px '+FONT; ctx.textAlign='left'; ctx.textBaseline='middle';
     ctx.fillText(pl.label,tr.x+28,tr.y+13.5);
+    if(G.team){
+      // partner badge: TEAM A (gold) / TEAM B (purple)
+      const tt=teamOf(i), tw2=46, px2=tr.x+tr.w-10-tw2, py2=tr.y+5.5;
+      ctx.fillStyle=tt?'#7f6bd6':'#e2a63a';
+      rr(ctx,px2,py2,tw2,16,8); ctx.fill();
+      ctx.fillStyle='#ffffff'; ctx.font='800 8px '+FONT; ctx.textAlign='center';
+      ctx.fillText(teamName(tt),px2+tw2/2,py2+8.5);
+      ctx.textAlign='left';
+    }
     for(let k=0;k<4;k++){
       const cr=chipRect(tr,k);
       const legal=active&&G.phase==='SELECT'&&G.legal.includes(k);
@@ -1790,7 +1819,7 @@ function drawVictory(){
   const pop=easeOutBack(clamp(t/0.45,0,1));
   ctx.fillStyle='#000000'; ctx.globalAlpha=0.72*fade; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
   const pw=Math.min(330,Math.max(160,W-40)), ph=420, x=W/2-pw/2, y=H/2-ph/2;
-  const first=G.order[0];
+  const first=G.winner>=0?G.winner:G.order[0];
   const d=PDEFS[seatOf(first)];
   ctx.save();
   ctx.globalAlpha=fade;
@@ -1798,23 +1827,13 @@ function drawVictory(){
   ctx.fillStyle=CFG.colors.panel; rr(ctx,x,y,pw,ph,22); ctx.fill();
   ctx.strokeStyle=CFG.colors.gold; ctx.lineWidth=2; rr(ctx,x,y,pw,ph,22); ctx.stroke();
   ctx.strokeStyle=CFG.colors.btnStroke; ctx.lineWidth=1; rr(ctx,x+3,y+3,pw-6,ph-6,19); ctx.stroke();
-  // winner crest: a slow gold sunburst and a pawn that pops in once, then holds
-  // perfectly still. (The breathing rings around it are gone by request.)
+  // winner crest: a single pawn — no circle, ring or burst behind it (by
+  // request). The celebration is the paper bomb drawn on top of the card.
   const cy=y+58;
-  ctx.save();
-  ctx.globalAlpha=fade*0.45;
-  ctx.translate(W/2,cy); ctx.rotate(now*0.35);
-  ctx.fillStyle=CFG.colors.gold;
-  for(let i=0;i<12;i++){
-    ctx.rotate(TAU/12);
-    ctx.beginPath(); ctx.moveTo(0,-33); ctx.lineTo(9,-52); ctx.lineTo(-9,-52); ctx.closePath(); ctx.fill();
-  }
-  ctx.restore();
-  if(t<4.0&&FX.parts2.length<240){ spawnConfetti(); spawnConfetti(); }
   drawPawnAt(ctx,W/2,cy,30,d,{num:null,scale:1+0.10*pop});
   ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.font='900 28px '+FONT; ctx.fillStyle=lighten(d.c,0.25);
-  ctx.fillText(G.players[first].label+' WINS!',W/2,y+114);
+  ctx.fillText(G.team?teamName(G.winnerTeam)+' WINS!':G.players[first].label+' WINS!',W/2,y+114);
   ctx.font='600 12px '+FONT; ctx.fillStyle='rgba(255,255,255,.7)';
   ctx.fillText('FINAL STANDINGS',W/2,y+140);
   ctx.restore();
@@ -1831,8 +1850,13 @@ function drawVictory(){
     ctx.textAlign='left'; ctx.textBaseline='middle';
     ctx.font='800 13px '+FONT; ctx.fillStyle=cse;
     ctx.fillText(tag, x+42, yq);
-    ctx.font='600 13px '+FONT; ctx.fillStyle='#ffffff';
+    const win=G.team&&teamOf(piq)===G.winnerTeam;
+    ctx.font='600 13px '+FONT; ctx.fillStyle=win?CFG.colors.gold:'#ffffff';
     ctx.fillText(G.players[piq].label, x+84, yq);
+    if(G.team){
+      ctx.font='800 10px '+FONT; ctx.fillStyle=win?CFG.colors.gold:'rgba(255,255,255,.5)';
+      ctx.fillText(teamName(teamOf(piq)), x+pw*0.64, yq);
+    }
     ctx.restore();
   });
   uiBtn('rematch',x+22,y+288,pw-44,54,'REMATCH',{bg:d.c,fg:'#fff',fs:17,r:16,shadow:true});
@@ -1978,10 +2002,20 @@ function renderMenu(){
       });
       y+=34+24;
     }
-    head('PLAYERS',y); y+=16;
-    const w3=Math.max(44,(bw-16)/3);
-    ['2','3','4'].forEach((s2,i)=>uiBtn('count:'+s2,W/2-bw/2+i*(w3+8),y,w3,42,s2+' PLAYERS',sel(MENU.count===+s2)));
-    y+=42+28;
+    if(MENU.mode==='pass'){
+      // 2v2: four players, partners sit on opposite seats
+      uiBtn('team:toggle',W/2-bw/2,y,bw,42,'TEAMS: '+(MENU.team?'2 vs 2':'OFF'),sel(MENU.team));
+      y+=42+24;
+    }
+    if(MENU.team){
+      ctx.font='800 11px '+FONT; ctx.fillStyle='rgba(255,255,255,.7)';
+      ctx.fillText('4 PLAYERS · PARTNERS SIT OPPOSITE',W/2,y+6); y+=28;
+    }else{
+      head('PLAYERS',y); y+=16;
+      const w3=Math.max(44,(bw-16)/3);
+      ['2','3','4'].forEach((s2,i)=>uiBtn('count:'+s2,W/2-bw/2+i*(w3+8),y,w3,42,s2+' PLAYERS',sel(MENU.count===+s2)));
+      y+=42+28;
+    }
     if(MENU.mode) uiBtn('start',W/2-110,y,220,56,'START MATCH',{bg:CFG.colors.tile,fg:'#fff',fs:18,r:18,shadow:true});
     // Dev-only: reached only when the shell appends ?dev=1, which GameActivity
     // does for debug builds (BuildConfig.DEBUG) only. Keeps this out of release.
@@ -2161,13 +2195,14 @@ function handleAction(id){
       else goMenu();
       break;
     case 'rematch':
-      if(G.phase==='OVER'&&G.winner>=0) showInterstitial(()=>newGame(G.mode,G.skill,G.count));
-      else newGame(G.mode,G.skill,G.count);
+      if(G.phase==='OVER'&&G.winner>=0) showInterstitial(()=>newGame(G.mode,G.skill,G.count,G.team));
+      else newGame(G.mode,G.skill,G.count,G.team);
       break;
     case 'menu-play': MENU.step='setup'; SFX.play('click'); break;
     case 'menu-root': MENU.step='root'; SFX.play('click'); break;
-    case 'mode:ai': MENU.mode='ai'; SFX.play('click'); break;
+    case 'mode:ai': MENU.mode='ai'; MENU.team=false; SFX.play('click'); break;
     case 'mode:pass': MENU.mode='pass'; SFX.play('click'); break;
+    case 'team:toggle': MENU.team=!MENU.team; if(MENU.team) MENU.count=4; SFX.play('click'); break;
     case 'skill:easy': MENU.skill='easy'; SFX.play('click'); break;
     case 'skill:normal': MENU.skill='normal'; SFX.play('click'); break;
     case 'skill:hard': MENU.skill='hard'; SFX.play('click'); break;
@@ -2175,7 +2210,7 @@ function handleAction(id){
     case 'count:3': MENU.count=3; SFX.play('click'); break;
     case 'count:4': MENU.count=4; SFX.play('click'); break;
     case 'start': {
-      const begin=()=>newGame(MENU.mode,MENU.skill,MENU.count);
+      const begin=()=>newGame(MENU.mode,MENU.skill,MENU.count,MENU.team);
       // upsell when starting on the default theme (or an expired pass)
       if(!themeUnlocked(store.theme)||store.theme==='classic'){
         openUpsell(pickFeatured(),'start',begin);
@@ -2184,7 +2219,7 @@ function handleAction(id){
     }
     case 'test-10x':
       GAME_SPEED=10; SFX.play('click');
-      newGame('ai','normal',4);
+      newGame('ai','normal',4,false);
       G.players[0].human=false;
       break;
     case 'tgl-sound': store.sound=!store.sound; syncShell(); saveStore(); SFX.play('click'); break;
@@ -2209,6 +2244,7 @@ function tick(now){
   if(!lastT) lastT=now;
   let dt=(now-lastT)/1000; lastT=now;
   if(dt>0.05) dt=0.05;
+  rawDt=dt;                                   // keep a copy before the 10X scaling
   fps=fps*0.9+(1/Math.max(dt,1e-4))*0.1;
   dt*=GAME_SPEED;
   if(window.innerWidth!==W||window.innerHeight!==H) resize();
