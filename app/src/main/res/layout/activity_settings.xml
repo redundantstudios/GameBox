@@ -4,25 +4,55 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FAFAFA"
+    android:background="@color/studio_background"
     android:padding="24dp">
 
-    <TextView
-        android:id="@+id/settingsTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="STUDIO SETTINGS"
-        android:textColor="#1C1E24"
-        android:textSize="19sp"
-        android:textStyle="bold"
+    <!-- Custom Toolbar for Settings -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@android:color/transparent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginTop="16dp"/>
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageButton
+                android:id="@+id/btnBack"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_revert"
+                android:contentDescription="Back"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+            <TextView
+                android:id="@+id/settingsTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="STUDIO SETTINGS"
+                android:textColor="@color/studio_on_background"
+                android:textSize="@dimen/text_display_size"
+                android:textStyle="bold"
+                android:textAllCaps="true"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.appcompat.widget.Toolbar>
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/settingsTitle"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginTop="24dp">
 
@@ -31,13 +61,14 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Sound Section -->
+            <!-- Audio Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="AUDIO"
-                android:textColor="#7A7F88"
-                android:textSize="9sp"
+                android:textColor="@color/studio_border"
+                android:textSize="11sp"
+                android:textStyle="bold"
                 android:textAllCaps="true"
                 android:letterSpacing="0.1"
                 android:layout_marginBottom="12dp"/>
@@ -45,9 +76,11 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="@dimen/radius_tile"
                 app:cardElevation="0dp"
-                android:backgroundTint="#FFFFFF"
+                app:strokeColor="@color/studio_border"
+                app:strokeWidth="@dimen/border_thickness"
+                android:backgroundTint="@color/studio_surface"
                 android:layout_marginBottom="16dp">
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -58,7 +91,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Master Sound"
-                        android:textColor="#1C1E24"
+                        android:textColor="@color/studio_on_background"
+                        android:textStyle="bold"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"/>
                     <com.google.android.material.switchmaterial.SwitchMaterial
@@ -73,9 +107,11 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="@dimen/radius_tile"
                 app:cardElevation="0dp"
-                android:backgroundTint="#FFFFFF"
+                app:strokeColor="@color/studio_border"
+                app:strokeWidth="@dimen/border_thickness"
+                android:backgroundTint="@color/studio_surface"
                 android:layout_marginBottom="24dp">
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -86,7 +122,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Volume"
-                        android:textColor="#1C1E24"
+                        android:textColor="@color/studio_on_background"
+                        android:textStyle="bold"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"/>
                     <SeekBar
@@ -101,13 +138,14 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Vibration Section -->
+            <!-- Haptics Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="HAPTICS"
-                android:textColor="#7A7F88"
-                android:textSize="9sp"
+                android:textColor="@color/studio_border"
+                android:textSize="11sp"
+                android:textStyle="bold"
                 android:textAllCaps="true"
                 android:letterSpacing="0.1"
                 android:layout_marginBottom="12dp"/>
@@ -115,9 +153,11 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="@dimen/radius_tile"
                 app:cardElevation="0dp"
-                android:backgroundTint="#FFFFFF"
+                app:strokeColor="@color/studio_border"
+                app:strokeWidth="@dimen/border_thickness"
+                android:backgroundTint="@color/studio_surface"
                 android:layout_marginBottom="16dp">
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -127,7 +167,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Vibration"
-                        android:textColor="#1C1E24"
+                        android:textColor="@color/studio_on_background"
+                        android:textStyle="bold"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"/>
                     <com.google.android.material.switchmaterial.SwitchMaterial
@@ -142,9 +183,11 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="@dimen/radius_tile"
                 app:cardElevation="0dp"
-                android:backgroundTint="#FFFFFF"
+                app:strokeColor="@color/studio_border"
+                app:strokeWidth="@dimen/border_thickness"
+                android:backgroundTint="@color/studio_surface"
                 android:layout_marginBottom="24dp">
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -155,7 +198,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Haptic Profile"
-                        android:textColor="#1C1E24"
+                        android:textColor="@color/studio_on_background"
+                        android:textStyle="bold"
                         android:layout_marginBottom="12dp"/>
                     <RadioGroup
                         android:id="@+id/rgHaptic"
@@ -168,6 +212,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Soft"
+                            android:textColor="@color/studio_on_background"
                             android:textSize="12sp"/>
                         <RadioButton
                             android:id="@+id/rbHapticCrisp"
@@ -175,6 +220,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Crisp"
+                            android:textColor="@color/studio_on_background"
                             android:textSize="12sp"/>
                         <RadioButton
                             android:id="@+id/rbHapticHeavy"
@@ -182,18 +228,20 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Heavy"
+                            android:textColor="@color/studio_on_background"
                             android:textSize="12sp"/>
                         </RadioGroup>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-            <!-- Theme Section -->
+            <!-- Interface Section -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="INTERFACE"
-                android:textColor="#7A7F88"
-                android:textSize="9sp"
+                android:textColor="@color/studio_border"
+                android:textSize="11sp"
+                android:textStyle="bold"
                 android:textAllCaps="true"
                 android:letterSpacing="0.1"
                 android:layout_marginBottom="12dp"/>
@@ -201,9 +249,11 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="@dimen/radius_tile"
                 app:cardElevation="0dp"
-                android:backgroundTint="#FFFFFF"
+                app:strokeColor="@color/studio_border"
+                app:strokeWidth="@dimen/border_thickness"
+                android:backgroundTint="@color/studio_surface"
                 android:layout_marginBottom="24dp">
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -213,7 +263,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="App Theme"
-                        android:textColor="#1C1E24"
+                        android:textColor="@color/studio_on_background"
+                        android:textStyle="bold"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"/>
                     <com.google.android.material.switchmaterial.SwitchMaterial

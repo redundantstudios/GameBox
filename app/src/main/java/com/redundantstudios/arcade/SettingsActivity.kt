@@ -3,6 +3,7 @@ package com.redundantstudios.arcade
 import android.os.Bundle
 import android.widget.RadioButton
 import android.widget.SeekBar
+import android.widget.ImageButton
 import android.widget.CompoundButton
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.switchmaterial.SwitchMaterial
@@ -13,6 +14,9 @@ class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
+
+        val btnBack = findViewById<ImageButton>(R.id.btnBack)
+        btnBack.setOnClickListener { finish() }
 
         val switchSound = findViewById<SwitchMaterial>(R.id.switchSound)
         val seekVolume = findViewById<SeekBar>(R.id.seekVolume)
@@ -65,8 +69,6 @@ class SettingsActivity : AppCompatActivity() {
 
         switchTheme.setOnCheckedChangeListener { _, isChecked ->
             SettingsManager.appTheme = if (isChecked) "Dark" else "Light"
-            // Note: Full theme switching requires AppCompatDelegate.setDefaultNightMode()
-            // which will be handled in a later polish phase.
         }
     }
 }
