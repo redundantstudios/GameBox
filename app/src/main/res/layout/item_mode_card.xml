@@ -39,6 +39,20 @@
                 android:textStyle="bold"
                 android:textAllCaps="true"
                 android:letterSpacing="0.1"
+                app:layout_constraintBottom_toTopOf="@id/modeGameCount"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <TextView
+                android:id="@+id/modeGameCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1 GAME"
+                android:textColor="@color/studio_on_background"
+                android:textSize="11sp"
+                android:textAllCaps="true"
+                android:letterSpacing="0.1"
+                android:alpha="0.75"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"

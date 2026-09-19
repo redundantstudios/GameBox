@@ -13,7 +13,7 @@ import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.model.GameMode
 
 class ModeAdapter(
-    private val modes: List<GameMode>,
+    private var modes: List<GameMode>,
     private val onModeClick: (GameMode) -> Unit
 ) : RecyclerView.Adapter<ModeAdapter.ModeViewHolder>() {
 
@@ -21,6 +21,7 @@ class ModeAdapter(
         val card: MaterialCardView = view.findViewById(R.id.modeCard)
         val number: TextView = view.findViewById(R.id.modeNumber)
         val label: TextView = view.findViewById(R.id.modeLabel)
+        val gameCount: TextView = view.findViewById(R.id.modeGameCount)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ModeViewHolder {
@@ -32,6 +33,7 @@ class ModeAdapter(
         val mode = modes[position]
         holder.number.text = mode.playerCount.toString()
         holder.label.text = holder.itemView.context.resources.getQuantityString(R.plurals.player_count, mode.playerCount, mode.playerCount)
+        holder.gameCount.text = holder.itemView.context.resources.getQuantityString(R.plurals.game_count, mode.gameCount, mode.gameCount)
         holder.card.setCardBackgroundColor(Color.parseColor(mode.color))
 
         holder.itemView.setOnClickListener {
@@ -78,4 +80,9 @@ class ModeAdapter(
     }
 
     override fun getItemCount(): Int = modes.size
+
+    fun updateModes(newModes: List<GameMode>) {
+        modes = newModes
+        notifyDataSetChanged()
+    }
 }

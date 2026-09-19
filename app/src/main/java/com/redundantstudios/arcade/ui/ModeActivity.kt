@@ -16,6 +16,18 @@ import com.redundantstudios.arcade.util.ManifestParser
 class ModeActivity : AppCompatActivity() {
     private val TAG = "ModeActivity"
 
+    companion object {
+        /** Single source of truth for which games belong to a player count. */
+        fun filterGames(games: List<GameManifest>, playerCount: Int): List<GameManifest> =
+            games.filter { game ->
+                if (playerCount == 1) {
+                    (game.maxPlayers == 1) || (game.aiSupport == "full" && game.maxPlayers >= 2)
+                } else {
+                    game.minPlayers <= playerCount && game.maxPlayers >= playerCount
+                }
+            }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_mode)
@@ -30,14 +42,11 @@ class ModeActivity : AppCompatActivity() {
         val allGames = ManifestParser.scanGames(this)
         Log.d(TAG, "Total games scanned: ${allGames.size}")
 
-        val filteredGames = allGames.filter { game ->
-            if (playerCount == 1) {
-                (game.maxPlayers == 1) || (game.aiSupport == "full" && game.maxPlayers >= 2)
-            } else {
-                game.minPlayers <= playerCount && game.maxPlayers >= playerCount
-            }
-        }
+        val filteredGames = filterGames(allGames, playerCount)
         Log.d(TAG, "Filtered games for $playerCount P: ${filteredGames.size}")
+
+        findViewById<View>(R.id.emptyState).visibility =
+            if (filteredGames.isEmpty()) View.VISIBLE else View.GONE
 
         recyclerView.adapter = GameAdapter(filteredGames) { game ->
             android.util.Log.d(TAG, "Game tile clicked: ${game.id}, playerCount=$playerCount, maxPlayers=${game.maxPlayers}")

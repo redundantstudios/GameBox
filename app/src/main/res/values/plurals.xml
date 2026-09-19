@@ -3,4 +3,9 @@
         <item quantity="one">%d PLAYER</item>
         <item quantity="other">%d PLAYERS</item>
     </plurals>
+
+    <plurals name="game_count">
+        <item quantity="one">%d GAME</item>
+        <item quantity="other">%d GAMES</item>
+    </plurals>
 </resources>

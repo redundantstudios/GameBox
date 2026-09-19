@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -47,6 +46,23 @@ class MainActivity : AppCompatActivity() {
         modeRecyclerView.adapter = ModeAdapter(modes) { mode ->
             startModeActivity(mode)
         }
+        findViewById<View>(R.id.emptyState).visibility =
+            if (modes.isEmpty()) View.VISIBLE else View.GONE
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Re-scan in case games were added/removed while paused (e.g., dev swaps)
+        if (this::allGames.isInitialized) {
+            allGames = ManifestParser.scanGames(this)
+            val modeRecyclerView = findViewById<RecyclerView>(R.id.modeRecyclerView)
+            (modeRecyclerView.adapter as? ModeAdapter)?.let { adapter ->
+                val modes = deriveModes(allGames)
+                adapter.updateModes(modes)
+                findViewById<View>(R.id.emptyState).visibility =
+                    if (modes.isEmpty()) View.VISIBLE else View.GONE
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -65,16 +81,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun deriveModes(games: List<GameManifest>): List<GameMode> {
-        val supportedCounts = games.flatMap { (it.minPlayers..it.maxPlayers).toList() }.distinct().sorted()
+        val counts = games.flatMap { (it.minPlayers..it.maxPlayers).toList() }
+        val supportedCounts = counts.distinct().sorted()
         val colors = listOf("#EF5350", "#42A5F5", "#66BB6A", "#FFCA28", "#AB47BC")
 
         return supportedCounts.mapIndexed { index, count ->
+            val gameCount = ModeActivity.filterGames(games, count).size
             GameMode(
                 playerCount = count,
                 label = "${count} PLAYER",
-                color = colors[index % colors.size]
+                color = colors[index % colors.size],
+                gameCount = gameCount
             )
-        }
+        }.filter { it.gameCount > 0 }
     }
 
     private fun startModeActivity(mode: GameMode) {

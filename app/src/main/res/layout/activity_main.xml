@@ -40,6 +40,36 @@
         android:clipToPadding="false"
         android:padding="0dp" />
 
+    <LinearLayout
+        android:id="@+id/emptyState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/toolbar"
+        app:layout_constraintBottom_toTopOf="@id/footer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="NO GAMES INSTALLED"
+            android:textColor="@color/studio_on_background"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Check back soon!"
+            android:textColor="@color/studio_border"
+            android:textSize="13sp" />
+    </LinearLayout>
+
     <!-- Footer -->
     <LinearLayout
         android:id="@+id/footer"
