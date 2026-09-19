@@ -33,18 +33,27 @@
         android:clipToPadding="false"
         android:padding="@dimen/standard_spacing" />
 
-    <Button
+    <ImageButton
         android:id="@+id/btnBack"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_revert"
+        android:contentDescription="Back"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/modeTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="BACK"
+        android:text="SELECT PLAYERS"
         android:textColor="@color/studio_on_background"
-        android:backgroundTint="@color/studio_surface"
-        android:textSize="14sp"
+        android:textSize="@dimen/text_display_size"
         android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="16dp" />
+        android:textAllCaps="true"
+        app:layout_constraintStart_toEndOf="@id/btnBack"
+        android:layout_marginStart="16dp"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -46,7 +46,7 @@ class ModeActivity : AppCompatActivity() {
             launchGame(game, "pass", "medium", playerCount)
         }
 
-        val btnBack = findViewById<android.widget.Button>(R.id.btnBack)
+        val btnBack = findViewById<android.widget.ImageButton>(R.id.btnBack)
         btnBack.setOnClickListener {
             finish()
         }
