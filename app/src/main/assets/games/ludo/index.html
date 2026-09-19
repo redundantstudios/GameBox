@@ -82,7 +82,8 @@ const CFG = {
     passMinutes: 60,     // rewarded pass: valid for this many minutes...
     passPlays: 5,        // ...OR this many matches, whichever ends first
     interDur: 3.0,       // interstitial length (placeholder)
-    fakeAdDur: 2.5       // simulated rewarded ad when no bridge (testing)
+    fakeAdDur: 2.5,      // simulated rewarded ad when no bridge (testing)
+    rewardWait: 8        // seconds to wait for the shell before offering a retry
   },
   colors: {}
 };
@@ -212,11 +213,22 @@ function pickFeatured(){
   return pool[store.games%pool.length];
 }
 // Rewarded: real bridge if present; otherwise a simulated local ad.
-function showRewarded(placement,onReward){
+// NOTE: the shell SDK fires its reward callback with NO argument on success
+// (see Studio.ads.rewarded), so "callback invoked" means granted. Requiring
+// res==='granted' here silently swallowed every reward. A watchdog reports
+// failure so the UI can offer a retry instead of doing nothing.
+function showRewarded(placement,onReward,onFail){
+  let settled=false, watchdog=0;
+  const grant=()=>{ if(settled)return; settled=true; clearTimeout(watchdog); onReward(); };
   if(Studio.ads&&typeof Studio.ads.rewarded==='function'){
-    let called=false;
-    try{ Studio.ads.rewarded(placement,function(res){ if(called)return; called=true; if(res==='granted')onReward(); }); }catch(e){/*fallthrough*/}
-    return;
+    try{
+      Studio.ads.rewarded(placement,function(res){
+        if(res==='granted'||res===undefined||res===null) grant();
+      });
+      clearTimeout(watchdog);
+      watchdog=setTimeout(()=>{ if(!settled&&onFail) onFail(); },CFG.ads.rewardWait*1000);
+      return;
+    }catch(e){/*fallthrough*/}
   }
   // Simulated rewarded ad (no shell bridge) — lets the flow be tested anywhere.
   FX.fakeAd={ t:0, dur:CFG.ads.fakeAdDur, onDone:onReward };
@@ -449,6 +461,7 @@ function newGame(mode,skill,count){
 }
 function goMenu(){
   cancelTasks(); resetFx();
+  GAME_SPEED=1;   // the 10X BOT TEST is per-match; normal play stays real-time
   paused=false; G.screen='menu'; G.phase='IDLE'; G.winner=-1; G.legal=[]; G.order=[];
   ACTIVE_SEATS=[0,1,2,3]; buildCaches();
   MENU.step='root'; MENU.mode='ai';
@@ -517,8 +530,12 @@ function threat(g,pi){
    TURN MACHINE
 ============================================================ */
 function beginTurn(){
-  if(G.screen!=='game'||G.players.every(pl=>pl.finished>=4)) return;
-  if(isOut(G.cur)){ G.cur=(G.cur+1)%G.count; if(G.players.every(pl=>pl.finished>=4)) return; }
+  if(G.screen!=='game'||allDone()) return;
+  // Skip EVERY finished player, not just one: with 2+ ranked players a single
+  // step could hand the turn back to a finisher and freeze the match.
+  let guard=0;
+  while(isOut(G.cur)&&guard++<G.count) G.cur=(G.cur+1)%G.count;
+  if(allDone()||isOut(G.cur)) return;
   G.phase='ROLL'; G.legal=[];
   SFX.play('turn');
   const pl=G.players[G.cur];
@@ -566,6 +583,7 @@ function onRolled(){
   }
 }
 function isOut(pi){ return Array.isArray(G.order)&&G.order.includes(pi); }
+function allDone(){ return G.players.every(pl=>pl.finished>=4); }
 function endTurn(extra){
   if(G.screen!=='game'||G.players.every(pl=>pl.finished>=4)) return;
   if(extra){ beginTurn(); return; }
@@ -596,7 +614,9 @@ function startMove(pi,pid){
   const pts=[{x:from.x,y:from.y}], rels=[];
   if(launching){ const q=posOfRel(seat,0); pts.push(q); rels.push(0); }
   else for(let r=p.rel+1;r<=p.rel+DICE.value;r++){ const q=posOfRel(seat,r); pts.push(q); rels.push(r); }
-  FX.mover={pi,pid,pts,rels,t:0,dur:CFG.pawn.stepDuration*(pts.length-1)/GAME_SPEED,lastSeg:0,trail:[]};
+  // NOTE: dt is already multiplied by GAME_SPEED in tick(), so do NOT divide
+  // here as well - that made the 10X test run ~100x and look like teleporting.
+  FX.mover={pi,pid,pts,rels,t:0,dur:CFG.pawn.stepDuration*(pts.length-1),lastSeg:0,trail:[]};
 }
 function resolveLanding(pi,pid){
   const pl=G.players[pi], p=pl.pawns[pid], seat=pl.seat;
@@ -663,7 +683,11 @@ function resolveLanding(pi,pid){
         const tr=trayRect(seat);
         floatText((rk===1?'1ST':rk===2?'2ND':rk===3?'3RD':rk+'TH')+' PLACE!',tr.x+tr.w/2,tr.y-14,CFG.colors.gold);
       }
-      if(G.order.length>=G.count){
+      // Only one player can still be racing: give them the final place and
+      // close the match (nobody wants to watch a lone player jog home).
+      const left=G.players.map((_,i)=>i).filter(i=>!G.order.includes(i));
+      if(left.length<=1){
+        left.forEach(i=>G.order.push(i));
         G.winner=G.order[0];
         after(0.8,showVictory);
       }
@@ -1161,6 +1185,7 @@ function drawDice(c,x,y,s,face,opts){
 let cv,ctx,dpr=1,W=0,H=0,trayH=70,trayW=160,trayTopY=0,trayBotY=0,boardX=0,boardY=0,boardS=300,cell=20,BG=null,FELT=null,BANNER_H=28;
 const pxOf=x=>boardX+x*cell, pyOf=y=>boardY+y*cell;
 function layout(){
+  if(window.NativeBridge) BANNER_H=0;  // shell draws a real AdMob banner below the game
   trayH=Math.round(clamp(H*0.085,58,84));
   const gap=6;
   const avail=H-trayH*2-gap*2-16-BANNER_H; // reserve bottom banner strip (game screen)
@@ -1617,6 +1642,7 @@ function drawTrays(){
 }
 /* ---- in-game banner (placeholder ad placement; tap = theme upsell) ---- */
 function drawBanner(){
+  if(window.NativeBridge) return;   // shell shows a real banner instead
   const featured=pickFeatured();
   const pass=getPass(store.theme);
   let msg, tid=featured;
@@ -1665,8 +1691,9 @@ function drawUpsell(){
   ctx.fillStyle=CFG.colors.tile; rr(ctx,x,y,pw,40,18); ctx.fill(); ctx.fillRect(x,y+22,pw,18);
   ctx.fillStyle='#fff'; ctx.font='900 15px '+FONT; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText('GET A THEME!',W/2,y+20);
+  ctx.font='600 11px '+FONT; ctx.fillStyle=U.msg?(U.waiting?'#ffe08a':'#ff9f9f'):'rgba(255,255,255,.8)';
+  ctx.fillText(U.msg||'Watch a short ad to unlock a theme',W/2,y+56);
   ctx.font='600 11px '+FONT; ctx.fillStyle='rgba(255,255,255,.8)';
-  ctx.fillText('Watch a short ad to unlock a theme',W/2,y+56);
   ctx.fillText(CFG.ads.passMinutes+' MIN • '+CFG.ads.passPlays+' MATCHES',W/2,y+71);
   // theme chips
   const ids=premiumIds(), n=ids.length;
@@ -1684,7 +1711,7 @@ function drawUpsell(){
   });
   // watch button
   const selName=THEMES[U.sel].name;
-  uiBtn('upsell:watch',x+16,y+128,pw-32,50,'▶  WATCH AD — UNLOCK '+selName,{bg:CFG.colors.tile,fg:'#fff',fs:13,r:14,shadow:true});
+  uiBtn('upsell:watch',x+16,y+128,pw-32,50,U.waiting?'LOADING AD…':'▶  WATCH AD — UNLOCK '+selName,{bg:U.waiting?CFG.colors.btn:CFG.colors.tile,fg:'#fff',fs:13,r:14,shadow:true});
   uiBtn('upsell:no',x+16,y+186,pw-32,38,U.then==='start'?'NO THANKS — START MATCH':'MAYBE LATER',{bg:CFG.colors.btn,fg:'#fff',fs:12,r:12});
   ctx.restore();
 }
@@ -2000,15 +2027,19 @@ function handleAction(id){
   }
   if(id.indexOf('upsell:sel:')===0){ FX.upsell.sel=id.slice(11); SFX.play('click'); return; }
   if(id==='upsell:watch'){
-    const U=FX.upsell; if(!U) return;
+    const U=FX.upsell; if(!U||U.waiting) return;
     const tid=U.sel;
-    FX.upsell=null;
+    U.waiting=true; U.msg='LOADING AD…'; SFX.play('click');
     showRewarded('theme_'+tid,function(){
       grantPass(tid);
       applyTheme(tid);
       saveStore();
       haptic('success');
+      FX.upsell=null;
       if(U.then==='start'&&U.cb) U.cb(); // continue into the match they wanted
+    },function(){
+      if(FX.upsell!==U) return;          // reward already landed
+      U.waiting=false; U.msg='NO AD AVAILABLE — TAP TO TRY AGAIN';
     });
     return;
   }
@@ -2053,7 +2084,6 @@ function handleAction(id){
       }else begin();
       break;
     }
-    case 'dev-speed': GAME_SPEED=(GAME_SPEED===1)?10:1; SFX.play('click'); break;
     case 'test-10x':
       GAME_SPEED=10; SFX.play('click');
       newGame('ai','normal',4);

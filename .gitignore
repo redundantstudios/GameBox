@@ -14,3 +14,7 @@ build_log.txt
 uiautomator_dump.xml
 tmp_*
 pm_diff.txt
+
+# Local debugging scratch (screenshots / logs pulled from the device)
+_*.png
+_*.txt
