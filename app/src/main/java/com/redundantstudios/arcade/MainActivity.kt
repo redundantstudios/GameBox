@@ -2,9 +2,12 @@ package com.redundantstudios.arcade
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,6 +29,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+
         com.redundantstudios.arcade.util.SettingsManager.init(this)
 
         UMPConsentManager(this).gatherConsent {
@@ -35,15 +41,26 @@ class MainActivity : AppCompatActivity() {
         val modeRecyclerView = findViewById<RecyclerView>(R.id.modeRecyclerView)
         modeRecyclerView.layoutManager = GridLayoutManager(this, 2)
 
-        findViewById<View>(R.id.btnSettings).setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
-        }
-
         allGames = ManifestParser.scanGames(this)
 
         val modes = deriveModes(allGames)
         modeRecyclerView.adapter = ModeAdapter(modes) { mode ->
             startModeActivity(mode)
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.toolbar_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_settings -> {
+                startActivity(Intent(this, SettingsActivity::class.java))
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
     }
 

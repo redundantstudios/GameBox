@@ -32,10 +32,9 @@
                 app:layout_constraintBottom_toBottomOf="parent" />
 
             <TextView
-                android:id="@+id/settingsTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="STUDIO SETTINGS"
+                android:text="SETTINGS"
                 android:textColor="@color/studio_on_background"
                 android:textSize="@dimen/text_display_size"
                 android:textStyle="bold"
