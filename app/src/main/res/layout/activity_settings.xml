@@ -124,6 +124,9 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:max="100"
+                            android:progressTint="@color/studio_accent"
+                            android:progressBackgroundTint="@color/studio_muted"
+                            android:thumbTint="@color/studio_accent"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toEndOf="@id/tvVolumeLabel"
                             app:layout_constraintTop_toTopOf="parent"
@@ -196,6 +199,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:buttonTint="@color/studio_accent"
                             android:text="Soft"
                             android:textColor="@color/studio_on_background"
                             android:textSize="12sp"/>
@@ -204,6 +208,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:buttonTint="@color/studio_accent"
                             android:text="Crisp"
                             android:textColor="@color/studio_on_background"
                             android:textSize="12sp"/>
@@ -212,6 +217,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:buttonTint="@color/studio_accent"
                             android:text="Heavy"
                             android:textColor="@color/studio_on_background"
                             android:textSize="12sp"/>

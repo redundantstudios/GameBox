@@ -26,15 +26,18 @@
         <activity
             android:name=".ui.ModeActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.Shell" />
         <activity
             android:name=".SettingsActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.Shell" />
         <activity
             android:name=".GameActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.Shell" />
     </application>
 
