@@ -21,8 +21,9 @@
 
             <ImageButton
                 android:id="@+id/btnBack"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginStart="-8dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_back_arrow"
                 android:contentDescription="Back"
@@ -34,7 +35,7 @@
                 android:id="@+id/modeTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SELECT PLAYERS"
+                android:text="🎮 PICK YOUR PLAYERS 🎮"
                 android:textColor="@color/studio_on_background"
                 android:textSize="@dimen/text_display_size"
                 android:textStyle="bold"

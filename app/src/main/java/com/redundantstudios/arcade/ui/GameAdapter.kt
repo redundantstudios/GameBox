@@ -42,7 +42,7 @@ class GameAdapter(
         holder.itemView.post {
             val w = holder.itemView.width
             if (w > 0) {
-                holder.itemView.layoutParams.height = (w * 0.92).toInt()
+                holder.itemView.layoutParams.height = w // 1:1 square — big and fills the layout
                 holder.itemView.requestLayout()
             }
             android.util.Log.d("GameAdapter", "gameTile w=$w h=${holder.itemView.height}")

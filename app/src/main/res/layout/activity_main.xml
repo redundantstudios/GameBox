@@ -20,10 +20,11 @@
             android:layout_height="wrap_content"
             android:text="REDUNDANT STUDIOS"
             android:textColor="@color/studio_on_background"
-            android:textSize="@dimen/text_title_size"
+            android:textSize="26sp"
             android:textStyle="bold"
             android:textAllCaps="true"
-            android:layout_gravity="center" />
+            android:letterSpacing="0.05"
+            android:layout_gravity="start|center_vertical" />
     </androidx.appcompat.widget.Toolbar>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -86,7 +87,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Redundant Studios · v1.0"
+            android:text="Made with 🎮 by Redundant Studios · v1.0"
             android:textColor="@color/studio_muted"
             android:textSize="12sp" />
     </LinearLayout>

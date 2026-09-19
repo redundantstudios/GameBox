@@ -5,11 +5,11 @@
     android:id="@+id/tileRoot"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="@dimen/spacing_tile_margin"
-    app:cardCornerRadius="@dimen/radius_tile"
+    android:layout_margin="6dp"
+    app:cardCornerRadius="22dp"
     app:cardElevation="@dimen/elevation_card"
-    app:strokeColor="@color/studio_border"
-    app:strokeWidth="@dimen/border_thickness">
+    app:strokeColor="@color/studio_border_dark"
+    app:strokeWidth="3dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -22,13 +22,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@color/studio_surface"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingTop="2dp"
-            android:paddingBottom="2dp"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
             android:text="1P"
             android:textColor="@color/studio_on_surface"
-            android:textSize="@dimen/text_label_size"
+            android:textSize="12sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
@@ -40,14 +40,14 @@
             android:layout_height="wrap_content"
             android:text="GAME TITLE"
             android:textColor="#FFFFFF"
-            android:textSize="@dimen/text_title_size"
+            android:textSize="20sp"
             android:textStyle="bold"
             android:textAllCaps="true"
             android:textAlignment="center"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginBottom="12dp" />
+            android:layout_marginBottom="8dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
