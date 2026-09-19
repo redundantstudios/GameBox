@@ -67,21 +67,7 @@ body{
 .pbtn svg{width:46%;height:46%}
 .pbtn:active{transform:translateY(4px);box-shadow:0 1px 0 #c94d86,0 4px 10px rgba(180,60,110,.3)}
 .pbtn.active{background:#f25a5a;box-shadow:0 5px 0 #c93a3a,0 10px 20px rgba(200,60,60,.3)}
-.pbtn.empty{opacity:1}
-#adBack{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s}
-#adBack.show{opacity:1;pointer-events:auto}
-#adPop{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.9);z-index:101;width:min(80vw,300px);
-  background:#fff;border-radius:24px;padding:24px;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.3);
-  border:4px solid #f3dfb4;opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.34,1.56,.64,1)}
-#adPop.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
-#adPop #adTitle{font:700 22px var(--font);color:#7a4a2a;margin:0 0 8px}
-#adPop #adSub{font:500 16px var(--font);color:#a58a68;margin:0 0 24px}
-#adPop #adRow{display:flex;gap:12px;justify-content:center}
-#adPop button{font:700 14px var(--font);padding:10px 20px;border-radius:999px;border:none;cursor:pointer;transition:all .2s}
-#adPop #adWatch{background:#ee6fa8;color:#fff;box-shadow:0 4px 0 #c94d86}
-#adPop #adWatch:active{transform:translateY(2px);box-shadow:0 2px 0 #c94d86}
-#adPop #adNo{background:#f0dfc0;color:#a58a68}
-#adPop #adNo:active{transform:translateY(2px)}
+.pbtn.empty{opacity:.55}
 .pbtn.empty::after{content:'+AD';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
   background:#f7b32b;color:#5b3a00;font:700 8px/1 var(--font);letter-spacing:.08em;padding:3px 6px;border-radius:8px;
   box-shadow:0 2px 5px rgba(120,80,20,.3)}
@@ -342,16 +328,15 @@ function setScore(v){
   if(score>best){best=score;bestVal.textContent=best;store.set('pm_best',best);}
 }
 function updateHUD(){
-  const sVal=$('scoreVal'), bVal=$('bestVal'), uN=$('undoN'), eN=$('eraseN'), uB=$('undoBtn'), eB=$('eraseBtn'), w=$('boardWrap'), c=$('game');
-  if(sVal) sVal.textContent=score;
-  if(bVal) bVal.textContent=best;
-  if(uN) uN.textContent=undos;
-  if(eN) eN.textContent=erases;
-  if(uB) uB.classList.toggle('empty',undos<=0);
-  if(eB) eB.classList.toggle('empty',erases<=0);
-  if(eB) eB.classList.toggle('active',eraseMode);
-  if(w) w.classList.toggle('erasing',eraseMode);
-  if(c) c.style.cursor=eraseMode?'crosshair':(state==='aiming'?'grabbing':'grab');
+  scoreVal.textContent=score;bestVal.textContent=best;
+  undoN.textContent=undos;eraseN.textContent=erases;
+  const canUndo=snapshots.length>0&&state!=='over'&&state!=='start';
+  undoBtn.classList.toggle('empty',canUndo&&undos<=0);
+  const canErase=state!=='over'&&state!=='start';
+  eraseBtn.classList.toggle('empty',canErase&&erases<=0);
+  eraseBtn.classList.toggle('active',eraseMode);
+  wrap.classList.toggle('erasing',eraseMode);
+  cvs.style.cursor=eraseMode?'crosshair':(state==='aiming'?'grabbing':'grab');
 }
 
 /* ============================================================

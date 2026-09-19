@@ -156,6 +156,8 @@ class GameActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        adMobManager.loadRewardedAd()
+        adMobManager.loadInterstitialAd()
         webView.evaluateJavascript("Game.resume && Game.resume();", null)
     }
 
