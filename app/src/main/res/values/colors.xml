@@ -11,6 +11,9 @@
     <color name="studio_border">#8D6E63</color> <!-- Medium Brown -->
     <color name="studio_muted">#E0D5C1</color> <!-- Dotted Grid Color -->
 
+    <!-- Design-ref chunky borders -->
+    <color name="studio_border_dark">#4E342E</color>
+
     <!-- Status Colors -->
     <color name="studio_success">#4CAF50</color>
     <color name="studio_error">#E8584A</color>

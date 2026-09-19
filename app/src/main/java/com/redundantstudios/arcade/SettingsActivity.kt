@@ -8,6 +8,7 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.redundantstudios.arcade.R
+import com.redundantstudios.arcade.util.Haptics
 import com.redundantstudios.arcade.util.SettingsManager
 
 class SettingsActivity : AppCompatActivity() {
@@ -57,6 +58,7 @@ class SettingsActivity : AppCompatActivity() {
 
         switchVibe.setOnCheckedChangeListener { _, isChecked ->
             SettingsManager.vibrationEnabled = isChecked
+            if (isChecked) Haptics.preview(this)
         }
 
         rgHaptic.setOnCheckedChangeListener { _, checkedId ->
@@ -67,6 +69,7 @@ class SettingsActivity : AppCompatActivity() {
                 else -> "Crisp"
             }
             SettingsManager.hapticProfile = profile
+            Haptics.preview(this)
         }
 
         switchTheme.setOnCheckedChangeListener { _, isChecked ->

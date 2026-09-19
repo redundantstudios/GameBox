@@ -74,9 +74,9 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="@dimen/radius_tile"
+                app:cardCornerRadius="@dimen/radius_card"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/studio_border"
+                app:strokeColor="@color/studio_border_dark"
                 app:strokeWidth="@dimen/border_thickness"
                 android:backgroundTint="@color/studio_surface"
                 android:layout_marginBottom="24dp">
@@ -103,6 +103,8 @@
                             android:id="@+id/switchSound"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            app:thumbTint="@color/switch_thumb"
+                            app:trackTint="@color/switch_track"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintTop_toTopOf="parent"/>
                     </androidx.constraintlayout.widget.ConstraintLayout>
@@ -150,9 +152,9 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="@dimen/radius_tile"
+                app:cardCornerRadius="@dimen/radius_card"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/studio_border"
+                app:strokeColor="@color/studio_border_dark"
                 app:strokeWidth="@dimen/border_thickness"
                 android:backgroundTint="@color/studio_surface"
                 android:layout_marginBottom="24dp">
@@ -178,6 +180,8 @@
                             android:id="@+id/switchVibe"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            app:thumbTint="@color/switch_thumb"
+                            app:trackTint="@color/switch_track"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintTop_toTopOf="parent"/>
                     </androidx.constraintlayout.widget.ConstraintLayout>
@@ -199,7 +203,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:buttonTint="@color/studio_accent"
+                            android:buttonTint="@color/studio_primary"
                             android:text="Soft"
                             android:textColor="@color/studio_on_background"
                             android:textSize="12sp"/>
@@ -208,7 +212,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:buttonTint="@color/studio_accent"
+                            android:buttonTint="@color/studio_primary"
                             android:text="Crisp"
                             android:textColor="@color/studio_on_background"
                             android:textSize="12sp"/>
@@ -217,7 +221,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:buttonTint="@color/studio_accent"
+                            android:buttonTint="@color/studio_primary"
                             android:text="Heavy"
                             android:textColor="@color/studio_on_background"
                             android:textSize="12sp"/>
@@ -240,9 +244,9 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="@dimen/radius_tile"
+                app:cardCornerRadius="@dimen/radius_card"
                 app:cardElevation="0dp"
-                app:strokeColor="@color/studio_border"
+                app:strokeColor="@color/studio_border_dark"
                 app:strokeWidth="@dimen/border_thickness"
                 android:backgroundTint="@color/studio_surface"
                 android:layout_marginBottom="24dp">
@@ -262,6 +266,8 @@
                         android:id="@+id/switchTheme"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        app:thumbTint="@color/switch_thumb"
+                        app:trackTint="@color/switch_track"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"/>
                 </androidx.constraintlayout.widget.ConstraintLayout>
