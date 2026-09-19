@@ -1887,7 +1887,9 @@ function renderMenu(){
     ['2','3','4'].forEach((s2,i)=>uiBtn('count:'+s2,W/2-bw/2+i*(w3+8),y,w3,42,s2+' PLAYERS',sel(MENU.count===+s2)));
     y+=42+28;
     if(MENU.mode) uiBtn('start',W/2-110,y,220,56,'START MATCH',{bg:CFG.colors.tile,fg:'#fff',fs:18,r:18,shadow:true});
-    if(MENU.mode) uiBtn('test-10x',W/2-110,y+68,220,44,'10X BOT TEST',{bg:CFG.colors.btn,fg:'#fff',fs:14,r:14});
+    // Dev-only: reached only when the shell appends ?dev=1, which GameActivity
+    // does for debug builds (BuildConfig.DEBUG) only. Keeps this out of release.
+    if(MENU.mode&&DEV_MODE) uiBtn('test-10x',W/2-110,y+68,220,44,'10X BOT TEST',{bg:CFG.colors.btn,fg:'#fff',fs:14,r:14});
     uiBtn('menu-root',12,12,92,38,'BACK',{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
   }
   ctx.font='600 13px '+FONT; ctx.fillStyle='rgba(255,255,255,.5)';
