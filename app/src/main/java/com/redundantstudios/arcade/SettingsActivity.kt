@@ -12,6 +12,8 @@ import com.redundantstudios.arcade.util.SettingsManager
 
 class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        SettingsManager.init(this)
+        SettingsManager.applyTheme()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
@@ -69,6 +71,7 @@ class SettingsActivity : AppCompatActivity() {
 
         switchTheme.setOnCheckedChangeListener { _, isChecked ->
             SettingsManager.appTheme = if (isChecked) "Dark" else "Light"
+            SettingsManager.applyTheme()
         }
     }
 }

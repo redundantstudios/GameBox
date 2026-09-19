@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark Studio Palette: warm charcoal + cream ink -->
+    <color name="studio_background">#1A1713</color>
+    <color name="studio_surface">#242019</color>
+    <color name="studio_on_surface">#E8DCC8</color>
+    <color name="studio_on_background">#E8DCC8</color>
+    <color name="studio_muted">#3A332B</color>
+    <color name="studio_ink">#E8DCC8</color>
+</resources>

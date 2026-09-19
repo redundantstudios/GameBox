@@ -25,14 +25,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var allGames: List<GameManifest>
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        com.redundantstudios.arcade.util.SettingsManager.init(this)
+        com.redundantstudios.arcade.util.SettingsManager.applyTheme()
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
-
-        com.redundantstudios.arcade.util.SettingsManager.init(this)
 
         UMPConsentManager(this).gatherConsent {
             MobileAds.initialize(this) {}

@@ -1,0 +1,12 @@
+<resources>
+    <!-- Night variant: keep same styles, but flip status bar to light icons -->
+    <style name="Theme.Shell" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/brand_black</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Shell</item>
+    </style>
+</resources>

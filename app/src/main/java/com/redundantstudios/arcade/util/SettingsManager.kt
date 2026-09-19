@@ -2,6 +2,7 @@ package com.redundantstudios.arcade.util
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.appcompat.app.AppCompatDelegate
 
 object SettingsManager {
     private const val PREFS_NAME = "studio_settings"
@@ -47,6 +48,14 @@ object SettingsManager {
     var appTheme: String
         get() = prefs.getString(KEY_APP_THEME, "Light") ?: "Light"
         set(value) = prefs.edit().putString(KEY_APP_THEME, value).apply()
+
+    /** Apply the saved theme app-wide. Must be called before super.onCreate(). */
+    fun applyTheme() {
+        AppCompatDelegate.setDefaultNightMode(
+            if (appTheme == "Dark") AppCompatDelegate.MODE_NIGHT_YES
+            else AppCompatDelegate.MODE_NIGHT_NO
+        )
+    }
 
     fun getSettingsQueryString(): String {
         return "sound=${if (soundEnabled) 1 else 0}" +
