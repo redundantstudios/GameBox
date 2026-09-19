@@ -29,7 +29,9 @@ tileColor: #D94B4B
 version: 14
 */
 const Studio = (() => { const bridge = () => window.NativeBridge || null; const ls = { get k(){ try{return localStorage;}catch(_){return null;} } }; let settings = { sound: true, haptics: true }; try { const s = (bridge()?bridge().load('shell:settings'):ls.k?.getItem('shell:settings')); if (s) settings = Object.assign(settings, JSON.parse(s)); } catch(_){} return { save:(k,v)=>{ const b=bridge(); if(b) b.save(k,v); else try{ls.k.setItem(k,v);}catch(_){} }, load:(k)=>{ const b=bridge(); if(b) return b.load(k); try{return ls.k?.getItem(k)||null;}catch{return null;} }, haptic:(kind)=>{ if(!settings.haptics) return; const b=bridge(); if(!b) return; const map={light:15,medium:30,heavy:60,success:45}; try{b.haptic(typeof map[kind]==='number'?map[kind]:0);}catch(_){} }, settings, ads:{ rewarded(placement,onReward){ const b=bridge(); if(!b) return; window.__studioAdCb = function(result){ if(result==='granted') onReward(); }; b.showRewardedAd('__studioAdCb'); }, showBanner(){ const b=bridge(); try{ if(b) b.showBanner(); }catch(_){} }, hideBanner(){ const b=bridge(); try{ if(b) b.hideBanner(); }catch(_){} } } };})();
-try{ Studio.ads.showBanner(); }catch(_){}
+// Banner visibility is driven by syncBanner(): it is shown only while the board
+// is actually being played, never over menus / popups / the victory panel.
+try{ Studio.ads.hideBanner(); }catch(_){}
 // NOTE: SDK byte-identical to spec except `catch(*)` -> `catch(_)` (syntax fix).
 
 'use strict';
@@ -206,6 +208,18 @@ function grantPass(id){
   if(!store.pass) store.pass={};
   store.pass[id]={ until:Date.now()+CFG.ads.passMinutes*60000, plays:CFG.ads.passPlays };
 }
+/* Theme-pass clock. The pass is real wall-clock time, so it keeps counting down
+   even while a match is paused or the player sits in a menu. */
+function passLeftMs(id){
+  const p=store.pass&&store.pass[id];
+  if(!p) return 0;
+  return Math.max(0,p.until-Date.now());
+}
+function fmtClock(ms){
+  const t=Math.max(0,Math.floor(ms/1000)), m=Math.floor(t/60), s=t%60;
+  return m+':'+(s<10?'0':'')+s;
+}
+function fmtMin(ms){ return Math.max(0,Math.ceil(ms/60000))+'m'; }
 function premiumIds(){ return Object.keys(THEMES).filter(k=>!THEMES[k].free); }
 function pickFeatured(){
   const locked=premiumIds().filter(id=>!getPass(id));
@@ -275,7 +289,10 @@ const BASE_ORG = (function(){
   const raw=[[0,0],[9,0],[9,9],[0,9]];
   return raw.map(o=>{ const a=ROT(o[0],o[1]), b=ROT(o[0]+5,o[1]+5); return [Math.min(a.x,b.x), Math.min(a.y,b.y)]; });
 })();
-const BASE_SLOTS= [[2,2],[4,2],[2,4],[4,4]];
+// Four pawns live in ONE horizontal row inside the base square, so they always
+// sit in a tidy line (0.62 cells apart, centred on the base) instead of a 2x2
+// block that left them looking scattered / overlapping.
+const BASE_SLOTS= [[2.07,3],[2.69,3],[3.31,3],[3.93,3]];
 const FIN_DIR   = [[0,1],[-1,0],[0,-1],[1,0]];
 const FIN_SPOTS = [];
 (function(){
@@ -427,7 +444,7 @@ const DICE={ value:0, face:6, final:6, face0:6, mid1:3, mid2:5,
              bounce:0, s:52, hopH:[24,15,8], wanderPx:4, wphase:0, lastH:-1 };
 const FX={ mover:null, flights:[], parts:[], parts2:[], texts:[], rings:[], popup:null,
            upsell:null, fakeAd:null, inter:null,
-           hitStop:0, boardBounce:0, confettiUntil:0, fade:0, noMove:0 };
+           hitStop:0, boardBounce:0, confettiUntil:0, fade:0, noMove:0, victoryAt:0 };
 let paused=false, lastT=0, fps=60, menuStart=0, menuDiceUntil=0, menuFace=6, DEBUG=false, raf=0;
 let ACTIVE_SEATS=[0,1,2,3];
 
@@ -435,7 +452,7 @@ const seatOf=i=>G.players[i].seat;
 
 function resetFx(){
   FX.mover=null; FX.flights=[]; FX.parts=[]; FX.parts2=[]; FX.texts=[]; FX.rings=[]; FX.popup=null; FX.upsell=null;
-  FX.hitStop=0; FX.boardBounce=0; FX.confettiUntil=0; FX.noMove=0;
+  FX.hitStop=0; FX.boardBounce=0; FX.confettiUntil=0; FX.noMove=0; FX.victoryAt=0;
 }
 function newGame(mode,skill,count){
   cancelTasks(); resetFx();
@@ -447,7 +464,7 @@ function newGame(mode,skill,count){
   ACTIVE_SEATS=seats.slice();
   seats.forEach((seat,idx)=>{
     const human = mode==='pass' ? true : idx===0;
-    const label = human&&mode==='ai' ? 'YOU' : PDEFS[seat].name;
+    const label = PDEFS[seat].name;   // theme character names only (SUN, DEEP, ...) — no "YOU"/"BOT"
     G.players.push({ seat, human, label, finished:0, lastRoll:0,
       pawns:[0,1,2,3].map(id=>({id,state:'HOME',rel:-1,cx:0,cy:0,lift:0,squash:0,bump:0,moving:false})) });
   });
@@ -706,6 +723,7 @@ function showVictory(){
   if(!Array.isArray(G.order)||!G.order.length) return;
   G.winner=G.order[0];
   G.phase='OVER';
+  FX.victoryAt=performance.now()/1000;   // popup animates on the wall clock, not the sim clock
   FX.boardBounce=1;
   FX.confettiUntil=simTime+CFG.fx.victory;
   const cp=boardPxOf(7.5,7.5);
@@ -948,54 +966,28 @@ function themeCell(c,id,px,py,s,kind,seat,gx,gy){
 function themeBase(c,id,bx,by,org,seat,active){
   const d=PDEFS[seat], dim=active?1:0.35;
   c.save(); c.globalAlpha=dim;
-  if(id==='neon'){
-    c.fillStyle='#0c1222'; rr(c,bx(org[0]+0.18),by(org[1]+0.18),cell*5.64,cell*5.64,cell*0.7); c.fill();
-    c.strokeStyle=d.c; c.lineWidth=3; rr(c,bx(org[0]+0.18),by(org[1]+0.18),cell*5.64,cell*5.64,cell*0.7); c.stroke();
+  const X=bx(org[0]+0.18), Y=by(org[1]+0.18), S=cell*5.64, R=cell*0.7;
+  const IX=bx(org[0]+0.95), IY=by(org[1]+0.95), IS=cell*4.1, IR=cell*0.5;
+  // ONE horizontal socket tray behind the pawn row (matches BASE_SLOTS)
+  const s0=BASE_SLOTS[0], s3=BASE_SLOTS[3];
+  const tx=bx(org[0]+s0[0]-0.42), ty=by(org[1]+s0[1]-0.42);
+  const tw=cell*(s3[0]-s0[0]+0.84), th=cell*0.84, tr=th*0.45;
+  let outer=d.dk, inner='#fdfaf1', innerStroke='rgba(0,0,0,.12)';
+  let tray=d.lt, trayStroke=d.c, dots=null;
+  if(id==='neon'){ outer=d.lt; inner='#0c1222'; innerStroke='rgba(0,0,0,.4)'; tray='#0a0f1c'; trayStroke=d.c; dots=d.c; }
+  else if(id==='wood'){ outer='#4a3212'; inner='#e8cf9d'; innerStroke='rgba(74,50,18,.45)'; tray='#c9a86b'; trayStroke='#6e4f22'; }
+  else if(id==='jungle'){ outer='#234428'; inner='#e9e2b8'; innerStroke='rgba(80,70,35,.35)'; tray='#cfc493'; trayStroke='#8a7d52'; }
+  else if(id==='ocean'){ outer='#0f4a5e'; inner='#f4ecd6'; innerStroke='rgba(26,127,158,.35)'; tray='#fbfdfe'; trayStroke='#5aa9bf'; dots=d.lt; }
+  // House body is ALWAYS the seat colour, so a house can never mismatch its pawns.
+  c.fillStyle=d.c; rr(c,X,Y,S,S,R); c.fill();
+  c.strokeStyle=outer; c.lineWidth=(id==='neon')?3:2; rr(c,X,Y,S,S,R); c.stroke();
+  c.fillStyle=inner; rr(c,IX,IY,IS,IS,IR); c.fill();
+  c.strokeStyle=innerStroke; c.lineWidth=1.5; rr(c,IX,IY,IS,IS,IR); c.stroke();
+  c.fillStyle=tray; rr(c,tx,ty,tw,th,tr); c.fill();
+  c.strokeStyle=trayStroke; c.lineWidth=2; rr(c,tx,ty,tw,th,tr); c.stroke();
+  if(dots){
     for(const sl of BASE_SLOTS){
-      c.beginPath(); c.arc(bx(org[0]+sl[0]),by(org[1]+sl[1]),cell*0.62,0,TAU);
-      c.fillStyle='#0a0f1c'; c.fill();
-      c.strokeStyle=d.c; c.lineWidth=2; c.stroke();
-      c.fillStyle=d.c; c.beginPath(); c.arc(bx(org[0]+sl[0]),by(org[1]+sl[1]),cell*0.1,0,TAU); c.fill();
-    }
-  }else if(id==='wood'){
-    c.fillStyle=d.c; rr(c,bx(org[0]+0.18),by(org[1]+0.18),cell*5.64,cell*5.64,cell*0.7); c.fill();
-    c.strokeStyle='#4a3212'; c.lineWidth=3; rr(c,bx(org[0]+0.18),by(org[1]+0.18),cell*5.64,cell*5.64,cell*0.7); c.stroke();
-    c.fillStyle='#e8cf9d'; rr(c,bx(org[0]+0.95),by(org[1]+0.95),cell*4.1,cell*4.1,cell*0.5); c.fill();
-    c.strokeStyle='rgba(74,50,18,.45)'; c.lineWidth=1.5; rr(c,bx(org[0]+0.95),by(org[1]+0.95),cell*4.1,cell*4.1,cell*0.5); c.stroke();
-    for(const sl of BASE_SLOTS){
-      c.beginPath(); c.arc(bx(org[0]+sl[0]),by(org[1]+sl[1]),cell*0.62,0,TAU);
-      c.fillStyle='#c9a86b'; c.fill();
-      c.strokeStyle='#6e4f22'; c.lineWidth=2; c.stroke();
-    }
-  }else if(id==='jungle'){
-    c.fillStyle=d.c; rr(c,bx(org[0]+0.18),by(org[1]+0.18),cell*5.64,cell*5.64,cell*0.7); c.fill();
-    c.strokeStyle='#234428'; c.lineWidth=3; rr(c,bx(org[0]+0.18),by(org[1]+0.18),cell*5.64,cell*5.64,cell*0.7); c.stroke();
-    c.fillStyle='#e9e2b8'; rr(c,bx(org[0]+0.95),by(org[1]+0.95),cell*4.1,cell*4.1,cell*0.5); c.fill();
-    for(const sl of BASE_SLOTS){
-      c.beginPath(); c.arc(bx(org[0]+sl[0]),by(org[1]+sl[1]),cell*0.62,0,TAU);
-      c.fillStyle='#cfc493'; c.fill();
-      c.strokeStyle='#8a7d52'; c.lineWidth=2; c.stroke();
-    }
-  }else if(id==='ocean'){
-    // island: colored reef ring, sand lagoon, shell sockets with pearls
-    c.fillStyle=d.c; rr(c,bx(org[0]+0.18),by(org[1]+0.18),cell*5.64,cell*5.64,cell*0.7); c.fill();
-    c.strokeStyle='#0f4a5e'; c.lineWidth=3; rr(c,bx(org[0]+0.18),by(org[1]+0.18),cell*5.64,cell*5.64,cell*0.7); c.stroke();
-    c.fillStyle='#f4ecd6'; rr(c,bx(org[0]+0.95),by(org[1]+0.95),cell*4.1,cell*4.1,cell*0.5); c.fill();
-    c.strokeStyle='rgba(26,127,158,.35)'; c.lineWidth=1.5; rr(c,bx(org[0]+0.95),by(org[1]+0.95),cell*4.1,cell*4.1,cell*0.5); c.stroke();
-    for(const sl of BASE_SLOTS){
-      c.beginPath(); c.arc(bx(org[0]+sl[0]),by(org[1]+sl[1]),cell*0.62,0,TAU);
-      c.fillStyle='#fbfdfe'; c.fill();
-      c.strokeStyle='#5aa9bf'; c.lineWidth=2; c.stroke();
-      c.fillStyle=d.lt; c.beginPath(); c.arc(bx(org[0]+sl[0]),by(org[1]+sl[1]),cell*0.17,0,TAU); c.fill();
-    }
-  }else{
-    c.fillStyle=d.c; rr(c,bx(org[0]+0.18),by(org[1]+0.18),cell*5.64,cell*5.64,cell*0.7); c.fill();
-    c.strokeStyle=d.dk; c.lineWidth=2; rr(c,bx(org[0]+0.18),by(org[1]+0.18),cell*5.64,cell*5.64,cell*0.7); c.stroke();
-    c.fillStyle='#fdfaf1'; rr(c,bx(org[0]+0.95),by(org[1]+0.95),cell*4.1,cell*4.1,cell*0.5); c.fill();
-    for(const sl of BASE_SLOTS){
-      c.beginPath(); c.arc(bx(org[0]+sl[0]),by(org[1]+sl[1]),cell*0.62,0,TAU);
-      c.fillStyle=d.dk; c.globalAlpha=dim*.16; c.fill(); c.globalAlpha=dim*.5;
-      c.strokeStyle=d.dk; c.lineWidth=1.5; c.stroke(); c.globalAlpha=dim;
+      c.fillStyle=dots; c.beginPath(); c.arc(bx(org[0]+sl[0]),by(org[1]+sl[1]),cell*0.075,0,TAU); c.fill();
     }
   }
   c.restore();
@@ -1518,7 +1510,7 @@ function drawBoardPawns(){
       if(p.state!=='HOME'||hasFlight(pi,p.id)) continue;
       const hp=homeSlotPos(seat,p.id);
       const legal=isLegal(p.id)&&pi===G.cur;
-      drawPawnAt(ctx,pxOf(hp.x),pyOf(hp.y),cell*0.40,PDEFS[seat],
+      drawPawnAt(ctx,pxOf(hp.x),pyOf(hp.y),cell*0.30,PDEFS[seat],
         {num:p.id,alpha:dim(pi),rim:legal,scale:(1+p.bump*CFG.pawn.bump)*(legal?pulse():1),squash:p.squash*0.35});
     }
   }
@@ -1640,6 +1632,39 @@ function drawTrays(){
   rr(ctx,W/2-9,15,5,20,2); ctx.fill();
   rr(ctx,W/2+4,15,5,20,2); ctx.fill();
 }
+/* ---- theme pass timer (only while a rewarded pass is running) ---- */
+function drawPassTimer(){
+  const id=store.theme;
+  if(id==='classic') return;
+  const p=store.pass&&store.pass[id];
+  if(!p) return;
+  const left=p.until-Date.now();
+  if(left<=0) return;                       // expired: the pill disappears
+  const w=190,h=28,x=Math.round(W/2-w/2),y=50;
+  ctx.save();
+  ctx.fillStyle='rgba(0,0,0,.45)'; rr(ctx,x,y,w,h,14); ctx.fill();
+  ctx.strokeStyle=CFG.colors.gold; ctx.lineWidth=1.5; rr(ctx,x,y,w,h,14); ctx.stroke();
+  const cx=x+17, cy=y+h/2;
+  ctx.strokeStyle=CFG.colors.gold; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx,cy,6.5,0,TAU); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx,cy-3.8); ctx.moveTo(cx,cy); ctx.lineTo(cx+3,cy+2.2); ctx.stroke();
+  ctx.textBaseline='middle';
+  ctx.textAlign='left'; ctx.font='800 11px '+FONT; ctx.fillStyle='#ffffff';
+  ctx.fillText(THEMES[id].name+' PASS',x+31,cy+0.5);
+  ctx.textAlign='right'; ctx.font='900 13px '+FONT;
+  ctx.fillStyle=left<60000?'#ff9f9f':CFG.colors.gold;
+  ctx.fillText(fmtClock(left),x+w-12,cy+0.5);
+  ctx.restore();
+}
+/* ---- banner policy: gameplay only, never over menus or popups ---- */
+let bannerShown=null;
+function syncBanner(){
+  const playing = G.screen==='game' && G.phase!=='OVER' && !paused
+                  && !FX.upsell && !FX.popup && !FX.inter && !FX.fakeAd;
+  if(playing===bannerShown) return;         // only call the bridge on a real change
+  bannerShown=playing;
+  try{ if(playing) Studio.ads.showBanner(); else Studio.ads.hideBanner(); }catch(_){}
+}
 /* ---- in-game banner (placeholder ad placement; tap = theme upsell) ---- */
 function drawBanner(){
   if(window.NativeBridge) return;   // shell shows a real banner instead
@@ -1707,7 +1732,7 @@ function drawUpsell(){
     ctx.fillStyle='#fff'; ctx.font='800 9px '+FONT; ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(THEMES[tid].code,cx+cw/2,cy+13);
     ctx.font='700 8px '+FONT; ctx.fillStyle=p?'#9fe8a8':'rgba(255,255,255,.55)';
-    ctx.fillText(p?('▶'+p.plays):'▶ AD',cx+cw/2,cy+26);
+    ctx.fillText(p?(fmtMin(passLeftMs(tid))+'·'+p.plays):'▶ AD',cx+cw/2,cy+26);
   });
   // watch button
   const selName=THEMES[U.sel].name;
@@ -1734,29 +1759,55 @@ function drawConfetti(){
   }
 }
 function drawVictory(){
-  ctx.fillStyle='#000000'; ctx.globalAlpha=0.66; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
+  /* Animation uses the WALL CLOCK, not simTime: the old code read simTime, which
+     advances at GAME_SPEED, which made the winner pawn vibrate. Clock-time also
+     gives us a clean entrance instead of popping in fully formed. */
+  const now=performance.now()/1000;
+  const t=Math.max(0,now-(FX.victoryAt||now));
+  const fade=clamp(t/0.35,0,1);
+  const pop=easeOutBack(clamp(t/0.45,0,1));
+  ctx.fillStyle='#000000'; ctx.globalAlpha=0.72*fade; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1;
   const pw=Math.min(330,Math.max(160,W-40)), ph=420, x=W/2-pw/2, y=H/2-ph/2;
-  ctx.fillStyle=CFG.colors.panel; rr(ctx,x,y,pw,ph,22); ctx.fill();
-  ctx.strokeStyle=CFG.colors.btnStroke; ctx.lineWidth=1.5; rr(ctx,x,y,pw,ph,22); ctx.stroke();
   const first=G.order[0];
-  const d=PDEFS[seatOf(first)], human=G.players[first].human;
-  drawPawnAt(ctx,W/2,y+56,30,d,{num:null,scale:1+0.07*Math.abs(Math.sin(simTime*4))});
+  const d=PDEFS[seatOf(first)];
+  ctx.save();
+  ctx.globalAlpha=fade;
+  ctx.translate(W/2,y+ph/2); ctx.scale(pop,pop); ctx.translate(-W/2,-(y+ph/2));
+  ctx.fillStyle=CFG.colors.panel; rr(ctx,x,y,pw,ph,22); ctx.fill();
+  ctx.strokeStyle=CFG.colors.gold; ctx.lineWidth=2; rr(ctx,x,y,pw,ph,22); ctx.stroke();
+  ctx.strokeStyle=CFG.colors.btnStroke; ctx.lineWidth=1; rr(ctx,x+3,y+3,pw-6,ph-6,19); ctx.stroke();
+  // winner crest: two slow breathing rings + one steady pawn (no jitter)
+  const cy=y+58;
+  ctx.save();
+  ctx.globalAlpha=fade*(0.30+0.14*Math.sin(now*2.0));
+  ctx.strokeStyle=CFG.colors.gold; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.arc(W/2,cy,37,0,TAU); ctx.stroke();
+  ctx.globalAlpha=fade*(0.16+0.09*Math.sin(now*2.0+1.1));
+  ctx.beginPath(); ctx.arc(W/2,cy,45,0,TAU); ctx.stroke();
+  ctx.restore();
+  drawPawnAt(ctx,W/2,cy,30,d,{num:null,scale:1+0.035*Math.sin(now*2.0)});
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.font='900 30px '+FONT; ctx.fillStyle=lighten(d.c,0.25);
-  ctx.fillText(human?'YOU WIN!':G.players[first].label+' WINS!',W/2,y+116);
+  ctx.font='900 28px '+FONT; ctx.fillStyle=lighten(d.c,0.25);
+  ctx.fillText(G.players[first].label+' WINS!',W/2,y+114);
   ctx.font='600 12px '+FONT; ctx.fillStyle='rgba(255,255,255,.7)';
   ctx.fillText('FINAL STANDINGS',W/2,y+140);
-  for(let k=0;k<4;k++){
-    const cs=18, cx=W/2-(4*cs+3*10)/2+k*(cs+10);
-    drawChip(cx,y+154,cs,d,'FINISHED',k,false);
-  }
+  ctx.restore();
+  // standings: one row per beat, each sliding in from the left
   G.order.forEach((piq,ri)=>{
+    const rt=clamp((t-0.30-ri*0.09)/0.30,0,1);
     const yq=y+184+ri*24;
     const tag=ri===0?'1ST':ri===1?'2ND':ri===2?'3RD':(ri+1)+'TH';
-    ctx.font='800 13px '+FONT; ctx.fillStyle=PDEFS[G.players[piq].seat].c; ctx.textAlign='left';
-    ctx.fillText(tag, x+34, yq);
+    const cse=PDEFS[G.players[piq].seat].c;
+    ctx.save();
+    ctx.globalAlpha=rt;
+    ctx.translate(-14*(1-rt),0);
+    ctx.fillStyle=cse; ctx.beginPath(); ctx.arc(x+30,yq,6,0,TAU); ctx.fill();
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.font='800 13px '+FONT; ctx.fillStyle=cse;
+    ctx.fillText(tag, x+42, yq);
     ctx.font='600 13px '+FONT; ctx.fillStyle='#ffffff';
-    ctx.fillText(G.players[piq].human&&G.mode==='ai'?'YOU':G.players[piq].label, x+76, yq);
+    ctx.fillText(G.players[piq].label, x+84, yq);
+    ctx.restore();
   });
   uiBtn('rematch',x+22,y+288,pw-44,54,'REMATCH',{bg:d.c,fg:'#fff',fs:17,r:16,shadow:true});
   uiBtn('to-menu',x+22,y+354,pw-44,46,'MAIN MENU',{bg:CFG.colors.btn,fg:'#fff',fs:14,r:14});
@@ -1784,6 +1835,7 @@ function renderGame(){
   ctx.restore();
   drawRankOverlays();
   drawTrays();
+  drawPassTimer();
   drawBanner();
   drawTexts();
   drawConfetti();
@@ -1874,11 +1926,26 @@ function renderMenu(){
       ids.forEach((tid,i)=>{
         const unlocked=themeUnlocked(tid), p=getPass(tid);
         let lab=THEMES[tid].code;
-        if(p) lab=THEMES[tid].code+'·'+p.plays;
-        else if(!unlocked) lab='▶'+THEMES[tid].code;
+        if(!unlocked) lab='▶'+THEMES[tid].code;
+        const bx0=W/2-bw/2+i*(tg+6);
         const o={bg:store.theme===tid?CFG.colors.tile:CFG.colors.btn,fg:'#fff',r:8,fs:8,active:store.theme===tid};
         if(!unlocked) o.fg='rgba(255,255,255,.5)';
-        uiBtn('theme:'+tid,W/2-bw/2+i*(tg+6),y,tg,34,lab,o);
+        uiBtn('theme:'+tid,bx0,y,tg,34,lab,o);
+        if(p){
+          // active pass: the remaining time lives right on the button
+          const left=passLeftMs(tid);
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.font='800 7px '+FONT;
+          ctx.fillStyle=left<300000?'#ffb3b3':'#9fe8a8';
+          ctx.fillText(fmtMin(left),bx0+tg/2,y+26);
+        }else if(!unlocked){
+          // locked: an explicit AD badge, so it reads as "watch an ad" not a label
+          const abw=17,abh=11,ax=bx0+tg-abw-2,ay=y+2;
+          ctx.fillStyle='#ffcf3f'; rr(ctx,ax,ay,abw,abh,3); ctx.fill();
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.font='900 7px '+FONT; ctx.fillStyle='#3a2a08';
+          ctx.fillText('AD',ax+abw/2,ay+abh/2+0.5);
+        }
       });
       y+=34+24;
     }
@@ -2089,7 +2156,7 @@ function handleAction(id){
     case 'test-10x':
       GAME_SPEED=10; SFX.play('click');
       newGame('ai','normal',4);
-      G.players[0].human=false; G.players[0].label='BOT A';
+      G.players[0].human=false;
       break;
     case 'tgl-sound': store.sound=!store.sound; syncShell(); saveStore(); SFX.play('click'); break;
     case 'tgl-haptic': store.haptics=!store.haptics; syncShell(); saveStore(); SFX.play('click'); haptic('light'); break;
@@ -2117,6 +2184,7 @@ function tick(now){
   dt*=GAME_SPEED;
   if(window.innerWidth!==W||window.innerHeight!==H) resize();
   uiButtons=[];
+  syncBanner();   // banner follows gameplay state (also survives pausing)
   if(!paused){
     try{ update(dt); }
     catch(err){ cancelAnimationFrame(raf); showFatal(err); return; }
