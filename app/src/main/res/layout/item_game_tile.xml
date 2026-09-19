@@ -14,8 +14,8 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintDimensionRatio="H,1:0.92"
-        android:padding="@dimen/internal_padding">
+        app:layout_constraintDimensionRatio="H,1:1"
+        android:padding="16dp">
 
         <TextView
             android:id="@+id/playersBadge"
