@@ -7,7 +7,6 @@
     android:background="@color/studio_background"
     android:padding="24dp">
 
-    <!-- Custom Toolbar for Settings -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
@@ -23,8 +22,8 @@
 
             <ImageButton
                 android:id="@+id/btnBack"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_back_arrow"
                 android:contentDescription="Back"
@@ -61,7 +60,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Audio Section -->
+            <!-- Audio Section: Grouped in one square -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -81,64 +80,60 @@
                 app:strokeColor="@color/studio_border"
                 app:strokeWidth="@dimen/border_thickness"
                 android:backgroundTint="@color/studio_surface"
-                android:layout_marginBottom="16dp">
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp">
-                    <TextView
-                        android:id="@+id/tvSoundLabel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Master Sound"
-                        android:textColor="@color/studio_on_background"
-                        android:textStyle="bold"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"/>
-                    <com.google.android.material.switchmaterial.SwitchMaterial
-                        android:id="@+id/switchSound"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"/>
-                </androidx.constraintlayout.widget.ConstraintLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="@dimen/radius_tile"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/studio_border"
-                app:strokeWidth="@dimen/border_thickness"
-                android:backgroundTint="@color/studio_surface"
                 android:layout_marginBottom="24dp">
-                <androidx.constraintlayout.widget.ConstraintLayout
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:orientation="vertical"
                     android:padding="16dp">
-                    <TextView
-                        android:id="@+id/tvVolumeLabel"
-                        android:layout_width="wrap_content"
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Volume"
-                        android:textColor="@color/studio_on_background"
-                        android:textStyle="bold"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"/>
-                    <SeekBar
-                        android:id="@+id/seekVolume"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:max="100"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toEndOf="@id/tvVolumeLabel"
-                        app:layout_constraintTop_toTopOf="parent"
-                        android:layout_marginStart="16dp"/>
-                </androidx.constraintlayout.widget.ConstraintLayout>
+                        android:layout_marginBottom="16dp">
+                        <TextView
+                            android:id="@+id/tvSoundLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Master Sound"
+                            android:textColor="@color/studio_on_background"
+                            android:textStyle="bold"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"/>
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switchSound"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"/>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                        <TextView
+                            android:id="@+id/tvVolumeLabel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Volume"
+                            android:textColor="@color/studio_on_background"
+                            android:textStyle="bold"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"/>
+                        <SeekBar
+                            android:id="@+id/seekVolume"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:max="100"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toEndOf="@id/tvVolumeLabel"
+                            app:layout_constraintTop_toTopOf="parent"
+                            android:layout_marginStart="16dp"/>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+                </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Haptics Section -->
+            <!-- Haptics Section: Grouped in one square -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -158,42 +153,33 @@
                 app:strokeColor="@color/studio_border"
                 app:strokeWidth="@dimen/border_thickness"
                 android:backgroundTint="@color/studio_surface"
-                android:layout_marginBottom="16dp">
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="16dp">
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Vibration"
-                        android:textColor="@color/studio_on_background"
-                        android:textStyle="bold"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"/>
-                    <com.google.android.material.switchmaterial.SwitchMaterial
-                        android:id="@+id/switchVibe"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"/>
-                </androidx.constraintlayout.widget.ConstraintLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="@dimen/radius_tile"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/studio_border"
-                app:strokeWidth="@dimen/border_thickness"
-                android:backgroundTint="@color/studio_surface"
                 android:layout_marginBottom="24dp">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Vibration"
+                            android:textColor="@color/studio_on_background"
+                            android:textStyle="bold"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"/>
+                        <com.google.android.material.switchmaterial.SwitchMaterial
+                            android:id="@+id/switchVibe"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"/>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -234,7 +220,7 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-            <!-- Interface Section -->
+            <!-- Interface Section: Grouped in one square -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -262,7 +248,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="App Theme"
+                        android:text="Dark Theme"
                         android:textColor="@color/studio_on_background"
                         android:textStyle="bold"
                         app:layout_constraintStart_toStartOf="parent"
