@@ -1,0 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Design ref page background: warm gradient + dot grid + floating glyph cards -->
+<com.redundantstudios.arcade.ui.ShellBackgroundDrawable
+    xmlns:android="http://schemas.android.com/apk/res/android" />

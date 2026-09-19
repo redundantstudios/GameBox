@@ -7,4 +7,21 @@
     <color name="studio_on_background">#E8DCC8</color>
     <color name="studio_muted">#3A332B</color>
     <color name="studio_ink">#E8DCC8</color>
+    <color name="studio_border">#8A7358</color>
+    <color name="studio_border_dark">#A98B6A</color>
+
+    <!-- Decorative background: dark warm, keeps the same dot grid + floating cards -->
+    <color name="studio_bg_top">#221E18</color>
+    <color name="studio_bg_bottom">#15120E</color>
+    <color name="studio_bg_dot">#4A4238</color>
+    <color name="studio_bg_card">#1FE8DCC8</color>
+    <color name="studio_bg_card_border">#33E8DCC8</color>
+    <color name="studio_bg_glyph">#4DE8DCC8</color>
+
+    <!-- SelectCard: darker beige idle so it stays readable on the dark canvas -->
+    <color name="select_idle_fill">#3A332B</color>
+    <color name="select_idle_text">#E8DCC8</color>
+    <color name="select_checked_fill">#43A047</color>
+    <color name="select_checked_text">#FFFFFF</color>
+    <color name="select_badge">#2E7D32</color>
 </resources>

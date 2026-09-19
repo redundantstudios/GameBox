@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.card.MaterialCardView
 import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.model.GameManifest
 
@@ -19,7 +18,7 @@ class GameAdapter(
 ) : RecyclerView.Adapter<GameAdapter.GameViewHolder>() {
 
     class GameViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val tileRoot: MaterialCardView = view.findViewById(R.id.tileRoot)
+        val tileRoot: ChunkyCardView = view.findViewById(R.id.tileRoot)
         val title: TextView = view.findViewById(R.id.gameTitle)
         val players: TextView = view.findViewById(R.id.playersBadge)
     }
@@ -33,7 +32,7 @@ class GameAdapter(
         val game = games[position]
         holder.title.text = game.title
         holder.players.text = "${game.maxPlayers}P"
-        holder.tileRoot.setCardBackgroundColor(Color.parseColor(game.tileColor))
+        holder.tileRoot.cardColor = Color.parseColor(game.tileColor)
 
         holder.itemView.setOnClickListener {
             onGameClick(game)

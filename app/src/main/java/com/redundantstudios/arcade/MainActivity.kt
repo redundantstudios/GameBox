@@ -83,7 +83,8 @@ class MainActivity : AppCompatActivity() {
     private fun deriveModes(games: List<GameManifest>): List<GameMode> {
         val counts = games.flatMap { (it.minPlayers..it.maxPlayers).toList() }
         val supportedCounts = counts.distinct().sorted()
-        val colors = listOf("#EF5350", "#42A5F5", "#66BB6A", "#FFCA28", "#AB47BC")
+        // Design--ref palette: all saturated enough to carry white text
+        val colors = listOf("#E53935", "#1E88E5", "#43A047", "#F9A825", "#8E24AA")
 
         return supportedCounts.mapIndexed { index, count ->
             val gameCount = ModeActivity.filterGames(games, count).size

@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.card.MaterialCardView
 import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.model.GameMode
 
@@ -18,7 +17,7 @@ class ModeAdapter(
 ) : RecyclerView.Adapter<ModeAdapter.ModeViewHolder>() {
 
     class ModeViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val card: MaterialCardView = view.findViewById(R.id.modeCard)
+        val card: ChunkyCardView = view.findViewById(R.id.modeCard)
         val number: TextView = view.findViewById(R.id.modeNumber)
         val label: TextView = view.findViewById(R.id.modeLabel)
         val gameCount: TextView = view.findViewById(R.id.modeGameCount)
@@ -34,7 +33,7 @@ class ModeAdapter(
         holder.number.text = mode.playerCount.toString()
         holder.label.text = holder.itemView.context.resources.getQuantityString(R.plurals.player_count, mode.playerCount, mode.playerCount)
         holder.gameCount.text = holder.itemView.context.resources.getQuantityString(R.plurals.game_count, mode.gameCount, mode.gameCount)
-        holder.card.setCardBackgroundColor(Color.parseColor(mode.color))
+        holder.card.cardColor = Color.parseColor(mode.color)
 
         holder.itemView.setOnClickListener {
             android.util.Log.d("ModeAdapter", "Mode card clicked: ${mode.playerCount}P")

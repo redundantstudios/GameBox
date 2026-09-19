@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Refined Studio Palette (Based on Design References) -->
     <color name="studio_background">#FDF5E6</color> <!-- Creamy Beige -->
@@ -13,6 +13,21 @@
 
     <!-- Design-ref chunky borders -->
     <color name="studio_border_dark">#4E342E</color>
+
+    <!-- Decorative background (Design ref: dot grid + floating cards) -->
+    <color name="studio_bg_top">#FFFBF0</color>
+    <color name="studio_bg_bottom">#FBE2C2</color>
+    <color name="studio_bg_dot">#D8C6A4</color>
+    <color name="studio_bg_card">#A6FFFFFF</color>
+    <color name="studio_bg_card_border">#59100000</color>
+    <color name="studio_bg_glyph">#59FF9800</color>
+
+    <!-- SelectCard (Design ref design 3): beige idle / green selected -->
+    <color name="select_idle_fill">#DCC9A6</color>
+    <color name="select_idle_text">#5D4037</color>
+    <color name="select_checked_fill">#4CAF50</color>
+    <color name="select_checked_text">#FFFFFF</color>
+    <color name="select_badge">#2E7D32</color>
 
     <!-- Status Colors -->
     <color name="studio_success">#4CAF50</color>

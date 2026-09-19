@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Design ref brown tagline pill with a hard shadow (see design 4) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:left="3dp" android:top="3dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#2A1C14" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+    <item android:right="3dp" android:bottom="3dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#6B4A31" />
+            <stroke android:width="2dp" android:color="#2A1C14" />
+            <corners android:radius="14dp" />
+        </shape>
+    </item>
+</layer-list>

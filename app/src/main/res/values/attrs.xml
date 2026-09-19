@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Design-ref "chunky card": solid fill + thick dark border + hard offset shadow -->
+    <declare-styleable name="ChunkyCardView">
+        <attr name="ccColor" format="color" />
+        <attr name="ccBorderColor" format="color" />
+        <attr name="ccShadowColor" format="color" />
+        <attr name="ccCornerRadius" format="dimension" />
+        <attr name="ccBorderWidth" format="dimension" />
+        <attr name="ccShadowOffset" format="dimension" />
+    </declare-styleable>
+
+    <!-- Design-ref option card: beige when idle, green + check badge when selected -->
+    <declare-styleable name="SelectCard">
+        <attr name="scText" format="string" />
+        <attr name="scSubText" format="string" />
+    </declare-styleable>
+</resources>
