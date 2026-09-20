@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.ads.MobileAds
 import com.redundantstudios.arcade.ads.UMPConsentManager
+import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.model.GameManifest
 import com.redundantstudios.arcade.model.GameMode
 import com.redundantstudios.arcade.ui.ModeAdapter
@@ -32,10 +33,12 @@ class MainActivity : ThemedActivity() {
         }
 
         findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
+            ShellAudio.tap(this)
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
         findViewById<View>(R.id.allGamesCard).setOnClickListener {
+            ShellAudio.select(this)
             startActivity(
                 Intent(this, ModeActivity::class.java).apply {
                     putExtra(ModeActivity.EXTRA_ALL_GAMES, true)

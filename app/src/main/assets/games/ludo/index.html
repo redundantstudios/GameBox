@@ -28,7 +28,7 @@ online: false
 tileColor: #D94B4B
 version: 14
 */
-const Studio = (() => { const bridge = () => window.NativeBridge || null; const ls = { get k(){ try{return localStorage;}catch(_){return null;} } }; let settings = { sound: true, haptics: true }; try { const s = (bridge()?bridge().load('shell:settings'):ls.k?.getItem('shell:settings')); if (s) settings = Object.assign(settings, JSON.parse(s)); } catch(_){} return { save:(k,v)=>{ const b=bridge(); if(b) b.save(k,v); else try{ls.k.setItem(k,v);}catch(_){} }, load:(k)=>{ const b=bridge(); if(b) return b.load(k); try{return ls.k?.getItem(k)||null;}catch{return null;} }, haptic:(kind)=>{ if(!settings.haptics) return; const b=bridge(); if(!b) return; const map={light:15,medium:30,heavy:60,success:45}; try{b.haptic(typeof map[kind]==='number'?map[kind]:0);}catch(_){} }, settings, ads:{ rewarded(placement,onReward){ const b=bridge(); if(!b) return; window.__studioAdCb = function(result){ if(result==='granted') onReward(); }; b.showRewardedAd('__studioAdCb'); }, showBanner(){ const b=bridge(); try{ if(b) b.showBanner(); }catch(_){} }, hideBanner(){ const b=bridge(); try{ if(b) b.hideBanner(); }catch(_){} } } };})();
+const Studio = (() => { const bridge = () => window.NativeBridge || null; const ls = { get k(){ try{return localStorage;}catch(_){return null;} } }; let settings = { sound: true, haptics: true }; try { const s = (bridge()?bridge().load('shell:settings'):ls.k?.getItem('shell:settings')); if (s) settings = Object.assign(settings, JSON.parse(s)); } catch(_){} return { save:(k,v)=>{ const b=bridge(); if(b) b.save(k,v); else try{ls.k.setItem(k,v);}catch(_){} }, load:(k)=>{ const b=bridge(); if(b) return b.load(k); try{return ls.k?.getItem(k)||null;}catch{return null;} }, haptic:(kind)=>{ if(!settings.haptics) return; const b=bridge(); if(!b) return; const map={light:15,medium:30,heavy:60,success:45}; try{b.haptic(typeof map[kind]==='number'?map[kind]:0);}catch(_){} }, exit:()=>{ const b=bridge(); try{ if(b&&b.exitGame) b.exitGame(); }catch(_){} }, settings, ads:{ rewarded(placement,onReward){ const b=bridge(); if(!b) return; window.__studioAdCb = function(result){ if(result==='granted') onReward(); }; b.showRewardedAd('__studioAdCb'); }, showBanner(){ const b=bridge(); try{ if(b) b.showBanner(); }catch(_){} }, hideBanner(){ const b=bridge(); try{ if(b) b.hideBanner(); }catch(_){} } } };})();
 // Banner visibility is driven by syncBanner(): it is shown only while the board
 // is actually being played, never over menus / popups / the victory panel.
 try{ Studio.ads.hideBanner(); }catch(_){}
@@ -1947,6 +1947,8 @@ function renderMenu(){
     const tw2=Math.max(60,(bw-10)/2), ty=y0+120+64+18;
     uiBtn('tgl-sound',W/2-bw/2,ty,tw2,44,'SOUND: '+(store.sound?'ON':'OFF'),{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
     uiBtn('tgl-haptic',W/2-bw/2+tw2+10,ty,tw2,44,'HAPTICS: '+(store.haptics?'ON':'OFF'),{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
+    // Same position as the setup screen's BACK: the way out to the shell.
+    uiBtn('exit',12,12,92,38,'EXIT',{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
   }else{
     const blockH=(MENU.mode==='ai'?312:230)+82;
     const panelW=bw+44, panelH=blockH+112;
@@ -2014,9 +2016,15 @@ function renderMenu(){
       ctx.font='800 11px '+FONT; ctx.fillStyle='rgba(255,255,255,.7)';
       ctx.fillText('4 PLAYERS · PARTNERS SIT OPPOSITE',W/2,y+6); y+=28;
     }else{
-      head('PLAYERS',y); y+=16;
+      head(isAI?'BOTS':'PLAYERS',y); y+=16;
       const w3=Math.max(44,(bw-16)/3);
-      ['2','3','4'].forEach((s2,i)=>uiBtn('count:'+s2,W/2-bw/2+i*(w3+8),y,w3,42,s2+' PLAYERS',sel(MENU.count===+s2)));
+      ['2','3','4'].forEach((s2,i)=>{
+        // VS COMPUTER seats one human plus bots, so the label shows the number
+        // of BOTS being added, not the total seat count.
+        const n=+s2-(isAI?1:0);
+        const lab=isAI?(n===1?'1 BOT':n+' BOTS'):s2+' PLAYERS';
+        uiBtn('count:'+s2,W/2-bw/2+i*(w3+8),y,w3,42,lab,sel(MENU.count===+s2));
+      });
       y+=42+28;
     }
     if(MENU.mode) uiBtn('start',W/2-110,y,220,56,'START MATCH',{bg:CFG.colors.tile,fg:'#fff',fs:18,r:18,shadow:true});
@@ -2203,6 +2211,7 @@ function handleAction(id){
       break;
     case 'menu-play': MENU.step='setup'; SFX.play('click'); break;
     case 'menu-root': MENU.step='root'; SFX.play('click'); break;
+    case 'exit': SFX.play('click'); try{ Studio.exit(); }catch(_){ if(window.NativeBridge&&window.NativeBridge.exitGame) window.NativeBridge.exitGame(); } break;
     case 'mode:ai': MENU.mode='ai'; MENU.team=false; SFX.play('click'); break;
     case 'mode:pass': MENU.mode='pass'; SFX.play('click'); break;
     case 'team:toggle': MENU.team=!MENU.team; if(MENU.team) MENU.count=4; SFX.play('click'); break;

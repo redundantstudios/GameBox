@@ -19,4 +19,23 @@
     <string name="n_player_games">%1$d player games</string>
     <string name="no_games_here">No games here yet</string>
     <string name="no_games_here_hint">New games are coming soon!</string>
+
+    <!-- Settings -->
+    <string name="section_audio">Audio</string>
+    <string name="section_feedback">Feedback</string>
+    <string name="section_interface">Interface</string>
+    <string name="row_master_sound">Master sound</string>
+    <string name="row_volume">Volume</string>
+    <string name="row_vibration">Vibration</string>
+    <string name="row_haptic_feel">Haptic feel</string>
+    <string name="row_haptic_feel_hint">How strong the buzz feels in games</string>
+    <string name="row_theme">Theme</string>
+    <string name="row_theme_hint">Applies to the whole shell</string>
+    <string name="row_developer_mode">Developer mode</string>
+    <string name="row_developer_mode_hint">Adds in-game test tools (bot speed test)</string>
+    <string name="haptic_soft">Soft</string>
+    <string name="haptic_crisp">Crisp</string>
+    <string name="haptic_heavy">Heavy</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
 </resources>

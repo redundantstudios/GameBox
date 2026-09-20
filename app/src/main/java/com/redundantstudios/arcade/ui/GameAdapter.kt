@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.redundantstudios.arcade.R
+import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.model.GameManifest
 
 class GameAdapter(
@@ -35,6 +36,7 @@ class GameAdapter(
         holder.tileRoot.cardColor = Color.parseColor(game.tileColor)
 
         holder.itemView.setOnClickListener {
+            ShellAudio.tap(it.context)
             onGameClick(game)
         }
 

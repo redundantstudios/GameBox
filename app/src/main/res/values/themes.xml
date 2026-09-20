@@ -6,7 +6,8 @@
         <item name="colorSecondary">@color/studio_accent</item>
         <item name="colorSecondaryVariant">@color/studio_accent</item>
         <item name="colorOnSecondary">@color/white</item>
-        <item name="android:colorAccent">@color/studio_accent</item>
+        <item name="android:colorAccent">@color/studio_primary</item>
+        <item name="colorControlActivated">@color/studio_primary</item>
         <item name="android:statusBarColor">@color/studio_background</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowBackground">@color/studio_background</item>

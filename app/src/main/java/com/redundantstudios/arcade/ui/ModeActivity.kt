@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.redundantstudios.arcade.GameActivity
 import com.redundantstudios.arcade.R
+import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.model.GameManifest
 import com.redundantstudios.arcade.util.ManifestParser
 
@@ -26,16 +27,28 @@ class ModeActivity : ThemedActivity() {
         fun filterGames(games: List<GameManifest>, playerCount: Int): List<GameManifest> =
             games.filter { game ->
                 if (playerCount == 1) {
-                    (game.maxPlayers == 1) || (game.aiSupport == "full" && game.maxPlayers >= 2)
+                    // A single human can play solo-only games (Planet Merge) or
+                    // games that can fill the other seats with bots (Ludo
+                    // ships aiSupport: true). Opening it never forces bot
+                    // mode - the game's own menu decides how seats are filled.
+                    (game.maxPlayers == 1) || canPlayWithBots(game)
                 } else {
                     game.minPlayers <= playerCount && game.maxPlayers >= playerCount
                 }
             }
 
         /**
-         * Player count used when a game is opened from All Games (no tile was
-         * tapped): prefer 2 players, but never exceed what the game supports.
+         * Player count used when a game is opened from All Games or the 1
+         * PLAYER page: 0 means "no preselect" - the game opens its own normal
+         * menu and the player chooses the mode there (bot mode is never forced
+         * automatically).
          */
+    /** True when a game can seat one human plus computer opponents. */
+    fun canPlayWithBots(game: GameManifest): Boolean =
+        game.aiSupport == "true" || game.aiSupport == "full" || game.aiSupport == "partial"
+
+        const val NO_PRESELECT = 0
+
         fun defaultPlayers(game: GameManifest): Int =
             game.maxPlayers.coerceAtMost(2).coerceAtLeast(1)
     }
@@ -68,25 +81,30 @@ class ModeActivity : ThemedActivity() {
             if (filteredGames.isEmpty()) View.VISIBLE else View.GONE
 
         recyclerView.adapter = GameAdapter(filteredGames) { game ->
-            val players = if (allGamesMode) defaultPlayers(game) else playerCount
-            Log.d(TAG, "Game tile clicked: ${game.id}, players=$players, maxPlayers=${game.maxPlayers}")
+            // All Games and 1 PLAYER open the game's own normal menu — bot mode
+            // is never forced automatically. An N PLAYER page preselects that
+            // count so play starts in one tap.
+            val preselect = if (allGamesMode || playerCount == 1) NO_PRESELECT else playerCount
+            Log.d(TAG, "Game tile clicked: ${game.id}, preselect=$preselect, maxPlayers=${game.maxPlayers}")
 
-            // Direct launch: skip LaunchSheet and pass the chosen mode count to the game
-            launchGame(game, "pass", "medium", players)
+            launchGame(game, preselect)
         }
 
         val btnBack = findViewById<android.widget.ImageButton>(R.id.btnBack)
         btnBack.setOnClickListener {
+            ShellAudio.back(this)
             finish()
         }
     }
 
-    private fun launchGame(game: GameManifest, mode: String, skill: String, players: Int) {
+    private fun launchGame(game: GameManifest, preselect: Int) {
         val intent = Intent(this, GameActivity::class.java).apply {
             putExtra("game_id", game.id)
-            putExtra("mode", mode)
-            putExtra("skill", skill)
-            putExtra("players", players)
+            if (preselect > 0) {
+                putExtra("mode", "pass")
+                putExtra("skill", "medium")
+                putExtra("players", preselect)
+            }
         }
         startActivity(intent)
     }

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.util.SettingsManager
 
 /**
@@ -29,6 +30,15 @@ abstract class ThemedActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (isThemeOutOfSync()) recreate()
+        // The ambient loop belongs to the shell screens; it follows the
+        // master volume from Settings and pauses whenever the shell is
+        // backgrounded or a game takes over (see onPause).
+        ShellAudio.startBgm(this)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        ShellAudio.pauseBgm()
     }
 
     /** True when the stored theme preference and the running config disagree. */

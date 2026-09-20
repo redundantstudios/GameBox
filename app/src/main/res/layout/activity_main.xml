@@ -134,12 +134,11 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/allGamesCard">
 
-        <!-- fillViewport + center_vertical keeps a short list balanced on screen
-             instead of dumping one big empty gap above the footer. -->
+        <!-- fillViewport keeps the whole list scrollable; content hangs from the
+             top so the grid sits right under the All Games band. -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
             android:orientation="vertical">
 
             <TextView

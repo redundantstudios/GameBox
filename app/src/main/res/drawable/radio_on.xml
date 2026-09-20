@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shell-styled radio dot: green ring + green dot when selected. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:width="20dp"
+        android:height="20dp"
+        android:gravity="center">
+        <shape android:shape="oval">
+            <solid android:color="@android:color/transparent" />
+            <stroke android:width="2dp" android:color="@color/studio_primary" />
+        </shape>
+    </item>
+    <item
+        android:width="10dp"
+        android:height="10dp"
+        android:gravity="center">
+        <shape android:shape="oval">
+            <solid android:color="@color/studio_primary" />
+        </shape>
+    </item>
+</layer-list>

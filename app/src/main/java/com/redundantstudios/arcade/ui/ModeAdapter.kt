@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.redundantstudios.arcade.R
+import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.model.GameMode
 
 class ModeAdapter(
@@ -36,6 +37,7 @@ class ModeAdapter(
         holder.card.cardColor = Color.parseColor(mode.color)
 
         holder.itemView.setOnClickListener {
+            ShellAudio.tap(it.context)
             android.util.Log.d("ModeAdapter", "Mode card clicked: ${mode.playerCount}P")
             onModeClick(mode)
         }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tint for shell radios: shell green when checked, quiet brown otherwise. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true" android:color="@color/studio_primary" />
+    <item android:color="@color/studio_border" />
+</selector>

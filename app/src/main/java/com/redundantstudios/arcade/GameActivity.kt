@@ -91,9 +91,9 @@ class GameActivity : AppCompatActivity() {
 
             addJavascriptInterface(NativeBridge(this@GameActivity), "NativeBridge")
 
-            val mode = intent.getStringExtra("mode") ?: "solo"
+            val mode = intent.getStringExtra("mode")
             val skill = intent.getStringExtra("skill") ?: "medium"
-            val players = intent.getIntExtra("players", 1)
+            val players = intent.getIntExtra("players", 0)
 
             android.util.Log.d("GameActivity", "Launching game $gameId: mode=$mode, skill=$skill, players=$players")
 
@@ -107,7 +107,11 @@ class GameActivity : AppCompatActivity() {
             // has switched on Developer mode in Settings.
             val devFlag =
                 if (com.redundantstudios.arcade.util.SettingsManager.developerMode) "&dev=1" else ""
-            loadUrl("file:///android_asset/games/$gameId/index.html?mode=$mode&skill=$skill&players=$players&$settingsQuery$devFlag")
+            // A player-count preselect is only attached when one was actually
+            // chosen; otherwise the game opens its own normal menu.
+            val preselect =
+                if (mode != null && players > 0) "&mode=$mode&skill=$skill&players=$players" else ""
+            loadUrl("file:///android_asset/games/$gameId/index.html?$settingsQuery$devFlag$preselect")
         }
 
         rootLayout.addView(webView)

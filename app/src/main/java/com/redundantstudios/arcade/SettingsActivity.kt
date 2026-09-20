@@ -2,160 +2,135 @@ package com.redundantstudios.arcade
 
 import android.os.Bundle
 import android.widget.ImageButton
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.SeekBar
-import com.redundantstudios.arcade.ui.SelectCard
+import android.widget.TextView
+import androidx.appcompat.widget.SwitchCompat
+import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.ui.ThemedActivity
 import com.redundantstudios.arcade.util.Haptics
 import com.redundantstudios.arcade.util.SettingsManager
 
+/**
+ * Settings, rebuilt calm: one row per setting, real Android controls
+ * (SwitchCompat / RadioButton) restyled to the shell palette, the volume
+ * slider, and audio feedback on every interaction.
+ *
+ * gone: the ON/OFF pill pairs and the triple pill row that made this page
+ * feel like a wall of buttons.
+ */
 class SettingsActivity : ThemedActivity() {
 
-    /** Guards the listeners while we push the saved values into the controls. */
+    /** Guards the listeners while the saved values are pushed into the controls. */
     private var loading = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // SettingsManager.init() + applyTheme() run in ThemedActivity before super.onCreate()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
         applyShellBackground()
 
-        findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
+        findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
+            ShellAudio.back(this)
+            finish()
+        }
 
-        val selSoundOn = findViewById<SelectCard>(R.id.selSoundOn)
-        val selSoundOff = findViewById<SelectCard>(R.id.selSoundOff)
-        val selVibeOn = findViewById<SelectCard>(R.id.selVibeOn)
-        val selVibeOff = findViewById<SelectCard>(R.id.selVibeOff)
-        val selHapticSoft = findViewById<SelectCard>(R.id.selHapticSoft)
-        val selHapticCrisp = findViewById<SelectCard>(R.id.selHapticCrisp)
-        val selHapticHeavy = findViewById<SelectCard>(R.id.selHapticHeavy)
-        val selThemeLight = findViewById<SelectCard>(R.id.selThemeLight)
-        val selThemeDark = findViewById<SelectCard>(R.id.selThemeDark)
-        val selDevOn = findViewById<SelectCard>(R.id.selDevOn)
-        val selDevOff = findViewById<SelectCard>(R.id.selDevOff)
+        val swSound = findViewById<SwitchCompat>(R.id.swSound)
+        val swVibe = findViewById<SwitchCompat>(R.id.swVibe)
+        val swDev = findViewById<SwitchCompat>(R.id.swDev)
         val seekVolume = findViewById<SeekBar>(R.id.seekVolume)
+        val volValue = findViewById<TextView>(R.id.volValue)
+        val hapticGroup = findViewById<RadioGroup>(R.id.hapticGroup)
+        val themeGroup = findViewById<RadioGroup>(R.id.themeGroup)
 
-        // Push the saved state into the controls (listeners suppressed).
-        applyPair(selSoundOn, selSoundOff, SettingsManager.soundEnabled)
-        applyPair(selVibeOn, selVibeOff, SettingsManager.vibrationEnabled)
-        // applyPair(on, off, value): for the theme row the "on" card is DARK.
-        // Passing (light, dark) made the selector jump back to Light after
-        // picking Dark, so the order below is intentional.
-        applyPair(selThemeDark, selThemeLight, SettingsManager.appTheme == "Dark")
-        applyPair(selDevOn, selDevOff, SettingsManager.developerMode)
-
-        selHapticSoft.setChecked(SettingsManager.hapticProfile == "Soft")
-        selHapticCrisp.setChecked(SettingsManager.hapticProfile == "Crisp")
-        selHapticHeavy.setChecked(SettingsManager.hapticProfile == "Heavy")
-
+        // ---- push the saved state in BEFORE any listener is attached --------
+        swSound.isChecked = SettingsManager.soundEnabled
+        swVibe.isChecked = SettingsManager.vibrationEnabled
+        swDev.isChecked = SettingsManager.developerMode
         seekVolume.progress = SettingsManager.soundVolume
+        volValue.text = "${SettingsManager.soundVolume}%"
+        when (SettingsManager.hapticProfile) {
+            "Soft" -> findViewById<RadioButton>(R.id.rbHapticSoft).isChecked = true
+            "Heavy" -> findViewById<RadioButton>(R.id.rbHapticHeavy).isChecked = true
+            else -> findViewById<RadioButton>(R.id.rbHapticCrisp).isChecked = true
+        }
+        if (SettingsManager.appTheme == "Dark") {
+            findViewById<RadioButton>(R.id.rbThemeDark).isChecked = true
+        } else {
+            findViewById<RadioButton>(R.id.rbThemeLight).isChecked = true
+        }
+        loading = false
 
         // ---- sound ----------------------------------------------------------
-        selSoundOn.onCheckedChanged = { checked ->
-            if (!loading && checked) {
-                SettingsManager.soundEnabled = true
-                selSoundOff.setChecked(false)
-                SettingsManager.syncToGameStore(this)
-            }
-        }
-        selSoundOff.onCheckedChanged = { checked ->
-            if (!loading && checked) {
-                SettingsManager.soundEnabled = false
-                selSoundOn.setChecked(false)
-                SettingsManager.syncToGameStore(this)
-            }
+        swSound.setOnCheckedChangeListener { _, checked ->
+            if (loading) return@setOnCheckedChangeListener
+            SettingsManager.soundEnabled = checked
+            if (checked) ShellAudio.select(this) else ShellAudio.back(this)
+            ShellAudio.refresh(this)
+            sync()
         }
 
+        // ---- volume: live audio preview, which is what a volume slider is for
         seekVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) SettingsManager.soundVolume = progress
+                if (!fromUser) return
+                SettingsManager.soundVolume = progress
+                volValue.text = "$progress%"
+                if (SettingsManager.soundEnabled) ShellAudio.tick(this@SettingsActivity)
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
-                SettingsManager.syncToGameStore(this@SettingsActivity)
+                // Confirm the level with a real note played at the new volume.
+                if (SettingsManager.soundEnabled) ShellAudio.select(this@SettingsActivity)
+                ShellAudio.refresh(this@SettingsActivity)
+                sync()
             }
         })
 
         // ---- vibration ------------------------------------------------------
-        selVibeOn.onCheckedChanged = { checked ->
-            if (!loading && checked) {
-                SettingsManager.vibrationEnabled = true
-                selVibeOff.setChecked(false)
-                Haptics.preview(this)
-                SettingsManager.syncToGameStore(this)
-            }
-        }
-        selVibeOff.onCheckedChanged = { checked ->
-            if (!loading && checked) {
-                SettingsManager.vibrationEnabled = false
-                selVibeOn.setChecked(false)
-                SettingsManager.syncToGameStore(this)
-            }
+        swVibe.setOnCheckedChangeListener { _, checked ->
+            if (loading) return@setOnCheckedChangeListener
+            SettingsManager.vibrationEnabled = checked
+            if (checked) Haptics.preview(this)
+            sync()
         }
 
-        // ---- haptic profile (exclusive triple, with a live preview) ---------
-        val haptics = listOf(
-            selHapticSoft to "Soft",
-            selHapticCrisp to "Crisp",
-            selHapticHeavy to "Heavy"
-        )
-        haptics.forEach { (card, profile) ->
-            card.onCheckedChanged = { checked ->
-                if (!loading && checked) {
-                    SettingsManager.hapticProfile = profile
-                    haptics.filter { it.first !== card }.forEach { it.first.setChecked(false) }
-                    Haptics.preview(this)
-                    SettingsManager.syncToGameStore(this)
-                }
+        // ---- haptic profile -------------------------------------------------
+        hapticGroup.setOnCheckedChangeListener { _, checkedId ->
+            if (loading) return@setOnCheckedChangeListener
+            SettingsManager.hapticProfile = when (checkedId) {
+                R.id.rbHapticSoft -> "Soft"
+                R.id.rbHapticHeavy -> "Heavy"
+                else -> "Crisp"
             }
+            Haptics.preview(this)
+            ShellAudio.tap(this)
+            sync()
         }
 
-        // ---- theme ----------------------------------------------------------
-        selThemeLight.onCheckedChanged = { checked ->
-            if (!loading && checked) {
-                SettingsManager.appTheme = "Light"
-                selThemeDark.setChecked(false)
-                SettingsManager.applyTheme()
-            }
-        }
-        selThemeDark.onCheckedChanged = { checked ->
-            if (!loading && checked) {
-                SettingsManager.appTheme = "Dark"
-                selThemeLight.setChecked(false)
-                SettingsManager.applyTheme()
-            }
+        // ---- theme (ThemedActivity re-applies it to every screen) -----------
+        themeGroup.setOnCheckedChangeListener { _, checkedId ->
+            if (loading) return@setOnCheckedChangeListener
+            SettingsManager.appTheme = if (checkedId == R.id.rbThemeDark) "Dark" else "Light"
+            SettingsManager.applyTheme()
         }
 
         // ---- developer mode -------------------------------------------------
-        selDevOn.onCheckedChanged = { checked ->
-            if (!loading && checked) {
-                SettingsManager.developerMode = true
-                selDevOff.setChecked(false)
-            }
+        swDev.setOnCheckedChangeListener { _, checked ->
+            if (loading) return@setOnCheckedChangeListener
+            SettingsManager.developerMode = checked
+            ShellAudio.tap(this)
+            sync()
         }
-        selDevOff.onCheckedChanged = { checked ->
-            if (!loading && checked) {
-                SettingsManager.developerMode = false
-                selDevOn.setChecked(false)
-            }
-        }
-
-        loading = false
     }
+
+    /** Whatever changed here must reach every game. */
+    private fun sync() = SettingsManager.syncToGameStore(this)
 
     override fun onPause() {
         super.onPause()
-        // Whatever changed here must reach every game.
-        SettingsManager.syncToGameStore(this)
-    }
-
-    /** Sets both cards of a yes/no pair without firing the change listeners. */
-    private fun applyPair(on: SelectCard, off: SelectCard, value: Boolean) {
-        val wasLoading = loading
-        loading = true
-        on.setChecked(value)
-        off.setChecked(!value)
-        loading = wasLoading
+        sync()
     }
 }
