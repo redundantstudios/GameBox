@@ -1,123 +1,203 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_shell"
     android:paddingStart="@dimen/screen_margin"
     android:paddingEnd="@dimen/screen_margin"
-    android:paddingTop="@dimen/screen_margin"
-    android:paddingBottom="@dimen/screen_margin">
+    android:paddingTop="@dimen/standard_spacing"
+    android:paddingBottom="@dimen/standard_spacing">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@android:color/transparent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/app_title"
-            android:textColor="@color/studio_on_background"
-            android:textSize="30sp"
-            android:textStyle="bold"
-            android:textAllCaps="true"
-            android:letterSpacing="0.04"
-            android:shadowColor="#33FFFFFF"
-            android:shadowDx="0"
-            android:shadowDy="3"
-            android:shadowRadius="0"
-            android:layout_gravity="start|center_vertical" />
-    </androidx.appcompat.widget.Toolbar>
-
-    <!-- Design ref brown pill tagline (see design 4: "REMEMBER Â· MATCH Â· SCORE") -->
-    <TextView
-        android:id="@+id/tagline"
-        android:layout_width="wrap_content"
+    <!-- Brand owns the whole first line (auto-sized so it can never wrap or clip);
+         the settings gear is tucked into the corner. -->
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/brandTitle"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="@string/app_tagline"
-        android:textColor="@color/white"
-        android:textSize="11sp"
-        android:textStyle="bold"
+        android:letterSpacing="0.03"
+        android:maxLines="1"
+        android:shadowColor="#33FFFFFF"
+        android:shadowDx="0"
+        android:shadowDy="3"
+        android:shadowRadius="0"
+        android:text="@string/app_title"
         android:textAllCaps="true"
-        android:letterSpacing="0.1"
-        android:background="@drawable/bg_tag_pill"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="7dp"
-        android:paddingBottom="7dp"
-        android:layout_marginTop="2dp"
-        app:layout_constraintTop_toBottomOf="@id/toolbar"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:textColor="@color/studio_on_background"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        app:autoSizeMaxTextSize="26sp"
+        app:autoSizeMinTextSize="14sp"
+        app:autoSizeStepGranularity="1sp"
+        app:autoSizeTextType="uniform"
+        app:layout_constraintEnd_toStartOf="@id/btnSettings"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/modeRecyclerView"
+    <ImageButton
+        android:id="@+id/btnSettings"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginTop="-12dp"
+        android:layout_marginEnd="-12dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/settings"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_settings_gear"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Single primary action: browse the whole catalogue -->
+    <com.redundantstudios.arcade.ui.ChunkyCardView
+        android:id="@+id/allGamesCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:ccBorderColor="@color/brand_cta_border"
+        app:ccBorderWidth="3.5dp"
+        app:ccColor="@color/brand_cta_fill"
+        app:ccCornerRadius="20dp"
+        app:ccShadowColor="@color/brand_cta_shadow"
+        app:ccShadowOffset="5dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/brandTitle">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="18dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="14dp">
+
+            <TextView
+                android:id="@+id/allGamesTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.05"
+                android:shadowColor="#401B5E20"
+                android:shadowDx="0"
+                android:shadowDy="2"
+                android:shadowRadius="1"
+                android:text="@string/all_games"
+                android:textAllCaps="true"
+                android:textColor="@color/brand_cta_text"
+                android:textSize="19sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/allGamesSubtitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:layout_marginEnd="10dp"
+                android:alpha="0.85"
+                android:ellipsize="end"
+                android:letterSpacing="0.08"
+                android:maxLines="1"
+                android:text="@string/all_games_hint"
+                android:textAllCaps="true"
+                android:textColor="@color/brand_cta_text"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@id/allGamesChevron"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/allGamesTitle" />
+
+            <ImageView
+                android:id="@+id/allGamesChevron"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_chevron_right"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.redundantstudios.arcade.ui.ChunkyCardView>
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/homeScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/tagline"
-        android:layout_marginTop="@dimen/spacing_section_gap"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/footer"
-        app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-        app:spanCount="2"
+        android:layout_marginTop="4dp"
         android:clipToPadding="false"
-        android:padding="0dp" />
-
-    <LinearLayout
-        android:id="@+id/emptyState"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="gone"
-        app:layout_constraintTop_toBottomOf="@id/tagline"
+        android:fillViewport="true"
+        android:scrollbars="none"
         app:layout_constraintBottom_toTopOf="@id/footer"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/allGamesCard">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <!-- fillViewport + center_vertical keeps a short list balanced on screen
+             instead of dumping one big empty gap above the footer. -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="NO GAMES INSTALLED"
-            android:textColor="@color/studio_on_background"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.1" />
+            android:gravity="center_vertical"
+            android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Check back soon!"
-            android:textColor="@color/studio_border"
-            android:textSize="13sp" />
-    </LinearLayout>
+            <TextView
+                style="@style/SectionLabel"
+                android:layout_marginTop="16dp"
+                android:text="@string/section_choose_players" />
 
-    <!-- Footer -->
-    <LinearLayout
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/modeRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:nestedScrollingEnabled="false"
+                app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
+                app:spanCount="2" />
+
+            <LinearLayout
+                android:id="@+id/emptyState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:letterSpacing="0.1"
+                    android:text="@string/no_games_installed"
+                    android:textColor="@color/studio_on_background"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/no_games_hint"
+                    android:textColor="@color/studio_border"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <TextView
         android:id="@+id/footer"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
         android:gravity="center"
-        android:orientation="horizontal"
-        android:paddingBottom="@dimen/standard_spacing"
-        android:paddingTop="8dp"
+        android:text="@string/footer_brand"
+        android:textColor="@color/studio_border"
+        android:textSize="12sp"
+        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Redundant Studios Â· v1.0"
-            android:textColor="@color/studio_border"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-    </LinearLayout>
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

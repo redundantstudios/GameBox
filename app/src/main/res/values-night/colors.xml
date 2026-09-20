@@ -10,13 +10,12 @@
     <color name="studio_border">#8A7358</color>
     <color name="studio_border_dark">#A98B6A</color>
 
-    <!-- Decorative background: dark warm, keeps the same dot grid + floating cards -->
+    <!-- Decorative background: dark warm, same gradient + grid + bloom + ripples -->
     <color name="studio_bg_top">#221E18</color>
     <color name="studio_bg_bottom">#15120E</color>
-    <color name="studio_bg_dot">#4A4238</color>
-    <color name="studio_bg_card">#1FE8DCC8</color>
-    <color name="studio_bg_card_border">#33E8DCC8</color>
-    <color name="studio_bg_glyph">#4DE8DCC8</color>
+    <color name="studio_bg_dot">#463E34</color>
+    <color name="studio_bg_glow">#3B3126</color>
+    <color name="studio_bg_arc">#8A7358</color>
 
     <!-- SelectCard: darker beige idle so it stays readable on the dark canvas -->
     <color name="select_idle_fill">#3A332B</color>

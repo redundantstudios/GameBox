@@ -14,13 +14,12 @@
     <!-- Design-ref chunky borders -->
     <color name="studio_border_dark">#4E342E</color>
 
-    <!-- Decorative background (Design ref: dot grid + floating cards) -->
+    <!-- Ambient page decoration: gradient + dot grid + corner bloom + ripples -->
     <color name="studio_bg_top">#FFFBF0</color>
     <color name="studio_bg_bottom">#FBE2C2</color>
     <color name="studio_bg_dot">#D8C6A4</color>
-    <color name="studio_bg_card">#A6FFFFFF</color>
-    <color name="studio_bg_card_border">#59100000</color>
-    <color name="studio_bg_glyph">#59FF9800</color>
+    <color name="studio_bg_glow">#FFF4DC</color>
+    <color name="studio_bg_arc">#8D6E63</color>
 
     <!-- SelectCard (Design ref design 3): beige idle / green selected -->
     <color name="select_idle_fill">#DCC9A6</color>
@@ -28,6 +27,13 @@
     <color name="select_checked_fill">#4CAF50</color>
     <color name="select_checked_text">#FFFFFF</color>
     <color name="select_badge">#2E7D32</color>
+
+    <!-- Brand-CTA surface (All Games band): intentionally fixed in both themes so
+         the primary action always reads as the studio green. -->
+    <color name="brand_cta_fill">#43A047</color>
+    <color name="brand_cta_border">#2E7D32</color>
+    <color name="brand_cta_shadow">#1B5E20</color>
+    <color name="brand_cta_text">#FFFFFF</color>
 
     <!-- Status Colors -->
     <color name="studio_success">#4CAF50</color>

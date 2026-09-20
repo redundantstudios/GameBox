@@ -3,21 +3,21 @@ package com.redundantstudios.arcade
 import android.os.Bundle
 import android.widget.ImageButton
 import android.widget.SeekBar
-import androidx.appcompat.app.AppCompatActivity
 import com.redundantstudios.arcade.ui.SelectCard
+import com.redundantstudios.arcade.ui.ThemedActivity
 import com.redundantstudios.arcade.util.Haptics
 import com.redundantstudios.arcade.util.SettingsManager
 
-class SettingsActivity : AppCompatActivity() {
+class SettingsActivity : ThemedActivity() {
 
     /** Guards the listeners while we push the saved values into the controls. */
     private var loading = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        SettingsManager.init(this)
-        SettingsManager.applyTheme()
+        // SettingsManager.init() + applyTheme() run in ThemedActivity before super.onCreate()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
+        applyShellBackground()
 
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
 
@@ -37,7 +37,10 @@ class SettingsActivity : AppCompatActivity() {
         // Push the saved state into the controls (listeners suppressed).
         applyPair(selSoundOn, selSoundOff, SettingsManager.soundEnabled)
         applyPair(selVibeOn, selVibeOff, SettingsManager.vibrationEnabled)
-        applyPair(selThemeLight, selThemeDark, SettingsManager.appTheme == "Dark")
+        // applyPair(on, off, value): for the theme row the "on" card is DARK.
+        // Passing (light, dark) made the selector jump back to Light after
+        // picking Dark, so the order below is intentional.
+        applyPair(selThemeDark, selThemeLight, SettingsManager.appTheme == "Dark")
         applyPair(selDevOn, selDevOff, SettingsManager.developerMode)
 
         selHapticSoft.setChecked(SettingsManager.hapticProfile == "Soft")
