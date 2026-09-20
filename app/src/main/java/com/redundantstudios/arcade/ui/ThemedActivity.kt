@@ -29,16 +29,27 @@ abstract class ThemedActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (isThemeOutOfSync()) recreate()
-        // The ambient loop belongs to the shell screens; it follows the
-        // master volume from Settings and pauses whenever the shell is
-        // backgrounded or a game takes over (see onPause).
-        ShellAudio.startBgm(this)
+        if (isThemeOutOfSync()) {
+            recreate()
+        } else if (SettingsManager.consumeThemeTransition()) {
+            // A theme flip just rebuilt this screen: fade the content in
+            // instead of popping it, for a subtle cross-fade feel.
+            val content = findViewById<View>(android.R.id.content) as? ViewGroup
+            content?.getChildAt(0)?.let { root ->
+                root.alpha = 0f
+                root.animate().alpha(1f).setDuration(240L).start()
+            }
+        }
+        // Host counting instead of start/pause: during recreate() the new
+        // activity resumes BEFORE the old one pauses, so the loop must stay
+        // alive across that overlap. It only fades out when the last shell
+        // screen is gone (backgrounded, or a game took over).
+        ShellAudio.hostResumed(this)
     }
 
     override fun onPause() {
         super.onPause()
-        ShellAudio.pauseBgm()
+        ShellAudio.hostPaused()
     }
 
     /** True when the stored theme preference and the running config disagree. */

@@ -8,6 +8,7 @@
     <!-- Design-ref section heading, e.g. "AUDIO" / "FEEDBACK" / "INTERFACE" -->
     <style name="SectionLabel">
         <item name="android:layout_width">wrap_content</item>
+        <item name="android:paddingStart">8dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:textColor">@color/studio_border</item>
         <item name="android:textSize">12sp</item>

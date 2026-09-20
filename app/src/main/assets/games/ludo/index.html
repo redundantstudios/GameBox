@@ -1951,6 +1951,7 @@ function renderMenu(){
     uiBtn('exit',12,12,92,38,'EXIT',{bg:CFG.colors.btn,fg:'#fff',fs:13,r:12});
   }else{
     const blockH=(MENU.mode==='ai'?312:230)+82;
+    const isAI=MENU.mode==='ai';
     const panelW=bw+44, panelH=blockH+112;
     const pxp=Math.round(W/2-panelW/2), pyp=Math.max(56,Math.round((H-panelH)/2));
     ctx.fillStyle=CFG.colors.panel; rr(ctx,pxp,pyp,panelW,panelH,20); ctx.fill();

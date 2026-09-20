@@ -45,6 +45,10 @@ dependencies {
     implementation 'com.google.android.gms:play-services-ads:23.6.0'
     implementation 'com.google.android.ump:user-messaging-platform:3.1.0'
 
+    // Local notifications (WorkManager scheduling)
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+
     // Splash Screen
     implementation 'androidx.core:core-splashscreen:1.0.1'
 }
+

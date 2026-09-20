@@ -17,6 +17,7 @@ import com.redundantstudios.arcade.bridge.NativeBridge
 import com.redundantstudios.arcade.bridge.NativeBridgeContext
 import com.redundantstudios.arcade.model.GameManifest
 import com.redundantstudios.arcade.util.ManifestParser
+import com.redundantstudios.arcade.util.SettingsManager
 
 class GameActivity : AppCompatActivity() {
     private lateinit var webView: WebView
@@ -43,6 +44,9 @@ class GameActivity : AppCompatActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         val gameId = intent.getStringExtra("game_id") ?: return
+
+        // Counts toward the one-shot notification permission moment on Home.
+        SettingsManager.gamesLaunched += 1
 
         val allGames = ManifestParser.scanGames(this)
         currentGame = allGames.find { it.id == gameId }
