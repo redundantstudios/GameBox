@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.model.GameManifest
+import com.redundantstudios.arcade.util.GameSeenStore
 
 class GameAdapter(
     private val games: List<GameManifest>,
@@ -22,6 +23,8 @@ class GameAdapter(
         val tileRoot: ChunkyCardView = view.findViewById(R.id.tileRoot)
         val title: TextView = view.findViewById(R.id.gameTitle)
         val players: TextView = view.findViewById(R.id.playersBadge)
+        val newBadge: TextView = view.findViewById(R.id.newBadge)
+        val art: android.widget.ImageView = view.findViewById(R.id.tileArt)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GameViewHolder {
@@ -34,6 +37,25 @@ class GameAdapter(
         holder.title.text = game.title
         holder.players.text = "${game.maxPlayers}P"
         holder.tileRoot.cardColor = Color.parseColor(game.tileColor)
+        holder.newBadge.visibility = if (GameSeenStore.isNew(holder.itemView.context, game.id)) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+        // Tile artwork, generated from the game file by _gen_tiles.py. Looked up
+        // by name (see util.resName convention in that script); when it has not
+        // been generated yet the tile keeps its flat manifest colour.
+        val artId = holder.itemView.resources.getIdentifier(
+            "tile_${game.id.lowercase().replace('-', '_')}", "drawable",
+            holder.itemView.context.packageName
+        )
+        if (artId != 0) {
+            holder.art.setImageResource(artId)
+            holder.art.visibility = View.VISIBLE
+        } else {
+            holder.art.setImageDrawable(null)
+            holder.art.visibility = View.GONE
+        }
 
         holder.itemView.setOnClickListener {
             ShellAudio.tap(it.context)

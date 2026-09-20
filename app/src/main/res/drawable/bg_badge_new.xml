@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NEW tag on a freshly added game tile: brand green pill, chunky border + tiny
+     shadow so it sits in the same visual language as the rest of the tile. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:left="2dp" android:top="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/brand_cta_shadow" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+    <item android:right="2dp" android:bottom="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/brand_cta_fill" />
+            <stroke android:width="2dp" android:color="@color/brand_cta_border" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+</layer-list>
