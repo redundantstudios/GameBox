@@ -20,9 +20,17 @@
 - Notifications: implemented (channels + custom chime, WorkManager daily reminder with skip rules,
   permission ask after the first game launch, Settings section, dev test send). Play-Store
   hardening (exact alarms / battery-optimisation hint) deferred to release prep. See `NOTIFICATIONS.md`.
-- Docs index for future sessions: `GAME_IDEAS.md` (game backlog + status board), `NOTIFICATIONS.md`,
+- Docs index for future sessions: `GAME_IDEAS.md` (game backlog + status board + roadmap), `NOTIFICATIONS.md`,
   `LEADERBOARD_IDEA.md`, `ONLINE_MULTIPLAYER_PLAN.md`, `COINS_ECONOMY_PLAN.md`, plus the standing
   rules in `CONTRACT.md`, `STYLE.md`, `AGENT.md` and `HANDOFF.md`.
+- **Agreed order of work (2026-09-20) — `GAME_IDEAS.md §11`:** finish the shell (landscape path,
+  remaining polish, `category`/PARTY surface) → **Planet Merge fix in its own session** → **Chess
+  integration** (manifest/lifecycle/ads + puzzle mode from `chess_puzzles.txt`) → then the seven-game
+  integration queue one at a time (Chicken Chaos, Memory Grab, Egg Rush, Balloon Battle, Bomb Relay,
+  Last Balloon, Pen Fight) → then new games via request prompts (§12).
+- **Two standing rules:** we never author a game from scratch in this repo — the eight root `.html`
+  files are *finished, playable games awaiting shell integration*, not prototypes; and a new game is
+  requested as a `GAME_IDEAS.md §12` prompt (brief idea + full shell-stack requirements).
 
 ## Previous State — 2026-09-19
 - `main @ a620101` = last known-good shell. `BUILD.bat` green, APK installed and running on

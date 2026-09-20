@@ -4,6 +4,14 @@
 > funny" shower thought. Ideas do not live in chat, they live here.
 > **Rule 0:** never delete an idea. Change its status. A shelved idea with a reason is worth
 > more than a forgotten one.
+> **Rule 1 — we never author a game from scratch.** Every game of ours already exists as a
+> finished, playable single `.html` file. Our work in this repo is **integration**: the manifest
+> block, the lifecycle, ads, settings sync, orientation, polish. When a *new* game is wanted, it is
+> requested as a **prompt** (`§12`) that satisfies the shell stack — the idea described neither
+> more nor less than that — and the authored file is then integrated here.
+> **Rule 2 — the games are done, the wiring is not.** The 2026-09-20 inventory found eight finished
+> playable games sitting in the project root that the shell has never seen. Treat them as products
+> awaiting integration, never as sketches.
 
 ---
 
@@ -15,18 +23,27 @@ Two speeds, on purpose — so a good idea never waits on formatting:
 |---|---|---|---|
 | **Inbox** | `§5` | one line, no rules | capture fast, sort later |
 | **Entry** | `§6+` | fill the template in `§3` | an idea we actually intend to build |
+| **Work request** | `§12` | fill the prompt template | asking for a game to be authored or updated in the shell stack |
+
+The agreed build order lives in `§11` — **shell first, then Planet Merge, then Chess, then one game
+at a time.**
 
 **Status ladder** — an entry moves one step at a time:
 
 ```
-IDEA  ->  PARKED  ->  PROTOTYPE  ->  SPEC'D  ->  BUILDING  ->  SHELL-READY  ->  SHIPPED
+IDEA  ->  PLAYABLE  ->  NEEDS SHELL  ->  INTEGRATING  ->  SHELL-READY  ->  SHIPPED
                                                                   |
                                                               SHELVED  (with a reason)
 ```
 
 - `IDEA` — exists as words only.
 - `PARKED` — worth building, deliberately not now (see the cross-cutting docs in `§7`).
-- `PROTOTYPE` — a playable `.html` exists somewhere (project root or `assets/games/`).
+- `PLAYABLE` — a finished, playable game exists as ONE self-contained `.html` file
+  (project root). It is not a mock-up: it runs and it is fun — it just is not wired into the
+  shell yet.
+- `NEEDS SHELL` — the game plays, but still needs the integration work: manifest block,
+  lifecycle, ads, settings sync, orientation check (`§8`). **This is where almost every game
+  of ours sits** — the games are done, the wiring is not.
 - `SPEC'D` — hook, players, tier, and tile colour are written down (all four required).
 - `BUILDING` — someone is inside the file right now.
 - `SHELL-READY` — passes the `CONTRACT.md` checklist and can drop into `assets/games/<id>/`.
@@ -51,28 +68,28 @@ block, the `window.Game` lifecycle (`pause` / `resume` / `destroy`), and a passi
 |---|---|---|---|---|---|---|---|
 | RS-001 | **Ludo** | SHIPPED | Board | 2–4 + bots | 1 | `assets/games/ludo/` | rankings, 10X bot test in dev mode |
 | RS-002 | **Planet Merge** | SHIPPED (needs own session) | Puzzle | 1 | 1 | `assets/games/planetmerge/` | issues parked by user 2026-09-20 |
-| RS-003 | **Chess** | PROTOTYPE | Classic | 1–2 (+bot) | 1 | `Chess.html` | engine done; no manifest block yet |
-| RS-004 | **Checkers · Gould's problems** | PROTOTYPE (data only) | Puzzle | 1 | 1 | `CHeckers_puzzels_goulds_problems_all.json` | 678 puzzles, no game around them yet |
-| RS-005 | **Bomb Relay** | PROTOTYPE | Party | 1–4 + bots | 1 | `BombRelay.html` | pass-n-play, fuse + mini-games |
-| RS-006 | **Last Balloon** | PROTOTYPE | Party | 1–4 + bots | 1 | `LastBaloon.html` | hold-to-inflate tension curve |
+| RS-003 | **Chess** | PLAYABLE | Classic | 1–2 (+bot) | 1 | `Chess.html` | engine done; no manifest block yet |
+| RS-004 | **Checkers · Gould's problems** | DATA ONLY | Puzzle | 1 | 1 | `CHeckers_puzzels_goulds_problems_all.json` | 678 puzzles, no game around them yet |
+| RS-005 | **Bomb Relay** | PLAYABLE | Party | 1–4 + bots | 1 | `BombRelay.html` | pass-n-play, fuse + mini-games |
+| RS-006 | **Last Balloon** | PLAYABLE | Party | 1–4 + bots | 1 | `LastBaloon.html` | hold-to-inflate tension curve |
 | RS-007 | **Monopoly-style board game** | IDEA **(user's favourite)** | Board | 2–6 + bots | 1 | — | Indian + world boards, simplified map, our identity |
 | RS-008 | **Party Pack** (shell section + games) | IDEA | Party | group on one phone | 1 | — | clue-and-guess, truth-or-dare, etc. |
 | RS-009 | **Snakes & Ladders** | IDEA | Classic | 2–4 + bots | 1 | — | needs a real hook to beat the boredom |
 | RS-010 | **Daadi / Dhadi** | IDEA | Classic | 2 | 1 | — | "attack" · nested squares (Nine Men's Morris) |
 | RS-011 | **Tic Tac Toe** | IDEA | Classic | 2 + bot | 1 | — | only worth it with juice + a twist |
-| RS-012 | **Pen Fight** | PROTOTYPE (has issues) | Arena | up to 5 + AI | 2 (Matter.js) | `PenFight.html` | flick pens off the bench; physics engine must be local |
+| RS-012 | **Pen Fight** | PLAYABLE (issues) | Arena | up to 5 + AI | 2 (Matter.js) | `PenFight.html` | flick pens off the bench; physics engine must be local |
 | RS-013 | **Connect Four** | IDEA | Classic | 2 + bot | 1 | — | drop-and-win, add gravity juice |
 | RS-014 | **Dots & Boxes** | IDEA | Classic | 2–4 + bots | 1 | — | claim boxes, chain-reaction combo |
-| RS-015 | **Chicken Chaos** | PROTOTYPE **(manifest ready)** | Arena | 2–4 + bots | 1 | `Chicken Chaos.html` | dash-and-carry arena; nearest to shippable |
-| RS-016 | **Egg Rush** | PROTOTYPE | Arena | 2–4 + bots | 1 | `EggRush.html` | collect · rob · raid, landscape, golden eggs |
-| RS-017 | **Memory Grab** | PROTOTYPE | Party | 2+ / vs AI | 1 | `MemeoryGrab.html` (filename has a typo) | memory pairs, hot-seat turn flip |
-| RS-018 | **Balloon Battle** | PROTOTYPE | Arena | 2–4 | 1 | `balloonFight.html` | grab the pin, pop rivals' balloons |
+| RS-015 | **Chicken Chaos** | PLAYABLE · **needs QA** | Arena | 2–4 + bots | 1 | `Chicken Chaos.html` | dash-and-carry arena; nearest to shippable |
+| RS-016 | **Egg Rush** | PLAYABLE | Arena | 2–4 + bots | 1 | `EggRush.html` | collect · rob · raid, landscape, golden eggs |
+| RS-017 | **Memory Grab** | PLAYABLE | Party | 2+ / vs AI | 1 | `MemeoryGrab.html` (filename has a typo) | memory pairs, hot-seat turn flip |
+| RS-018 | **Balloon Battle** | PLAYABLE | Arena | 2–4 | 1 | `balloonFight.html` | grab the pin, pop rivals' balloons |
 
-> Sizes: prototype figures are raw `.html` size, the `CONTRACT.md` budget unit.
+> Sizes are the raw `.html` file size — the `CONTRACT.md` budget unit.
 > **Type** is our own vocabulary, not a shell feature yet — see RS-008 for the "party section"
 > shell work it implies.
-> Two "PROTOTYPE (data only)" and "(manifest ready)" markers matter: they say how close a file is
-> to dropping into `assets/games/`.
+> `PLAYABLE` means the game works; the real question is always the last column: what is still
+> missing before it can drop into `assets/games/`.
 
 
 ---
@@ -174,14 +191,14 @@ Add here first. Tag the source so future-us knows where it came from:
 - [ ] `[scan]` Last Balloon — hold-to-inflate party game, persona bots. See `§6.4`.
 - [x] `[you]` **Party-pack identity — CONFIRMED 2026-09-20.** The user asked for a *party games
   section in the shell* plus small party games (clue-and-guess a word with a group, truth or dare).
-  Three existing prototypes are already the same genre. Recorded as RS-008; needs a shell surface
+  Three existing games are already the same genre. Recorded as RS-008; needs a shell surface
   (a "PARTY" entry on Home + a manifest `category` field — not implemented yet).
 - [ ] `[you]` Monopoly-style board game — the favourite. Indian board + other popular boards,
   simplified (fewer spaces), our own identity. See RS-007.
 - [ ] `[you]` Snakes & Ladders (RS-009) · Daadi/Dhadi (RS-010) · Tic Tac Toe with juice + a twist
   (RS-011) · Connect Four (RS-013) · Dots & Boxes (RS-014) — all dumped 2026-09-20, entries in `§6`.
 - [ ] `[you]` Pen Fight — developed, needs polish; "serious issues"; up to 5 players. See RS-012.
-- [ ] `[scan]` Four more prototypes found in the project root: **Chicken Chaos** (RS-015, already
+- [ ] `[scan]` Four more playable games found in the project root: **Chicken Chaos** (RS-015, already
   has a valid manifest), **Egg Rush** (RS-016), **Memory Grab** (RS-017), **Balloon Battle**
   (RS-018). These are the "we were building it, not in development right now" files.
 - [ ] `[agent]` **Puzzle-pack identity:** Chess + Checkers both come with real puzzle databases.
@@ -198,7 +215,7 @@ Add here first. Tag the source so future-us knows where it came from:
 ## 6. Entries
 
 ### 6.1 RS-003 — Chess
-**Status:** PROTOTYPE · **Source:** `Chess.html` (137 KB, untracked in project root)
+**Status:** PLAYABLE · NEEDS SHELL · **Source:** `Chess.html` (137 KB, untracked in project root)
 
 - **Hook:** real chess against a bot that actually thinks, with a daily puzzle as the reason to
   come back tomorrow.
@@ -222,7 +239,7 @@ Add here first. Tag the source so future-us knows where it came from:
 - **Next action:** pick the puzzle subset size — that number drives every other decision.
 
 ### 6.2 RS-004 — Checkers · Gould's Problems
-**Status:** PROTOTYPE (data only) · **Source:** `CHeckers_puzzels_goulds_problems_all.json` (260 KB)
+**Status:** DATA ONLY (no game built around them yet) · **Source:** `CHeckers_puzzels_goulds_problems_all.json` (260 KB)
 
 - **Hook:** 678 real historical checkers problems (*Gould's Problem Book*) solved one at a time —
   a pure "next puzzle" loop, no timer pressure.
@@ -240,7 +257,7 @@ Add here first. Tag the source so future-us knows where it came from:
 - **Next action:** decide puzzle-vs-engine, then build the board renderer.
 
 ### 6.3 RS-005 — Bomb Relay
-**Status:** PROTOTYPE · **Source:** `BombRelay.html` (188 KB, untracked)
+**Status:** PLAYABLE · NEEDS SHELL · **Source:** `BombRelay.html` (188 KB, untracked)
 
 - **Hook:** pass the phone, the bomb is ticking, complete the mini-challenge to survive, and the
   holder when the fuse hits 0:00 loses.
@@ -260,7 +277,7 @@ Add here first. Tag the source so future-us knows where it came from:
 - **Next action:** play one full 4-player round on device and list which mini-games feel weak.
 
 ### 6.4 RS-006 — Last Balloon
-**Status:** PROTOTYPE · **Source:** `LastBaloon.html` (110 KB, untracked)
+**Status:** PLAYABLE · NEEDS SHELL · **Source:** `LastBaloon.html` (110 KB, untracked)
 
 - **Hook:** hold the pump, inflate the balloon, and hand it over before it pops — greed is funny
   right up until it isn't.
@@ -315,7 +332,8 @@ Add here first. Tag the source so future-us knows where it came from:
   or must bots be in version 1? (3) do you want the India board to be real city names or invented
   places? (4) name ideas — I'll bring a shortlist when we start.
 - **Next action:** research pass (rules variants, 24-space economy maths, what makes the last 10
-  minutes cruel in a good way), then write the board data + a playable movement-only prototype.
+  minutes cruel in a good way), then write the board data and the request prompt (`§12`) for the
+  authoring session — **we never author a game from scratch here**.
 
 ### 6.6 RS-008 — Party Pack (shell section + the small party games)
 **Status:** IDEA (direction confirmed by user 2026-09-20) · **Players:** a group sharing one phone
@@ -436,11 +454,12 @@ Add here first. Tag the source so future-us knows where it came from:
   point); then build Classic + Misère first, since both reuse the same board code.
 
 ### 6.10 RS-012 — Pen Fight
-**Status:** PROTOTYPE (has issues — user, 2026-09-20) · **Source:** `PenFight.html` (77.5 KB)
+**Status:** PLAYABLE · NEEDS SHELL (has issues — user, 2026-09-20) · **Source:** `PenFight.html` (77.5 KB)
 
 - **Hook:** desk-warfare nostalgia — pull back, release, flick your rival's pen off the bench.
-- **What's in the file (scanned):** a **bench prototype**, pulled-back flick control with an aiming
-  line, "flick pens off", scoring **kill +1 / survivor +3**, landscape lock, a seat grid where you
+- **What's in the file (scanned):** a **playable bench-top flick game** (its own copy calls it a
+  "bench prototype"), pulled-back flick control with an aiming line, "flick pens off", scoring
+  **kill +1 / survivor +3**, landscape lock, a seat grid where you
   tap a seat to toggle **human / AI** (dashed = AI), an **AI skill** setting, rounds with
   "highest score wins", and physics-driven motion.
 - **⚠️ The serious issue I can prove from the code (and it breaks our own contract):**
@@ -516,7 +535,7 @@ Add here first. Tag the source so future-us knows where it came from:
   chain-aware bot feels smart enough (that is the whole game).
 
 ### 6.13 RS-015 — Chicken Chaos
-**Status:** PROTOTYPE · **Source:** `Chicken Chaos.html` (97.5 KB) · **Closest to shippable of all**
+**Status:** PLAYABLE · NEEDS QA · **Source:** `Chicken Chaos.html` (97.5 KB) · **Closest to shippable of all**
 
 - **Hook:** grab the chicken, dash away, don't get tackled — a same-screen scramble where everyone
   fights over one bird.
@@ -526,7 +545,7 @@ Add here first. Tag the source so future-us knows where it came from:
   floating text, **SOLO VS BOT**, arena bounce/walls, safe-area handling, an explicit full-screen
   guarantee for older WebViews, error handling (`GAME ERROR`, `showFatal`/`runtimeError`), a
   `WINNER CHICKEN` result panel, and a **landscape lock**.
-- **✅ It already has a valid `STUDIO_GAME_MANIFEST`** (the only prototype that does):
+- **✅ It already has a valid `STUDIO_GAME_MANIFEST`** (the only game file that does):
   `id: chicken-chaos`, `orientation: landscape`, `minPlayers: 2`, `maxPlayers: 4`,
   `aiSupport: true`, `online: false`, `tileColor: #6BCB4A`, `version: 1`.
 - **✅ It also already has the Studio SDK block and a lifecycle** (`pause` / `resume` / `destroy`,
@@ -542,7 +561,7 @@ Add here first. Tag the source so future-us knows where it came from:
 - **Next action:** run the syntax gate, then a landscape device test.
 
 ### 6.14 RS-016 — Egg Rush
-**Status:** PROTOTYPE · **Source:** `EggRush.html` (97.7 KB, "REVISION 5") · **Type:** Arena
+**Status:** PLAYABLE · NEEDS SHELL · **Source:** `EggRush.html` (97.7 KB, "REVISION 5") · **Type:** Arena
 
 - **Hook:** *COLLECT · ROB · RAID* — hoard eggs, steal them off rivals, and get them home.
 - **What's in the file (scanned):** landscape arena, hens as players (red/yellow/blue/purple =
@@ -560,7 +579,7 @@ Add here first. Tag the source so future-us knows where it came from:
 - **Next action:** add the manifest, then device-test landscape + the race mode.
 
 ### 6.15 RS-017 — Memory Grab
-**Status:** PROTOTYPE · **Source:** `MemeoryGrab.html` (57.8 KB — note the filename typo) · **Type:** Party
+**Status:** PLAYABLE · NEEDS SHELL · **Source:** `MemeoryGrab.html` (57.8 KB — note the filename typo) · **Type:** Party
 
 - **Hook:** *Remember. Match. Score.* — memory pairs you pass around the room, with no timer pressure.
 - **What's in the file (scanned, from its own how-to-play copy):** cards start face-down, tap one to
@@ -579,7 +598,7 @@ Add here first. Tag the source so future-us knows where it came from:
 - **Next action:** add the manifest + rename, then treat card-set themes as future content.
 
 ### 6.16 RS-018 — Balloon Battle
-**Status:** PROTOTYPE · **Source:** `balloonFight.html` (74.4 KB) · **Type:** Arena
+**Status:** PLAYABLE · NEEDS SHELL · **Source:** `balloonFight.html` (74.4 KB) · **Type:** Arena
 
 - **Hook:** *grab the pin, pop their balloons* — a sky-island scramble where the pin is the weapon
   and everybody wants it.
@@ -590,7 +609,7 @@ Add here first. Tag the source so future-us knows where it came from:
   `P2 BOTTOM`, locked seat mapping) so 2–4 players share one screen, plus `ROTATE YOUR DEVICE`
   (landscape) and `PLAY AGAIN`.
 - **Already present:** a lifecycle (`pause` / `resume` / `destroy`).
-- **Missing:** `STUDIO_GAME_MANIFEST`, the **Studio SDK block** (it is the one arena prototype
+- **Missing:** `STUDIO_GAME_MANIFEST`, the **Studio SDK block** (it is the one arena game
   without it), the syntax gate, and landscape verification.
 - **Players:** 2–4 on one phone, real-time multi-touch — same class as Chicken Chaos and Egg Rush.
 - **Proposed manifest (user to confirm):** `id balloon-battle`, `landscape`, `minPlayers 2`,
@@ -618,7 +637,7 @@ Each has its own parked document so a game idea never has to carry platform deci
 **Rule:** if a new game needs one of the above, note it in the game entry and move on. Do not
 build platform work as a side quest of a game.
 
-### Shell gaps these prototypes just exposed (all shell-side, none game-side)
+### Shell gaps these playable games just exposed (all shell-side, none game-side)
 
 | Gap | Why it matters | Status |
 |---|---|---|
@@ -634,8 +653,8 @@ build platform work as a side quest of a game.
 
 1. **Regression first** (`AGENT.md`): run `BUILD.bat`, confirm the APK timestamp is fresh, and
    re-check the previous phase's acceptance items before touching a new file.
-2. **Copy the prototype into the shell:** `app/src/main/assets/games/<id>/index.html`. Leave the
-   root `.html` where it is — it is the historical prototype, not a build input.
+2. **Copy the game file into the shell:** `app/src/main/assets/games/<id>/index.html`. Leave the
+   root `.html` where it is — it is the master reference copy, not a build input.
 3. **Add the two required blocks:** `STUDIO_GAME_MANIFEST` (see `§2`) and the `window.Game`
    lifecycle with a sim-clock `pause` / `resume`, plus `destroy`.
 4. **Route audio and haptics through the shell** so the master-sound and vibration settings in
@@ -683,15 +702,154 @@ not be copied into `assets/games/`. Recording them here stops future-us from "di
 (user decision 2026-09-20). They are the shell's real sound, not test leftovers — the code references
 them as `R.raw.*`, so never delete them without regenerating first (`BUILD.md`, "Audio Assets").
 
-**Rule:** a prototype lives in the root until it is shell-ready; only then does it get copied into
+**Rule:** a game file lives in the root until it is shell-ready; only then does it get copied into
 `assets/games/<id>/`. Never edit the root copy and the shipped copy in the same session without
 noting which one won.
 
 ---
 
+## 11. Roadmap — the order we agreed (2026-09-20)
+
+> Two phases of different kinds of work. **Shell first, then games one at a time.** No parallel game
+> work: integration is a checklist, and interleaving it is how bugs get born.
+
+### Phase 0 — finish the shell (before any game work)
+The shell is the foundation; a half-wired game on a moving shell gets re-tested twice. Outstanding:
+
+| # | Item | Why it blocks us | Status |
+|---|---|---|---|
+| 0.1 | **Landscape orientation path verified** | Chicken Chaos, Egg Rush, Pen Fight and Balloon Battle are all landscape, and no shipped game has ever run landscape, so we do not actually know the shell handles it | TO VERIFY |
+| 0.2 | Remaining UI polish reported while testing | last open class of items from the UI passes | OPEN |
+| 0.3 | `category` manifest field + a PARTY entry on Home | needed before party games can be grouped (RS-008) | NOT IMPLEMENTED |
+| 0.4 | Pass-n-play conventions extracted once ("pass to X" + screen flip) | currently implemented twice by hand (Bomb Relay, Memory Grab); a third copy is where drift starts | PATTERN TO EXTRACT |
+| 0.5 | Notifications release-hardening (`SCHEDULE_EXACT_ALARM`, Xiaomi battery hint) | store-prep work, can wait until closer to submission | DEFERRED TO RELEASE PREP |
+
+### Phase 1 — Planet Merge fix (first game priority, dedicated session)
+Parked deliberately: it has several real issues and needs one focused session with its own scope.
+Known-good snapshots exist for rollback — `backup_pm_knowngood.html`, `previous_pm.html`,
+`previous_known_good.html`. **Do not bundle anything else into that session.**
+
+### Phase 2 — Chess integration
+Chess is **functionally complete**; what remains is shell work plus its puzzle mode:
+
+| Task | Notes |
+|---|---|
+| Manifest + lifecycle + settings sync + ads | the standard `§8` checklist |
+| Puzzle mode fed by `chess_puzzles.txt` | Lichess set, **count 10 500**, buckets easy/normal/hard, entries `[puzzleId, FEN, solutionMoves, rating, themes]` |
+| Subset decision | the file is 2.6 MB and **cannot ship as-is**; choose a trimmed/packed subset that fits the tier budget |
+| Daily puzzle | natural fit for the notifications system we already shipped |
+
+### Phase 3 — integration queue, one game at a time
+Ordered by *smallest distance to shipping* — the fastest route to real titles in the store:
+
+| Order | Game | Remaining work |
+|---|---|---|
+| 1 | **Chicken Chaos** | manifest + SDK + lifecycle already present → essentially QA (syntax gate, landscape, device test) |
+| 2 | **Memory Grab** | add manifest (+ rename the file: `MemeoryGrab.html` → `memory-grab`) |
+| 3 | **Egg Rush** | add manifest, verify landscape + race mode |
+| 4 | **Balloon Battle** | add manifest + Studio SDK block; resolve the two-balloon naming collision with Last Balloon |
+| 5 | **Bomb Relay** | manifest + lifecycle already there; route real ads through the shell, verify pass-and-flip on a phone |
+| 6 | **Last Balloon** | manifest; verify the audio tells respect the master-sound setting |
+| 7 | **Pen Fight** | inline Matter.js (no CDN), add manifest + lifecycle, then AI tuning |
+
+### Phase 4 — new games, requested as prompts
+Daadi/Dhadi, the Monopoly-style board game, the Party Pack modules, Snakes & Ladders, Tic Tac Toe,
+Connect Four, Dots & Boxes, and anything from the `§5` inbox. Each starts as a `§12` request prompt;
+the authored file lands in the root and then joins the Phase 3 queue.
+
+---
+
+## 12. The game-work request prompt (how we ask for a game)
+
+**Why this exists:** we never author a game from scratch in this repo. When a game is wanted — a new
+one, or new work on an existing one — the request is a **prompt** that (a) states the idea briefly
+and (b) pins every shell constraint the result must satisfy. Nothing more, nothing less: no
+implementation instructions, no code, no art direction beyond the one-line idea and the required
+data. The prompt is the contract; the file that comes back is integrated by `§8`.
+
+### 12.1 Template (copy, fill the `< >` slots, ship it)
+
+```text
+Build a single self-contained HTML5 game: <NAME>
+
+THE IDEA (one paragraph, no more): <what the player does, why it is fun in 30 seconds,
+who plays it, and on how many phones. Nothing about how to implement it.>
+
+TARGET FILE: <path to the existing game file to UPDATE — e.g. Chess.html>
+Update that file in place. Do not start a new game, do not rewrite what already works,
+and do not touch any other file in the repo.
+
+HARD REQUIREMENTS (our shell stack — all mandatory):
+1. ONE self-contained .html. All CSS, JS and art inline.
+2. ZERO network calls at runtime: no CDNs, no external fonts, no analytics, no remote images.
+   It must run perfectly from file:// with the device offline.
+3. Size budget: <Tier N> — see CONTRACT.md §2 (T1 <=300KB, T2 <=450KB, T3 <=1MB).
+4. STUDIO_GAME_MANIFEST comment block with exactly these keys:
+   id / title / orientation / minPlayers / maxPlayers / aiSupport / online / tileColor / version
+   values: <the values for this game>
+5. window.Game lifecycle with a simulation clock: pause(), resume(), destroy(). Pausing must freeze
+   all timers, animation and audio; nothing may keep simulating in the background.
+6. Studio SDK block, wrapped so the game runs fully when the native bridge is absent (browser test).
+7. Ads ONLY through the shell bridge (banner + rewarded). If the device is offline, show a plain
+   "check your internet connection" message — NEVER a simulated or fake ad.
+8. Audio and vibration obey the shell settings (master sound, volume, vibration, haptic profile):
+   no game sound may play when master sound is off.
+9. User-facing copy: plain text, no em dashes and no "--" anywhere in the UI.
+10. Orientation <orientation>, with safe-area insets handled (notches, rounded corners).
+11. Every inline <script> block must parse — verified with the node -e gate in AGENT.md.
+
+DO NOT: change the shell, add a second file, add a dependency, phone home, or invent gameplay
+beyond the idea above.
+```
+
+### 12.2 Filled example — Chess (Phase 2)
+
+```text
+Build a single self-contained HTML5 game: Chess — Redundant Studios
+
+THE IDEA: real chess on a phone against a bot that actually thinks, plus a daily puzzle as the
+reason to come back tomorrow. One player, portrait, pass-and-play for two if it fits.
+
+TARGET FILE: Chess.html   (update in place — the engine already works)
+
+HARD REQUIREMENTS: the 11 items in §12.1, with:
+ - orientation: portrait, minPlayers 1, maxPlayers 2, aiSupport true, online false,
+   tileColor #37474F, version 2
+ - size budget: Tier 1, <=300KB for the game itself
+ - PUZZLES: use a SUBSET of chess_puzzles.txt (Lichess, 10 500 entries, buckets
+   easy/normal/hard, entries are [puzzleId, FEN, solutionMoves, rating, themes]). The source file is
+   2.6MB and must NOT be shipped as-is — pick and pack a subset that fits the budget and report the
+   count you shipped.
+ - puzzle rules: the player must play the stored solution move(s); a wrong move gets a gentle
+   shake and a retry, no timer.
+```
+
+### 12.3 Filled example — Planet Merge (Phase 1)
+
+```text
+Fix the existing single-file game: Planet Merge
+
+TARGET FILE: app/src/main/assets/games/planetmerge/index.html   (this IS the shipped copy)
+
+SCOPE: only the issues listed below — <the user's issue list for this session>.
+Rollback references exist: backup_pm_knowngood.html, previous_pm.html, previous_known_good.html.
+
+CONSTRAINTS: single self-contained .html, zero network calls, works offline from file://, keep the
+existing manifest block and the window.Game lifecycle intact, ads through the shell bridge only
+(never simulated), audio/vibration obey the shell settings, no em dashes in UI copy, and every
+inline <script> must parse (AGENT.md syntax gate).
+Do not change gameplay beyond the issue list, and do not touch any other file.
+```
+
+> **When the file comes back:** it lands in the project root (or straight into `assets/games/<id>/`
+> if it is a shipped-copy fix), and then the `§8` checklist runs — build gate, syntax gate, device
+> verification in both themes, screenshots.
+
+---
+
 ## Changelog of this file
 
-- 2026-09-20 — created. Board seeded from the four prototypes found untracked in the project root
+- 2026-09-20 — created. Board seeded from the four playable games found untracked in the project root
   (Chess, Checkers/Gould's, Bomb Relay, Last Balloon), the two shipped games, and the principles
   already agreed in the four parked system docs. Agent-proposed identity observations marked
   `[agent]` in `§5` are awaiting your verdict, not accepted truth.
@@ -701,8 +859,17 @@ noting which one won.
   family, 24 points, mills, AP fisherfolk heritage), RS-011 Tic Tac Toe (three-mode package with
   Ultimate as the twist), RS-012 Pen Fight (CDN physics dependency identified as a
   `CONTRACT.md` breach), RS-013 Connect Four (solved-game warning + Pop variant), RS-014 Dots &
-  Boxes. Four further prototypes discovered in the root and recorded: RS-015 Chicken Chaos
+  Boxes. Four further playable games discovered in the root and recorded: RS-015 Chicken Chaos
   (**already has a valid manifest — cheapest third game**), RS-016 Egg Rush, RS-017 Memory Grab,
   RS-018 Balloon Battle. Added the Type column, the shell-gaps table in `§7`, and the `§10` archive
   of inactive repo files.
+- 2026-09-20 (this pass) — vocabulary and rules corrected per the user:
+  **the root `.html` files are finished, playable games awaiting shell integration, not prototypes.**
+  The status ladder was renamed (`PROTOTYPE` → `PLAYABLE` → `NEEDS SHELL` → `INTEGRATING` →
+  `SHELL-READY` → `SHIPPED`) and every entry re-labelled. Added **Rule 1** (we never author a game
+  from scratch in this repo — work here is integration; new games arrive as a prompt) and **Rule 2**
+  (the games are done, the wiring is not). New `§11 Roadmap` pins the agreed order — finish the shell,
+  then **Planet Merge**, then **Chess**, then the seven-game integration queue, then new games — and
+  new `§12` holds the **game-work request prompt template** with filled Chess and Planet Merge
+  examples, so a request states the idea briefly and pins the whole shell stack.
 

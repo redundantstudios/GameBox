@@ -40,21 +40,30 @@ translated by the offset, and the border is stroked inside the body edge), and t
 selector was inverted — `applyPair(on, off, value)` must be called as
 `(selThemeDark, selThemeLight, isDark)`, otherwise picking Dark jumps back to Light.
 
-### NEXT
-1. **Settings redesign (still owed)** — the user called the page "a complete mess"; the direction
-   agreed is conservative: one calm row per setting, keep the cream palette and rounded language,
-   drop the visual noise. Show the direction before rewriting.
-2. **Notifications** — full plan in `NOTIFICATIONS.md` (local-only, WorkManager, 4 channels,
-   permission after the first finished game). Ask the open questions at the bottom of that file.
-3. **Chess** — `Chess.html` + `chess_puzzles.txt` sit untracked in the project root, uncommitted
-   and unbundled; user still to decide.
-4. **Game backlog** — every game idea, prototype, and its ship-readiness now lives in
-   `GAME_IDEAS.md` (status board in §1; entries for Chess, Checkers/Gould's, Bomb Relay, Last
-   Balloon in §6). Add new ideas to the §5 inbox before they get lost. Cross-cutting platform
-   docs: `NOTIFICATIONS.md`, `LEADERBOARD_IDEA.md`, `ONLINE_MULTIPLAYER_PLAN.md`,
-   `COINS_ECONOMY_PLAN.md`.
-5. **Audio assets are generated, NOT committed** — the `.ogg` files in `app/src/main/res/raw/`
-   are gitignored on purpose. On any fresh clone or new machine, run `python _gen_audio.py` and then
+### NEXT — agreed order (2026-09-20)
+1. **Finish the shell first (Phase 0).** Open items: the **landscape orientation path verified** (it
+   blocks four landscape games and no shipped game has ever run landscape), the remaining UI polish
+   the user reports, a `category` manifest field + a PARTY entry on Home, and extracting the
+   pass-n-play "pass to X" + screen-flip pattern once (it is hand-copied in Bomb Relay and Memory
+   Grab today). Notifications release-hardening is deferred to store prep.
+2. **Planet Merge — first game priority, its own dedicated session.** Several real issues; do not
+   bundle anything else into that session. Rollback references:
+   `backup_pm_knowngood.html`, `previous_pm.html`, `previous_known_good.html`. The shipped copy is
+   `app/src/main/assets/games/planetmerge/index.html`.
+3. **Chess integration.** The game is functionally complete; it needs the standard checklist
+   (manifest, lifecycle, settings sync, ads) plus puzzle mode built from `chess_puzzles.txt` —
+   10 500 Lichess puzzles in easy/normal/hard buckets, 2.6 MB, so a packed subset must be chosen.
+4. **Integration queue, one game at a time** — Chicken Chaos (manifest already valid, so essentially
+   QA) → Memory Grab → Egg Rush → Balloon Battle → Bomb Relay → Last Balloon → Pen Fight. Full table
+   and reasoning in `GAME_IDEAS.md §11`.
+5. **Game backlog and the two new rules** — `GAME_IDEAS.md` holds the status board (§1), the roadmap
+   (§11) and **§12, the game-work request-prompt template**. Rules that now stand: (a) **we never
+   author a game from scratch here** — the root `.html` files are *finished, playable games awaiting
+   shell integration*, not prototypes; (b) a new game is requested as a §12 **prompt** (the idea
+   stated briefly + the shell-stack requirements), authored elsewhere, then integrated here.
+6. **Audio assets are generated, NOT committed** — the `.ogg` files in `app/src/main/res/raw/`
+   are gitignored on purpose, but the files themselves must stay on disk (the code references them as
+   `R.raw.*`). On any fresh clone or new machine, run `python _gen_audio.py` and
    `python _gen_bgm.py` **before** `BUILD.bat`, otherwise the Kotlin `R.raw.*` references do not
    compile. `notif_chime.ogg` has no committed generator yet (see `BUILD.md`, "Audio Assets").
 
