@@ -58,7 +58,7 @@ block, the `window.Game` lifecycle (`pause` / `resume` / `destroy`), and a passi
 | RS-007 | **Monopoly-style board game** | IDEA **(user's favourite)** | Board | 2–6 + bots | 1 | — | Indian + world boards, simplified map, our identity |
 | RS-008 | **Party Pack** (shell section + games) | IDEA | Party | group on one phone | 1 | — | clue-and-guess, truth-or-dare, etc. |
 | RS-009 | **Snakes & Ladders** | IDEA | Classic | 2–4 + bots | 1 | — | needs a real hook to beat the boredom |
-| RS-010 | **Daadi (Jaadi)** | IDEA | Classic | 2 | 1 | — | nested squares / Nine Men's Morris |
+| RS-010 | **Daadi / Dhadi** | IDEA | Classic | 2 | 1 | — | "attack" · nested squares (Nine Men's Morris) |
 | RS-011 | **Tic Tac Toe** | IDEA | Classic | 2 + bot | 1 | — | only worth it with juice + a twist |
 | RS-012 | **Pen Fight** | PROTOTYPE (has issues) | Arena | up to 5 + AI | 2 (Matter.js) | `PenFight.html` | flick pens off the bench; physics engine must be local |
 | RS-013 | **Connect Four** | IDEA | Classic | 2 + bot | 1 | — | drop-and-win, add gravity juice |
@@ -178,7 +178,7 @@ Add here first. Tag the source so future-us knows where it came from:
   (a "PARTY" entry on Home + a manifest `category` field — not implemented yet).
 - [ ] `[you]` Monopoly-style board game — the favourite. Indian board + other popular boards,
   simplified (fewer spaces), our own identity. See RS-007.
-- [ ] `[you]` Snakes & Ladders (RS-009) · Daadi/Jaadi (RS-010) · Tic Tac Toe with juice + a twist
+- [ ] `[you]` Snakes & Ladders (RS-009) · Daadi/Dhadi (RS-010) · Tic Tac Toe with juice + a twist
   (RS-011) · Connect Four (RS-013) · Dots & Boxes (RS-014) — all dumped 2026-09-20, entries in `§6`.
 - [ ] `[you]` Pen Fight — developed, needs polish; "serious issues"; up to 5 players. See RS-012.
 - [ ] `[scan]` Four more prototypes found in the project root: **Chicken Chaos** (RS-015, already
@@ -375,16 +375,16 @@ Add here first. Tag the source so future-us knows where it came from:
   no-decisions innocence; keep the art friendly (this tile will be played by kids).
 - **Next action:** choose the single twist + the board theme, then build board data + hop animation.
 
-### 6.8 RS-010 — Daadi (Telugu "Jaadi") · the chalk-and-stones game
+### 6.8 RS-010 — Daadi / Dhadi (Telugu for "attack") · the chalk-and-stones game
 **Status:** IDEA (rules researched and verified 2026-09-20) · **Type:** Classic / heritage
 
 - **Hook:** "the game the Andhra fisherfolk were said to be impossible to beat" — drawn on the
   ground with chalk, played with stones. Zero luck, pure thinking, and it is *ours*.
-- **Verified rules (researched, not guessed):** this is the **Nine Men's Morris** family, known as
-  **Daadi** in Telugu (literally "to attack"), and also **Navakankari** (Sanskrit), **Saalu Mane
-  Ata / Char-Par** (Kannada), **Jodpi Ata**, **Muhle**, **Navkakri** (Gujarati). It is documented as
-  a game of the fisherfolk of **Sorlagondi, Krishna district, Andhra Pradesh** — a community famous
-  for being near-unbeatable at it.
+- **Verified rules (researched, not guessed):** this is the **Nine Men's Morris** family. In Telugu it
+  is **Daadi / Dhadi** — from **దాడి (dāḍi)**, *"attack"* — and it is also known as **Navakankari**
+  (Sanskrit), **Saalu Mane Ata / Char-Par** (Kannada), **Jodpi Ata**, **Muhle**, **Navkakri**
+  (Gujarati). It is documented as a game of the fisherfolk of **Sorlagondi, Krishna district, Andhra
+  Pradesh** — a community famous for being near-unbeatable at it.
   - Board: **three concentric squares joined by mid-lines = 24 points** (no equipment needed
     beyond chalk and stones).
   - Each player gets **9 pieces** (some local versions use 11).
@@ -689,7 +689,7 @@ noting which one won.
   `[agent]` in `§5` are awaiting your verdict, not accepted truth.
 - 2026-09-20 (later) — idea dump recorded: RS-007 Monopoly-style board game (the user's favourite,
   with the IP warning written down), RS-008 Party Pack + the `PartyKit` architecture, RS-009
-  Snakes & Ladders, RS-010 **Daadi/Jaadi — rules researched and verified** (Nine Men's Morris
+  Snakes & Ladders, RS-010 **Daadi/Dhadi — rules researched and verified** (Nine Men's Morris
   family, 24 points, mills, AP fisherfolk heritage), RS-011 Tic Tac Toe (three-mode package with
   Ultimate as the twist), RS-012 Pen Fight (CDN physics dependency identified as a
   `CONTRACT.md` breach), RS-013 Connect Four (solved-game warning + Pop variant), RS-014 Dots &
