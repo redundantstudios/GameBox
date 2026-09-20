@@ -18,3 +18,12 @@ pm_diff.txt
 # Local debugging scratch (screenshots / logs pulled from the device)
 _*.png
 _*.txt
+
+# Generated audio assets - NOT in git on purpose (keeps the repo text-only).
+# They are produced from the committed generator scripts; run both before building:
+#     python _gen_audio.py     (sfx_tap / sfx_select / sfx_back / sfx_tick + bgm take 1)
+#     python _gen_bgm.py       (bgm_shell, seamless loop - overwrites the take-1 bgm)
+# Requires ffmpeg with libvorbis on PATH. See BUILD.md, "Audio Assets".
+# notif_chime.ogg has NO committed generator yet - see the note in BUILD.md.
+app/src/main/res/raw/*.ogg
+app/src/main/res/raw/*.wav

@@ -53,6 +53,10 @@ selector was inverted — `applyPair(on, off, value)` must be called as
    Balloon in §6). Add new ideas to the §5 inbox before they get lost. Cross-cutting platform
    docs: `NOTIFICATIONS.md`, `LEADERBOARD_IDEA.md`, `ONLINE_MULTIPLAYER_PLAN.md`,
    `COINS_ECONOMY_PLAN.md`.
+5. **Audio assets are generated, NOT committed** — the `.ogg` files in `app/src/main/res/raw/`
+   are gitignored on purpose. On any fresh clone or new machine, run `python _gen_audio.py` and then
+   `python _gen_bgm.py` **before** `BUILD.bat`, otherwise the Kotlin `R.raw.*` references do not
+   compile. `notif_chime.ogg` has no committed generator yet (see `BUILD.md`, "Audio Assets").
 
 
 ### ⚠️ USER FEEDBACK 2026-09-20 00:58 — ADDRESSED IN `757fc6e` (history below)
