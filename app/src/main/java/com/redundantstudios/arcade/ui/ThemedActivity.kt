@@ -1,23 +1,52 @@
-package com.redundantstudios.arcade.ui
+﻿package com.redundantstudios.arcade.ui
 
+import android.app.Activity
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.NestedScrollView
 import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.util.SettingsManager
+
+/** Carries the visual state of a screen across a theme-flip recreation. */
+object ThemeTransition {
+    /** The screen as it looked in the old theme, captured just before the flip. */
+    internal var snapshot: Bitmap? = null
+
+    /** Where the page was scrolled, so the rebuilt page stays where it was. */
+    internal var scrollY: Int = 0
+
+    /** Screenshot the activity right now. Cheap: one draw pass, once per flip. */
+    fun capture(activity: Activity) {
+        try {
+            val decor = activity.window.decorView
+            if (decor.width == 0 || decor.height == 0) return
+            val bitmap = Bitmap.createBitmap(decor.width, decor.height, Bitmap.Config.ARGB_8888)
+            decor.draw(Canvas(bitmap))
+            snapshot = bitmap
+        } catch (_: Exception) {
+            snapshot = null
+        }
+    }
+}
 
 /**
  * Base activity for every shell screen.
  *
- * Settings are initialised and the theme applied *before* `super.onCreate()` —
+ * Settings are initialised and the theme applied *before* `super.onCreate()` -
  * a cold start of any screen must already know the saved preferences.
  *
- * It also fixes the "dark theme only darkened some screens" bug: an activity
- * that is already stopped (sitting behind the screen where the theme was
- * switched) can keep its old configuration, so we re-check on every resume and
- * recreate only when the running configuration disagrees with the preference.
+ * Theme flips land here as an automatic recreation (AppCompatDelegate resets
+ * the night mode for every alive activity). To make that subtle instead of a
+ * hard snap, the screen that starts the flip screenshots itself; when the
+ * rebuilt screen resumes we lay that snapshot ON TOP and fade it out - a true
+ * cross-fade from old theme to new - and re-apply the saved scroll position
+ * underneath so the page never jumps to the top.
  */
 abstract class ThemedActivity : AppCompatActivity() {
 
@@ -31,25 +60,59 @@ abstract class ThemedActivity : AppCompatActivity() {
         super.onResume()
         if (isThemeOutOfSync()) {
             recreate()
-        } else if (SettingsManager.consumeThemeTransition()) {
-            // A theme flip just rebuilt this screen: fade the content in
-            // instead of popping it, for a subtle cross-fade feel.
-            val content = findViewById<View>(android.R.id.content) as? ViewGroup
-            content?.getChildAt(0)?.let { root ->
-                root.alpha = 0f
-                root.animate().alpha(1f).setDuration(240L).start()
-            }
+        } else {
+            playThemeTransition()
+            ShellAudio.hostResumed(this)
         }
-        // Host counting instead of start/pause: during recreate() the new
-        // activity resumes BEFORE the old one pauses, so the loop must stay
-        // alive across that overlap. It only fades out when the last shell
-        // screen is gone (backgrounded, or a game took over).
-        ShellAudio.hostResumed(this)
     }
 
     override fun onPause() {
         super.onPause()
         ShellAudio.hostPaused()
+    }
+
+    /**
+     * If a theme flip just happened: restore the scroll position, then fade
+     * the captured old-theme screenshot away to reveal the new palette.
+     */
+    private fun playThemeTransition() {
+        val snapshot = ThemeTransition.snapshot ?: return
+        ThemeTransition.snapshot = null
+        val content = findViewById<ViewGroup>(android.R.id.content) ?: return
+
+        // Keep the reading position - the scroll jump the user kept seeing.
+        findScrollView(content)?.let { scrollView ->
+            val target = ThemeTransition.scrollY
+            scrollView.post { scrollView.scrollTo(0, target) }
+        }
+
+        // Old frame on top of the rebuilt screen, dissolving out.
+        val overlay = ImageView(this)
+        overlay.setImageBitmap(snapshot)
+        overlay.scaleType = ImageView.ScaleType.FIT_XY
+        content.addView(
+            overlay,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
+        overlay.animate()
+            .alpha(0f)
+            .setDuration(360L)
+            .withEndAction {
+                (overlay.parent as? ViewGroup)?.removeView(overlay)
+                snapshot.recycle()
+            }
+            .start()
+    }
+
+    private fun findScrollView(view: View): NestedScrollView? {
+        if (view is NestedScrollView) return view
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                findScrollView(view.getChildAt(i))?.let { return it }
+            }
+        }
+        return null
     }
 
     /** True when the stored theme preference and the running config disagree. */
@@ -73,7 +136,7 @@ abstract class ThemedActivity : AppCompatActivity() {
      * Call it right after `setContentView(...)`.
      */
     protected fun applyShellBackground() {
-        val content = findViewById<View>(android.R.id.content) as? ViewGroup ?: return
+        val content = findViewById<ViewGroup>(android.R.id.content) ?: return
         val root = content.getChildAt(0) ?: return
         root.background = ShellBackgroundDrawable(this)
     }

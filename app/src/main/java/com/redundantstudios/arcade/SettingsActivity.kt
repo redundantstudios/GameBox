@@ -11,6 +11,7 @@ import androidx.appcompat.widget.SwitchCompat
 import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.notifications.ArcadeNotifier
 import com.redundantstudios.arcade.notifications.ReminderScheduler
+import com.redundantstudios.arcade.ui.ThemeTransition
 import com.redundantstudios.arcade.ui.ThemedActivity
 import com.redundantstudios.arcade.util.Haptics
 import com.redundantstudios.arcade.util.SettingsManager
@@ -76,21 +77,17 @@ class SettingsActivity : ThemedActivity() {
         if (SettingsManager.developerMode) btnTestNotif.visibility = View.VISIBLE
         loading = false
 
-        // A theme flip recreates this screen; put the user back where they were.
-        val scroll = findViewById<androidx.core.widget.NestedScrollView>(R.id.settingsScroll)
-        if (pendingScroll > 0 && scroll != null) {
-            scroll.post { scroll.scrollTo(0, pendingScroll) }
-            pendingScroll = 0
-        }
+        // A theme flip recreates this screen; the old frame dissolves away on
+        // top and ThemedActivity restores the scroll position underneath.
 
-        // ---- sound effects (no fanfare on the switch itself) ----------------
-        // ---- sound effects: silent flip (the sounds themselves are the feedback)
+        // ---- sound effects: the switch itself confirms with the toggle sounds
         swSound.setOnCheckedChangeListener { _, checked ->
             if (loading) return@setOnCheckedChangeListener
             SettingsManager.soundEnabled = checked
+            // Play AFTER the setting lands so the sound is heard at the new state.
+            if (checked) ShellAudio.tapToggleOn(this) else ShellAudio.tapTiny(this)
             sync()
         }
-
         // ---- music: silent flip; the loop fading in/out IS the feedback ----
         swMusic.setOnCheckedChangeListener { _, checked ->
             if (loading) return@setOnCheckedChangeListener
@@ -139,18 +136,17 @@ class SettingsActivity : ThemedActivity() {
                 else -> "Crisp"
             }
             Haptics.preview(this)
-            ShellAudio.tap(this)
+            ShellAudio.tapTiny(this)
             sync()
         }
 
         // ---- theme (ThemedActivity re-applies it to every screen) -----------
         themeGroup.setOnCheckedChangeListener { _, checkedId ->
             if (loading) return@setOnCheckedChangeListener
-            ShellAudio.tap(this)
+            ShellAudio.tapToggleOn(this)
             SettingsManager.appTheme = if (checkedId == R.id.rbThemeDark) "Dark" else "Light"
             applyThemeCrossFade()
         }
-
         // ---- developer mode (silent; it is a test surface) ------------------
         swDev.setOnCheckedChangeListener { _, checked ->
             if (loading) return@setOnCheckedChangeListener
@@ -177,7 +173,7 @@ class SettingsActivity : ThemedActivity() {
                 else -> "Evening"
             }
             ReminderScheduler.schedule(this)
-            ShellAudio.tap(this)
+            ShellAudio.tapTiny(this)
             sync()
         }
 
@@ -195,14 +191,10 @@ class SettingsActivity : ThemedActivity() {
      * Net effect: a soft fade instead of a hard snap, and no jump to the top.
      */
     private fun applyThemeCrossFade() {
-        pendingScroll = findViewById<androidx.core.widget.NestedScrollView>(R.id.settingsScroll)?.scrollY ?: 0
-        SettingsManager.themeTransitionPending = true
+        ThemeTransition.scrollY =
+            findViewById<androidx.core.widget.NestedScrollView>(R.id.settingsScroll)?.scrollY ?: 0
+        ThemeTransition.capture(this)
         SettingsManager.applyTheme()
-    }
-
-    companion object {
-        /** Scroll position carried across the theme-flip recreation. */
-        private var pendingScroll = 0
     }
 
     /** Whatever changed here must reach every game. */

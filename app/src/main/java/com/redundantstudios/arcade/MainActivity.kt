@@ -51,7 +51,7 @@ class MainActivity : ThemedActivity() {
         }
 
         findViewById<View>(R.id.allGamesCard).setOnClickListener {
-            ShellAudio.select(this)
+            ShellAudio.tap(this)
             startActivity(
                 Intent(this, ModeActivity::class.java).apply {
                     putExtra(ModeActivity.EXTRA_ALL_GAMES, true)
