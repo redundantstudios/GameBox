@@ -674,6 +674,14 @@ not be copied into `assets/games/`. Recording them here stops future-us from "di
 | `manus-reference.html` | an external design/AI reference, not our code | reference only |
 | `forensics/broken_planetmerge_2026-09-18.html` | the broken PM build kept for diagnosis | forensics |
 | `Design--ref/*.jpeg`, `brand/red-studios-logo.jpg` | the design inspiration set and the brand logo | assets, keep |
+| `generate_icons.py`, `make_splash.py` | **app asset generators** (launcher icons, splash logo) — same category as the audio generators | tools, keep |
+| `add_tutimg.py` | injects tutorial images into Planet Merge — still relevant while PM is unfinished | tool, keep for the PM session |
+| `cleanup*.py`, `cleanup2-10.py`, `fix_intro*.py`, `remove_banner.py`, `remove_button.py`, `remove_btn2.py`, `check_banner.py`, `check_dump.py` | the one-off Planet Merge patch/cleanup scripts from earlier phases | **deleted from the root 2026-09-20** — still in git history if ever needed (`git log --diff-filter=D --name-only`) |
+
+**Audio note:** the six `.ogg` files in `app/src/main/res/raw/` (`bgm_shell`, `sfx_tap`,
+`sfx_select`, `sfx_back`, `sfx_tick`, `notif_chime`) are **deliberately kept on disk but out of git**
+(user decision 2026-09-20). They are the shell's real sound, not test leftovers — the code references
+them as `R.raw.*`, so never delete them without regenerating first (`BUILD.md`, "Audio Assets").
 
 **Rule:** a prototype lives in the root until it is shell-ready; only then does it get copied into
 `assets/games/<id>/`. Never edit the root copy and the shipped copy in the same session without
