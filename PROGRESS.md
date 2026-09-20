@@ -1,6 +1,25 @@
 # Project Progress
 
-## Current State — 2026-09-19
+## Current State — 2026-09-20 (shell UI pass 3, `main @ 757fc6e`)
+- **ALL GAMES** shipped: brand-green band on Home -> `ModeActivity(EXTRA_ALL_GAMES)` lists every
+  bundled game; launching from there uses `ModeActivity.defaultPlayers(game)`.
+- **Dark mode root cause fixed and verified in both themes.** A custom Drawable inflated from XML
+  gets the *application* context, which never sees AppCompat's night override — that is why the
+  page background stayed light while the views went dark. Backgrounds are now applied from code
+  (`ThemedActivity.applyShellBackground()`), `bg_shell.xml` deleted, and `ThemedActivity` adds a
+  self-healing `onResume` recreate check (stopped screens can no longer keep a stale theme).
+- **ChunkyCardView leak fixed**: the shadow is the exact card shape translated by the offset and
+  the border is stroked inside the body edge; press feedback is clipped to the rounded body.
+- **Settings theme selector un-inverted** (`applyPair(selThemeDark, selThemeLight, isDark)`).
+- Home header rebuilt: single-line auto-sized brand title, 34dp gear tucked into the corner, no
+  tagline pill, footer is just "Redundant Studios · v1.0" from a string resource.
+- Background is texture only (gradient + bloom + dot grid + corner ripples + specks) — the
+  floating glyph cards the user disliked are gone.
+- Mode/Settings headers: 64dp back button pulled 24dp toward the screen edge, title constrained
+  beside it so they cannot collide.
+- Notifications: plan written in `NOTIFICATIONS.md`, not implemented yet.
+
+## Previous State — 2026-09-19
 - `main @ a620101` = last known-good shell. `BUILD.bat` green, APK installed and running on
   device `0015935AT001973` (1080x2392 @420dpi).
 - Bundled games: **ludo** (2-4P, portrait) and **planetmerge** (1P). Test canaries removed.
