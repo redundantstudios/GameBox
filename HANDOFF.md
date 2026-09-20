@@ -48,6 +48,11 @@ selector was inverted — `applyPair(on, off, value)` must be called as
    permission after the first finished game). Ask the open questions at the bottom of that file.
 3. **Chess** — `Chess.html` + `chess_puzzles.txt` sit untracked in the project root, uncommitted
    and unbundled; user still to decide.
+4. **Game backlog** — every game idea, prototype, and its ship-readiness now lives in
+   `GAME_IDEAS.md` (status board in §1; entries for Chess, Checkers/Gould's, Bomb Relay, Last
+   Balloon in §6). Add new ideas to the §5 inbox before they get lost. Cross-cutting platform
+   docs: `NOTIFICATIONS.md`, `LEADERBOARD_IDEA.md`, `ONLINE_MULTIPLAYER_PLAN.md`,
+   `COINS_ECONOMY_PLAN.md`.
 
 
 ### ⚠️ USER FEEDBACK 2026-09-20 00:58 — ADDRESSED IN `757fc6e` (history below)

@@ -17,7 +17,12 @@
   floating glyph cards the user disliked are gone.
 - Mode/Settings headers: 64dp back button pulled 24dp toward the screen edge, title constrained
   beside it so they cannot collide.
-- Notifications: plan written in `NOTIFICATIONS.md`, not implemented yet.
+- Notifications: implemented (channels + custom chime, WorkManager daily reminder with skip rules,
+  permission ask after the first game launch, Settings section, dev test send). Play-Store
+  hardening (exact alarms / battery-optimisation hint) deferred to release prep. See `NOTIFICATIONS.md`.
+- Docs index for future sessions: `GAME_IDEAS.md` (game backlog + status board), `NOTIFICATIONS.md`,
+  `LEADERBOARD_IDEA.md`, `ONLINE_MULTIPLAYER_PLAN.md`, `COINS_ECONOMY_PLAN.md`, plus the standing
+  rules in `CONTRACT.md`, `STYLE.md`, `AGENT.md` and `HANDOFF.md`.
 
 ## Previous State — 2026-09-19
 - `main @ a620101` = last known-good shell. `BUILD.bat` green, APK installed and running on
