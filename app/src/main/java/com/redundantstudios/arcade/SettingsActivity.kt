@@ -191,9 +191,9 @@ class SettingsActivity : ThemedActivity() {
      * Net effect: a soft fade instead of a hard snap, and no jump to the top.
      */
     private fun applyThemeCrossFade() {
-        ThemeTransition.scrollY =
-            findViewById<androidx.core.widget.NestedScrollView>(R.id.settingsScroll)?.scrollY ?: 0
-        ThemeTransition.capture(this)
+        // Capture this screen first: a flip started here must also FADE here,
+        // not just on the screens further back in the stack.
+        beginThemeFlip()
         SettingsManager.applyTheme()
     }
 

@@ -2,20 +2,16 @@ package com.redundantstudios.arcade.audio
 
 import android.content.Context
 import android.media.AudioAttributes
-import android.media.MediaPlayer
 import android.media.SoundPool
-import android.os.Build
-import android.os.Handler
-import android.os.Looper
 import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.util.SettingsManager
 
 /**
  * The shell's sound identity.
  *
- * A quiet, warm marimba loop under the shell screens plus a small set of UI
- * blips (tap / select / tick) recorded from the same instrument, so
- * everything sounds like one instrument instead of stock Android clicks.
+ * A quiet ambient loop under the shell screens plus a small set of UI blips
+ * (tap / select / tick) recorded from the same instrument, so everything
+ * sounds like one instrument instead of stock Android clicks.
  *
  * Rules:
  *  - Music and sound effects are separately switchable in Settings, and both
@@ -25,16 +21,16 @@ import com.redundantstudios.arcade.util.SettingsManager
  *    resumes before the OLD one pauses, so a naive handler stops the music
  *    after a theme change. Counting hosts means the loop only truly pauses
  *    when the last shell screen is gone (background, or a game took over).
- *  - The loop always FADES. In, out, and on volume changes - never a cut.
+ *  - The loop always FADES, and it loops without a seam - both are handled by
+ *    [BgmLoop] (sample-rate gain ramp, index wrap instead of a re-seek).
  *  - `back()` is kept as an API slot for future dialogs/popups, but for now
  *    it plays the same subtle tap (no separate "back" sound by design).
  */
 object ShellAudio {
 
     private var soundPool: SoundPool? = null
-    private var bgm: MediaPlayer? = null
+    private var bgm: BgmLoop? = null
     private var appContext: Context? = null
-    private val mainThread = Handler(Looper.getMainLooper())
 
     private var tapId = 0
     private var selectId = 0
@@ -46,16 +42,8 @@ object ShellAudio {
     /** How many shell activities are currently resumed. */
     private var hostCount = 0
 
-    /** Where the loop volume is right now (0..1 of the BGM gain scale). */
-    private var currentLevel = 0f
-    private var fadeStep = 0
-
     /** How loud the ambient loop sits under the UI, relative to the master volume. */
     private const val BGM_GAIN = 0.32f
-
-    /** Fade duration for in/out transitions. */
-    private const val FADE_MS = 900L
-    private const val FADE_STEPS = 12
 
     fun init(context: Context) {
         if (soundPool != null) return
@@ -108,9 +96,9 @@ object ShellAudio {
      * pitch-up variant of the same sound so on/off feel different without
      * being loud.
      */
-    fun tapTiny(context: Context) = play(context, tapId, 0.3f)
+    fun tapTiny(context: Context) = play(context, tapId, 0.55f)
 
-    fun tapToggleOn(context: Context) = play(context, tapId, 0.35f, 1.12f)
+    fun tapToggleOn(context: Context) = play(context, tapId, 0.65f, 1.12f)
 
     /**
      * One subtle blip for the volume slider; throttled against machine-gunning.
@@ -143,7 +131,7 @@ object ShellAudio {
     /** A shell screen went away. Only the LAST host leaving pauses the loop. */
     fun hostPaused() {
         hostCount = (hostCount - 1).coerceAtLeast(0)
-        if (hostCount == 0) applyBgm()
+        applyBgm()
     }
 
     /** Re-apply the current settings (called after volume/toggle changes). */
@@ -155,75 +143,27 @@ object ShellAudio {
     private fun targetLevel(): Float =
         if (hostCount > 0) musicLevel() * BGM_GAIN else 0f
 
+    /**
+     * Hand the wanted volume to the loop; it ramps there at sample rate, so
+     * every change is a fade and there is never a cut or a click.
+     */
     private fun applyBgm() {
-        val player = ensurePlayer() ?: return
-        val target = targetLevel()
-        if (target > 0f && !player.isPlaying && currentLevel <= 0f) {
-            // Starting from silence: come in at a whisper and fade up.
-            currentLevel = 0f
-            player.setVolume(0f, 0f)
-            try {
-                player.start()
-            } catch (_: Exception) {
-                return
-            }
-        }
-        fadeTo(player, target)
+        val loop = ensureBgm() ?: return
+        loop.setTarget(targetLevel())
     }
 
-    /** Ramps the loop volume to [target] in [FADE_STEPS] steps over [FADE_MS]. */
-    private fun fadeTo(player: MediaPlayer, target: Float) {
-        mainThread.removeCallbacksAndMessages(null)
-        fadeStep = 0
-        fun step() {
-            fadeStep++
-            val t = fadeStep.toFloat() / FADE_STEPS
-            currentLevel = currentLevel + (target - currentLevel) * t
-            if (fadeStep >= FADE_STEPS) {
-                currentLevel = target
-                player.setVolume(target, target)
-                if (target <= 0f) {
-                    try {
-                        player.pause()
-                    } catch (_: Exception) {
-                    }
-                }
-                return
-            }
-            player.setVolume(currentLevel, currentLevel)
-            mainThread.postDelayed(::step, FADE_MS / FADE_STEPS)
-        }
-        step()
-    }
-
-    private fun ensurePlayer(): MediaPlayer? {
-        if (bgm != null) return bgm
+    private fun ensureBgm(): BgmLoop? {
+        bgm?.let { return it }
         val app = appContext ?: return null
-        bgm = try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                MediaPlayer.create(
-                    app, R.raw.bgm_shell,
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                        .build(), 0
-                )
-            } else {
-                MediaPlayer.create(app, R.raw.bgm_shell)
-            }
-        } catch (_: Exception) {
-            null
-        }?.apply { isLooping = true }
-        return bgm
+        val loop = BgmLoop(app, R.raw.bgm_shell)
+        bgm = loop
+        loop.prepare()
+        return loop
     }
 
     fun release() {
         hostCount = 0
-        mainThread.removeCallbacksAndMessages(null)
-        try {
-            bgm?.release()
-        } catch (_: Exception) {
-        }
+        bgm?.release()
         bgm = null
         soundPool?.release()
         soundPool = null

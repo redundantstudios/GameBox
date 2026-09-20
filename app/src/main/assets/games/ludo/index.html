@@ -28,7 +28,7 @@ online: false
 tileColor: #D94B4B
 version: 14
 */
-const Studio = (() => { const bridge = () => window.NativeBridge || null; const ls = { get k(){ try{return localStorage;}catch(_){return null;} } }; let settings = { sound: true, haptics: true }; try { const s = (bridge()?bridge().load('shell:settings'):ls.k?.getItem('shell:settings')); if (s) settings = Object.assign(settings, JSON.parse(s)); } catch(_){} return { save:(k,v)=>{ const b=bridge(); if(b) b.save(k,v); else try{ls.k.setItem(k,v);}catch(_){} }, load:(k)=>{ const b=bridge(); if(b) return b.load(k); try{return ls.k?.getItem(k)||null;}catch{return null;} }, haptic:(kind)=>{ if(!settings.haptics) return; const b=bridge(); if(!b) return; const map={light:15,medium:30,heavy:60,success:45}; try{b.haptic(typeof map[kind]==='number'?map[kind]:0);}catch(_){} }, exit:()=>{ const b=bridge(); try{ if(b&&b.exitGame) b.exitGame(); }catch(_){} }, settings, ads:{ rewarded(placement,onReward){ const b=bridge(); if(!b) return; window.__studioAdCb = function(result){ if(result==='granted') onReward(); }; b.showRewardedAd('__studioAdCb'); }, showBanner(){ const b=bridge(); try{ if(b) b.showBanner(); }catch(_){} }, hideBanner(){ const b=bridge(); try{ if(b) b.hideBanner(); }catch(_){} } } };})();
+const Studio = (() => { const bridge = () => window.NativeBridge || null; const ls = { get k(){ try{return localStorage;}catch(_){return null;} } }; let settings = { sound: true, haptics: true }; try { const s = (bridge()?bridge().load('shell:settings'):ls.k?.getItem('shell:settings')); if (s) settings = Object.assign(settings, JSON.parse(s)); } catch(_){} return { save:(k,v)=>{ const b=bridge(); if(b) b.save(k,v); else try{ls.k.setItem(k,v);}catch(_){} }, load:(k)=>{ const b=bridge(); if(b) return b.load(k); try{return ls.k?.getItem(k)||null;}catch{return null;} }, haptic:(kind)=>{ if(!settings.haptics) return; const b=bridge(); if(!b) return; const map={light:15,medium:30,heavy:60,success:45}; try{b.haptic(typeof map[kind]==='number'?map[kind]:0);}catch(_){} }, exit:()=>{ const b=bridge(); try{ if(b&&b.exitGame) b.exitGame(); }catch(_){} }, settings, ads:{ rewarded(placement,onResult){ const b=bridge(); if(!b) return; window.__studioAdCb = function(result){ try{ onResult(result||'closed'); }catch(_){} }; b.showRewardedAd('__studioAdCb'); }, showBanner(){ const b=bridge(); try{ if(b) b.showBanner(); }catch(_){} }, hideBanner(){ const b=bridge(); try{ if(b) b.hideBanner(); }catch(_){} } } };})();
 // Banner visibility is driven by syncBanner(): it is shown only while the board
 // is actually being played, never over menus / popups / the victory panel.
 try{ Studio.ads.hideBanner(); }catch(_){}
@@ -227,24 +227,30 @@ function pickFeatured(){
   return pool[store.games%pool.length];
 }
 // Rewarded: real bridge if present; otherwise a simulated local ad.
-// NOTE: the shell SDK fires its reward callback with NO argument on success
+// NOTE: the shell reports the outcome through the same callback:
+//   'granted' = ad watched, reward earned
+//   'closed'  = no reward (dismissed early, OR offline / blocked by the shell)
+// A 'closed' answer is decided immediately and must NEVER fall through to the
+// simulated ad - otherwise an offline player would "earn" a fake reward.
 // (see Studio.ads.rewarded), so "callback invoked" means granted. Requiring
 // res==='granted' here silently swallowed every reward. A watchdog reports
 // failure so the UI can offer a retry instead of doing nothing.
 function showRewarded(placement,onReward,onFail){
   let settled=false, watchdog=0;
+  const fail=(reason)=>{ if(settled)return; settled=true; clearTimeout(watchdog); if(onFail) onFail(reason); };
   const grant=()=>{ if(settled)return; settled=true; clearTimeout(watchdog); onReward(); };
   if(Studio.ads&&typeof Studio.ads.rewarded==='function'){
     try{
       Studio.ads.rewarded(placement,function(res){
-        if(res==='granted'||res===undefined||res===null) grant();
+        if(res==='granted') grant(); else fail('closed');
       });
       clearTimeout(watchdog);
-      watchdog=setTimeout(()=>{ if(!settled&&onFail) onFail(); },CFG.ads.rewardWait*1000);
+      watchdog=setTimeout(()=>{ fail('timeout'); },CFG.ads.rewardWait*1000);
       return;
     }catch(e){/*fallthrough*/}
   }
-  // Simulated rewarded ad (no shell bridge) — lets the flow be tested anywhere.
+  // Simulated rewarded ad: only when there is no shell bridge at all
+  // (standalone browser testing) — never an offline fallback.
   FX.fakeAd={ t:0, dur:CFG.ads.fakeAdDur, onDone:onReward };
 }
 function showInterstitial(next){
@@ -2181,9 +2187,12 @@ function handleAction(id){
       haptic('success');
       FX.upsell=null;
       if(U.then==='start'&&U.cb) U.cb(); // continue into the match they wanted
-    },function(){
+    },function(reason){
       if(FX.upsell!==U) return;          // reward already landed
-      U.waiting=false; U.msg='NO AD AVAILABLE — TAP TO TRY AGAIN';
+      U.waiting=false;
+      U.msg = reason==='closed'
+        ? 'NO INTERNET — CHECK YOUR CONNECTION'
+        : 'NO AD AVAILABLE — TAP TO TRY AGAIN';
     });
     return;
   }

@@ -38,20 +38,24 @@ class GameActivity : AppCompatActivity() {
     /**
      * Rewarded/interstitial ads cannot load offline. Without this guard the
      * player taps "watch ad", nothing happens for up to 7s, and the game looks
-     * broken. Instead: a clear native message + the game's waiting UI released
-     * (callback fires with "closed" so every game resets without JS changes).
+     * broken. Instead: a clear native message, and the game's waiting UI is
+     * released immediately ("closed" fires) so no game ever falls back to its
+     * simulated-ad path while offline.
      */
-    private fun runAdOrExplainOffline(action: () -> Unit) {
+    private fun runAdOrExplainOffline(callback: String, action: () -> Unit) {
         if (isOnline()) {
             action()
             return
         }
         Log.w("GameActivity", "Ad request blocked: device is offline")
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-            .setTitle("No internet connection")
-            .setMessage("Ads need a connection to load. Check your network and try again.")
-            .setPositiveButton("Okay", null)
-            .show()
+        runOnUiThread {
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Check your internet connection")
+                .setMessage("Ads need an internet connection. Please check your network and try again.")
+                .setPositiveButton("Okay", null)
+                .show()
+        }
+        NativeBridgeContext.callback?.invoke(callback, "closed")
     }
     private var loadedSettingsSignature: String = ""
 
@@ -168,7 +172,7 @@ class GameActivity : AppCompatActivity() {
             }
         }
         NativeBridgeContext.adHandler = { callback ->
-            runAdOrExplainOffline {
+            runAdOrExplainOffline(callback) {
                 adMobManager.showRewardedAd(
                     onRewardEarned = {
                         NativeBridgeContext.callback?.invoke(callback, "granted")
@@ -180,7 +184,7 @@ class GameActivity : AppCompatActivity() {
             }
         }
         NativeBridgeContext.interstitialHandler = { callback ->
-            runAdOrExplainOffline {
+            runAdOrExplainOffline(callback) {
                 adMobManager.showInterstitialAd(
                     onAdClosed = {
                         NativeBridgeContext.callback?.invoke(callback, "closed")

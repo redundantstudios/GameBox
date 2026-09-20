@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -13,25 +14,82 @@ import androidx.core.widget.NestedScrollView
 import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.util.SettingsManager
 
-/** Carries the visual state of a screen across a theme-flip recreation. */
+/**
+ * Carries the visual state of each screen across a theme-flip recreation.
+ *
+ * Keyed by ACTIVITY CLASS, and that key is the whole point: a flip recreates
+ * every screen on the back stack, so a single shared `scrollY` slot was being
+ * overwritten by whichever screen paused last (the background Home screen
+ * writes 0, the Settings page then restores 0). The page jumped to the top and
+ * the cross-fade only appeared "sometimes" - whenever the last writer happened
+ * to be the visible screen. Per-class frames make both deterministic.
+ *
+ * Frames are also timestamped: a recreated screen must consume its own frame
+ * within a couple of seconds, otherwise a screen that was merely stopped long
+ * ago would replay a stale fade when the user comes back to it.
+ */
 object ThemeTransition {
-    /** The screen as it looked in the old theme, captured just before the flip. */
-    internal var snapshot: Bitmap? = null
 
-    /** Where the page was scrolled, so the rebuilt page stays where it was. */
-    internal var scrollY: Int = 0
+    /** One screen's pre-flip state. */
+    class Frame(val snapshot: Bitmap?, val scrollY: Int, private val atMs: Long) {
+        fun isFresh(): Boolean = SystemClock.uptimeMillis() - atMs < FRESH_MS
+    }
 
-    /** Screenshot the activity right now. Cheap: one draw pass, once per flip. */
-    fun capture(activity: Activity) {
-        try {
-            val decor = activity.window.decorView
-            if (decor.width == 0 || decor.height == 0) return
-            val bitmap = Bitmap.createBitmap(decor.width, decor.height, Bitmap.Config.ARGB_8888)
-            decor.draw(Canvas(bitmap))
-            snapshot = bitmap
+    private const val FRESH_MS = 3000L
+
+    private val frames = HashMap<String, Frame>()
+
+    /** Screenshot [activity] as it looks right now and remember its scroll. */
+    fun remember(activity: Activity) {
+        val key = activity.javaClass.name
+        frames.remove(key)?.snapshot?.recycle()
+        frames[key] = Frame(capture(activity), scrollOf(activity), SystemClock.uptimeMillis())
+    }
+
+    /**
+     * The frame belonging to [activity] if it is still fresh - removed from the
+     * store, so a screen cross-fades exactly once per flip.
+     */
+    fun take(activity: Activity): Frame? {
+        val frame = frames.remove(activity.javaClass.name) ?: return null
+        if (frame.isFresh()) return frame
+        frame.snapshot?.recycle()
+        return null
+    }
+
+    /**
+     * The CONTENT view, not the decor: the snapshot is laid over the rebuilt
+     * content view, so shooting the decor (which includes the status bar) would
+     * shift the old frame down by the status-bar height during the fade.
+     */
+    private fun capture(activity: Activity): Bitmap? {
+        return try {
+            val content = activity.findViewById<ViewGroup>(android.R.id.content)
+            if (content == null || content.width == 0 || content.height == 0) return null
+            val bitmap = Bitmap.createBitmap(content.width, content.height, Bitmap.Config.ARGB_8888)
+            content.draw(Canvas(bitmap))
+            bitmap
         } catch (_: Exception) {
-            snapshot = null
+            null
+        } catch (_: OutOfMemoryError) {
+            null
         }
+    }
+
+    /** Scroll offset of the first scrollable view on the screen, if any. */
+    private fun scrollOf(activity: Activity): Int {
+        val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return 0
+        return findScroll(content)?.scrollY ?: 0
+    }
+
+    private fun findScroll(view: View): NestedScrollView? {
+        if (view is NestedScrollView) return view
+        if (view is ViewGroup) {
+            for (i in 0 until view.childCount) {
+                findScroll(view.getChildAt(i))?.let { return it }
+            }
+        }
+        return null
     }
 }
 
@@ -59,11 +117,27 @@ abstract class ThemedActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (isThemeOutOfSync()) {
+            // A screen that comes back to the foreground with a stale theme
+            // (a flip happened while it was stopped) fades itself too: shoot the
+            // palette the user is about to leave, then rebuild.
+            ThemeTransition.remember(this)
             recreate()
         } else {
             playThemeTransition()
             ShellAudio.hostResumed(this)
         }
+    }
+
+    /**
+     * Records this screen's look so the rebuild can cross-fade into the new
+     * theme. A screen that STARTS a flip must call this before applying the
+     * theme - without it that screen simply snaps, because its own onResume
+     * never sees a stale theme and therefore never captures a frame. That was
+     * the "the fade works, but not every time" bug: the flip always faded
+     * somewhere, just not on the screen where the user pressed the button.
+     */
+    protected fun beginThemeFlip() {
+        ThemeTransition.remember(this)
     }
 
     override fun onPause() {
@@ -72,24 +146,34 @@ abstract class ThemedActivity : AppCompatActivity() {
     }
 
     /**
-     * If a theme flip just happened: restore the scroll position, then fade
-     * the captured old-theme screenshot away to reveal the new palette.
+     * If a theme flip just happened on this screen: put the page back where it
+     * was, then dissolve the captured old-theme frame over the new palette.
+     *
+     * Nothing here touches transition state unless this screen owns a fresh
+     * frame, so a flip on one screen can never affect another one.
      */
     private fun playThemeTransition() {
-        val snapshot = ThemeTransition.snapshot ?: return
-        ThemeTransition.snapshot = null
-        val content = findViewById<ViewGroup>(android.R.id.content) ?: return
+        val frame = ThemeTransition.take(this) ?: return
 
-        // Keep the reading position - the scroll jump the user kept seeing.
-        findScrollView(content)?.let { scrollView ->
-            val target = ThemeTransition.scrollY
-            scrollView.post { scrollView.scrollTo(0, target) }
+        val content = findViewById<ViewGroup>(android.R.id.content) ?: run {
+            frame.snapshot?.recycle()
+            return
         }
+
+        // Keep the reading position: restoring AFTER the first layout pass is
+        // what makes this reliable - a scroll applied too early gets clamped by
+        // the not-yet-measured content height.
+        findScrollView(content)?.let { scrollView ->
+            if (frame.scrollY > 0) restoreScroll(scrollView, frame.scrollY)
+        }
+
+        val snapshot = frame.snapshot ?: return
 
         // Old frame on top of the rebuilt screen, dissolving out.
         val overlay = ImageView(this)
         overlay.setImageBitmap(snapshot)
         overlay.scaleType = ImageView.ScaleType.FIT_XY
+        overlay.isClickable = false
         content.addView(
             overlay,
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -103,6 +187,21 @@ abstract class ThemedActivity : AppCompatActivity() {
                 snapshot.recycle()
             }
             .start()
+    }
+
+    /** Applies [target] once now and again after the next layout pass. */
+    private fun restoreScroll(scrollView: NestedScrollView, target: Int) {
+        scrollView.post { scrollView.scrollTo(0, target) }
+        scrollView.viewTreeObserver.addOnGlobalLayoutListener(
+            object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    scrollView.scrollTo(0, target)
+                    if (scrollView.viewTreeObserver.isAlive) {
+                        scrollView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    }
+                }
+            }
+        )
     }
 
     private fun findScrollView(view: View): NestedScrollView? {
