@@ -118,11 +118,10 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
   #botBadge .bico{width:30px;height:30px;color:var(--ink-dim)}
   #botDots{display:flex;margin-top:2px;height:6px}
   #botDots span{width:5px;height:5px;border-radius:3px;background:var(--ink-dim);margin:0 2px;opacity:.25}
-  #botBadge.thinking .bico{color:var(--accent);animation:botGlow 1s ease-in-out infinite}
+  #botBadge.thinking .bico{color:var(--accent)}
   #botBadge.thinking #botDots span{animation:dotBlink 1s infinite}
   #botBadge.thinking #botDots span:nth-child(2){animation-delay:.18s}
   #botBadge.thinking #botDots span:nth-child(3){animation-delay:.36s}
-  @keyframes botGlow{0%,100%{filter:none;transform:scale(1)}50%{filter:drop-shadow(0 0 5px var(--accent));transform:scale(1.08)}}
   @keyframes dotBlink{0%,100%{opacity:.2}45%{opacity:1;background:var(--accent)}}
 
   .ctlRow{display:flex;align-items:center;justify-content:center;margin:7px 0}
@@ -559,7 +558,7 @@ const CFG = {
     bFill:"#453a2f", bStroke:"#1a120b",
     coordLight:"#8a6a48", coordDark:"#ecd9ae"
   },
-  sound: { master: 0.5 }
+  sound: { master: 1.0 }
 };
 
 /* ═══ PUZZLE DATA — Lichess extraction.
@@ -1715,12 +1714,9 @@ function showTestAd(kind,unitId,seconds,bodyText,onDone){
 }
 function setBanner(on){
   const show=!!on;
-  adSlot.style.display=show?"flex":"none";
-  if(show){
-    adSlot.textContent=window.NativeBridge
-      ? "AD"
-      : ("TEST BANNER · "+CFG.ads.admobBanner);
-  }
+  /* No in-page ad strip: the shell renders the real AdMob banner at the bottom
+     of the screen; the old placeholder strip just reserved height and read as
+     an empty "AD" box. Only the bridge call remains. */
   try{ Studio.ads.banner(show); }catch(e){}
   console.log("[chess] banner",show?"show":"hide",
     window.NativeBridge?"(shell/AdMob)":"(simulated label)");
