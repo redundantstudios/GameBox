@@ -35,7 +35,7 @@ object ThemeTransition {
         fun isFresh(): Boolean = SystemClock.uptimeMillis() - atMs < FRESH_MS
     }
 
-    private const val FRESH_MS = 3000L
+    private const val FRESH_MS = 10000L
 
     private val frames = HashMap<String, Frame>()
 
@@ -181,7 +181,7 @@ abstract class ThemedActivity : AppCompatActivity() {
         )
         overlay.animate()
             .alpha(0f)
-            .setDuration(360L)
+            .setDuration(600L)
             .withEndAction {
                 (overlay.parent as? ViewGroup)?.removeView(overlay)
                 snapshot.recycle()

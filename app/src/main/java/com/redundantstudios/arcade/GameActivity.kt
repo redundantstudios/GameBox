@@ -210,7 +210,7 @@ class GameActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        webView.evaluateJavascript("Game.pause && Game.pause();", null)
+        webView.evaluateJavascript("window.Game && Game.pause && Game.pause();", null)
     }
 
     override fun onResume() {
@@ -231,12 +231,12 @@ class GameActivity : AppCompatActivity() {
             )
         }
 
-        webView.evaluateJavascript("Game.resume && Game.resume();", null)
+        webView.evaluateJavascript("window.Game && Game.resume && Game.resume();", null)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        webView.evaluateJavascript("Game.destroy && Game.destroy();", null)
+        webView.evaluateJavascript("window.Game && Game.destroy && Game.destroy();", null)
     }
 
     override fun onBackPressed() {
