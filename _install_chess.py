@@ -21,7 +21,7 @@ import io
 import os
 import sys
 
-SRC = "Chess.html"
+SRC = os.path.join("sources", "Chess.html")
 DST = os.path.join("app", "src", "main", "assets", "games", "chess", "index.html")
 
 MANIFEST = """<!--
