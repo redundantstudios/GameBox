@@ -1,6 +1,8 @@
 package com.redundantstudios.arcade.ads
 
 import android.app.Activity
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -30,10 +32,29 @@ class AdMobManager(private val activity: Activity) {
 
     // A rewarded request can arrive before the ad finished loading (the game
     // preloads asynchronously). Silently doing nothing there is exactly the bug
-    // that made "unlock theme" look broken, so remember the callbacks and show
-    // the ad the moment it arrives - as long as it has not gone stale.
-    private var pendingReward: Pair<() -> Unit, () -> Unit>? = null
-    private var pendingRewardAt = 0L
+    // that made "watch ad for +1 undo / +1 erase" look dead: the game closed its
+    // offer popover, no ad ever appeared and no callback ever came back. So we
+    // remember the callbacks, show the ad the moment it arrives, and - if it
+    // never arrives - release the game's waiting UI with an explicit
+    // "unavailable" result it can show a message for.
+    private class PendingReward(
+        val onReward: () -> Unit,
+        val onClosed: () -> Unit,
+        val onUnavailable: () -> Unit
+    )
+
+    private var pendingReward: PendingReward? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val pendingTimeoutRunnable = Runnable { failPendingReward("timed out waiting for the ad") }
+
+    /** Releases a queued request that never got an ad, so no game hangs forever. */
+    private fun failPendingReward(reason: String) {
+        val queued = pendingReward ?: return
+        pendingReward = null
+        mainHandler.removeCallbacks(pendingTimeoutRunnable)
+        Log.w(TAG, "Rewarded ad unavailable ($reason) - telling the game")
+        activity.runOnUiThread { queued.onUnavailable() }
+    }
 
     // Interstitial
     private var interstitialAd: InterstitialAd? = null
@@ -54,6 +75,8 @@ class AdMobManager(private val activity: Activity) {
                     Log.e(TAG, "Rewarded ad failed to load: ${adError.message}")
                     isRewardedLoading = false
                     rewardedAd = null
+                    // Anyone already waiting on a tap must not be left hanging.
+                    failPendingReward("load failed: ${adError.code}")
                 }
                 override fun onAdLoaded(ad: RewardedAd) {
                     Log.d(TAG, "Rewarded ad loaded successfully")
@@ -63,13 +86,9 @@ class AdMobManager(private val activity: Activity) {
                     val queued = pendingReward
                     if (queued != null) {
                         pendingReward = null
-                        val stale = System.currentTimeMillis() - pendingRewardAt > pendingTimeoutMs
-                        if (stale) {
-                            Log.w(TAG, "Queued rewarded request expired - dropping it")
-                        } else {
-                            Log.d(TAG, "Showing rewarded ad for the queued request")
-                            activity.runOnUiThread { showRewardedInternal(queued.first, queued.second) }
-                        }
+                        mainHandler.removeCallbacks(pendingTimeoutRunnable)
+                        Log.d(TAG, "Showing rewarded ad for the queued request")
+                        showRewardedInternal(queued.onReward, queued.onClosed, queued.onUnavailable)
                     }
                 }
             })
@@ -82,16 +101,25 @@ class AdMobManager(private val activity: Activity) {
      * which silently killed every rewarded ad (and therefore every theme unlock).
      * Everything below is marshalled onto the UI thread.
      */
-    fun showRewardedAd(onRewardEarned: () -> Unit, onAdClosed: () -> Unit) {
-        activity.runOnUiThread { showRewardedInternal(onRewardEarned, onAdClosed) }
+    fun showRewardedAd(
+        onRewardEarned: () -> Unit,
+        onAdClosed: () -> Unit,
+        onAdUnavailable: () -> Unit = onAdClosed
+    ) {
+        activity.runOnUiThread { showRewardedInternal(onRewardEarned, onAdClosed, onAdUnavailable) }
     }
 
-    private fun showRewardedInternal(onRewardEarned: () -> Unit, onAdClosed: () -> Unit) {
+    private fun showRewardedInternal(
+        onRewardEarned: () -> Unit,
+        onAdClosed: () -> Unit,
+        onAdUnavailable: () -> Unit
+    ) {
         val ad = rewardedAd
         if (ad == null) {
             Log.w(TAG, "Rewarded ad not loaded yet - queuing the request")
-            pendingReward = onRewardEarned to onAdClosed
-            pendingRewardAt = System.currentTimeMillis()
+            pendingReward = PendingReward(onRewardEarned, onAdClosed, onUnavailable = onAdUnavailable)
+            mainHandler.removeCallbacks(pendingTimeoutRunnable)
+            mainHandler.postDelayed(pendingTimeoutRunnable, pendingTimeoutMs)
             loadRewardedAd()
             return
         }
@@ -107,7 +135,8 @@ class AdMobManager(private val activity: Activity) {
             override fun onAdFailedToShowFullScreenContent(error: AdError) {
                 Log.e(TAG, "Rewarded ad failed to show: ${error.message}")
                 loadRewardedAd()
-                onAdClosed()
+                // The player never saw an ad, so this is "unavailable", not "closed".
+                onAdUnavailable()
             }
         }
         ad.show(activity) { reward ->

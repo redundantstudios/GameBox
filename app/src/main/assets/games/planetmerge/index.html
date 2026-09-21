@@ -61,13 +61,20 @@ body{
 #scoreVal.pop{animation:pop .3s ease}
 @keyframes pop{40%{transform:scale(1.35)}}
 .row.tools{justify-content:center}
+/* The play group (tool row + board + evolution strip) is centred as ONE block
+   in the free space, so it sits in the middle of the screen instead of being
+   crammed under the Best/Score pills. */
+#playZone{flex:1 1 auto;min-height:0;width:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px}
 .pbtn{position:relative;width:58px;height:58px;border-radius:50%;border:none;cursor:pointer;
   background:#ee6fa8;box-shadow:0 5px 0 #c94d86,0 10px 20px rgba(180,60,110,.3);
   display:grid;place-items:center;color:#fff;transition:transform .08s,box-shadow .08s,opacity .2s}
 .pbtn svg{width:46%;height:46%}
 .pbtn:active{transform:translateY(4px);box-shadow:0 1px 0 #c94d86,0 4px 10px rgba(180,60,110,.3)}
 .pbtn.active{background:#f25a5a;box-shadow:0 5px 0 #c93a3a,0 10px 20px rgba(200,60,60,.3)}
-.pbtn.empty{}
+/* A tool with 0 charges must NEVER look dimmed/greyed out — it is still fully
+   tappable and opens the rewarded-ad offer. Gold = "more available via ad". */
+.pbtn.empty:not(.active){background:#f7b32b;box-shadow:0 5px 0 #c98c14,0 10px 20px rgba(160,110,20,.32);color:#5b3a00}
 .pbtn.empty::after{content:'+AD';position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
   background:#f7b32b;color:#5b3a00;font:700 8px/1 var(--font);letter-spacing:.08em;padding:3px 6px;border-radius:8px;
   box-shadow:0 2px 5px rgba(120,80,20,.3)}
@@ -79,7 +86,7 @@ body{
 #nextTag{position:absolute;top:-9px;left:31px;transform:translateX(-50%);z-index:2;background:#fff;border:2px solid #f0dfc0;
   color:#7a4a2a;font:600 8.5px/1 var(--font);letter-spacing:.14em;padding:3px 7px;border-radius:999px;box-shadow:0 2px 5px rgba(90,60,30,.18)}
 #queueCvs{display:block}
-#boardWrap{position:relative;margin:auto;border-radius:24px;
+#boardWrap{position:relative;margin:0;border-radius:24px;
   box-shadow:0 18px 44px rgba(96,58,26,.28)}
 #boardLayer,#game{position:absolute;inset:0;width:100%;height:100%;display:block}
 #game{touch-action:none;cursor:grab}
@@ -146,6 +153,41 @@ body{
 .tut-nav{display:flex;gap:16px}
 .tut-btn{background:#fff;border:2px solid #ecd9b4;color:#a58a68;font:700 16px var(--font);padding:12px 24px;border-radius:999px;cursor:pointer;transition:all .2s}
 .tut-btn:hover{background:#fdfbf7;border-color:#ee6fa8;color:#ee6fa8}
+
+/* ==== REWARDED-AD OFFER POPOVER + TOAST ====
+   These rules were missing from the stylesheet entirely, so #adPop/#adBack
+   sat UNSTYLED at the end of <body>: with overflow:hidden on the body they
+   rendered below the viewport, i.e. every "watch an ad for +1 undo/erase" tap
+   opened an invisible popover and looked dead. toast() was invisible too. */
+#adBack{position:fixed;inset:0;z-index:40;background:rgba(60,40,30,.45);
+  opacity:0;pointer-events:none;transition:opacity .25s}
+#adBack.show{opacity:1;pointer-events:auto}
+#adPop{position:fixed;left:50%;top:50%;z-index:41;width:min(86vw,340px);
+  padding:26px 22px 20px;border-radius:28px;text-align:center;
+  background:#fff8e9;border:3px solid #f3dfb4;box-shadow:0 24px 60px rgba(110,70,30,.35);
+  transform:translate(-50%,-50%) scale(.88);opacity:0;pointer-events:none;
+  transition:opacity .25s,transform .3s cubic-bezier(.34,1.56,.64,1)}
+#adPop.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+#adTitle{font:700 22px var(--font);color:#7a4a2a}
+#adSub{margin:10px 0 20px;font:500 14.5px/1.45 var(--font);color:#a58a68}
+#adRow{display:flex;flex-direction:column;align-items:center;gap:10px}
+#adWatch{width:100%;padding:14px 18px;border:none;border-radius:999px;cursor:pointer;
+  background:#ee6fa8;color:#fff;font:600 18px var(--font);letter-spacing:.06em;
+  box-shadow:0 5px 0 #c94d86,0 10px 20px rgba(180,60,110,.3);transition:transform .08s,box-shadow .08s}
+#adWatch:active{transform:translateY(4px);box-shadow:0 1px 0 #c94d86}
+/* While the ad is being fetched the button shows LOADING… — it must not look
+   broken or dim the whole offer, so it keeps its colour. */
+#adWatch[disabled]{cursor:wait;opacity:.85;box-shadow:0 2px 0 #c94d86;
+  transform:translateY(2px)}
+#adNo{border:2px solid #ecd9b4;background:#fff;color:#a58a68;cursor:pointer;
+  font:600 14px var(--font);padding:10px 22px;border-radius:999px;transition:transform .08s}
+#adNo:active{transform:scale(.96)}
+#toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));z-index:45;
+  max-width:88vw;padding:11px 20px;border-radius:999px;background:rgba(56,47,42,.92);color:#fff;
+  font:600 14px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transform:translate(-50%,12px);opacity:0;pointer-events:none;
+  transition:opacity .25s,transform .25s}
+#toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
 </head>
 <body>
@@ -172,30 +214,32 @@ body{
     </div>
   </div>
 
-  <div class="row tools">
-    <button class="pbtn" id="eraseBtn" aria-label="Erase">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20 4 11.5 12.5"/><path d="M9.5 10.5 14 15l-5.7 5.2c-.9.8-2.2.8-3-.1L4 18.8c-.8-.9-.7-2.2.1-3z"/>
-        <path d="M19.2 13.6l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z" fill="currentColor" stroke="none"/>
-        <path d="M15.6 17.4l.4 1.1 1.1.4-1.1.4-.4 1.1-.4-1.1-1.1-.4 1.1-.4z" fill="currentColor" stroke="none"/>
-      </svg>
-      <i class="pbadge" id="eraseN">3</i>
-    </button>
-    <button class="pbtn" id="undoBtn" aria-label="Undo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
-      <i class="pbadge" id="undoN">3</i>
-    </button>
-    <div id="queuePill"><span id="nextTag">NEXT</span><canvas id="queueCvs"></canvas></div>
-  </div>
+  <div id="playZone">
+    <div class="row tools">
+      <button class="pbtn" id="eraseBtn" aria-label="Erase">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 4 11.5 12.5"/><path d="M9.5 10.5 14 15l-5.7 5.2c-.9.8-2.2.8-3-.1L4 18.8c-.8-.9-.7-2.2.1-3z"/>
+          <path d="M19.2 13.6l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6z" fill="currentColor" stroke="none"/>
+          <path d="M15.6 17.4l.4 1.1 1.1.4-1.1.4-.4 1.1-.4-1.1-1.1-.4 1.1-.4z" fill="currentColor" stroke="none"/>
+        </svg>
+        <i class="pbadge" id="eraseN">3</i>
+      </button>
+      <button class="pbtn" id="undoBtn" aria-label="Undo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+        <i class="pbadge" id="undoN">3</i>
+      </button>
+      <div id="queuePill"><span id="nextTag">NEXT</span><canvas id="queueCvs"></canvas></div>
+    </div>
 
-  <div id="boardWrap">
-    <canvas id="boardLayer"></canvas>
-    <canvas id="game"></canvas>
-    <div id="announce"></div>
-    <div id="eraseBanner">Tap a planet to erase &middot; tap the broom to cancel</div>
-  </div>
+    <div id="boardWrap">
+      <canvas id="boardLayer"></canvas>
+      <canvas id="game"></canvas>
+      <div id="announce"></div>
+      <div id="eraseBanner">Tap a planet to erase &middot; tap the broom to cancel</div>
+    </div>
 
-  <div id="chainWrap"></div>
+    <div id="chainWrap"></div>
+  </div>
 </div>
 
 <div class="overlay show" id="introOverlay">
@@ -225,7 +269,7 @@ body{
 
 <div class="overlay" id="tutorialOverlay">
   <div class="tut-full-page">
-    <div id="tutContent">
+    <div id="tutContent" class="tut-content">
       <div id="tutArt" class="tut-art"></div>
       <h3 id="tutTitle"></h3>
       <p id="tutText" class="tut-txt"></p>
@@ -344,7 +388,10 @@ function bootGame(){
   }
   console.log('ViewportProof: innerWidth=' + window.innerWidth + ', clientWidth=' + document.documentElement.clientWidth);
   const {Engine,Bodies,Body,Composite,Events,Query} = Matter;
-const $=id=>document.getElementById(id);
+/* Accepts both 'game' and '#game'. The tutorial/help code calls
+   $('#tutTitle') / $('#tutorialOverlay'), which came back null from a plain
+   getElementById and silently killed the whole tutorial overlay. */
+const $=id=>{const s=String(id);return document.getElementById(s.charAt(0)==='#'?s.slice(1):s);};
 
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const TAU=Math.PI*2;
@@ -397,16 +444,13 @@ function updateTut() {
   text.innerText = data.text;
   art.innerText = data.art;
   document.querySelectorAll('.tut-dot').forEach((dot, i) => dot.classList.toggle('active', i === tutIdx));
-  $('#tutPrev').style.visibility = tutIdx === 0 ? 'hidden' : 'visible';
-  $('#tutNext').innerText = tutIdx === TUTORIAL_DATA.length - 1 ? 'Start!' : 'Next';
+  const prev = $('#tutPrev'), next = $('#tutNext');
+  if(prev) prev.style.visibility = tutIdx === 0 ? 'hidden' : 'visible';
+  if(next) next.innerText = tutIdx === TUTORIAL_DATA.length - 1 ? 'Start!' : 'Next';
 }
 
 function showTutorial(force = false) {
-  console.log('showTutorial: force=', force, 'seen=', store.get('pm:tutorialSeen'), 'overlay=', !!$('#tutorialOverlay'));
-  if (!force && store.get('pm:tutorialSeen')) {
-    console.log('showTutorial: early return (seen)');
-    return;
-  }
+  if (!force && store.get('pm:tutorialSeen')) return;
   tutIdx = 0;
   buildTutDots();
   updateTut();
@@ -425,7 +469,6 @@ function prevTut() {
 }
 
 function finishTut() {
-  console.log('finishTut: overlay=', !!$('#tutorialOverlay'), 'game=', !!$('#game'));
   const overlay = $('#tutorialOverlay');
   if (overlay) overlay.classList.remove('show');
   const gameCanvas = $('#game');
@@ -440,7 +483,6 @@ function introBack() {
 }
 
 function openHelp() {
-  console.log('openHelp: calling showTutorial(true)');
   showTutorial(true);
 }
 
@@ -1124,14 +1166,16 @@ function roundRectPath(g,x,y,w,h,r){
 }
 const appEl=$('app');
 function layout(){
-  const chain=$('chainWrap');
-  const hdr=appEl.querySelector('.row.top');
+  const zone=$('playZone'),chain=$('chainWrap'),tools=appEl.querySelector('.row.tools');
   const availW=Math.min(Math.round(innerWidth * 0.86), 440);
-  const availH=innerHeight-hdr.offsetHeight
-    -appEl.querySelector('.row.tools').offsetHeight-chain.offsetHeight-44;
+  /* Size the board from the centred play group's OWN box: its height minus the
+     tool row, the evolution strip and the group's two 14px gaps (plus slack).
+     Nothing is measured against the score pills any more, so the board can
+     never be clipped by them. */
+  const availH=zone.clientHeight-tools.offsetHeight-chain.offsetHeight-34;
   let w=Math.min(availW,432);let h=w*BH/BW;
   if(h>availH){h=Math.max(280,availH);w=h*BW/BH;}
-  w=Math.min(w,hdr.clientWidth-20);h=w*BH/BW;
+  w=Math.min(w,zone.clientWidth-12);h=w*BH/BW;
   wrap.style.width=w+'px';wrap.style.height=h+'px';
   boardCvs.width=Math.round(w*DPR);boardCvs.height=Math.round(h*DPR);
   cvs.width=Math.round(w*DPR);cvs.height=Math.round(h*DPR);
@@ -1344,9 +1388,11 @@ function setScore(v){
 function updateHUD(){
   scoreVal.textContent=score;bestVal.textContent=best;
   undoN.textContent=undos;eraseN.textContent=erases;
-  const canUndo=snapshots.length>0&&state!=='over'&&state!=='start';
-  undoBtn.classList.toggle('empty',canUndo&&undos<=0);
-  const canErase=state!=='over'&&state!=='start';
+  /* Gold "ad offer" state whenever the charges hit 0 — it must never look
+     greyed out, and it stays tappable (tap = watch ad for +1). */
+  const inPlay=state!=='over'&&state!=='start';
+  undoBtn.classList.toggle('empty',undos<=0&&inPlay);
+  const canErase=inPlay;
   eraseBtn.classList.toggle('empty',canErase&&erases<=0);
   eraseBtn.classList.toggle('active',eraseMode);
   wrap.classList.toggle('erasing',eraseMode);
@@ -1357,20 +1403,31 @@ function updateHUD(){
    REWARDED AD POPOVER
 ============================================================ */
 const adPop=$('adPop'),adBack=$('adBack');
-let adKind=null;
+let adKind=null,adBusy=false;
+/* While the native side is fetching/showing the ad the offer stays visible and
+   says so, instead of the popover vanishing into silence. */
+function setAdBusy(busy){
+  adBusy=!!busy;
+  const watch=$('adWatch'),no=$('adNo');
+  if(watch){watch.disabled=adBusy;watch.textContent=adBusy?'LOADING\u2026':'WATCH AD +1';}
+  if(no)no.style.visibility=adBusy?'hidden':'visible';
+}
 function openAdPop(kind){
   adKind=kind;
   $('adTitle').textContent=kind==='undo'?'Out of Undos':'Out of Erases';
   $('adSub').textContent=kind==='undo'?'Watch a short ad to get +1 Undo.':'Watch a short ad to get +1 Erase.';
+  setAdBusy(false);
   adBack.classList.add('show');adPop.classList.add('show');
 }
-function closeAdPop(){adBack.classList.remove('show');adPop.classList.remove('show');}
+function closeAdPop(){setAdBusy(false);adBack.classList.remove('show');adPop.classList.remove('show');}
 
 /* ============================================================
    INPUT
 ============================================================ */
 const bound=[];
-function on(el,ev,fn,opt){el.addEventListener(ev,fn,opt);bound.push([el,ev,fn,opt]);}
+/* Null-safe: one missing element used to throw here and silently kill every
+   handler registered after it (this is what left the "? tutorial" button dead). */
+function on(el,ev,fn,opt){if(!el||!el.addEventListener)return;el.addEventListener(ev,fn,opt);bound.push([el,ev,fn,opt]);}
 function toLogicXY(cx,cy){
   const rect=cvs.getBoundingClientRect();
   return{x:(cx-rect.left)*BW/rect.width,y:(cy-rect.top)*BH/rect.height};
@@ -1439,12 +1496,11 @@ on(window,'keydown',onKey);
    BUTTONS
 ============================================================ */
 on(playBtn,'click',()=>{
-  console.log('playBtn: startOverlay=', !!startOverlay, 'playBtn=', !!playBtn);
-  if(!startOverlay){
-    console.log('playBtn: early return (no startOverlay)');
-    return;
-  }
+  if(!startOverlay)return;
   SFX.ensure();SFX.click();Studio.ads.banner('show');startOverlay.classList.remove('show');resetGame();
+  /* First run only: the tutorial walks the player through merging (showTutorial
+     self-guards on the pm:tutorialSeen flag). The "?" button replays it. */
+  showTutorial();
 });
 on($('againBtn'),'click',()=>{const el=$('againBtn');if(!el)return;SFX.ensure();SFX.click();resetGame();});
 on($('resetBtn'),'click',()=>{
@@ -1462,10 +1518,9 @@ on($('tutPrev'),'click',()=>{SFX.ensure();SFX.click();prevTut();});
 on(undoBtn,'click',()=>{
   if(state==='over'||state==='start')return;
   SFX.ensure();SFX.click();
-  if(undos<=0){
-    if(snapshots.length>0)openAdPop('undo'); else toast('Nothing to undo');
-    return;
-  }
+  /* 0 charges → always offer the ad (this used to bail out with a toast when
+     there was no snapshot, so the rewarded ad never appeared). */
+  if(undos<=0){openAdPop('undo');return;}
   doUndo();
 });
 on(eraseBtn,'click',()=>{
@@ -1477,16 +1532,18 @@ on(eraseBtn,'click',()=>{
   updateHUD();
 });
 on($('adWatch'),'click',()=>{
-  SFX.click();
-  const kind=adKind;closeAdPop();
+  if(adBusy)return;
+  SFX.ensure();SFX.click();
+  const kind=adKind;
   if(!kind)return;
-  if(!window.NativeBridge){toast('No ad available right now');return;}
+  if(!window.NativeBridge){toast('No ad available right now');closeAdPop();return;}
+  setAdBusy(true);
   Studio.ads.rewarded(kind,function(result){
     if(destroyed)return;
-    if(result !== 'granted'){
-      toast('No reward — ad not completed');
-      return;
-    }
+    setAdBusy(false);
+    closeAdPop();
+    if(result==='unavailable'){toast('No ad available right now');return;}
+    if(result!=='granted'){toast('No reward \u2014 ad not completed');return;}
     if(kind==='undo'){undos++;toast('+1 Undo!');}
     else{erases++;toast('+1 Erase!');}
     updateHUD();

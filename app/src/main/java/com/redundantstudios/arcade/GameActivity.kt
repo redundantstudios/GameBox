@@ -55,7 +55,9 @@ class GameActivity : AppCompatActivity() {
                 .setPositiveButton("Okay", null)
                 .show()
         }
-        NativeBridgeContext.callback?.invoke(callback, "closed")
+        // "unavailable" (not "closed"): the player never saw an ad, so the game
+        // can explain instead of pretending the ad was skipped.
+        NativeBridgeContext.callback?.invoke(callback, "unavailable")
     }
     private var loadedSettingsSignature: String = ""
 
@@ -179,6 +181,11 @@ class GameActivity : AppCompatActivity() {
                     },
                     onAdClosed = {
                         NativeBridgeContext.callback?.invoke(callback, "closed")
+                    },
+                    onAdUnavailable = {
+                        // No ad to show (still loading, failed, or offline): the game
+                        // must hear back so it can re-open its offer / say why.
+                        NativeBridgeContext.callback?.invoke(callback, "unavailable")
                     }
                 )
             }
