@@ -75,7 +75,7 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
   .sw.on::after{left:27px;background:var(--accent-ink)}
 
   #scr-intro{justify-content:space-between;align-items:center}
-  #introTop{width:100%;display:flex;justify-content:flex-end}
+  #introTop{width:100%;display:flex;justify-content:space-between}
   .introMid{display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center}
   #knightCv{margin-bottom:6px}
   .bigTitle{font-size:44px;font-weight:800;letter-spacing:6px}
@@ -184,6 +184,11 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
 
   <section id="scr-intro" class="screen active">
     <div id="introTop">
+      <button id="introBack" class="iconBtn" aria-label="Back to GameBox">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
       <button id="introGear" class="iconBtn" aria-label="Settings">
         <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
           <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/>
@@ -1364,7 +1369,7 @@ const AudioSys=(()=>{
         woodTap(t,720,0.62,0.075);          /* heavier knock */
         woodTap(t+0.045,1100,0.28,0.04);    /* pieces settling click */
       } else if(kind==="select"){
-        marimba(t,880,0.10,0.10);           /* soft mallet tick */
+        marimba(t,880,0.26,0.10);           /* soft mallet tick (lifted — was inaudible) */
       } else if(kind==="check"){
         woodTap(t,980,0.42,0.05);           /* urgent tap-tap */
         woodTap(t+0.11,1180,0.42,0.05);
@@ -1378,7 +1383,7 @@ const AudioSys=(()=>{
         marimba(t+0.10,494,0.12,0.22);
         marimba(t+0.20,587,0.12,0.28);
       } else if(kind==="tap"){
-        marimba(t,520,0.07,0.07);
+        marimba(t,520,0.24,0.09);           /* UI tap (lifted — was 0.07, too quiet) */
       } else if(kind==="wrong"){
         woodTap(t,300,0.6,0.11);            /* dull knock on heavy wood */
       }
@@ -1523,7 +1528,7 @@ const app=$("app"), wrap=$("boardWrap"), boardShake=$("boardShake"),
       fatalReload=$("fatalReload"), errBanner=$("errBanner"),
       scrIntro=$("scr-intro"), scrSetup=$("scr-setup"),
       scrPuzzles=$("scr-puzzles"), scrGame=$("scr-game"),
-      introGear=$("introGear"), playBtn=$("playBtn"), continueBtn=$("continueBtn"),
+      introGear=$("introGear"), introBack=$("introBack"), playBtn=$("playBtn"), continueBtn=$("continueBtn"),
       knightCv=$("knightCv"), modeKnightCv=$("modeKnightCv"),
       setupBack=$("setupBack"), oppSeg=$("oppSeg"), aiBlock=$("aiBlock"),
       lvlSeg=$("lvlSeg"), colSeg=$("colSeg"), startBtn=$("startBtn"),
@@ -2735,6 +2740,12 @@ function bindEvents(){
     mode="chess";
     showScreen("game");
     if(setup.opp==="bot") after(420, maybeBotMove);
+  });
+  /* SHELL: leaves the game and returns to GameBox. No-op in a browser tab
+     (Studio.exitGame only acts when the shell bridge is present). */
+  introBack.addEventListener("click",function(){
+    AudioSys.unlock(); AudioSys.play("tap"); gameHaptic("light");
+    try{ Studio.exitGame(); }catch(e){}
   });
   introGear.addEventListener("click",function(){ AudioSys.unlock(); AudioSys.play("tap"); syncSettingsUI(); openModal(settingsSheet); });
 
