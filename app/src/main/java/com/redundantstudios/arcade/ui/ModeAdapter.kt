@@ -20,6 +20,7 @@ class ModeAdapter(
     class ModeViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val card: ChunkyCardView = view.findViewById(R.id.modeCard)
         val number: TextView = view.findViewById(R.id.modeNumber)
+        val icon: android.widget.ImageView = view.findViewById(R.id.modeIcon)
         val label: TextView = view.findViewById(R.id.modeLabel)
         val gameCount: TextView = view.findViewById(R.id.modeGameCount)
     }
@@ -31,9 +32,19 @@ class ModeAdapter(
 
     override fun onBindViewHolder(holder: ModeViewHolder, position: Int) {
         val mode = modes[position]
-        holder.number.text = mode.playerCount.toString()
-        holder.label.text = holder.itemView.context.resources.getQuantityString(R.plurals.player_count, mode.playerCount, mode.playerCount)
-        holder.gameCount.text = holder.itemView.context.resources.getQuantityString(R.plurals.game_count, mode.gameCount, mode.gameCount)
+        if (mode.playerCount == GameMode.PARTY_TILE) {
+            holder.number.visibility = View.GONE
+            holder.icon.visibility = View.VISIBLE
+            holder.icon.setImageResource(R.drawable.ic_party)
+            holder.label.text = holder.itemView.context.getString(R.string.party_tile_title)
+            holder.gameCount.text = holder.itemView.context.getString(R.string.party_tile_subtitle)
+        } else {
+            holder.icon.visibility = View.GONE
+            holder.number.visibility = View.VISIBLE
+            holder.number.text = mode.playerCount.toString()
+            holder.label.text = holder.itemView.context.resources.getQuantityString(R.plurals.player_count, mode.playerCount, mode.playerCount)
+            holder.gameCount.text = holder.itemView.context.resources.getQuantityString(R.plurals.game_count, mode.gameCount, mode.gameCount)
+        }
         holder.card.cardColor = Color.parseColor(mode.color)
 
         holder.itemView.setOnClickListener {

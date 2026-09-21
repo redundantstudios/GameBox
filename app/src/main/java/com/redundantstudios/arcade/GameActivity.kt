@@ -16,6 +16,7 @@ import com.redundantstudios.arcade.ads.AdMobManager
 import com.redundantstudios.arcade.bridge.NativeBridge
 import com.redundantstudios.arcade.bridge.NativeBridgeContext
 import com.redundantstudios.arcade.model.GameManifest
+import com.redundantstudios.arcade.ui.ShellTransition
 import com.redundantstudios.arcade.util.ManifestParser
 import com.redundantstudios.arcade.util.SettingsManager
 
@@ -156,6 +157,11 @@ class GameActivity : AppCompatActivity() {
         rootLayout.addView(bannerContainer)
         setContentView(rootLayout)
 
+        // Entering and leaving a game is a screen change too: same dissolve as
+        // the rest of the shell, so launching a game never hard-cuts.
+        ShellTransition.armSelf(this)
+        window.decorView.post { ShellTransition.playEnter(this) }
+
         webView.post {
             android.util.Log.d("VP", "webViewPx=${webView.width}, density=${resources.displayMetrics.density}")
         }
@@ -167,7 +173,10 @@ class GameActivity : AppCompatActivity() {
             }
         }
 
-        NativeBridgeContext.exitHandler = { finish() }
+        NativeBridgeContext.exitHandler = {
+            ShellTransition.close(this)
+            finish()
+        }
         NativeBridgeContext.callback = { jsFuncName, result ->
             runOnUiThread {
                 webView.evaluateJavascript("if(window.$jsFuncName) { window.$jsFuncName('$result'); }", null)
@@ -202,17 +211,34 @@ class GameActivity : AppCompatActivity() {
         NativeBridgeContext.bannerHandler = { show ->
             runOnUiThread {
                 bannerRequestedVisible = show
+                /* GONE here is correct: pages that intentionally hide the banner
+                   (intro / menu) must get the full height back, with no reserved
+                   grey strip. The game-over drag was fixed at the source instead —
+                   the game no longer hides the banner at game over. */
                 bannerContainer.visibility = if (show) android.view.View.VISIBLE else android.view.View.GONE
             }
         }
     }
 
+    /**
+     * Per-game rotation, done WITHOUT any overlay: the game's manifest decides,
+     * and the activity rotates automatically. configChanges in the manifest keeps
+     * the activity alive across the flip (no relaunch = no hard cut), so the
+     * system's own rotate animation plays while the WebView simply resizes.
+     */
     private fun setupOrientation(orientation: String) {
         when (orientation.lowercase()) {
-            "portrait" -> requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            "landscape" -> requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            "portrait" -> requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            "landscape" -> requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             else -> requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Games normally reflow via the WebView's own resize event; this hook is
+        // for any game that exposes an explicit resize entry point.
+        webView.evaluateJavascript("if(window.Game&&Game.onResize){Game.onResize();}", null)
     }
 
     override fun onPause() {
@@ -247,6 +273,7 @@ class GameActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
+        ShellTransition.close(this)
         finish()
     }
 }

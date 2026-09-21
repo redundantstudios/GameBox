@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Quicker cross-dissolve used when a fullscreen ad (rewarded/interstitial)
+     opens over or closes back into a game — softer than the hard cut. -->
+<resources>
+    <anim name="ad_fade_in" xmlns:android="http://schemas.android.com/apk/res/android"
+        android:fromAlpha="0.0" android:toAlpha="1.0"
+        android:duration="220" android:interpolator="@android:anim/decelerate_interpolator" />
+</resources>

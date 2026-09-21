@@ -1,0 +1,2937 @@
+<!--
+REDUNDANT STUDIOS — GAMEBOX MANIFEST
+game: Chess | version: 0.7.1
+tier: 1 (Vanilla JS + Canvas 2D) | ads: banner/bot+puzzle, interstitial/chess-end,
+        rewarded every-5-solves -> Streak Shield. AdMob TEST ids per director;
+        shell bridge serves real ads on device; labeled SIMULATED ads in-browser.
+modes: pass | VS BOT (live) | puzzles (EASY 202 live; NORMAL/HARD paste slots ready)
+changelog 0.7.1: AUDIO OVERHAUL — replaced sliding sine/square/saw synthesis (read
+        as "buzzy") with wooden percussion: bandpassed noise knocks + low thumps
+        (no frequency slides anywhere), marimba-style mallet tones for UI, cached
+        noise buffer (no per-sound allocation), natural playback-rate variation so
+        repeats never sound identical. All safety rails unchanged (70ms debounce,
+        gesture-gated unlock, master 0.5, try/catch isolation).
+changelog 0.7.0: robot badge (no thinking text); undo/redo/resign restored in Bot
+        mode on player side; three AdMob test ids; labeled simulated ads in-browser.
+changelog 0.6.0: board rotation; black piece restyle; gold tier labels; ads skeleton;
+        streak shields. 0.5.0: Bot AI. 0.4.0: juice pass. 0.3.x: puzzles.
+changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Chess — RedundantStudios</title>
+<style>
+  :root{
+    --bg:#2b2723; --panel:#38322b; --panel2:#413a31; --ink:#efe6d6;
+    --ink-dim:#b3a78f; --line:#4a3826; --accent:#e0b45c; --accent-ink:#2b2416;
+    --danger:#a05a3d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overscroll-behavior:none; user-select:none; -webkit-user-select:none;
+    padding:calc(env(safe-area-inset-top,0px) + 10px)
+            calc(env(safe-area-inset-right,0px) + 12px)
+            calc(env(safe-area-inset-bottom,0px) + 10px)
+            calc(env(safe-area-inset-left,0px) + 12px);
+  }
+  #app{height:100%;max-width:560px;margin:0 auto;position:relative}
+  .screen{display:none;height:100%;flex-direction:column}
+  .screen.active{display:flex;animation:screenIn .22s ease-out}
+  @keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  button,.sw{transition:background-color .15s ease-out,transform .08s ease-out,
+    opacity .15s ease-out,border-color .15s ease-out}
+  .iconBtn{width:44px;height:44px;min-width:44px;border-radius:12px;border:2px solid var(--line);
+    background:var(--panel);color:var(--ink);display:flex;align-items:center;justify-content:center}
+  .iconBtn:active{transform:translateY(1px) scale(.96);background:var(--panel2)}
+  .iconBtn:disabled{opacity:.35}
+  .btn{height:52px;border-radius:14px;border:2px solid var(--line);background:var(--panel);
+    color:var(--ink);font-weight:800;letter-spacing:1px;font-size:15px}
+  .btn:active{transform:translateY(1px);background:var(--panel2)}
+  .btn.primary{background:var(--accent);border-color:#c79a45;color:var(--accent-ink)}
+  .btn.primary:active{background:#d3a54f}
+  .btn.arm{background:var(--danger);border-color:#c06a48;color:#f5ded6}
+  .btn:disabled{opacity:.35}
+  @keyframes armPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+  .arm{animation:armPulse .55s ease-in-out infinite}
+  .lbl{font-size:11px;letter-spacing:2px;color:var(--ink-dim);font-weight:800;margin:16px 0 6px}
+  .card{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:14px}
+  .seg{display:flex;border:2px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+  .seg button{flex:1;height:44px;border:none;background:transparent;color:var(--ink-dim);
+    font-weight:800;font-size:13px;letter-spacing:.5px}
+  .seg button+button{border-left:2px solid var(--line)}
+  .seg button.on{background:var(--accent);color:var(--accent-ink)}
+  .sw{width:54px;height:30px;min-width:54px;border-radius:15px;border:2px solid var(--line);
+    background:var(--panel2);position:relative}
+  .sw::after{content:"";position:absolute;width:22px;height:22px;border-radius:11px;
+    top:2px;left:3px;background:var(--ink-dim);transition:left .15s ease-out}
+  .sw.on{background:var(--accent);border-color:#c79a45}
+  .sw.on::after{left:27px;background:var(--accent-ink)}
+
+  #scr-intro{justify-content:space-between;align-items:center}
+  #introTop{width:100%;display:flex;justify-content:flex-end}
+  .introMid{display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center}
+  #knightCv{margin-bottom:6px}
+  .bigTitle{font-size:44px;font-weight:800;letter-spacing:6px}
+  #playBtn{width:240px;margin-top:26px}
+  #continueBtn{width:240px;margin-top:10px}
+  .brand{font-size:11px;font-weight:800;letter-spacing:4px;color:var(--ink-dim);
+    padding-bottom:6px;text-align:center}
+
+  .scrHead{display:flex;align-items:center;min-height:44px;margin-bottom:6px}
+  .scrHead h2{font-size:18px;font-weight:800;letter-spacing:2px;margin-left:10px;flex:1}
+  .scrollBody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:16px}
+  #startBtn{width:100%;margin-top:22px}
+
+  .pzRow{display:flex;align-items:center;width:100%;margin-top:10px;text-align:left;padding:0;border:none;background:transparent}
+  .pzRow .card{flex:1;display:flex;align-items:center;width:100%}
+  .pzRow:active .card{transform:scale(.985);background:var(--panel2)}
+  .pzName{font-size:15px;font-weight:800;letter-spacing:1px;flex:1;color:var(--accent)}
+  .pzCount{font-size:12px;font-weight:700;color:var(--ink-dim);margin-right:10px}
+  .streakFlame{width:34px;height:34px;min-width:34px;border-radius:10px;background:var(--panel2);
+    border:2px solid var(--line);display:flex;align-items:center;justify-content:center;margin-right:12px}
+  #streakNow{font-size:22px;font-weight:800}
+  #streakBest{font-size:12px;font-weight:700;color:var(--ink-dim);margin-top:1px}
+  #streakShield{font-size:12px;font-weight:800;color:var(--accent);margin-top:2px}
+  .dailyHead{display:flex;align-items:center}
+  .dailyTitle{font-size:13px;font-weight:800;letter-spacing:2px;color:var(--ink-dim);flex:1}
+  .badge{font-size:10px;font-weight:800;letter-spacing:1px;background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;padding:3px 8px;color:var(--accent)}
+  #dailyDate{font-size:19px;font-weight:800;margin-top:6px}
+  #dailySolve{margin-top:12px;width:100%;height:44px}
+
+  #adSlot{display:none;height:52px;min-height:52px;margin:-10px -12px 6px;
+    background:rgba(0,0,0,.18);border-bottom:2px solid var(--line);
+    align-items:center;justify-content:center;font-size:10px;letter-spacing:1px;
+    color:var(--ink-dim);font-weight:800;text-align:center;padding:0 8px}
+  #gameBar{display:flex;align-items:center}
+  #status{flex:1;text-align:center;font-size:15px;font-weight:700;color:var(--ink-dim);min-height:22px}
+  #status.chk{color:#e2917a}
+  .barSpacer{width:44px;min-width:44px}
+  #botBadge{width:44px;min-width:44px;display:none;flex-direction:column;align-items:center}
+  #botBadge .bico{width:30px;height:30px;color:var(--ink-dim)}
+  #botDots{display:flex;margin-top:2px;height:6px}
+  #botDots span{width:5px;height:5px;border-radius:3px;background:var(--ink-dim);margin:0 2px;opacity:.25}
+  #botBadge.thinking .bico{color:var(--accent);animation:botGlow 1s ease-in-out infinite}
+  #botBadge.thinking #botDots span{animation:dotBlink 1s infinite}
+  #botBadge.thinking #botDots span:nth-child(2){animation-delay:.18s}
+  #botBadge.thinking #botDots span:nth-child(3){animation-delay:.36s}
+  @keyframes botGlow{0%,100%{filter:none;transform:scale(1)}50%{filter:drop-shadow(0 0 5px var(--accent));transform:scale(1.08)}}
+  @keyframes dotBlink{0%,100%{opacity:.2}45%{opacity:1;background:var(--accent)}}
+
+  .ctlRow{display:flex;align-items:center;justify-content:center;margin:7px 0}
+  .ctlRow .iconBtn{margin:0 5px}
+  .sideDot{width:12px;height:12px;min-width:12px;border-radius:7px;border:2px solid var(--line)}
+  .sideDot.sp{margin-right:18px}
+  .sideDot.ghost{visibility:hidden;margin-right:0;margin-left:18px}
+  #boardArea{position:relative;flex:1 1 0;min-height:0}
+  #boardWrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    border-radius:12px;overflow:hidden;box-shadow:0 3px 14px rgba(0,0,0,.35)}
+  #boardShake{position:absolute;left:0;top:0;width:100%;height:100%}
+  #boardWrap canvas{position:absolute;left:0;top:0;width:100%;height:100%;
+    display:block;touch-action:none}
+
+  .modalWrap{display:none;position:fixed;left:0;top:0;right:0;bottom:0;
+    background:rgba(15,10,6,.62);z-index:50;align-items:center;justify-content:center;padding:22px}
+  .modalWrap.show{display:flex;animation:fadeIn .16s ease-out}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes popIn{0%{transform:scale(.86);opacity:0}70%{transform:scale(1.02)}100%{transform:scale(1);opacity:1}}
+  .modalWrap.show .modalBox{animation:popIn .24s cubic-bezier(.2,.8,.3,1.1)}
+  .modalBox{width:100%;max-width:380px;background:var(--panel);border:2px solid var(--line);
+    border-radius:18px;padding:18px}
+  .modalBox h3{font-size:16px;font-weight:800;letter-spacing:2px;margin-bottom:4px}
+  .modalBox .sub{font-size:13px;font-weight:600;color:var(--ink-dim);line-height:1.5}
+  .modeCard{display:flex;align-items:center;width:100%;margin-top:12px;padding:14px;
+    border-radius:16px;border:2px solid var(--line);background:var(--panel2);color:var(--ink)}
+  .modeCard:active{transform:translateY(1px) scale(.985);background:#4a4237}
+  .modeIcon{width:48px;height:48px;min-width:48px;border-radius:12px;background:var(--panel);
+    border:2px solid var(--line);display:flex;align-items:center;justify-content:center;margin-right:14px}
+  .modeName{font-size:17px;font-weight:800;letter-spacing:1px}
+  .modeHint{font-size:12px;font-weight:600;color:var(--ink-dim);margin-top:2px}
+  .sheetBtn{width:100%;margin-top:10px;height:48px}
+  .setRow{display:flex;align-items:center;margin-top:14px}
+  .setRow .lbl2{flex:1;font-size:14px;font-weight:800;letter-spacing:1px}
+  .setFoot{margin-top:18px;font-size:11px;font-weight:700;letter-spacing:2px;
+    color:var(--ink-dim);text-align:center}
+  #taKind{font-size:11px;letter-spacing:3px;color:var(--ink-dim);font-weight:800;text-align:center}
+  #taBody{margin:14px 0 6px;font-weight:800;font-size:16px;text-align:center}
+  #taUnit{font-size:10px;color:var(--ink-dim);word-break:break-all;text-align:center}
+  #taNote{font-size:10px;color:var(--ink-dim);text-align:center;margin-top:6px;line-height:1.5}
+  #taCount{font-size:30px;font-weight:800;margin:8px 0;text-align:center;color:var(--accent)}
+  @keyframes bumpK{0%{transform:scale(1)}35%{transform:scale(1.12)}100%{transform:scale(1)}}
+  .bump{animation:bumpK .2s ease-out}
+
+  #errBanner{display:none;position:fixed;left:10px;right:10px;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 10px);
+    background:#5b2a22;color:#f5ded6;border:2px solid var(--danger);border-radius:12px;
+    padding:10px 14px;font-size:13px;font-weight:600;z-index:98}
+  #fatal{display:none;position:fixed;left:0;top:0;right:0;bottom:0;
+    background:#43201c;color:#f5ded6;z-index:99;padding:28px;overflow:auto}
+  #fatal h2{margin-bottom:10px;font-size:18px}
+  #fatal pre{white-space:pre-wrap;font-size:13px;line-height:1.5;word-break:break-word}
+  #fatal button{margin-top:14px;height:48px;padding:0 22px;border-radius:12px;
+    border:2px solid var(--danger);background:var(--danger);color:#f5ded6;
+    font-weight:800;font-size:15px;letter-spacing:.6px}
+</style>
+</head>
+<body>
+<main id="app">
+
+  <section id="scr-intro" class="screen active">
+    <div id="introTop">
+      <button id="introGear" class="iconBtn" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+    <div class="introMid">
+      <canvas id="knightCv"></canvas>
+      <div class="bigTitle">CHESS</div>
+      <button id="playBtn" class="btn primary">PLAY</button>
+      <button id="continueBtn" class="btn" style="display:none">CONTINUE</button>
+    </div>
+    <div class="brand">REDUNDANT&nbsp;STUDIOS</div>
+  </section>
+
+  <section id="scr-setup" class="screen">
+    <div class="scrHead">
+      <button id="setupBack" class="iconBtn" aria-label="Back">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <h2>NEW GAME</h2>
+    </div>
+    <div class="scrollBody">
+      <div class="lbl">OPPONENT</div>
+      <div class="seg" id="oppSeg">
+        <button data-v="2p" class="on">2 PLAYERS</button>
+        <button data-v="bot">VS BOT</button>
+      </div>
+      <div id="aiBlock" style="display:none">
+        <div class="lbl">BOT STRENGTH</div>
+        <div class="seg" id="lvlSeg">
+          <button data-v="easy" class="on">EASY</button>
+          <button data-v="medium">MEDIUM</button>
+          <button data-v="hard">HARD</button>
+        </div>
+        <div class="lbl">PLAY AS</div>
+        <div class="seg" id="colSeg">
+          <button data-v="w" class="on">WHITE</button>
+          <button data-v="b">BLACK</button>
+          <button data-v="r">RANDOM</button>
+        </div>
+      </div>
+      <button id="startBtn" class="btn primary">START GAME</button>
+    </div>
+  </section>
+
+  <section id="scr-puzzles" class="screen">
+    <div class="scrHead">
+      <button id="pzBack" class="iconBtn" aria-label="Back">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <h2>PUZZLES</h2>
+    </div>
+    <div class="scrollBody">
+      <div class="card" style="display:flex;align-items:center">
+        <div class="streakFlame">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M12 2c1 4-3 5.5-3 9a3 3 0 0 0 6 .2C16.4 13 18 11 17 8c2.6 1.7 4 4.4 4 7a9 9 0 1 1-18 0C3 9.5 8.5 7.5 12 2z" fill="#e08a3c"/>
+          </svg>
+        </div>
+        <div>
+          <div id="streakNow">0 DAYS</div>
+          <div id="streakBest">BEST 0</div>
+          <div id="streakShield">SHIELDS 0</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="dailyHead">
+          <div class="dailyTitle">DAILY PUZZLE</div>
+          <div class="badge" id="dailyBadge">EASY</div>
+        </div>
+        <div id="dailyDate">—</div>
+        <button id="dailySolve" class="btn primary">SOLVE</button>
+      </div>
+      <button class="pzRow" id="tierEasy">
+        <div class="card">
+          <div class="pzName">EASY</div>
+          <div class="pzCount"><span id="solvedEasy">0</span> solved</div>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M9.5 6 15.5 12l-6 6" fill="none" stroke="#b3a78f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </button>
+      <button class="pzRow" id="tierNormal">
+        <div class="card">
+          <div class="pzName">NORMAL</div>
+          <div class="pzCount"><span id="solvedNormal">0</span> solved</div>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M9.5 6 15.5 12l-6 6" fill="none" stroke="#b3a78f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </button>
+      <button class="pzRow" id="tierHard">
+        <div class="card">
+          <div class="pzName">HARD</div>
+          <div class="pzCount"><span id="solvedHard">0</span> solved</div>
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M9.5 6 15.5 12l-6 6" fill="none" stroke="#b3a78f" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <section id="scr-game" class="screen">
+    <div id="adSlot">AD</div>
+    <div id="gameBar">
+      <button id="pauseBtn" class="iconBtn" aria-label="Pause">
+        <svg id="icoPause" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <rect x="6.5" y="5" width="4" height="14" rx="1.4" fill="currentColor"/>
+          <rect x="13.5" y="5" width="4" height="14" rx="1.4" fill="currentColor"/>
+        </svg>
+        <svg id="icoBack" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="display:none">
+          <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div id="status">White to move</div>
+      <div class="barSpacer" id="barSpacer"></div>
+      <div id="botBadge">
+        <svg class="bico" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="5" y="8.5" width="14" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="9.5" cy="13.5" r="1.6" fill="currentColor"/>
+          <circle cx="14.5" cy="13.5" r="1.6" fill="currentColor"/>
+          <path d="M12 8.5V5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="4" r="1.4" fill="currentColor"/>
+        </svg>
+        <div id="botDots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+    <div id="ctlTop" class="ctlRow">
+      <span class="sideDot sp" id="dotTop"></span>
+      <button class="iconBtn" data-act="undo" aria-label="Undo">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M8.5 4.5 3.5 9.5l5 5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3.5 9.5H14a6 6 0 0 1 0 12h-3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="iconBtn" data-act="redo" aria-label="Redo">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M15.5 4.5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20.5 9.5H10a6 6 0 0 0 0 12h3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="iconBtn" data-act="resign" data-icon="1" aria-label="Resign">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z" fill="currentColor"/>
+        </svg>
+      </button>
+      <span class="sideDot ghost"></span>
+    </div>
+    <div id="boardArea">
+      <div id="boardWrap"><div id="boardShake"><canvas id="bg"></canvas><canvas id="fg"></canvas></div></div>
+    </div>
+    <div id="ctlBottom" class="ctlRow">
+      <span class="sideDot sp" id="dotBottom"></span>
+      <button class="iconBtn" data-act="undo" aria-label="Undo">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M8.5 4.5 3.5 9.5l5 5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3.5 9.5H14a6 6 0 0 1 0 12h-3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="iconBtn" data-act="redo" aria-label="Redo">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M15.5 4.5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20.5 9.5H10a6 6 0 0 0 0 12h3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="iconBtn" data-act="resign" data-icon="1" aria-label="Resign">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z" fill="currentColor"/>
+        </svg>
+      </button>
+      <span class="sideDot ghost"></span>
+    </div>
+  </section>
+</main>
+
+<div id="modeModal" class="modalWrap">
+  <div class="modalBox">
+    <h3>CHOOSE MODE</h3>
+    <div class="sub">What are we playing today?</div>
+    <button id="cardChess" class="modeCard">
+      <div class="modeIcon"><canvas id="modeKnightCv"></canvas></div>
+      <div>
+        <div class="modeName">CHESS</div>
+        <div class="modeHint">2 players or vs Bot</div>
+      </div>
+    </button>
+    <button id="cardPuzzles" class="modeCard">
+      <div class="modeIcon">
+        <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+          <rect x="4" y="4" width="7" height="7" rx="2" fill="none" stroke="#e0b45c" stroke-width="2"/>
+          <rect x="13" y="4" width="7" height="7" rx="2" fill="none" stroke="#e0b45c" stroke-width="2"/>
+          <rect x="4" y="13" width="7" height="7" rx="2" fill="none" stroke="#e0b45c" stroke-width="2"/>
+          <rect x="13" y="13" width="7" height="7" rx="2" fill="none" stroke="#e0b45c" stroke-width="2"/>
+        </svg>
+      </div>
+      <div>
+        <div class="modeName">PUZZLES</div>
+        <div class="modeHint">Daily + 3 difficulty tiers</div>
+      </div>
+    </button>
+  </div>
+</div>
+
+<div id="settingsSheet" class="modalWrap">
+  <div class="modalBox">
+    <h3>SETTINGS</h3>
+    <div class="setRow">
+      <div class="lbl2">SOUND</div>
+      <button id="sndTgl" class="sw on" aria-label="Toggle sound"></button>
+    </div>
+    <div class="setRow">
+      <div class="lbl2">HAPTICS</div>
+      <button id="hapTgl" class="sw on" aria-label="Toggle haptics"></button>
+    </div>
+    <div class="setFoot" id="verLine">V0.7.1 — REDUNDANT STUDIOS</div>
+  </div>
+</div>
+
+<div id="pauseSheet" class="modalWrap">
+  <div class="modalBox">
+    <h3>PAUSED</h3>
+    <div class="sub" id="pauseStatus">White to move</div>
+    <button id="pResume" class="btn primary sheetBtn">RESUME</button>
+    <button id="pNew" class="btn sheetBtn">NEW GAME</button>
+    <button id="pMenu" class="btn sheetBtn">MAIN MENU</button>
+  </div>
+</div>
+
+<div id="overSheet" class="modalWrap">
+  <div class="modalBox">
+    <h3 id="overTitle">WHITE WINS</h3>
+    <div class="sub" id="overSub">by checkmate</div>
+    <button id="overPrimary" class="btn primary sheetBtn">REMATCH</button>
+    <button id="overSecondary" class="btn sheetBtn">MAIN MENU</button>
+  </div>
+</div>
+
+<div id="soonSheet" class="modalWrap">
+  <div class="modalBox">
+    <h3 id="soonTitle">COMING SOON</h3>
+    <div class="sub" id="soonMsg">This feature arrives in the next update.</div>
+    <button id="soonAlt" class="btn primary sheetBtn" style="display:none">OK</button>
+    <button id="soonOk" class="btn sheetBtn">GOT IT</button>
+  </div>
+</div>
+
+<div id="testAd" class="modalWrap">
+  <div class="modalBox">
+    <div id="taKind">TEST AD</div>
+    <div id="taBody"></div>
+    <div id="taUnit"></div>
+    <div id="taNote"></div>
+    <div id="taCount">5</div>
+    <button id="taClose" class="btn primary sheetBtn" style="display:none">CONTINUE</button>
+  </div>
+</div>
+
+<div id="errBanner"></div>
+<div id="fatal"><div><h2>Something broke</h2><pre id="fatalMsg"></pre><button id="fatalReload">RELOAD</button></div></div>
+
+<script>
+/* ═══ STUDIO SDK — inlined, ES2015-normalized (per build prompt: ALL ads/persistence
+     route through it; never raw localStorage, never navigator.vibrate) ═══ */
+const Studio = (() => {
+  const bridge = () => window.NativeBridge || null;
+  const ls = { get k(){ try { return localStorage; } catch(e) { return null; } } };
+  let settings = { sound: true, haptics: true };
+  try {
+    const b0 = bridge();
+    const s0 = b0 ? b0.load('shell:settings') : (ls.k ? ls.k.getItem('shell:settings') : null);
+    if (s0) settings = Object.assign(settings, JSON.parse(s0));
+  } catch(e) {}
+  return {
+    save: (k, v) => {
+      const b = bridge();
+      if (b) b.save(k, v);
+      else try { ls.k.setItem(k, v); } catch(e) {}
+    },
+    load: (k) => {
+      const b = bridge();
+      if (b) return b.load(k);
+      try { return ls.k ? ls.k.getItem(k) : null; } catch(e) { return null; }
+    },
+    getSetting: (k) => {
+      const b = bridge();
+      return (b && b.getSetting) ? b.getSetting(k) : null;
+    },
+    haptic: (kind) => {
+      if (!settings.haptics) return;
+      const b = bridge();
+      if (!b) return;
+      const map = { light: 15, medium: 30, heavy: 60, success: 45 };
+      try { b.haptic(typeof map[kind] === 'number' ? map[kind] : 0); } catch(e) {}
+    },
+    settings,
+    exitGame: () => {
+      const b = bridge();
+      if (b && b.exitGame) { try { b.exitGame(); } catch(e) {} }
+    },
+    ads: {
+      banner(visible) {
+        const b = bridge();
+        if (b && b.banner) { try { b.banner(visible ? 'show' : 'hide'); } catch(e) {} }
+      },
+      rewarded(placement, onReward) {
+        const b = bridge();
+        if (b && b.showRewardedAd) {
+          window.__studioAdCb = function(result) {
+            if (result === 'granted') onReward();
+          };
+          b.showRewardedAd('__studioAdCb');
+          return;
+        }
+        const cg = (window.CrazyGames && window.CrazyGames.SDK) || null;
+        if (cg && cg.ad && /(^|.)crazygames.(com|co)$/i.test(location.hostname)) {
+          try {
+            cg.ad.requestAd('rewarded', {
+              adFinished: function() { onReward(); },
+              adError: function() { /* no reward; game stays fair */ }
+            });
+          } catch(e) {}
+        }
+        /* no bridge/SDK: no-op — game keeps working, never fakes a reward
+           (browser preview shows a labeled SIMULATOR instead via game layer) */
+      },
+      interstitial(onDone) {
+        const b = bridge();
+        if (b && b.showInterstitial) {
+          window.__studioInterCb = function() { if (onDone) onDone(); };
+          b.showInterstitial('__studioInterCb');
+          return;
+        }
+        if (onDone) onDone();
+      }
+    }
+  };
+})();
+</script>
+
+<script>
+"use strict";
+(function(){
+
+const CFG = {
+  version: "0.7.1",
+  dprCap: 2,
+  animMs: 140, popMs: 130, confirmMs: 2500, autoMs: 550, wrongMs: 450,
+  saveKey: "chess:save:v1",
+  mutedKey: "chess:muted:v1",
+  hapticsKey: "chess:haptics:v1",
+  statsKey: "chess:stats:v1",
+  /* ADS — director-supplied Google TEST unit ids. On device the GameBox shell
+     serves real ads via NativeBridge; ids live here as the single source of
+     truth for shell mapping + browser simulator. Swap for prod ids at launch. */
+  ads: {
+    admobBanner:       "ca-app-pub-3940256099942544/6300978111",
+    admobInterstitial: "ca-app-pub-3940256099942544/1033173712",
+    admobRewarded:     "ca-app-pub-3940256099942544/5354046379",
+    rewardEveryN: 5
+  },
+  colors: {
+    lightSq:"#efddb9", darkSq:"#a97c50", frame:"#6b4f3a",
+    sel:"rgba(127,176,105,0.55)", last:"rgba(242,193,78,0.45)",
+    check:"rgba(214,69,69,0.60)", wrong:"rgba(214,69,69,0.55)", dot:"rgba(43,31,18,0.32)",
+    wFill:"#f3ead3", wStroke:"#4a3826",
+    bFill:"#453a2f", bStroke:"#1a120b",
+    coordLight:"#8a6a48", coordDark:"#ecd9ae"
+  },
+  sound: { master: 0.5 }
+};
+
+/* ═══ PUZZLE DATA — Lichess extraction.
+     EASY: director-supplied pack (202 rows received; transport truncates pastes).
+     NORMAL + HARD: paste the director's arrays into the marked slots below.
+     5-field rows [id, fen, line, rating, themes] paste in as-is. Boot validation
+     executes every row through the engine and drops any bad ones loudly. */
+const PUZZLE_DATA={easy:[
+["0k5t3","8/1K2k3/7p/1B2Pp2/Pn5P/8/8/8 w - - 3 50","b5c6 b4c6 b7c6 f5f4 a4a5 f4f3 a5a6 f3f2",1395,"advancedPawn crushing endgame master quietMove veryLong"],
+["uWKVC","r1bqnrk1/ppp1n1b1/3p4/2PPp2p/4P1P1/2NB1pP1/PP1BN2P/2RQK2R w K - 0 17","g4h5 f3f2 e1f1 c8h3",1390,"advancedPawn mate mateIn2 opening short"],
+["KuSKs","8/3N1pk1/2p1p3/R3Pbb1/Pp6/1B3K1p/8/8 w - - 0 47","f3g3 g5f4 g3f4 h3h2 d7f6 h2h1q",1324,"advancedPawn crushing endgame long master promotion sacrifice"],
+["Ahgt2","4rk2/p1p3pQ/2pp1p2/8/2P5/1P1Br2P/PB4PK/4b3 w - - 1 33","b2f6 e1g3 h2g1 e3e1 d3f1 e1f1 g1f1 e8e1",1186,"attraction endgame mate mateIn4 operaMate sacrifice veryLong"],
+["rQIFH","3R4/p1p5/1p2pk2/4p3/4PP2/2Q3pq/PP6/5RK1 w - - 0 29","f1f3 h3h2 g1f1 g3g2 f1e2 g2g1q",1265,"advancedPawn advantage deflection discoveredAttack discoveredCheck endgame exposedKing long promotion"],
+["Jps76","3r4/p6p/2p3p1/5p2/4k3/2P4P/PP2K1P1/4R3 b - - 1 26","g6g5 e2f2 e4d3 e1d1 d3c2 d1d8",1379,"crushing discoveredAttack discoveredCheck endgame long rookEndgame skewer"],
+["MpRZh","6rk/1p1r1p1p/p1q1pPpQ/8/3P4/4R3/PP4PP/3R2K1 b - - 4 24","c6c2 h6h7 h8h7 e3h3",1372,"attraction endgame kingsideAttack mate mateIn2 sacrifice short"],
+["emrTg","2kr4/1Rp1pp2/p1N2p1b/3P3p/2P5/P2b4/1R3P1r/6K1 b - - 3 27","h6f4 b7b8 c8d7 b8d8",1376,"epauletteMate hookMate mate mateIn2 middlegame queensideAttack short"],
+["Ei2B5","rkb4r/1p5p/1b1N1q2/1B1Q2p1/8/P3P3/5PP1/2R2K2 b - - 4 31","h8d8 c1c8 d8c8 d5b7",1324,"epauletteMate mate mateIn2 middlegame queensideAttack short"],
+["KqBiP","8/kp6/6p1/P2K3p/7P/6P1/8/8 w - - 7 45","d5e6 a7a6 e6f6 a6a5 f6g6 b7b5 g6h5 b5b4 g3g4 b4b3 g4g5 b3b2",1361,"advancedPawn crushing endgame master pawnEndgame quietMove veryLong"],
+["eAGH3","1k1r4/1b6/8/4Q3/2r2PP1/8/5qPK/4R3 b - - 2 42","b8a8 e1a1 f2a7 a1a7 a8a7 e5a5 b7a6 a5d8",1367,"attraction crushing endgame exposedKing fork veryLong"],
+["RLZT5","2k5/pppb3p/2np4/3N2p1/2P3nq/1P5P/PB1Q1rP1/R3R1K1 w - - 0 21","d2c3 f2g2 g1g2 h4f2 g2h1 f2h2",1360,"attraction kingsideAttack long mate mateIn3 middlegame sacrifice"],
+["D1iDe","4r2k/4q1pp/2p1pp1b/p2p2PQ/3P3P/2P2R2/r5N1/5RK1 b - - 0 29","f6g5 h5e8 e7e8 f3f8 e8f8 f1f8",1371,"backRankMate fork long mate mateIn3 middlegame sacrifice"],
+["iJlgm","r5k1/1p3pp1/5n2/7p/8/p6P/bpB2PP1/1R1Q2K1 w - - 0 26","d1d6 a2b1 c2b1 a3a2 b1a2 a8a2 d6d8 g8h7",1302,"advancedPawn crushing endgame master masterVsMaster superGM veryLong"],
+["36jpN","6k1/1r4B1/1qb1p2p/2b2p2/1nP2P2/6PP/1Q1NB2K/1R6 w - - 0 29","g7e5 c5g1 b1g1 b6f2 g1g2 f2g2",1397,"clearance fork long mate mateIn3 middlegame sacrifice"],
+["Z5SSs","r3r1k1/5pp1/p1Np3p/3P4/1RP2p2/1P1n4/Q4PPP/4qRK1 w - - 6 30","b4b6 e1f1 g1f1 e8e1",1255,"attraction kingsideAttack mate mateIn2 middlegame sacrifice short"],
+["B1a4q","r6k/3n1p1p/pqn2Pr1/1p1p1R1Q/3P4/4B3/PP4PP/3R2K1 b - - 4 25","a8g8 h5h7 h8h7 f5h5 g6h6 h5h6",1255,"attraction kingsideAttack long mate mateIn3 middlegame operaMate sacrifice"],
+["Lsi7V","8/1p4p1/pk1R1p2/1P1p4/K2P1P1p/6r1/8/8 b - - 1 46","b6a7 b5b6 a7b8 d6d8",1219,"endgame mate mateIn2 rookEndgame short"],
+["0e2Fb","4rqrk/pp1b4/2p2pPB/3p4/1P1P3R/P2BP2P/6P1/6K1 b - - 0 41","f8h6 h4h6 h8g7 h6h7 g7f8 h7f7",1379,"endgame epauletteMate exposedKing hangingPiece kingsideAttack long mate mateIn3"],
+["IjwRG","rn5k/1bp3p1/p5pn/2b3N1/2Bq3Q/P4P2/6PP/3R1R1K b - - 9 26","d4h4 d1d8 c5f8 d8f8 h6g8 f8g8",1330,"kingsideAttack long mate mateIn3 middlegame operaMate"],
+["STBps","6rk/1p2qbrp/p1n1NQ2/3pPp2/3P4/P3B2R/1P5P/5R1K b - - 0 27","f7e6 h3h7 h8h7 f6h6",1242,"attraction kingsideAttack mate mateIn2 middlegame pin sacrifice short"],
+["K9aZM","2b2rk1/4R2N/p4pp1/1ppq3n/5R1Q/8/6P1/6K1 b - - 1 28","h5f4 h7f6 f8f6 h4h7 g8f8 h7g7",1368,"exposedKing fork long mate mateIn3 middlegame sacrifice triangleMate"],
+["rFKz2","8/P4pk1/3p2p1/2p1b3/8/5q1p/R2R1P2/5QK1 w - - 1 50","a7a8q h3h2",1391,"advancedPawn endgame master mate mateIn1 oneMove"],
+["w1nOx","2rqr1k1/1b1nbpB1/p5p1/4Pp2/2pP4/2P2N1R/P2Q2PP/R5K1 b - - 1 25","e7f8 h3h8 g8g7 d2h6",960,"kingsideAttack mate mateIn2 middlegame sacrifice short triangleMate"],
+["ektg3","1k4n1/pppQ4/3b4/3p1p2/3P2p1/2P5/PP1N1PPr/R1B1r1K1 w - - 0 20","d2f1 h2h1 g1h1 e1f1",1347,"attraction deflection kingsideAttack mate mateIn2 middlegame sacrifice short"],
+["lZ4JB","1r3rk1/p4pp1/2pN1b1p/2Pp2q1/6b1/3B4/PPQ3PP/4RRK1 b - - 2 22","b8b2 d3h7 g8h8 d6f7 f8f7 e1e8 f7f8 e8f8",1253,"deflection kingsideAttack mate mateIn4 middlegame sacrifice veryLong"],
+["t63oF","1k5r/1p1r2bp/p5p1/2Rq1p2/4pP2/4B3/1P3QPP/2R3K1 b - - 3 28","d5d6 c5c8 h8c8 e3a7 b8a8 c1c8 d6b8 c8b8",1215,"clearance deflection master mate mateIn4 middlegame queensideAttack sacrifice veryLong"],
+["kukh2","8/8/5k2/3p1P2/1pp2R1P/3r4/1P2K3/8 b - - 1 45","f6e5 f5f6 e5f4 f6f7 f4e4 f7f8q",1141,"advancedPawn crushing endgame long promotion rookEndgame sacrifice"],
+["RsF7J","3r3k/Q3R1pp/5p2/pP6/Pb6/3qPp2/5PPP/5RK1 w - - 0 25","e7g7 d3f1 g1f1 d8d1",1331,"attraction endgame master mate mateIn2 sacrifice short"],
+["eHVQc","5rk1/1ppn2pp/p3p1q1/4p3/4Pn1B/2NP4/PPP1Q1PP/5RK1 w - - 2 17","e2d2 f4h3 g1h1 f8f1",1280,"deflection discoveredAttack kingsideAttack mate mateIn2 middlegame pin short"],
+["2WXsg","4q2r/kbQ5/pN3p2/2p5/2p1p3/2P2pP1/PP3P1P/3R2RK w - - 3 36","c7c5 h8h2 h1h2 e8h8 c5h5 h8h5",1271,"attraction kingsideAttack long mate mateIn3 middlegame sacrifice"],
+["d7xea","r7/ppp1k2r/4bp2/4p3/1P1bP3/P2P2P1/6PP/1RBB1R1K w - - 3 24","c1b2 h7h2 h1h2 a8h8 d1h5 h8h5",1280,"attraction kingsideAttack long mate mateIn3 middlegame pillsburysMate sacrifice"],
+["IL6PP","6k1/pp3r1p/2p1r2q/1PPpP1p1/P2P4/3B1pP1/3Q1RbP/4R1K1 w - - 1 29","b5c6 h6h2 g1h2 e6h6 h2g1 h6h1",1170,"attraction kingsideAttack long mate mateIn3 middlegame operaMate sacrifice"],
+["fMcAD","r4rk1/p3qppp/4p3/2b1B3/4b1N1/3R2Q1/P4PPP/1R4K1 b - - 7 21","e4d3 g4h6 g8h8 g3g7",1393,"discoveredAttack kingsideAttack mate mateIn2 middlegame pin short"],
+["8Ks7Q","4r1k1/ppp2pP1/3p3p/3P4/2P1q3/1P2r3/P1P2QP1/3b1RK1 b - - 0 29","e3e1 f2f7 g8h7 g7g8q",1213,"advancedPawn discoveredCheck doubleCheck endgame kingsideAttack mate mateIn2 promotion short"],
+["vJscm","rb1q1rk1/1p1b2p1/p3p1N1/3pp2Q/1P5P/P1p5/5PP1/R3R1K1 b - - 3 21","f8f5 h5h8 g8f7 h8d8",894,"advantage master middlegame short skewer"],
+["3yO7f","1R6/1P3p1P/8/8/5k2/8/1r3p2/4K3 w - - 0 53","e1f1 f4f3 b8c8 b2b1 c8c1 b1c1",1323,"endgame exposedKing long mate mateIn3 rookEndgame"],
+["WyjGi","k2r4/1p1n1rp1/p2R1b1p/7P/2q2B2/5QP1/PP3P2/K2R4 b - - 1 33","c4b4 d6a6",1240,"master mate mateIn1 middlegame oneMove pillsburysMate pin queensideAttack"],
+["N0caP","5rk1/5ppp/3Q1b2/2NP4/8/8/1q6/3KR3 b - - 5 34","f6g5 d6f8 g8f8 c5d7 f8g8 e1e8",1354,"attraction backRankMate endgame long mate mateIn3 sacrifice"],
+["0KlBf","8/kppR4/pq5p/8/2B2Q2/7P/PPP2bP1/2K5 w - - 0 23","f4c7 b6e3 d7d2 e3e1 d2d1 f2e3 c1b1 e1d1",1239,"clearance deflection endgame mate mateIn4 veryLong"],
+["kOejt","r4rk1/pp3pbN/2p3p1/3p1b2/4q1P1/1B2P2Q/P4P1R/2R2K2 b - - 2 23","f5g4 h7f6 g7f6 h3h7",1203,"clearance kingsideAttack mate mateIn2 middlegame sacrifice short"],
+["Ei271","r2q2rk/ppp2p1p/2np1PpQ/6P1/2n2P2/3R4/PPP4P/2K4R b - - 5 19","d8f8 h6h7 h8h7 d3h3 f8h6 h3h6",1386,"attraction kingsideAttack long master mate mateIn3 middlegame sacrifice"],
+["jPqow","2r1r1k1/1b3p2/p4nR1/1p1p4/1P1q4/P3PP2/3NKP1P/1Q4R1 b - - 0 23","f7g6 b1g6 g8h8 g6g7",1283,"kingsideAttack mate mateIn2 middlegame short"],
+["f7Xbe","5r1k/pn4pp/1pB3n1/2pQ4/8/1P2q3/PB4PP/2R4K w - - 2 25","c6b7 e3c1 b2c1 f8f1",1139,"backRankMate mate mateIn2 middlegame sacrifice short"],
+["1jxa4","4r1k1/1r2qp2/6P1/2pP3p/4p3/2N3QP/1P4PK/1R6 b - - 0 35","e7e5 g6f7 g8f7 b1f1",1306,"advancedPawn attraction crushing discoveredCheck doubleCheck endgame master masterVsMaster short"],
+["hZoBa","4k3/pp2P3/2p2pp1/5n1p/3q1P2/1P4PP/P3Q2K/4R3 w - - 1 33","e2e6 d4f2 h2h1 f5g3",1185,"cornerMate deflection endgame master mate mateIn2 short"],
+["byJCw","1k1r3r/pp2bppp/2p1qn2/4B3/N2Q4/7P/PPP2PP1/R3R1K1 b - - 0 16","b8a8 a4b6 a7b6 d4a4",1126,"clearance mate mateIn2 middlegame queensideAttack sacrifice short"],
+["Sfwyc","5k1r/1pp3b1/4Qq1p/p5p1/5p2/2rB3P/PP3PPB/2KRR3 w - - 0 25","c1b1 c3c1 d1c1 f6b2",1207,"discoveredAttack mate mateIn2 middlegame queensideAttack sacrifice short"],
+["LMBBv","8/4k3/4P3/3K3p/P1B4P/1p4P1/2b5/8 w - - 0 54","a4a5 b3b2 c4a2 c2b3 a2b3 b2b1q",1298,"advancedPawn bishopEndgame clearance crushing deflection endgame long master promotion"],
+["FTugp","r5k1/pp2p1q1/2p2r1p/4Np2/3P1n1P/P1P3p1/1PQ2PP1/R3R1K1 w - - 0 24","c2d2 g3f2 d2f2 f4h3 g1f1 h3f2",1354,"advancedPawn attraction crushing kingsideAttack long middlegame pin"],
+["urDFj","2r1b1k1/pp3pbp/2n3p1/8/6qP/1B4P1/PP3QN1/4R1K1 b - - 1 28","c8d8 e1e8 d8e8 f2f7 g8h8 f7e8 g7f8 e8f8",1319,"attraction fork mate mateIn4 middlegame veryLong"],
+["CNTQU","r7/1kp3p1/4p2p/2R5/1P5Q/5bP1/4qP1P/5RK1 w - - 1 30","h4e7 e2f1 g1f1 a8a1 c5c1 a1c1",1260,"attraction endgame long mate mateIn3 pillsburysMate sacrifice"],
+["wU7T8","2R2bk1/P4p1p/3pp1p1/1r5n/4P3/2P2P2/3QBqPP/R6K w - - 1 30","a7a8q h5g3 h2g3 b5h5",1219,"clearance kingsideAttack mate mateIn2 middlegame sacrifice short"],
+["N1IMm","R7/8/5K2/P4P2/6k1/r6p/8/8 w - - 4 50","f6g6 h3h2 a8h8 a3h3 h8h3 g4h3 f5f6 h2h1q",1299,"advancedPawn clearance crushing endgame master promotion rookEndgame veryLong"],
+["sVycA","4r2r/p1p3k1/3p2bb/8/8/1B6/PP1q4/K4RR1 b - - 5 30","e8e2 f1f7 g7g8 g1g6 h6g7 g6g7",1351,"blindSwineMate deflection exposedKing long mate mateIn3 middlegame pin"],
+["yiSSl","6k1/2p2rpp/p2b4/3Q1p2/8/1PB1q2P/P1P3P1/4R2K b - - 3 29","e3c3 e1e8 d6f8 e8f8 g8f8 d5d8",1201,"attraction endgame long mate mateIn3 pin sacrifice"],
+["aSKi9","8/2p2p1k/1p1p1K1P/1P2p1P1/8/2n2P2/8/8 b - - 3 49","c3b5 f6f7 d6d5 g5g6 h7h6 g6g7 b5d6 f7f8",1252,"advancedPawn crushing defensiveMove endgame exposedKing knightEndgame veryLong"],
+["I8R6U","5rk1/pp1b3p/2p1pqp1/2PpR3/1P1P2r1/P7/2B3PP/R2Q2K1 w - - 5 25","d1g4 f6f2 g1h1 f2f1 a1f1 f8f1",1222,"backRankMate fork long mate mateIn3 middlegame sacrifice"],
+["V6hAh","r2q2rk/1pp2p1p/2b2PpQ/p2pP3/8/2N2R2/PP4PP/n1B3K1 b - - 5 21","d8f8 h6h7 h8h7 f3h3 f8h6 h3h6",1345,"attraction kingsideAttack long mate mateIn3 middlegame operaMate sacrifice"],
+["v30tE","5r1k/1p1q1rpp/pp3p2/4p2R/P1P4Q/6RP/1P4PK/8 b - - 12 40","h7h6 h5h6 g7h6 h4h6 f7h7 h6f8",1195,"deflection endgame kingsideAttack long master mate mateIn3 sacrifice"],
+["k8lj0","8/1p6/6p1/K1k4P/P4P2/6p1/8/8 w - - 0 44","h5h6 g3g2 h6h7 g2g1q h7h8q g1e1 h8c3 e1c3",1233,"advancedPawn endgame master mate mateIn4 pawnEndgame promotion veryLong"],
+["raFwZ","rnbqk2r/ppp2p2/4p1p1/2np2N1/2Bb4/3P4/PPP3PP/RNBQ1R1K w kq - 0 11","g5f7 h8h2 h1h2 d8h4",1303,"attraction kingsideAttack mate mateIn2 middlegame sacrifice short"],
+["YaVcR","r2q1rk1/pb2bppp/2n1pn2/1p1pN3/2pP1P2/2P1PR2/PPBN2PP/R1BQ2K1 b - - 3 11","f6d7 c2h7 g8h7 f3h3 h7g8 d1h5",1372,"attraction clearance crushing kingsideAttack long opening sacrifice"],
+["rm2cv","8/7k/P7/2p5/8/1KP3p1/1P3r1p/7R b - - 0 47","g3g2 h1h2 h7g6 h2g2 f2g2 a6a7",1381,"advancedPawn crushing endgame exposedKing long rookEndgame sacrifice"],
+["sUv2H","3r3k/6pp/p2q4/1b2p3/4B3/2Q2P2/1P4PP/2R3K1 w - - 2 29","c3c7 d6d4 g1h1 d4d1 c1d1 d8d1",1260,"backRankMate endgame long mate mateIn3 sacrifice"],
+["707lp","r2r3k/4bpRb/p3p2P/1p2P2P/P3pB2/4P3/3N2QK/q7 b - - 1 30","a1a2 g7h7 h8h7 g2g7",1375,"attraction kingsideAttack mate mateIn2 middlegame sacrifice short"],
+["UnLl0","2k3n1/pppr2b1/2q1Np1r/4N3/3p3p/1P1P1R2/P5PP/5QK1 b - - 0 25","f6e5 f3f8 g7f8 f1f8 d7d8 f8d8",1346,"fork long mate mateIn3 middlegame sacrifice"],
+["FpL07","8/5p2/6p1/1pR5/1P2bkP1/3p3P/5K2/8 w - - 0 42","c5b5 d3d2 f2e2 e4d3 e2d3 d2d1q",1254,"advancedPawn attraction crushing deflection endgame exposedKing long promotion"],
+["RbszZ","8/8/8/P4kp1/1R2R3/3p3n/7r/4K3 w - - 1 55","a5a6 d3d2 e1d1 h3f2 d1d2 f2e4",1392,"advancedPawn advantage doubleCheck endgame exposedKing fork long"],
+["AjlFi","2r4k/pp2R1pp/8/1b1p4/3n4/1P6/P4PPP/1BN3K1 w - - 2 26","e7e1 c8c1 e1c1 d4e2 g1f1 e2c1",1396,"attraction crushing discoveredAttack discoveredCheck endgame fork long sacrifice"],
+["gIzxJ","2r4k/1bq2p1p/p2ppPr1/1pp4Q/3nPR2/3P3P/PPP3B1/R1B3K1 b - - 4 23","c8g8 h5h7 h8h7 f4h4 g6h6 h4h6",1339,"attraction kingsideAttack long mate mateIn3 middlegame operaMate sacrifice"],
+["Ph8Sk","b4rk1/5p2/5QP1/2pPP2p/8/7P/6BK/2q5 b - - 0 32","c1h6 g6f7 f8f7 f6h6",1336,"advancedPawn crushing discoveredAttack endgame master short"],
+["TXDm0","1k5r/1p1r1p2/p2N4/4pNb1/6p1/3P2P1/PP4B1/2R3K1 w - - 0 24","c1c5 d7d6 f5d6 g5e3 g1f1 e3c5",1374,"advantage exposedKing fork long master middlegame sacrifice superGM"],
+["LAzRo","3rr3/1pp4k/p1n3p1/2P2b1P/5P2/P3P3/1B2K3/6RR b - - 0 28","d8d3 h5g6 h7g8 h1h8",1290,"discoveredCheck doubleCheck mate mateIn2 middlegame operaMate short"],
+["BYV3x","6k1/1p4pp/pQ2Rpn1/8/5q2/6PP/P4P1K/3r4 b - - 0 28","f4f3 e6e8 g6f8 b6e6 g8h8 e8f8",1224,"backRankMate clearance deflection endgame long mate mateIn3 pin"],
+["SGRDp","8/8/8/3R2P1/5P2/4r1K1/3pk3/8 w - - 1 57","g3g4 e3d3 d5d3 e2d3",1398,"crushing endgame master masterVsMaster rookEndgame short superGM"],
+["DFend","8/7r/8/p3p3/2Kr1kPR/5P2/P6R/8 w - - 2 46","c4c3 h7c7 c3b2 d4b4 b2a1 c7c1",1159,"endgame exposedKing long mate mateIn3 rookEndgame"],
+["WNCmB","rnbqk2r/pppp2pp/5n2/4p3/1bB1PP2/2N5/PPP3PP/R1BQK1NR b KQkq - 2 6","f6e4 d1h5 g7g6 h5e5 d8e7 e5h8",1224,"crushing fork long master opening"],
+["JNXmR","4Rrk1/ppq2pp1/6b1/2p3N1/8/7P/PP3PP1/4R1K1 b - - 0 23","f7f6 e8f8 g8f8 g5e6 f8e7 e6c7",1277,"attraction crushing discoveredAttack discoveredCheck endgame fork long"],
+["rslgD","1r6/1k1N1ppp/4p3/4q3/4n3/1P3B2/1PP2PPP/3R2K1 b - - 1 22","e5f5 f3e4 f5e4 d7c5 b7c7 c5e4",1291,"attraction crushing endgame exposedKing fork long"],
+["FAwQH","5rk1/4bR2/4P2p/p5pQ/P2r1nP1/1P3P2/7P/6K1 w - - 15 44","h5h6 d4d1 g1f2 e7c5 f2g3 d1g1",1353,"endgame long mate mateIn3 pillsburysMate"],
+["WUQiU","8/4Qpk1/2p3p1/3pP3/P1bP4/6P1/5qBK/8 b - - 1 47","c4f1 e7f6 f2f6 e5f6 g7f6 g2f1",1134,"crushing endgame long"],
+["86WG6","5r1k/p4N1P/6p1/3np3/7Q/2r1p1P1/2q2PK1/7R b - - 0 25","f8f7 h4d8 h8g7 h7h8q",1398,"advancedPawn endgame fork mate mateIn2 promotion short"],
+["GK60v","r2b2k1/3P1p1p/1qp3p1/3p1NQ1/p5P1/Pp1P1N1P/1P3P2/1K2R3 b - - 0 27","d8g5 e1e8 a8e8 d7e8q",1329,"advancedPawn endgame kingsideAttack mate mateIn2 promotion short"],
+["rhe05","2krr3/ppq2ppp/2nb4/2p5/4n3/NQP2B1P/PP3PP1/R1B2RK1 w - - 0 15","a3c4 d6h2 g1h1 e4f2 f1f2 e8e1 f2f1 e1f1",1377,"clearance deflection kingsideAttack mate mateIn4 middlegame sacrifice veryLong"],
+["Uex9h","5Q2/6pk/4p2p/2pq2n1/3P4/6P1/1P3PKP/2R5 w - - 1 28","g2g1 g5h3 g1f1 d5h1 f1e2 h1c1",1323,"crushing endgame long skewer"],
+["zNZet","3r1r1k/2q1n1pp/2p2p2/p1b1pP1Q/Pp1nP1R1/2N4P/BP3BPK/5R2 b - - 1 26","b4c3 h5h7 h8h7 g4h4",1379,"attraction kingsideAttack master mate mateIn2 middlegame pillsburysMate sacrifice short"],
+["wDC0I","6k1/7p/4pnp1/5q2/7K/P5P1/1P2N2P/3Q4 w - - 0 35","e2f4 g6g5",1211,"endgame master mate mateIn1 oneMove"],
+["FoKUY","7r/2pk4/1p2N3/3r2p1/3P2Pn/6Rp/PP3P1K/4R3 w - - 2 39","g3h3 h4f3 h2g3 h8h3 g3h3 f3e1",1386,"crushing discoveredAttack endgame exposedKing long pin"],
+["0GrCZ","r5k1/6bp/p1p3p1/2NbB1q1/2pQ4/5r2/PP4PP/R3R1K1 w - - 0 23","e5g7 f3f1 e1f1 g5g2",1165,"kingsideAttack master masterVsMaster mate mateIn2 middlegame sacrifice short"],
+["L8b27","5r2/3b1k2/1q3p2/p3pPp1/p1BpP3/1Pr3R1/2PQ2P1/2R3K1 b - - 1 30","f7g7 g3g5 f6g5 d2g5",1031,"crushing middlegame sacrifice short"],
+["I9FXq","r1bq2k1/pp2r1bR/2p3Q1/4p1N1/6n1/2P1P3/PP1N1PP1/R3K3 b Q - 4 18","d8f8 h7h8 g8h8 g6h7",1368,"attraction kingsideAttack master mate mateIn2 middlegame pin sacrifice short"],
+["0i07s","5r1r/QR3bk1/5p2/6p1/2q5/2N3P1/PP3PP1/4R1K1 w - - 3 27","e1e7 h8h1 g1h1 c4f1 h1h2 f8h8",1109,"attraction long mate mateIn3 middlegame sacrifice"],
+["ZZdgx","5rk1/pp3ppp/1b6/1B1bR3/3r4/Q7/P1P2PnP/5K2 b - - 1 27","d4f4 a3f8 g8f8 e5e8",1394,"attraction mate mateIn2 middlegame operaMate sacrifice short"],
+["v7jgD","r6k/1pQ1P1pp/8/p7/8/1q3NK1/2p3PP/8 b - - 0 37","b3b2 c7d8 a8d8 e7d8q",1127,"advancedPawn backRankMate endgame mate mateIn2 promotion short"],
+["RUO3r","b5rk/r2N2pp/p3Q3/7B/2pP1p2/2P5/P4PPP/1q2R1K1 b - - 6 26","b1b7 e6g8 h8g8 e1e8",1368,"attraction kingsideAttack mate mateIn2 middlegame pillsburysMate sacrifice short"],
+["71c4l","r1b3k1/p1p3pp/8/1p1Ppr2/3P4/1B1P1pPq/PP3P1P/R1BQ2RK w - - 5 18","d1f1 h3h2 h1h2 f5h5 f1h3 h5h3",1375,"attraction kingsideAttack long mate mateIn3 middlegame operaMate sacrifice"],
+["mLMHx","n7/4N3/1K6/P4ppp/4k3/6P1/7P/8 w - - 2 45","b6b7 f5f4 b7a8 f4f3 a8b7 f3f2 a5a6 f2f1q",1368,"advancedPawn crushing endgame knightEndgame promotion sacrifice veryLong"],
+["fWuNy","2Q3k1/5pp1/1q2p2p/1P6/5P2/6P1/1R4KP/3r4 b - - 2 31","g8h7 c8c2 h7g8 c2d1",1128,"crushing endgame fork short"],
+["tJuoJ","6r1/3p1Qpk/4p1Rp/4Pp1P/2p2P2/3q2PK/8/8 b - - 0 46","c4c3 g6h6 h7h6 f7g6",1384,"attraction endgame mate mateIn2 pin sacrifice short"],
+["rUzmq","4Rr2/p5kp/2pb1p2/1p3q2/3P4/1QP3p1/PP4PP/4R1K1 w - - 0 27","e8f8 f5f2 g1h1 f2e1",1295,"endgame fork master mate mateIn2 short"],
+["YzFvT","B4k2/4P2p/5Bb1/8/2pP3K/2P5/5n2/1q6 b - - 0 48","f8g8 a8d5 g6f7 e7e8q",1358,"advancedPawn endgame mate mateIn2 pin promotion short"],
+["Dn28w","r3b1k1/pp2b1p1/1qn1p1P1/3pPr2/1P1P2P1/P1N1P3/4Q3/R3K2R b KQ - 0 19","f5g5 h1h8 g8h8 e2h2 g5h5 h2h5 h8g8 h5h7 g8f8 h7h8",1281,"attraction kingsideAttack mate mateIn5 middlegame sacrifice veryLong"],
+["DLcGe","r5rk/2pqbp1n/p2p3R/3P2p1/Np2PB2/1P3Q2/1PP2P1P/2K3R1 b - - 0 21","g5f4 h6h7 h8h7 f3h5",1370,"attraction kingsideAttack mate mateIn2 middlegame sacrifice short"],
+["jCg95","3R4/2P5/3P4/4q3/2k2PP1/6K1/8/8 b - - 0 65","e5e3 g3h4 e3f4 c7c8q",1149,"advancedPawn crushing defensiveMove endgame master masterVsMaster promotion queenRookEndgame short"],
+["vEBhi","4r1k1/ppp2ppp/8/3p4/3Pr3/1PP5/P1Q1qPPP/3R1RK1 w - - 1 19","d1d2 e2f1 g1f1 e4e1",1380,"attraction endgame kingsideAttack mate mateIn2 sacrifice short"],
+["2atuc","6rk/pp3p1p/2p2pqP/8/2p1PB1Q/2P2P1N/PP4r1/5R1K w - - 1 28","f4d6 g2h2 d6h2 g6g2",1385,"clearance kingsideAttack mate mateIn2 middlegame sacrifice short"],
+["fChTN","8/2p4k/1pP2ppp/pP2p3/P1P3qP/6P1/4rQ2/2R3K1 w - - 4 38","f2f6 g4g3 g1f1 g3g2",1315,"endgame mate mateIn2 short triangleMate"],
+["QJicV","2k1r3/1pp4p/p7/4r1p1/3Nn3/2P5/PP3PPP/3RR1K1 w - - 5 23","g1f1 e4d2 f1g1 e5e1 d1e1 e8e1",1125,"backRankMate deflection discoveredAttack endgame long mate mateIn3"],
+["ZSobt","r4r1k/pp2q1pp/5p2/4pP1Q/2Bb4/3R4/P1P2PPP/5RK1 b - - 1 22","a8c8 h5h7 h8h7 d3h3",1316,"attraction kingsideAttack mate mateIn2 middlegame pillsburysMate sacrifice short"],
+["3KSrZ","2kr1bnr/pppq2pp/8/4B3/2p1p1b1/1P2P3/P1QN1PPP/R3KB1R w KQ - 0 12","d2c4 f8b4 e5c3 b4c3 c2c3 d7d1 a1d1 d8d1",1346,"mate mateIn4 opening operaMate sacrifice veryLong"],
+["UtimL","r6r/1p3pk1/p1p3p1/4p3/4PnN1/1P3PR1/1PPQ1P1q/6RK w - - 0 25","g4h2 h8h2 h1h2 a8h8 g3h3 h8h3",1118,"attraction exposedKing kingsideAttack long master masterVsMaster mate mateIn3 middlegame sacrifice"],
+["zy7oP","4Q3/1b3p1k/p5pp/1p3r2/2p5/P1B2P1P/BPP2KP1/3q4 b - - 7 34","g6g5 e8h8 h7g6 h8g7 g6h5 g2g4 h5h4 g7h6",1355,"deflection endgame fork mate mateIn4 veryLong"],
+["0Jtd7","r6r/pp1k1Q1p/2b1p3/5p2/2p5/P3P1B1/4q2P/b4RK1 b - - 3 26","d7c8 f7c7",918,"mate mateIn1 middlegame oneMove"],
+["PwHxf","r3r1k1/ppp1np1p/3p4/4nPB1/7P/1PP2P2/1P6/R5RK b - - 2 23","e5f3 g5e7 f3g1 a1g1 g8h8 e7f6",1340,"discoveredAttack discoveredCheck kingsideAttack long mate mateIn3 middlegame morphysMate"],
+["wt8EY","4r2k/p4p1p/2p1qPpQ/3p4/5R2/4p3/PP3PPP/6K1 b - - 1 29","e8g8 h6h7 h8h7 f4h4",1309,"attraction endgame mate mateIn2 sacrifice short"],
+["C9TWr","8/5p2/p5p1/3kP2p/2p2P2/P1K3P1/7P/8 w - - 0 30","h2h3 d5e4 c3c4 e4f3 c4d5 f3g3",1340,"crushing endgame long pawnEndgame"],
+["8qbRE","r2q1r1k/p3nBpp/2nB1p2/1p5Q/4R3/2P5/P4PPP/R5K1 b - - 0 19","d8d6 h5h7 h8h7 e4h4",1359,"attraction kingsideAttack mate mateIn2 middlegame pillsburysMate sacrifice short"],
+["CCX7I","r1b2rk1/1pp2pp1/pb1p3p/3P2q1/4N3/3B4/PP3PPP/1R1Q1RK1 b - - 5 19","g5d5 e4f6 g7f6 d3h7 g8h7 d1d5",1250,"advantage clearance discoveredAttack kingsideAttack long middlegame sacrifice"],
+["Dx0mb","2r2rk1/4bppp/p3p3/3P2P1/P4P1P/1pqBQ3/P1P5/2KR3R w - - 0 22","a2b3 e7a3 c1b1 c3b2",1309,"mate mateIn2 middlegame queensideAttack short"],
+["Z2PVU","3r4/6p1/1pR3p1/4k3/1P2N2r/P4P1n/5PKP/7R w - - 5 32","c6g6 h3f4 g2g3 f4g6",1107,"advantage endgame fork short"],
+["jjMxg","r2q1r2/1pp1pRbk/p1n1P1pp/8/3P4/2P4Q/P1P3PP/R1B3K1 b - - 6 17","d8d5 h3h6 h7g8 h6g7",1378,"mate mateIn2 middlegame pin short"],
+["g2kPD","8/R5b1/4k3/8/4Bp2/8/p4PK1/r7 w - - 0 47","a7g7 a1g1 g2g1 a2a1q g1h2 a1g7",1327,"advancedPawn attraction crushing endgame fork long promotion"],
+["I8hLf","r2q1rk1/pp4p1/1Bp3np/3b4/B4n2/2P2p2/PPQN1PPP/R4RK1 w - - 0 21","b6d8 f4e2 g1h1 f3g2",1329,"advancedPawn kingsideAttack mate mateIn2 middlegame short"],
+["bzdVZ","r4Bk1/5pp1/1pb2n1p/8/2N5/1P1Q1P2/6PP/q1KR3R w - - 1 26","d3b1 a1c3 b1c2 a8a1",1183,"clearance killBoxMate mate mateIn2 middlegame queensideAttack short"],
+["IX8Gy","5r1k/p4p1N/3p3P/3Pp1P1/4B3/2Pb4/P4Q1K/1q6 b - - 0 35","d3e4 f2f6 h8h7 f6g7",1304,"endgame mate mateIn2 sacrifice short"],
+["8F9Xr","8/8/8/1N6/PP1b4/4kp2/4p3/4K3 w - - 2 62","b5d4 f3f2",1343,"advancedPawn endgame knightEndgame mate mateIn1 oneMove"],
+["S4kyr","r3k2r/pp6/4pR2/8/3n2p1/3Pq1Pp/PPP1B2P/R2Q3K b kq - 0 20","e3e2 d1e2 d4e2 f6e6 e8d7 e6e2",1355,"advantage capturingDefender exposedKing fork long middlegame"],
+["9xHtH","2rq1r1k/n3bpp1/4p3/1p1nP3/p2p3R/P2B1N2/1PQ2PPP/R1B3K1 b - - 1 21","h8g8 d3h7 g8h8 h7g8 h8g8 c2h7",1343,"attraction discoveredAttack discoveredCheck kingsideAttack long mate mateIn3 middlegame sacrifice"],
+["zSPhr","3r1k2/4qp2/2pRb1p1/1pPN4/1n6/7P/1Q3PP1/6K1 b - - 6 34","e7h4 d6d8 h4d8 b2h8",1296,"master masterVsMaster mate mateIn2 middlegame short superGM"],
+["G8yKX","rn3rk1/pp1bbppp/2pp2q1/7n/2BNP3/2N2P2/PPPQ2PP/R1B1R2K w - - 3 14","e1g1 h5g3 h2g3 g6h5",1383,"clearance kingsideAttack mate mateIn2 opening sacrifice short"],
+["sedxZ","8/6QP/4p3/3pP3/3P4/1n2B3/1k3P1K/q4q2 w - - 1 51","h7h8q f1h1 h2g3 a1g1 g3f4 h1e4",1311,"endgame exposedKing long mate mateIn3"],
+["pymKk","r4nk1/p7/1pb2b2/5PpQ/2p3P1/2P1qN2/PP1p1R2/3B1R1K w - - 0 33","f2h2 c6f3 d1f3 e3f3 f1f3 d2d1q",1336,"advancedPawn crushing deflection exposedKing kingsideAttack long middlegame promotion"],
+["Kk8Xb","4r2k/p4Qpp/1p6/2p5/2P5/5R2/PP4PP/2q1rR1K b - - 7 34","e8g8 f7g8 h8g8 f3f8",1397,"attraction endgame mate mateIn2 sacrifice short"],
+["FkfDS","6rk/p6p/8/6b1/3qP3/2N5/PPP3QR/7K w - - 1 24","g2f2 g5e3 f2f1 g8g1 f1g1 e3g1",1379,"clearance crushing endgame exposedKing fork long"],
+["KiZR1","3r2kb/p1q2p1p/1p3PP1/2pb4/8/1P1B1Q2/P1P3R1/3R2K1 b - - 0 27","d5f3 g6h7 g8f8 g2g8",1320,"advancedPawn discoveredCheck doubleCheck mate mateIn2 middlegame short"],
+["FjGN9","R1Q5/1n2q1r1/4k3/p1npp3/P7/KP2BP2/8/8 b - - 1 44","e6f7 c8f5 e7f6 a8f8 f7f8 f5f6",1377,"attraction clearance crushing deflection exposedKing long master masterVsMaster middlegame"],
+["Un5U8","r1q2k2/pp2ppb1/3p4/1N1Q3r/2P1B3/BP3pPb/P4P2/3RR1K1 w - - 0 30","d5d3 h3g2 e4f3 h5h1 g1g2 c8h3",1344,"clearance kingsideAttack long mate mateIn3 middlegame quietMove sacrifice"],
+["uIXve","N1bk3r/3p1ppp/p7/4P3/1Q6/P2q1N2/1PpK1nPP/R6R w - - 1 24","d2c1 d3d1 h1d1 c2d1q",1365,"advancedPawn mate mateIn2 middlegame promotion queensideAttack short"],
+["wVIOk","2n5/4qpk1/1p2p1p1/p2pP1Np/Pn1P1PPN/7Q/7P/6K1 b - - 0 28","h5g4 h4f5 g6f5 h3h7 g7f8 h7h8",1218,"clearance endgame long mate mateIn3 sacrifice"],
+["dPhpC","8/1n3k2/1P1p4/1N1Np3/2K1P2p/5P1b/7P/8 w - - 6 54","c4d3 h3f1 d3e3 f1b5",1397,"advantage endgame master short skewer"],
+["fFkbT","4r1q1/7k/p3n1pB/1p3p2/2nP3Q/P1P3P1/1P3P1P/6K1 b - - 4 33","g6g5 h6g5 h7g6 h4h6 g6f7 h6f6",1064,"discoveredAttack discoveredCheck endgame exposedKing long mate mateIn3 swallowstailMate"],
+["yNfXU","4r1kr/1p1b1Rp1/p2P3p/3q4/1P6/8/1P3QPN/5RK1 b - - 0 34","d5d6 f7g7 g8g7 f2f7",1348,"attraction mate mateIn2 middlegame sacrifice short swallowstailMate"],
+["kp69o","1R6/3k4/8/3n1N1p/r4P1P/8/5K2/8 w - - 0 50","b8b5 a4f4 f2g2 f4f5",1363,"crushing endgame fork master short"],
+["BIppU","2r3rk/3n1p1p/p2p1PpQ/3Pp1P1/1Pp5/5R2/P3B1KP/q7 b - - 1 28","a1b2 h6h7 h8h7 f3h3",1293,"attraction kingsideAttack mate mateIn2 middlegame sacrifice short"],
+["6FEkl","1rb2rk1/ppNp1ppp/3Q4/8/7P/5q2/PPP5/2KRR3 b - - 1 19","f3c6 d6f8 g8f8 e1e8",1262,"attraction kingsideAttack mate mateIn2 middlegame sacrifice short"],
+["7S95l","2r4k/5qp1/6p1/p1p2PRp/Ppn5/1QP5/1P6/5RK1 w - - 5 30","f5g6 f7f1 g1f1 c4d2 f1e2 d2b3",1364,"attraction crushing endgame exposedKing fork long master sacrifice"],
+["dWpJB","5rk1/7q/p1n1QBpP/1p1p4/3P4/2P5/P4PP1/2K5 b - - 0 32","h7f7 h6h7 g8h7 e6h3 h7g8 h3h8",1279,"advancedPawn attraction endgame exposedKing long mate mateIn3 pin"],
+["3ymlV","1Q6/8/5k2/6p1/5pK1/5Pr1/8/8 w - - 2 61","g4h5 g3h3 h5g4 h3h4",1218,"endgame mate mateIn2 queenRookEndgame short"],
+["d57G1","k4r2/pR2b3/q1r1p3/3pPn2/2nP2Np/2PQ1N1P/P5P1/KR2B3 w - - 1 35","b7b3 a6a2 a1a2 c6a6 b3a3 a6a3",1323,"attraction long mate mateIn3 middlegame operaMate sacrifice"],
+["ZGF9O","8/7P/3k4/4p3/2K5/7r/R7/8 b - - 0 55","h3h7 a2a6 d6d7 a6a7 d7e6 a7h7",1076,"crushing endgame long master rookEndgame skewer"],
+["mxEIq","3r2k1/4Q1pp/p7/1p1q4/8/8/PP4PP/5R1K b - - 0 31","d5d3 e7f7 g8h8 f7f8 d8f8 f1f8",1269,"backRankMate endgame long mate mateIn3 sacrifice"],
+["xgk3j","r3rk2/1p3p2/p2p1q2/5N1Q/6PP/3n4/bPP2P2/2KRR3 w - - 0 26","c2d3 a8c8 c1d2 f6b2",1333,"deflection epauletteMate mate mateIn2 middlegame queensideAttack short"],
+["Gd86S","5Q2/6pk/3p3p/2PP4/3qP3/5P2/6PP/rR5K w - - 3 33","f8b8 d4d1 b1d1 a1d1",1284,"backRankMate endgame mate mateIn2 sacrifice short xRayAttack"],
+["DvSGZ","4rrk1/p4pp1/2p5/2Qb3R/P1pB4/2P2P2/2q3PP/5RK1 b - - 0 20","e8e2 h5h8 g8h8 c5f8 h8h7 f8g7",1381,"attraction deflection kingsideAttack long mate mateIn3 middlegame"],
+["cjM1m","8/5R2/2R3p1/4r1k1/1p4p1/3pp1K1/5P2/8 w - - 0 60","f7f6 e3e2 f6g6 g5f5",1278,"advancedPawn advantage endgame master rookEndgame short"],
+["1Or2D","2r1k1r1/1b1p1p2/1p2pn2/1B2B2p/P2P4/2P4p/2Q2PP1/1R3RK1 w - - 0 23","e5f6 g8g2 g1h1 g2f2 h1g1 f2c2",1346,"advantage deflection discoveredAttack discoveredCheck kingsideAttack long middlegame"],
+["Ppxps","3r4/ppp1knp1/5q1p/3R1p2/5N2/PB2pPP1/1PP4P/2KR4 b - - 0 22","g7g5 d5d8 f7d8 f4d5 e7f7 d5f6",1379,"crushing discoveredAttack discoveredCheck exposedKing fork long middlegame"],
+["N5X5F","8/pp6/2k1KP2/7R/6p1/1r4P1/8/8 b - - 0 49","b3g3 f6f7 g3f3 h5f5 f3f5 e6f5",1213,"advancedPawn crushing endgame long rookEndgame"],
+["Di2OF","3rk2r/pp1np1bp/6p1/3Q4/4N3/4B3/Pq3PPP/3R2K1 b - - 5 18","h8f8 e4d6 e7d6 d5e6",1299,"epauletteMate mate mateIn2 middlegame sacrifice short"],
+["C6Psi","r4rk1/pp3ppp/3b4/2pP4/2P4n/5N1q/P1Q1BP2/R1BR2K1 w - - 2 18","c2e4 h3g2",929,"mate mateIn1 middlegame oneMove"],
+["jWkvt","8/8/1R6/2p3p1/P1P3k1/2P2r1p/1P3PK1/8 w - - 0 39","g2f1 h3h2 f1g2 f3f2 g2f2 h2h1q",1388,"advancedPawn crushing deflection endgame long promotion rookEndgame"],
+["Unu4B","6rk/p1p2prp/5Q2/8/3R4/6PR/P1q4P/6K1 b - - 0 27","c2a2 h3h7 h8h7 d4h4",1315,"attraction endgame mate mateIn2 pin sacrifice short"],
+["3zFkj","7r/1p1qk1bp/p2ppnp1/3NB3/1QP5/8/PP3PPP/4RK2 b - - 5 22","e6d5 e5d6 e7f7 e1e7 d7e7 d6e7",1292,"advantage discoveredCheck doubleCheck fork long master middlegame"],
+["Kpeyi","r4r1k/1b2pPbp/p5p1/1pp5/3q2nQ/P1NP1P2/BPP4P/R1B2RK1 w - - 1 17","g1g2 g4e3 c1e3 d4h4",1196,"crushing discoveredAttack fork middlegame short"],
+["JNXvn","rkb4Q/p7/Bp6/3pP2p/3P4/4q3/P1P2nPP/1R3R1K w - - 3 32","h1g1 f2h3 g1h1 e3g1 f1g1 h3f2",1341,"discoveredCheck doubleCheck kingsideAttack long mate mateIn3 middlegame sacrifice smotheredMate"],
+["rzL9H","r3nb1r/kpnNp1p1/p1p1P1Q1/3p2P1/P1qP1N2/R1P2P2/1P6/2B2RK1 w - - 3 24","b2b4 h8h1 g1h1 c4f1 h1h2 f1c1",1186,"attraction crushing deflection exposedKing fork long middlegame"],
+["277PT","6qk/3r1p1p/pp1p1p1Q/2pP1Nr1/2P1P3/5KP1/PP6/7R b - - 16 37","g8g6 h6f8 g6g8 h1h7 h8h7 f8h6",1398,"attraction discoveredAttack endgame kingsideAttack long mate mateIn3 pin sacrifice"],
+["sOzUD","3q2rk/p4p1p/3p1PpQ/1p4P1/2p1PR2/P1Pr4/7P/R6K b - - 0 29","d8f8 h6h7 h8h7 f4h4 f8h6 h4h6",1316,"attraction endgame kingsideAttack long mate mateIn3 sacrifice"],
+["J4uLT","8/8/1pk5/3p3p/pP1Pp1pP/P3P1P1/3K4/8 w - - 5 50","d2c3 c6b5 c3c2 b5c4 b4b5 c4b5 c2c3 b5a5",1390,"crushing defensiveMove endgame pawnEndgame veryLong zugzwang"],
+["CWsb9","1qR4r/1P2bk2/3pNnn1/3Pp3/4Pp2/B2B3p/P3QPp1/6K1 w - - 2 35","c8b8 h3h2 g1g2 h2h1q",1345,"advancedPawn kingsideAttack mate mateIn2 middlegame promotion short"],
+["L0RoU","5rqk/pp3rb1/5NQp/4p2R/2Pp4/7R/PP4PP/6K1 b - - 0 25","f7f6 h5h6 g7h6 h3h6 g8h7 h6h7",1276,"exposedKing long master mate mateIn3 middlegame"],
+["a64Y8","1k5r/1p1r1p2/p3p1pp/PbN1P3/5P2/2R5/6PP/2R3K1 b - - 3 27","d7c7 c5a6 b5a6 c3c7",1303,"advantage discoveredAttack endgame master queensideAttack short"],
+["GoHBl","3r2rk/5ppp/p2p1q2/2pR4/1p2Q3/1P2PP2/P1P2PRP/1K6 b - - 3 21","f6c3 e4h7 h8h7 d5h5",1313,"attraction endgame kingsideAttack mate mateIn2 sacrifice short"],
+["MabOE","6rk/5p1p/q2PpPr1/p1p1P1PQ/1pp3R1/P3n3/1P4PB/5R1K b - - 0 34","c4c3 h5h7 h8h7 g4h4 g6h6 h4h6",1367,"attraction kingsideAttack long mate mateIn3 middlegame sacrifice"],
+["L1IsG","1q1r2k1/p4ppp/b1p2n2/8/PP4P1/2P2N1P/3NrB1K/R5QR w - - 1 24","g1g3 e2f2 h2g1 b8g3",1336,"deflection mate mateIn2 middlegame pin short"],
+["5VfO0","r1b1k2r/pp2q1pp/2Bp1p2/4n3/4PB2/2Q5/PPP2PPP/2KRR3 b kq - 0 14","b7c6 f4e5 f6e5 c3c6 e8f7 c6a8",1279,"advantage capturingDefender exposedKing fork intermezzo long middlegame"],
+["IpT4v","8/R7/8/3k4/P5KP/r1p5/8/8 w - - 0 41","h4h5 c3c2 a7c7 a3a4 g4f5 a4c4",1393,"advancedPawn crushing endgame long rookEndgame"],
+["Gd5vu","8/2k5/p2p4/P1pP4/2P1n3/1Q3R1q/1P3K2/8 w - - 1 46","f2e3 h3f3 e3f3 e4d2 f3e2 d2b3",1330,"attraction crushing endgame exposedKing fork long sacrifice"],
+["xK60Z","r4rk1/p2b2p1/1q1bp2N/1p1n3Q/8/6P1/Pp4KP/RNB2R2 b - - 0 19","g8h7 h6f7 h7g8 h5h8",1382,"discoveredAttack discoveredCheck mate mateIn2 middlegame short"],
+["SpZyi","8/5qk1/pp2pBpr/4PpQ1/3PbP2/2r1P3/P1p2KP1/2R5 b - - 1 33","g7h7 g5h6 h7h6 c1h1",1190,"attraction mate mateIn2 middlegame pillsburysMate sacrifice short"],
+["jjZbv","r1r3k1/3N1p1p/1qnb2p1/p2p1p2/QppP1P2/2P3P1/PP1N1P1P/R3R1K1 b - - 5 21","b6d8 e1e8 d8e8 d7f6 g8f8 f6e8",1270,"attraction crushing fork long master middlegame sacrifice"],
+["S1VLR","1r1r2k1/1q3pp1/p6p/1p2Q3/7b/PP5P/5PP1/1B1RR1K1 b - - 0 27","h4f6 d1d8 b8d8 e5e8 d8e8 e1e8",1314,"kingsideAttack long mate mateIn3 middlegame pillsburysMate sacrifice"],
+["j8oVf","5r1k/5Ppp/3Rp3/qb6/4PP1P/1pP5/1P1Q4/rNKR4 w - - 1 26","d6d8 a1b1 c1b1 a5a2 b1c1 a2a1",1223,"attraction long mate mateIn3 middlegame queensideAttack sacrifice"],
+["BSDcU","8/5P1Q/pqpkp1p1/3p4/8/2P5/PP3nPP/1R3R1K w - - 1 29","h1g1 f2h3 g1h1 b6g1 f1g1 h3f2",1384,"doubleCheck endgame long mate mateIn3 sacrifice smotheredMate"],
+["4blAP","8/8/5pk1/1R6/5rpp/8/6K1/4R3 w - - 0 59","e1f1 h4h3 g2g1 h3h2 g1h2 f4f1",1358,"advancedPawn crushing deflection endgame exposedKing long master rookEndgame"],
+["dE39S","2rrn1k1/1pq1bp1p/p1bpp1pQ/6P1/3BPP2/2N2R2/PPP3BP/3R2K1 b - - 1 18","e7f8 h6h7 g8h7 f3h3 f8h6 h3h6 h7g8 h6h8",1259,"attraction kingsideAttack mate mateIn4 middlegame operaMate sacrifice veryLong"],
+["6oTnJ","4r1k1/p7/1p6/7p/4n2B/1P2N1bP/P1R3P1/7K w - - 8 35","e3f5 e4f2 c2f2 e8e1 f2f1 e1f1",1340,"clearance endgame long master mate mateIn3 pillsburysMate sacrifice"],
+["BInIa","r3N2k/1p3q2/4Rr1p/pBpn1pp1/Pn1p4/5P1P/1PP3Q1/1KB3R1 w - - 6 30","e6f6 d5c3 b2c3 f7a2",1394,"clearance mate mateIn2 middlegame queensideAttack sacrifice short"],
+["kifN3","8/2pR4/8/2p2p2/1r2kPp1/rPK1P1P1/1R6/8 b - - 3 40","e4e3 d7d3 e3e4 b2e2",1387,"endgame master masterVsMaster mate mateIn2 rookEndgame short"],
+["3ppYy","r3q2k/1p2bRrN/p1n4Q/3pP3/3P2b1/P7/1P4PP/R5K1 b - - 1 23","g7f7 h7f6 f7h7 h6h7",1302,"discoveredAttack discoveredCheck fork mate mateIn2 middlegame short"],
+["lUzGf","8/2R5/4ppk1/3n4/2pPpPP1/6K1/4r1N1/8 w - - 11 44","c7c4 e2g2 g3g2 d5e3 g2h3 e3c4",1395,"attraction crushing endgame fork long sacrifice"],
+["H4Pzv","1r4k1/5pp1/7p/8/8/b2Q1NqP/6P1/4R2K b - - 1 31","b8b2 e1e8 a3f8 e8f8 g8f8 d3d8",1235,"attraction endgame long mate mateIn3 sacrifice"],
+["ImkYW","2r1r3/1R3pk1/p2p2pp/3P4/2q5/3Q4/P4PPP/5RK1 w - - 0 25","d3f3 c4f1 g1f1 c8c1 f3d1 c1d1",1238,"attraction endgame long mate mateIn3 sacrifice"],
+["8Upjr","1r4k1/q4pp1/2p1p2p/2P5/3PP1P1/2B1bP1P/6Q1/3R3K w - - 3 41","d1a1 a7a1 c3a1 b8b1 h1h2 e3f4",1399,"crushing endgame exposedKing fork long sacrifice"],
+["Vi6QY","3k4/5Rb1/6P1/4p3/4q3/2P4Q/8/3r1B1K w - - 0 51","h1g1 e4g6 h3g2 g6f7 g2a8 d8e7",1393,"crushing defensiveMove endgame fork long master masterVsMaster"],
+["6rYA7","2R5/1p2rqk1/p4p1P/3p2p1/4r3/1P2B2Q/P4P2/6K1 b - - 0 39","g7h7 h3f5 f7g6 c8h8 h7h8 f5g6",1344,"crushing deflection endgame exposedKing long pin"],
+["9ABqh","8/8/1P6/8/6P1/5k2/p6K/8 w - - 0 60","b6b7 a2a1q b7b8q a1a2 h2h3 a2g2 h3h4 g2g4",1383,"advancedPawn endgame exposedKing mate mateIn4 promotion veryLong"],
+["Gc1Ip","r3r1k1/5ppp/8/p5B1/3p2P1/P2B3q/1P1N3b/R2Q1R1K w - - 3 22","d1f3 h2g3 h1g1 h3h2",1379,"discoveredAttack discoveredCheck kingsideAttack mate mateIn2 middlegame short"],
+["3Xr5a","3rr1k1/p4pb1/1p5p/1P3Q2/3P4/2P2P2/5q2/1BRR3K w - - 0 35","c1c2 e8e1 d1e1 f2e1 h1h2 e1b1",1399,"crushing exposedKing fork long master masterVsMaster middlegame"],
+["g4a2s","1k3rR1/ppp4p/3pQ2p/4b3/3pq3/P6P/1PP5/1K6 b - - 3 25","e4f3 e6e8 f8e8 g8e8",1168,"backRankMate endgame mate mateIn2 sacrifice short xRayAttack"]
+/* ═══ PASTE NORMAL PACK ARRAY INTO THE SLOT BELOW (search "PASTE NORMAL") ═══ */
+],normal:[
+/* PASTE NORMAL PACK HERE */
+],hard:[
+/* PASTE HARD PACK HERE */
+]};
+
+/* ═══ CHESS ENGINE — full FIDE legality (perft-verified) ═══ */
+const P=1,N=2,B=3,R=4,Q=5,K=6;
+const FL_NONE=0, FL_DP=1, FL_EP=2, FL_CK=3, FL_CQ=4;
+const START_FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const FILES="abcdefgh";
+const PIECE_LETTER={2:"N",3:"B",4:"R",5:"Q",6:"K"};
+
+const Engine=(()=>{
+  const bd=new Int8Array(64);
+  let turn=1, castle=0, epSq=-1, half=0, full=1;
+  let kw=60, kb=4;
+  const undoStack=[];
+  const keys=[];
+  const KN=[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+  const KG=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+  const DIAG=[[-1,-1],[-1,1],[1,-1],[1,1]];
+  const ORTH=[[-1,0],[1,0],[0,-1],[0,1]];
+  const QDIR=DIAG.concat(ORTH);
+  const mk=(from,to,piece,capt,promo,flag)=>({from,to,piece,capt,promo,flag});
+  const sqName=s=>FILES[s&7]+(8-(s>>3));
+  const sqFromName=n=>(8-parseInt(n[1],10))*8+FILES.indexOf(n[0]);
+  const kingSq=us=>us===1?kw:kb;
+
+  function attacked(sq,by){
+    const r=sq>>3,c=sq&7;
+    if(by===1){ if(r<7){ if(c>0&&bd[sq+7]===P)return true; if(c<7&&bd[sq+9]===P)return true; } }
+    else      { if(r>0){ if(c>0&&bd[sq-9]===-P)return true; if(c<7&&bd[sq-7]===-P)return true; } }
+    for(let i=0;i<8;i++){const rr=r+KN[i][0],cc=c+KN[i][1];
+      if(rr>=0&&rr<8&&cc>=0&&cc<8&&bd[rr*8+cc]===by*N)return true;}
+    for(let i=0;i<8;i++){const rr=r+KG[i][0],cc=c+KG[i][1];
+      if(rr>=0&&rr<8&&cc>=0&&cc<8&&bd[rr*8+cc]===by*K)return true;}
+    for(let i=0;i<4;i++){let rr=r+DIAG[i][0],cc=c+DIAG[i][1];
+      while(rr>=0&&rr<8&&cc>=0&&cc<8){const q=bd[rr*8+cc];
+        if(q!==0){ if(q===by*B||q===by*Q)return true; break; }
+        rr+=DIAG[i][0];cc+=DIAG[i][1];}}
+    for(let i=0;i<4;i++){let rr=r+ORTH[i][0],cc=c+ORTH[i][1];
+      while(rr>=0&&rr<8&&cc>=0&&cc<8){const q=bd[rr*8+cc];
+        if(q!==0){ if(q===by*R||q===by*Q)return true; break; }
+        rr+=ORTH[i][0];cc+=ORTH[i][1];}}
+    return false;
+  }
+
+  function genCastles(ms,us,r,c){
+    if(us===1&&r===7&&c===4){
+      if((castle&1)&&bd[63]===R&&bd[61]===0&&bd[62]===0
+         &&!attacked(60,-1)&&!attacked(61,-1)) ms.push(mk(60,62,K,0,0,FL_CK));
+      if((castle&2)&&bd[56]===R&&bd[57]===0&&bd[58]===0&&bd[59]===0
+         &&!attacked(60,-1)&&!attacked(59,-1)) ms.push(mk(60,58,K,0,0,FL_CQ));
+    } else if(us===-1&&r===0&&c===4){
+      if((castle&4)&&bd[7]===-R&&bd[5]===0&&bd[6]===0
+         &&!attacked(4,1)&&!attacked(5,1)) ms.push(mk(4,6,K,0,0,FL_CK));
+      if((castle&8)&&bd[0]===-R&&bd[1]===0&&bd[2]===0&&bd[3]===0
+         &&!attacked(4,1)&&!attacked(3,1)) ms.push(mk(4,2,K,0,0,FL_CQ));
+    }
+  }
+
+  function genPseudo(){
+    const ms=[], us=turn;
+    for(let s=0;s<64;s++){
+      const p=bd[s]; if(p===0||(p>0)!==(us>0)) continue;
+      const t=p>0?p:-p, r=s>>3, c=s&7;
+      if(t===P){
+        const dir=us===1?-1:1, startR=us===1?6:1, promoR=us===1?0:7;
+        const r1=r+dir;
+        if(r1>=0&&r1<8){
+          const one=r1*8+c;
+          if(bd[one]===0){
+            if(r1===promoR){
+              ms.push(mk(s,one,t,0,Q,0),mk(s,one,t,0,R,0),mk(s,one,t,0,B,0),mk(s,one,t,0,N,0));
+            } else {
+              ms.push(mk(s,one,t,0,0,0));
+              if(r===startR){
+                const two=(r+2*dir)*8+c;
+                if(bd[two]===0) ms.push(mk(s,two,t,0,0,FL_DP));
+              }
+            }
+          }
+          for(let dc=-1;dc<=1;dc+=2){
+            const cc=c+dc; if(cc<0||cc>7) continue;
+            const tsq=r1*8+cc, q=bd[tsq];
+            if(q!==0&&(q>0)!==(us>0)){
+              const capt=q<0?-q:q;
+              if(r1===promoR){
+                ms.push(mk(s,tsq,t,capt,Q,0),mk(s,tsq,t,capt,R,0),mk(s,tsq,t,capt,B,0),mk(s,tsq,t,capt,N,0));
+              } else ms.push(mk(s,tsq,t,capt,0,0));
+            } else if(q===0&&tsq===epSq){
+              ms.push(mk(s,tsq,t,P,0,FL_EP));
+            }
+          }
+        }
+      } else if(t===N||t===K){
+        const offs=t===N?KN:KG;
+        for(let i=0;i<8;i++){
+          const rr=r+offs[i][0],cc=c+offs[i][1];
+          if(rr<0||rr>7||cc<0||cc>7) continue;
+          const tsq=rr*8+cc,q=bd[tsq];
+          if(q===0||(q>0)!==(us>0)) ms.push(mk(s,tsq,t,q===0?0:(q<0?-q:q),0,0));
+        }
+        if(t===K) genCastles(ms,us,r,c);
+      } else {
+        const dirs=t===B?DIAG:t===R?ORTH:QDIR;
+        for(let i=0;i<dirs.length;i++){
+          let rr=r+dirs[i][0],cc=c+dirs[i][1];
+          while(rr>=0&&rr<8&&cc>=0&&cc<8){
+            const tsq=rr*8+cc,q=bd[tsq];
+            if(q===0) ms.push(mk(s,tsq,t,0,0,0));
+            else { if((q>0)!==(us>0)) ms.push(mk(s,tsq,t,q<0?-q:q,0,0)); break; }
+            rr+=dirs[i][0];cc+=dirs[i][1];
+          }
+        }
+      }
+    }
+    return ms;
+  }
+
+  function makeMove(m){
+    const u={m,castle,ep:epSq,half,full,captured:0,capSq:-1};
+    undoStack.push(u);
+    const us=turn;
+    let captured=bd[m.to], capSq=m.to;
+    if(m.flag===FL_EP){ capSq=m.to+(us===1?8:-8); captured=bd[capSq]; bd[capSq]=0; }
+    u.captured=captured; u.capSq=capSq;
+    bd[m.to]=us*(m.promo?m.promo:m.piece);
+    bd[m.from]=0;
+    if(m.piece===K){ if(us===1){kw=m.to;castle&=~3;} else {kb=m.to;castle&=~12;} }
+    if(m.flag===FL_CK){ const rr=us===1?7:0; bd[rr*8+5]=us*R; bd[rr*8+7]=0; }
+    else if(m.flag===FL_CQ){ const rr=us===1?7:0; bd[rr*8+3]=us*R; bd[rr*8+0]=0; }
+    if(m.from===63||m.to===63) castle&=~1;
+    if(m.from===56||m.to===56) castle&=~2;
+    if(m.from===7 ||m.to===7 ) castle&=~4;
+    if(m.from===0 ||m.to===0 ) castle&=~8;
+    epSq=m.flag===FL_DP?(m.from+m.to)>>1:-1;
+    half=(m.piece===P||captured!==0)?0:half+1;
+    if(us===-1) full++;
+    turn=-us;
+  }
+
+  function unmakeMove(){
+    const u=undoStack.pop(); if(!u) return;
+    const m=u.m; turn=-turn; const us=turn;
+    bd[m.from]=us*m.piece;
+    bd[m.to]=0;
+    if(u.captured!==0) bd[u.capSq]=u.captured;
+    if(m.piece===K){ if(us===1) kw=m.from; else kb=m.from; }
+    if(m.flag===FL_CK){ const rr=us===1?7:0; bd[rr*8+7]=us*R; bd[rr*8+5]=0; }
+    else if(m.flag===FL_CQ){ const rr=us===1?7:0; bd[rr*8+0]=us*R; bd[rr*8+3]=0; }
+    castle=u.castle; epSq=u.ep; half=u.half; full=u.full;
+  }
+
+  function genLegal(){
+    const us=turn, out=[], ps=genPseudo();
+    for(let i=0;i<ps.length;i++){
+      const m=ps[i];
+      makeMove(m);
+      if(!attacked(us===1?kw:kb,-us)) out.push(m);
+      unmakeMove();
+    }
+    return out;
+  }
+
+  const inCheck=()=>attacked(turn===1?kw:kb,-turn);
+
+  function epPossible(){
+    if(epSq<0) return false;
+    const r=epSq>>3,c=epSq&7, fr=turn===1?r+1:r-1;
+    if(fr<0||fr>7) return false;
+    const us=turn;
+    for(let dc=-1;dc<=1;dc+=2){
+      const cc=c+dc; if(cc<0||cc>7) continue;
+      if(bd[fr*8+cc]===us*P){
+        const m={from:fr*8+cc,to:epSq,piece:P,capt:P,promo:0,flag:FL_EP};
+        makeMove(m);
+        const ok=!attacked(us===1?kw:kb,-us);
+        unmakeMove();
+        if(ok) return true;
+      }
+    }
+    return false;
+  }
+
+  function posKey(){
+    return bd.join(",")+"|"+turn+"|"+castle+"|"+(epPossible()?epSq:"-");
+  }
+
+  function insufficientMaterial(){
+    let minors=0, knights=0; const bcols=[];
+    for(let s=0;s<64;s++){
+      const p=bd[s]; if(p===0) continue;
+      const t=p<0?-p:p;
+      if(t===K) continue;
+      if(t===P||t===R||t===Q) return false;
+      minors++;
+      if(t===B) bcols.push(((s>>3)+(s&7))&1);
+      else knights++;
+    }
+    if(minors<=1) return true;
+    if(minors===2&&knights===0&&bcols.length===2&&bcols[0]===bcols[1]) return true;
+    return false;
+  }
+
+  function sanFor(m,legal){
+    if(m.flag===FL_CK) return "O-O";
+    if(m.flag===FL_CQ) return "O-O-O";
+    const dest=sqName(m.to);
+    if(m.piece===P){
+      let s=(m.capt?FILES[m.from&7]+"x":"")+dest;
+      if(m.promo) s+="="+PIECE_LETTER[m.promo];
+      return s;
+    }
+    const others=legal.filter(o=>o.piece===m.piece&&o.to===m.to&&o.from!==m.from);
+    let dis="";
+    if(others.length){
+      const fClash=others.some(o=>(o.from&7)===(m.from&7));
+      const rClash=others.some(o=>(o.from>>3)===(m.from>>3));
+      if(!fClash) dis=FILES[m.from&7];
+      else if(!rClash) dis=String(8-(m.from>>3));
+      else dis=FILES[m.from&7]+String(8-(m.from>>3));
+    }
+    return PIECE_LETTER[m.piece]+dis+(m.capt?"x":"")+dest;
+  }
+
+  function make(m){
+    const legal=genLegal();
+    let real=null;
+    for(let i=0;i<legal.length;i++){
+      const o=legal[i];
+      if(o.from===m.from&&o.to===m.to&&o.promo===m.promo){ real=o; break; }
+    }
+    if(!real) throw new Error("make: illegal move "+sqName(m.from)+sqName(m.to));
+    let san=sanFor(real,legal);
+    makeMove(real);
+    const them=turn;
+    const check=attacked(them===1?kw:kb,-them);
+    const replies=genLegal();
+    let over=false, result=null;
+    if(replies.length===0){
+      over=true;
+      result=check?{type:"checkmate",winner:-them}:{type:"stalemate",winner:0};
+    } else if(half>=100){
+      over=true; result={type:"fifty",winner:0};
+    } else if(insufficientMaterial()){
+      over=true; result={type:"material",winner:0};
+    }
+    keys.push(posKey());
+    if(!over){
+      const cur=keys[keys.length-1];
+      let rep=0; for(let i=0;i<keys.length;i++) if(keys[i]===cur) rep++;
+      if(rep>=3){ over=true; result={type:"threefold",winner:0}; }
+    }
+    if(result&&result.type==="checkmate") san+="#";
+    else if(check) san+="+";
+    return {san,check,over,result,move:real};
+  }
+
+  const CH={1:"P",2:"N",3:"B",4:"R",5:"Q",6:"K"};
+  function fen(){
+    let out="";
+    for(let r=0;r<8;r++){
+      let empty=0;
+      for(let c=0;c<8;c++){
+        const p=bd[r*8+c];
+        if(p===0){empty++;}
+        else{
+          if(empty){out+=empty;empty=0;}
+          const ch=CH[p<0?-p:p];
+          out+=p>0?ch:ch.toLowerCase();
+        }
+      }
+      if(empty) out+=empty;
+      if(r<7) out+="/";
+    }
+    let cs="";
+    if(castle&1)cs+="K"; if(castle&2)cs+="Q";
+    if(castle&4)cs+="k"; if(castle&8)cs+="q";
+    return out+" "+(turn===1?"w":"b")+" "+(cs||"-")+" "
+      +(epSq>=0?sqName(epSq):"-")+" "+half+" "+full;
+  }
+
+  function loadFEN(f){
+    const ps=String(f).trim().split(/\s+/);
+    if(ps.length<2) throw new Error("bad FEN: "+f);
+    if(ps[1]!=="w"&&ps[1]!=="b") throw new Error("bad FEN side: "+f);
+    bd.fill(0);
+    let r=0,c=0,kwF=false,kbF=false;
+    for(const ch of ps[0]){
+      if(ch==="/"){ r++; c=0; if(r>7) throw new Error("bad FEN board"); }
+      else if(ch>="1"&&ch<="8"){ c+=+ch; if(c>8) throw new Error("bad FEN board"); }
+      else{
+        const low=ch.toLowerCase();
+        const t={p:P,n:N,b:B,r:R,q:Q,k:K}[low];
+        if(t===undefined) throw new Error("bad FEN piece: "+ch);
+        if(c>7) throw new Error("bad FEN board");
+        const v=(ch===low?-1:1)*t;
+        bd[r*8+c]=v;
+        if(v===K){kw=r*8+c;kwF=true;}
+        if(v===-K){kb=r*8+c;kbF=true;}
+        c++;
+      }
+    }
+    if(!kwF||!kbF) throw new Error("FEN missing king");
+    turn=ps[1]==="b"?-1:1;
+    castle=0;
+    const cf=ps[2]||"-";
+    if(cf.indexOf("K")>=0)castle|=1;
+    if(cf.indexOf("Q")>=0)castle|=2;
+    if(cf.indexOf("k")>=0)castle|=4;
+    if(cf.indexOf("q")>=0)castle|=8;
+    epSq=(ps[3]&&ps[3]!=="-")?sqFromName(ps[3]):-1;
+    half=ps[4]?(+ps[4]||0):0;
+    full=ps[5]?(+ps[5]||1):1;
+    undoStack.length=0;
+    keys.length=0;
+  }
+
+  function reset(){ loadFEN(START_FEN); keys.push(posKey()); }
+
+  function perft(d){
+    if(d===0) return 1;
+    const ms=genLegal();
+    if(d===1) return ms.length;
+    let n=0;
+    for(let i=0;i<ms.length;i++){
+      makeMove(ms[i]);
+      n+=perft(d-1);
+      unmakeMove();
+    }
+    return n;
+  }
+
+  return {
+    reset, loadFEN, fen, make, perft, posKey,
+    legalMoves: genLegal,
+    makeFast: makeMove, unmakeFast: unmakeMove,
+    inCheck, kingSq, sqName, sqFromName,
+    turnOf: ()=>turn,
+    boardArr: ()=>bd,
+    keys,
+    undoDepth: ()=>undoStack.length
+  };
+})();
+
+/* ═══ BOT — alpha-beta + quiescence, chunked between frames ═══ */
+const MATE=100000;
+const VAL=[0,100,320,330,500,900,20000];
+const PST_P=[0,0,0,0,0,0,0,0, 50,50,50,50,50,50,50,50, 10,10,20,30,30,20,10,10,
+  5,5,10,25,25,10,5,5, 0,0,0,20,20,0,0,0, 5,-5,-10,0,0,-10,-5,5,
+  5,10,10,-20,-20,10,10,5, 0,0,0,0,0,0,0,0];
+const PST_N=[-50,-40,-30,-30,-30,-30,-40,-50, -40,-20,0,0,0,0,-20,-40,
+  -30,0,10,15,15,10,0,-30, -30,5,15,20,20,15,5,-30, -30,0,15,20,20,15,0,-30,
+  -30,5,10,15,15,10,5,-30, -40,-20,0,5,5,0,-20,-40, -50,-40,-30,-30,-30,-30,-40,-50];
+const PST_B=[-20,-10,-10,-10,-10,-10,-10,-20, -10,0,0,0,0,0,0,-10,
+  -10,0,5,10,10,5,0,-10, -10,5,5,10,10,5,5,-10, -10,0,10,10,10,10,0,-10,
+  -10,10,10,10,10,10,10,-10, -10,5,0,0,0,0,5,-10, -20,-10,-10,-10,-10,-10,-10,-20];
+const PST_R=[0,0,0,0,0,0,0,0, 5,10,10,10,10,10,10,5, -5,0,0,0,0,0,0,-5,
+  -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5, -5,0,0,0,0,0,0,-5,
+  -5,0,0,0,0,0,0,-5, 0,0,0,5,5,0,0,0];
+const PST_Q=[-20,-10,-10,-5,-5,-10,-10,-20, -10,0,0,0,0,0,0,-10,
+  -10,0,5,5,5,5,0,-10, -5,0,5,5,5,5,0,-5, 0,0,5,5,5,5,0,-5,
+  -10,5,5,5,5,5,0,-10, -10,0,5,0,0,0,0,-10, -20,-10,-10,-5,-5,-10,-10,-20];
+const PST_K=[-30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30,
+  -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30,
+  -20,-30,-30,-40,-40,-30,-30,-20, -10,-20,-20,-20,-20,-20,-20,-10,
+  20,20,0,0,0,0,20,20, 20,30,10,0,0,10,30,20];
+const PSTS=[null,PST_P,PST_N,PST_B,PST_R,PST_Q,PST_K];
+
+function evalBoard(){
+  const b=Engine.boardArr(); let s=0;
+  for(let i=0;i<64;i++){
+    const p=b[i]; if(p===0) continue;
+    if(p>0) s+=VAL[p]+PSTS[p][i];
+    else s-=VAL[-p]+PSTS[-p][i^56];
+  }
+  return s;
+}
+function mvScore(m){
+  let s=0;
+  if(m.capt) s=1000+VAL[m.capt]*10-VAL[m.piece];
+  if(m.promo) s+=900+VAL[m.promo];
+  return s;
+}
+function orderMoves(ms){
+  for(let i=0;i<ms.length;i++) ms[i]._s=mvScore(ms[i]);
+  ms.sort(function(a,b){ return b._s-a._s; });
+}
+function quiesce(alpha,beta,qd){
+  const side=Engine.turnOf();
+  const stand=evalBoard()*side;
+  if(stand>=beta) return stand;
+  if(stand>alpha) alpha=stand;
+  if(qd<=0) return alpha;
+  const ms=Engine.legalMoves();
+  const caps=[];
+  for(let i=0;i<ms.length;i++){ if(ms[i].capt||ms[i].promo) caps.push(ms[i]); }
+  orderMoves(caps);
+  for(let i=0;i<caps.length;i++){
+    Engine.makeFast(caps[i]);
+    const sc=-quiesce(-beta,-alpha,qd-1);
+    Engine.unmakeFast();
+    if(sc>=beta) return sc;
+    if(sc>alpha) alpha=sc;
+  }
+  return alpha;
+}
+function negamax(depth,alpha,beta,ply,qd){
+  if(depth<=0) return quiesce(alpha,beta,qd);
+  const ms=Engine.legalMoves();
+  if(ms.length===0) return Engine.inCheck()? -(MATE-ply):0;
+  orderMoves(ms);
+  let best=-Infinity;
+  for(let i=0;i<ms.length;i++){
+    Engine.makeFast(ms[i]);
+    const sc=-negamax(depth-1,-beta,-alpha,ply+1,qd);
+    Engine.unmakeFast();
+    if(sc>best) best=sc;
+    if(best>alpha) alpha=best;
+    if(alpha>=beta) break;
+  }
+  return best;
+}
+let think=null;
+function startThink(){
+  if(!thinking) return;
+  const level=setup.level;
+  if(level==="easy"){
+    const ms=Engine.legalMoves();
+    if(!ms.length){ finishThink(null); return; }
+    const mover=Engine.turnOf();
+    let best=null,bs=-Infinity;
+    for(let i=0;i<ms.length;i++){
+      Engine.makeFast(ms[i]);
+      const sc=evalBoard()*mover+(Math.random()*240-120);
+      Engine.unmakeFast();
+      if(sc>bs){ bs=sc; best=ms[i]; }
+    }
+    after(260,function(){ finishThink(best); });
+    return;
+  }
+  const conf=(level==="hard")
+    ? {maxDepth:3, budget:1300, qd:6, noise:0}
+    : {maxDepth:2, budget:520,  qd:4, noise:25};
+  const rootMoves=Engine.legalMoves();
+  if(!rootMoves.length){ finishThink(null); return; }
+  orderMoves(rootMoves);
+  think={moves:rootMoves, scores:[], idx:0, depth:1, maxDepth:conf.maxDepth,
+    deadline:performance.now()+conf.budget, qd:conf.qd, noise:conf.noise,
+    best:null, bestScore:-Infinity};
+  after(0,thinkChunk);
+}
+function thinkChunk(){
+  if(!thinking||!think) return;
+  const t=think;
+  if(performance.now()>t.deadline){ finishThink(t.best||t.moves[0]); return; }
+  if(t.idx>=t.moves.length){
+    if(t.depth>=t.maxDepth||performance.now()>t.deadline-80){
+      finishThink(t.best||t.moves[0]); return;
+    }
+    const paired=t.moves.map(function(m,i){ return {m:m,s:(t.scores[i]!==undefined)?t.scores[i]:0}; });
+    paired.sort(function(a,b){ return b.s-a.s; });
+    t.moves=paired.map(function(x){ return x.m; });
+    t.scores=[]; t.idx=0; t.depth++;
+    after(0,thinkChunk); return;
+  }
+  const m=t.moves[t.idx];
+  const mover=Engine.turnOf();
+  Engine.makeFast(m);
+  let sc;
+  if(t.depth<=1) sc=evalBoard()*mover;
+  else sc=-negamax(t.depth-1,-Infinity,Infinity,1,t.qd);
+  Engine.unmakeFast();
+  if(t.noise) sc+=(Math.random()*2-1)*t.noise;
+  t.scores[t.idx]=sc;
+  if(sc>t.bestScore){ t.bestScore=sc; t.best=m; }
+  t.idx++;
+  after(0,thinkChunk);
+}
+function finishThink(mv){
+  think=null;
+  if(!thinking) return;
+  thinking=false;
+  setBotBadge(false);
+  snapPre=null;   /* bot move takes NO undo snapshot — one undo = player+bot pair */
+  if(mv&&mode==="chess"&&setup.opp==="bot"&&!result&&Engine.turnOf()===aiColor){
+    doMove(mv);
+  } else {
+    updateStatus();
+  }
+}
+function cancelThink(){
+  thinking=false;
+  think=null;
+  setBotBadge(false);
+}
+function setBotBadge(on){
+  try{ botBadge.classList.toggle("thinking",!!on); }catch(e){}
+}
+function maybeBotMove(){
+  if(mode!=="chess"||setup.opp!=="bot"||result||thinking) return;
+  if(Engine.turnOf()!==aiColor) return;
+  thinking=true;
+  setBotBadge(true);
+  updateStatus(); updateCtlBars();
+  after(320, startThink);
+}
+
+/* ═══ AUDIO — wooden percussion (v0.7.1 overhaul).
+     Knocks = bandpassed noise + low thump, NO frequency slides.
+     UI tones = marimba-style mallets. Cached noise buffer (no per-sound alloc). ═══ */
+function effectiveMuted(){
+  if(gameMuted) return true;
+  if(Studio.settings&&Studio.settings.sound===false) return true;
+  try{ if(Studio.getSetting&&Studio.getSetting("sound")===false) return true; }catch(e){}
+  return false;
+}
+function gameHaptic(kind){
+  if(!hapticsOn) return;
+  try{ Studio.haptic(kind); }catch(e){}
+}
+const AudioSys=(()=>{
+  let ctx=null, master=null, lastAt=0;
+  let noiseBuf=null;   /* cached noise — no per-sound allocation */
+  function unlock(){
+    try{
+      if(!ctx){
+        const AC=window.AudioContext||window.webkitAudioContext;
+        if(!AC) return;
+        ctx=new AC();
+        master=ctx.createGain();
+        master.gain.value=CFG.sound.master;
+        master.connect(ctx.destination);
+        const len=Math.ceil(ctx.sampleRate*0.5);
+        noiseBuf=ctx.createBuffer(1,len,ctx.sampleRate);
+        const ch=noiseBuf.getChannelData(0);
+        for(let i=0;i<len;i++) ch[i]=Math.random()*2-1;
+      }
+      if(ctx.state==="suspended") ctx.resume();
+    }catch(e){ console.warn("audio init failed",e); }
+  }
+  /* percussive envelope: instant attack, exponential wood-style decay */
+  function decay(param,t0,peak,dur){
+    param.setValueAtTime(0.0001,t0);
+    param.linearRampToValueAtTime(peak,t0+0.002);
+    param.exponentialRampToValueAtTime(0.0001,t0+dur);
+  }
+  /* wooden tap: bandpassed noise knock + short fixed-pitch thump (no slides) */
+  function woodTap(t0,freq,vol,dur){
+    const src=ctx.createBufferSource(); src.buffer=noiseBuf;
+    src.playbackRate.value=0.8+Math.random()*0.4;   /* natural variation */
+    const bp=ctx.createBiquadFilter(); bp.type="bandpass";
+    bp.frequency.value=freq; bp.Q.value=1.6;        /* low Q = round knock */
+    const g=ctx.createGain();
+    decay(g.gain,t0,vol,dur);
+    src.connect(bp); bp.connect(g); g.connect(master);
+    src.start(t0,Math.random()*0.3);
+    src.stop(t0+dur+0.05);
+    const o=ctx.createOscillator(); o.type="sine";
+    o.frequency.setValueAtTime(freq*0.14,t0);       /* low body thud */
+    const g2=ctx.createGain();
+    decay(g2.gain,t0,vol*0.7,dur*1.4);
+    o.connect(g2); g2.connect(master);
+    o.start(t0); o.stop(t0+dur*1.4+0.05);
+  }
+  /* marimba-style mallet tone: sine + quick-dying 4th partial */
+  function marimba(t0,freq,vol,dur){
+    const o=ctx.createOscillator(); o.type="sine";
+    o.frequency.setValueAtTime(freq,t0);
+    const g=ctx.createGain();
+    decay(g.gain,t0,vol,dur);
+    o.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0+dur+0.05);
+    const o2=ctx.createOscillator(); o2.type="sine";
+    o2.frequency.setValueAtTime(freq*4,t0);
+    const g2=ctx.createGain();
+    decay(g2.gain,t0,vol*0.18,dur*0.4);
+    o2.connect(g2); g2.connect(master);
+    o2.start(t0); o2.stop(t0+dur*0.4+0.05);
+  }
+  function play(kind){
+    if(effectiveMuted()||!ctx) return;
+    const now=performance.now();
+    if(now-lastAt<70) return;
+    lastAt=now;
+    try{
+      const t=ctx.currentTime+0.001;
+      if(kind==="move"){
+        woodTap(t,1250,0.5,0.045);          /* crisp wooden clack */
+      } else if(kind==="capture"){
+        woodTap(t,720,0.62,0.075);          /* heavier knock */
+        woodTap(t+0.045,1100,0.28,0.04);    /* pieces settling click */
+      } else if(kind==="select"){
+        marimba(t,880,0.10,0.10);           /* soft mallet tick */
+      } else if(kind==="check"){
+        woodTap(t,980,0.42,0.05);           /* urgent tap-tap */
+        woodTap(t+0.11,1180,0.42,0.05);
+        marimba(t+0.20,660,0.10,0.16);
+      } else if(kind==="mate"){
+        woodTap(t,560,0.7,0.10);            /* gavel thud */
+        woodTap(t+0.14,420,0.62,0.12);      /* deeper thud */
+        marimba(t+0.30,220,0.16,0.35);      /* low resolved bell */
+      } else if(kind==="end"){
+        marimba(t,392,0.14,0.22);           /* gentle marimba arpeggio */
+        marimba(t+0.10,494,0.12,0.22);
+        marimba(t+0.20,587,0.12,0.28);
+      } else if(kind==="tap"){
+        marimba(t,520,0.07,0.07);
+      } else if(kind==="wrong"){
+        woodTap(t,300,0.6,0.11);            /* dull knock on heavy wood */
+      }
+    }catch(e){ console.warn("[chess] audio skipped:",e&&e.message); }
+  }
+  return {unlock,play};
+})();
+
+/* ═══ PIECE SPRITES ═══ */
+let sprites={};
+function rrPath(c,x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y);
+  c.lineTo(x+w-r,y); c.arcTo(x+w,y,x+w,y+r,r);
+  c.lineTo(x+w,y+h-r); c.arcTo(x+w,y+h,x+w-r,y+h,r);
+  c.lineTo(x+r,y+h); c.arcTo(x,y+h,x,y+h-r,r);
+  c.lineTo(x,y+r); c.arcTo(x,y,x+r,y,r);
+  c.closePath();
+}
+function fsh(c,F,S,w){
+  c.fillStyle=F; c.fill();
+  c.strokeStyle=S; c.lineWidth=w||6; c.stroke();
+}
+const PIECE_FN={
+  [P](c,F,S){
+    rrPath(c,30,78,40,8,3); fsh(c,F,S);
+    c.beginPath(); c.moveTo(41,50); c.quadraticCurveTo(37,64,33,78);
+    c.lineTo(67,78); c.quadraticCurveTo(63,64,59,50); c.closePath(); fsh(c,F,S);
+    c.beginPath(); c.ellipse(50,49,13,4.5,0,0,Math.PI*2); fsh(c,F,S,5);
+    c.beginPath(); c.moveTo(44,42); c.lineTo(56,42); c.lineTo(59,49);
+    c.lineTo(41,49); c.closePath(); fsh(c,F,S,5);
+    c.beginPath(); c.arc(50,31,11,0,Math.PI*2); fsh(c,F,S);
+  },
+  [R](c,F,S){
+    rrPath(c,28,78,44,8,3); fsh(c,F,S);
+    rrPath(c,34,70,32,8,2); fsh(c,F,S,5);
+    c.beginPath(); c.moveTo(40,38); c.lineTo(38,70); c.lineTo(62,70);
+    c.lineTo(60,38); c.closePath(); fsh(c,F,S);
+    rrPath(c,30,32,40,8,2); fsh(c,F,S,5);
+    rrPath(c,31,18,10,15,2); fsh(c,F,S,5);
+    rrPath(c,45,18,10,15,2); fsh(c,F,S,5);
+    rrPath(c,59,18,10,15,2); fsh(c,F,S,5);
+  },
+  [N](c,F,S){
+    c.beginPath();
+    c.moveTo(34,79);
+    c.bezierCurveTo(33,68,36,58,45,53);
+    c.bezierCurveTo(40,51,36,48,34,44);
+    c.bezierCurveTo(31,46,27,46,25,42);
+    c.bezierCurveTo(23,38,25,34,29,32);
+    c.lineTo(37,29);
+    c.bezierCurveTo(39,22,43,16,48,14);
+    c.lineTo(50,20);
+    c.lineTo(55,13);
+    c.lineTo(58,22);
+    c.bezierCurveTo(62,28,64,36,64,46);
+    c.bezierCurveTo(64,58,65,68,65,79);
+    c.closePath(); fsh(c,F,S);
+    c.beginPath(); c.arc(45,27,1.9,0,Math.PI*2); c.fillStyle=S; c.fill();
+    c.beginPath(); c.arc(28.5,34,1.3,0,Math.PI*2); c.fill();
+    rrPath(c,28,78,44,8,3); fsh(c,F,S);
+  },
+  [B](c,F,S){
+    rrPath(c,30,78,40,8,3); fsh(c,F,S);
+    rrPath(c,35,70,30,8,2); fsh(c,F,S,5);
+    c.beginPath(); c.ellipse(50,58,10,3.5,0,0,Math.PI*2); fsh(c,F,S,5);
+    c.beginPath(); c.moveTo(50,20);
+    c.bezierCurveTo(58,26,63,34,62,43);
+    c.bezierCurveTo(61,52,56,57,50,57);
+    c.bezierCurveTo(44,57,39,52,38,43);
+    c.bezierCurveTo(37,34,42,26,50,20);
+    c.closePath(); fsh(c,F,S);
+    c.beginPath(); c.moveTo(50,27); c.lineTo(59,38);
+    c.strokeStyle=S; c.lineWidth=4.5; c.lineCap="round"; c.stroke();
+    c.beginPath(); c.arc(50,15,4,0,Math.PI*2); fsh(c,F,S,5);
+  },
+  [Q](c,F,S){
+    rrPath(c,27,78,46,8,3); fsh(c,F,S);
+    c.beginPath(); c.moveTo(41,52); c.quadraticCurveTo(36,64,32,78);
+    c.lineTo(68,78); c.quadraticCurveTo(64,64,59,52); c.closePath(); fsh(c,F,S);
+    c.beginPath(); c.moveTo(31,40); c.lineTo(34,20); c.lineTo(39,30);
+    c.lineTo(43,15); c.lineTo(47,29); c.lineTo(50,13); c.lineTo(53,29);
+    c.lineTo(57,15); c.lineTo(61,30); c.lineTo(66,20); c.lineTo(69,40);
+    c.closePath(); fsh(c,F,S,5);
+    rrPath(c,30,38,40,7,3); fsh(c,F,S,5);
+    const tips=[[34,16],[43,11],[50,9],[57,11],[66,16]];
+    for(let i=0;i<tips.length;i++){ c.beginPath(); c.arc(tips[i][0],tips[i][1],2.6,0,Math.PI*2); fsh(c,F,S,3.5); }
+    c.beginPath(); c.ellipse(50,52,13,4,0,0,Math.PI*2); fsh(c,F,S,5);
+  },
+  [K](c,F,S){
+    rrPath(c,27,78,46,8,3); fsh(c,F,S);
+    c.beginPath(); c.moveTo(42,54); c.quadraticCurveTo(37,64,33,78);
+    c.lineTo(67,78); c.quadraticCurveTo(63,64,58,54); c.closePath(); fsh(c,F,S);
+    rrPath(c,47,10,6,24,2); fsh(c,F,S,5);
+    rrPath(c,40,15,20,6,2); fsh(c,F,S,5);
+    c.beginPath(); c.moveTo(38,54);
+    c.bezierCurveTo(36,40,41,33,50,33);
+    c.bezierCurveTo(59,33,64,40,62,54);
+    c.closePath(); fsh(c,F,S);
+    rrPath(c,36,49,28,6,3); fsh(c,F,S,5);
+    c.beginPath(); c.ellipse(50,55,12,4,0,0,Math.PI*2); fsh(c,F,S,5);
+  }
+};
+function buildSprites(){
+  sprites={};
+  const cs=CFG.colors, px=Math.max(2,Math.round(sq*dpr));
+  for(let ci=0;ci<2;ci++){
+    const col=ci===0?1:-1;
+    const F=col===1?cs.wFill:cs.bFill, S=col===1?cs.wStroke:cs.bStroke;
+    for(let t=P;t<=K;t++){
+      const cnv=document.createElement("canvas");
+      cnv.width=px; cnv.height=px;
+      const c=cnv.getContext("2d");
+      c.scale(px/100,px/100);
+      c.lineJoin="round"; c.lineCap="round";
+      PIECE_FN[t](c,F,S);
+      sprites[col+"_"+t]=cnv;
+    }
+  }
+}
+const spriteFor=(col,t)=>sprites[col+"_"+t];
+function drawPieceInto(cnv,cssSize,type,col){
+  const d=Math.min(window.devicePixelRatio||1,CFG.dprCap);
+  const px=Math.max(2,Math.round(cssSize*d));
+  cnv.width=px; cnv.height=px;
+  cnv.style.width=cssSize+"px"; cnv.style.height=cssSize+"px";
+  const c=cnv.getContext("2d");
+  c.scale(px/100,px/100);
+  c.lineJoin="round"; c.lineCap="round";
+  const cs=CFG.colors;
+  PIECE_FN[type](c,col===1?cs.wFill:cs.bFill,col===1?cs.wStroke:cs.bStroke);
+}
+
+/* ═══ GAME UI STATE ═══ */
+const $=id=>{ const el=document.getElementById(id); if(!el){throw new Error("missing element: "+id);} return el; };
+const app=$("app"), wrap=$("boardWrap"), boardShake=$("boardShake"),
+      boardArea=$("boardArea"), bgCv=$("bg"), fgCv=$("fg"),
+      statusEl=$("status"), adSlot=$("adSlot"),
+      barSpacer=$("barSpacer"), botBadge=$("botBadge"),
+      dotTop=$("dotTop"), dotBottom=$("dotBottom"),
+      fatalEl=$("fatal"), fatalMsg=$("fatalMsg"),
+      fatalReload=$("fatalReload"), errBanner=$("errBanner"),
+      scrIntro=$("scr-intro"), scrSetup=$("scr-setup"),
+      scrPuzzles=$("scr-puzzles"), scrGame=$("scr-game"),
+      introGear=$("introGear"), playBtn=$("playBtn"), continueBtn=$("continueBtn"),
+      knightCv=$("knightCv"), modeKnightCv=$("modeKnightCv"),
+      setupBack=$("setupBack"), oppSeg=$("oppSeg"), aiBlock=$("aiBlock"),
+      lvlSeg=$("lvlSeg"), colSeg=$("colSeg"), startBtn=$("startBtn"),
+      pzBack=$("pzBack"), streakNow=$("streakNow"), streakBest=$("streakBest"),
+      streakShield=$("streakShield"),
+      dailyDate=$("dailyDate"), dailySolve=$("dailySolve"),
+      solvedEasy=$("solvedEasy"), solvedNormal=$("solvedNormal"), solvedHard=$("solvedHard"),
+      tierEasy=$("tierEasy"), tierNormal=$("tierNormal"), tierHard=$("tierHard"),
+      pauseBtn=$("pauseBtn"), icoPause=$("icoPause"), icoBack=$("icoBack"),
+      ctlTop=$("ctlTop"), ctlBottom=$("ctlBottom"),
+      modeModal=$("modeModal"), cardChess=$("cardChess"), cardPuzzles=$("cardPuzzles"),
+      settingsSheet=$("settingsSheet"), sndTgl=$("sndTgl"), hapTgl=$("hapTgl"),
+      verLine=$("verLine"),
+      pauseSheet=$("pauseSheet"), pResume=$("pResume"), pNew=$("pNew"),
+      pMenu=$("pMenu"), pauseStatus=$("pauseStatus"),
+      overSheet=$("overSheet"), overTitle=$("overTitle"), overSub=$("overSub"),
+      overPrimary=$("overPrimary"), overSecondary=$("overSecondary"),
+      soonSheet=$("soonSheet"), soonTitle=$("soonTitle"), soonMsg=$("soonMsg"),
+      soonAlt=$("soonAlt"), soonOk=$("soonOk"),
+      testAdEl=$("testAd"), taKind=$("taKind"), taBody=$("taBody"),
+      taUnit=$("taUnit"), taNote=$("taNote"), taCount=$("taCount"), taClose=$("taClose");
+
+const bgx=bgCv.getContext("2d"), fgx=fgCv.getContext("2d");
+let size=0, sq=0, frame=0, dpr=1;
+let flipped=false;
+let sel=-1, legalCache=[], sans=[], lastMove=null, result=null;
+let anim=null, pop=null, picker=null;
+let gameMuted=false, hapticsOn=true, testLock=true;
+let simNow=0, running=false, rafId=0, lastT=0, bgDirty=true, dirty=true;
+let confirmBtn=null, confirmUntil=0;
+let booted=false, errToastTimer=0, curScreen="intro";
+let curModal=null;
+let mode="chess";
+const setup={opp:"2p", level:"easy", color:"w"};
+let aiColor=-1;
+let thinking=false;
+let stats={streak:0,best:0,shields:0,lastDaily:"",solved:{easy:0,normal:0,hard:0}};
+let pendingShieldAd=false, endIsChess=true;
+const undoStack=[], redoStack=[];
+let snapPre=null;
+let pz=null, wrongSq=-1, wrongUntil=0;
+let timers=[];
+const parts=[];
+let shakeT=0, shakeDur=0, shakeMag=0, hitStop=0;
+let lastStatusText="";
+let rings=[], topple=null, vignetteT0=-100000, gameSeq=0;
+
+function dispX(s){ const c=flipped?7-(s&7):(s&7); return frame+c*sq+sq/2; }
+function dispY(s){ const r=flipped?7-(s>>3):(s>>3); return frame+r*sq+sq/2; }
+const cx=dispX, cy=dispY;
+const lerp=(a,b,k)=>a+(b-a)*k;
+const easeOutCubic=k=>1-Math.pow(1-k,3);
+function fillSqTint(c,s,color){
+  c.fillStyle=color;
+  c.fillRect(dispX(s)-sq/2, dispY(s)-sq/2, sq, sq);
+}
+function bumpEl(el){
+  try{
+    el.classList.remove("bump");
+    void el.offsetWidth;
+    el.classList.add("bump");
+  }catch(e){}
+}
+function syncSideDots(){
+  const b=CFG.colors.bFill, w=CFG.colors.wFill;
+  dotTop.style.background=flipped?w:b;
+  dotBottom.style.background=flipped?b:w;
+}
+
+/* ═══ ERROR SURFACES ═══ */
+function showFatal(msg){
+  try{
+    fatalMsg.textContent=String(msg).slice(0,900);
+    fatalEl.style.display="block";
+  }catch(e){}
+  console.error("[chess] FATAL:",msg);
+}
+function runtimeError(msg){
+  console.error("[chess] runtime error:",msg);
+  try{
+    errBanner.textContent="Error (logged, game continues — tap to dismiss): "+String(msg).slice(0,110);
+    errBanner.style.display="block";
+    if(errToastTimer) clearTimeout(errToastTimer);
+    errToastTimer=setTimeout(()=>{ errBanner.style.display="none"; errToastTimer=0; },6000);
+  }catch(e){}
+}
+
+/* ═══ SIM-CLOCK TIMERS ═══ */
+function after(ms,fn){ timers.push({at:simNow+ms,fn:fn}); }
+function clearTimers(){ timers.length=0; }
+
+/* ═══ JUICE ═══ */
+const CONF_COLORS=["#e0b45c","#f3ead3","#7fae69","#d66d5a","#b3a78f"];
+function partPush(p){ if(parts.length>140) parts.shift(); parts.push(p); }
+function spawnBurst(x,y,colors){
+  for(let i=0;i<12;i++){
+    const a=Math.random()*Math.PI*2, sp=60+Math.random()*140;
+    partPush({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-90,g:520,life:0,
+      max:380+Math.random()*260,size:2.5+Math.random()*3,
+      color:colors[i%colors.length],rot:Math.random()*6.28,vr:(Math.random()-.5)*12});
+  }
+}
+function spawnConfetti(){
+  for(let i=0;i<70;i++){
+    partPush({x:Math.random()*size,y:-10-Math.random()*80,
+      vx:(Math.random()-.5)*70,vy:90+Math.random()*130,g:300,life:0,
+      max:1300+Math.random()*700,size:4+Math.random()*4,
+      color:CONF_COLORS[i%CONF_COLORS.length],rot:Math.random()*6.28,vr:(Math.random()-.5)*9});
+  }
+}
+function spawnRings(sx,sy,color,n,big){
+  for(let i=0;i<n;i++){
+    rings.push({x:sx,y:sy,t0:simNow,delay:i*130,dur:big?680:520,color:color,
+      maxR:big?sq*1.5:sq*0.95,lw:big?Math.max(3,sq*0.05):Math.max(2,sq*0.035)});
+  }
+  dirty=true;
+}
+function updateParts(dt){
+  const s=dt/1000;
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i];
+    p.life+=dt;
+    if(p.life>=p.max){ parts.splice(i,1); continue; }
+    p.vy+=p.g*s; p.x+=p.vx*s; p.y+=p.vy*s; p.rot+=p.vr*s;
+  }
+}
+function drawParts(c){
+  for(let i=0;i<parts.length;i++){
+    const p=parts[i], a=1-p.life/p.max;
+    c.globalAlpha=a;
+    c.fillStyle=p.color;
+    c.save();
+    c.translate(p.x,p.y); c.rotate(p.rot);
+    c.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.7);
+    c.restore();
+  }
+  c.globalAlpha=1;
+}
+function drawRings(c){
+  for(let i=0;i<rings.length;i++){
+    const r=rings[i];
+    const k=(simNow-r.t0-r.delay)/r.dur;
+    if(k<0||k>1) continue;
+    const e=easeOutCubic(k);
+    c.globalAlpha=(1-k)*0.85;
+    c.strokeStyle=r.color; c.lineWidth=r.lw;
+    c.beginPath(); c.arc(r.x,r.y,8+e*r.maxR,0,Math.PI*2); c.stroke();
+  }
+  c.globalAlpha=1;
+}
+function shake(ms,mag){ shakeT=ms; shakeDur=ms; shakeMag=mag; }
+function clearCinematics(){
+  rings.length=0; topple=null; vignetteT0=-100000;
+  try{ boardShake.style.transform=""; }catch(e){}
+}
+
+/* ═══ ADS — shell bridge (real AdMob on device) + labeled simulator (browser) ═══ */
+let taTimer=null;
+function showTestAd(kind,unitId,seconds,bodyText,onDone){
+  try{
+    taKind.textContent=(kind==="rewarded"?"TEST REWARDED AD":"TEST INTERSTITIAL")+" — SIMULATED";
+    taBody.textContent=bodyText||"";
+    taUnit.textContent="AdMob test unit: "+unitId;
+    taNote.textContent="No ad SDK in the browser preview — the GameBox shell serves the real ad via NativeBridge.";
+    taClose.style.display="none";
+    taCount.textContent=String(seconds);
+    openModal(testAdEl);
+    if(taTimer){ clearInterval(taTimer); taTimer=null; }
+    let left=seconds;
+    /* cosmetic chrome countdown only (PART 5 exception) */
+    taTimer=setInterval(function(){
+      left--;
+      if(left<=0){
+        clearInterval(taTimer); taTimer=null;
+        taCount.textContent="✓";
+        taClose.style.display="block";
+        taClose.onclick=function(){
+          closeModal();
+          if(onDone) onDone();
+        };
+      } else {
+        taCount.textContent=String(left);
+      }
+    },1000);
+  }catch(e){
+    if(onDone) onDone();
+  }
+}
+function setBanner(on){
+  const show=!!on;
+  adSlot.style.display=show?"flex":"none";
+  if(show){
+    adSlot.textContent=window.NativeBridge
+      ? "AD"
+      : ("TEST BANNER · "+CFG.ads.admobBanner);
+  }
+  try{ Studio.ads.banner(show); }catch(e){}
+  console.log("[chess] banner",show?"show":"hide",
+    window.NativeBridge?"(shell/AdMob)":"(simulated label)");
+}
+function gameInterstitial(next){
+  if(window.NativeBridge){
+    try{ Studio.ads.interstitial(next||function(){}); return; }catch(e){}
+  }
+  showTestAd("interstitial",CFG.ads.admobInterstitial,3,"Game over — thanks for playing!",next);
+}
+function rewardedAd(placement,onGrant){
+  console.log("[chess] rewarded:",placement);
+  if(window.NativeBridge){
+    try{ Studio.ads.rewarded(placement,onGrant); return; }catch(e){}
+  }
+  showTestAd("rewarded",CFG.ads.admobRewarded,5,"Reward: +1 Streak Shield",onGrant);
+}
+
+/* ═══ SCREENS + MODALS ═══ */
+function adWanted(){
+  return (mode==="puzzle")||(mode==="chess"&&setup.opp==="bot");
+}
+function showScreen(n){
+  scrIntro.classList.toggle("active",n==="intro");
+  scrSetup.classList.toggle("active",n==="setup");
+  scrPuzzles.classList.toggle("active",n==="puzzles");
+  scrGame.classList.toggle("active",n==="game");
+  curScreen=n;
+  if(n!=="game"){
+    clearTimers(); cancelThink();
+    parts.length=0; shakeT=0; hitStop=0;
+    clearCinematics();
+    setBanner(false);
+  }
+  if(n==="game"){
+    const bot=(mode==="chess"&&setup.opp==="bot");
+    botBadge.style.display=bot?"flex":"none";
+    barSpacer.style.display=bot?"none":"block";
+    setBotBadge(thinking);
+    setBanner(adWanted());
+    layout();
+    syncGameBar(); syncSideDots(); updateCtlBars();
+    bgDirty=true; dirty=true;
+    const r=fgCv.getBoundingClientRect();
+    console.log("[chess] game screen ("+mode+"): board "+Math.round(size)
+      +"px, on-screen "+Math.round(r.width)+"x"+Math.round(r.height));
+  }
+}
+function syncGameBar(){
+  const puzzle=(mode==="puzzle");
+  icoPause.style.display=puzzle?"none":"block";
+  icoBack.style.display=puzzle?"block":"none";
+  pauseBtn.setAttribute("aria-label",puzzle?"Back":"Pause");
+}
+function openModal(el){
+  if(curModal&&curModal!==el) curModal.classList.remove("show");
+  el.classList.add("show");
+  curModal=el;
+}
+function closeModal(){
+  if(confirmBtn) resetConfirm();
+  if(curModal){ curModal.classList.remove("show"); curModal=null; }
+}
+
+/* ═══ RENDERING ═══ */
+function renderBG(){
+  const c=bgx, cs=CFG.colors;
+  c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle=cs.frame; c.fillRect(0,0,size,size);
+  for(let r=0;r<8;r++)for(let q=0;q<8;q++){
+    c.fillStyle=((r+q)&1)===0?cs.lightSq:cs.darkSq;
+    const w=(q<7)?sq+0.6:sq, h=(r<7)?sq+0.6:sq;
+    c.fillRect(frame+q*sq, frame+r*sq, w, h);
+  }
+  if(lastMove){ fillSqTint(c,lastMove.from,cs.last); fillSqTint(c,lastMove.to,cs.last); }
+  const fs=Math.max(8,Math.round(sq*0.17));
+  c.font="700 "+fs+"px -apple-system,Segoe UI,Roboto,Arial,sans-serif";
+  for(let q=0;q<8;q++){
+    c.fillStyle=((7+q)&1)===0?cs.coordLight:cs.coordDark;
+    c.textAlign="right"; c.textBaseline="alphabetic";
+    c.fillText(FILES[flipped?7-q:q], frame+(q+1)*sq-4, frame+8*sq-4);
+  }
+  for(let r=0;r<8;r++){
+    c.fillStyle=((r)&1)===0?cs.coordLight:cs.coordDark;
+    c.textAlign="left"; c.textBaseline="top";
+    c.fillText(String(flipped?r+1:8-r), frame+4, frame+r*sq+3);
+  }
+}
+function drawSpriteAt(c,color,type,x,y,scale,alpha){
+  const spr=spriteFor(color,type); if(!spr) return;
+  const s2=sq*scale;
+  c.globalAlpha=alpha;
+  c.drawImage(spr, x-s2/2, y-s2/2, s2, s2);
+  c.globalAlpha=1;
+}
+function renderFG(){
+  const c=fgx, cs=CFG.colors, eb=Engine.boardArr();
+  c.setTransform(dpr,0,0,dpr,0,0);
+  c.clearRect(0,0,size,size);
+  if(mode==="chess"&&!result&&Engine.inCheck()&&!thinking){
+    c.globalAlpha=0.5+0.28*Math.sin(simNow/160);
+    fillSqTint(c,Engine.kingSq(Engine.turnOf()),cs.check);
+    c.globalAlpha=1;
+  }
+  if(wrongSq>=0){
+    c.globalAlpha=0.8;
+    fillSqTint(c,wrongSq,cs.wrong);
+    c.globalAlpha=1;
+  }
+  if(sel>=0){
+    c.globalAlpha=0.8+0.2*Math.sin(simNow/260);
+    fillSqTint(c,sel,cs.sel);
+    c.globalAlpha=1;
+    c.fillStyle=cs.dot;
+    for(let i=0;i<legalCache.length;i++){
+      const m=legalCache[i];
+      if(m.from!==sel) continue;
+      const px=cx(m.to), py=cy(m.to);
+      if(m.capt>0){
+        c.beginPath(); c.arc(px,py,sq*0.42,0,Math.PI*2);
+        c.lineWidth=Math.max(3,sq*0.09); c.strokeStyle=cs.dot; c.stroke();
+      } else {
+        c.beginPath(); c.arc(px,py,sq*0.15,0,Math.PI*2); c.fill();
+      }
+    }
+  }
+  const ek=anim?easeOutCubic(Math.min(1,anim.t/anim.dur)):1;
+  for(let s=0;s<64;s++){
+    const p=eb[s]; if(p===0) continue;
+    if(anim&&(s===anim.to||(anim.rookTo>=0&&s===anim.rookTo))) continue;
+    if(topple&&s===topple.sq) continue;
+    let scale=1;
+    if(s===sel) scale*=1.06;
+    if(pop&&pop.sq===s){
+      const pk=Math.min(1,pop.t/CFG.popMs);
+      scale*=1+0.13*Math.sin(Math.PI*pk);
+    }
+    drawSpriteAt(c,p>0?1:-1,p>0?p:-p,cx(s),cy(s),scale,1);
+  }
+  if(anim){
+    if(anim.capType>0){
+      c.globalAlpha=(1-ek)*0.9;
+      const gs=spriteFor(-anim.color,anim.capType);
+      c.drawImage(gs,cx(anim.capSq)-sq/2,cy(anim.capSq)-sq/2,sq,sq);
+      c.globalAlpha=1;
+    }
+    drawSpriteAt(c,anim.color,anim.piece,
+      lerp(cx(anim.from),cx(anim.to),ek),
+      lerp(cy(anim.from),cy(anim.to),ek),1,1);
+    if(anim.rookFrom>=0){
+      drawSpriteAt(c,anim.color,R,
+        lerp(cx(anim.rookFrom),cx(anim.rookTo),ek),
+        lerp(cy(anim.rookFrom),cy(anim.rookTo),ek),1,1);
+    }
+  }
+  if(topple){
+    const k=Math.min(1,(simNow-topple.t0)/700);
+    const e=easeOutCubic(k);
+    const p=eb[topple.sq];
+    if(p!==0){
+      const col=p>0?1:-1;
+      c.save();
+      c.translate(cx(topple.sq), cy(topple.sq)+e*sq*0.16);
+      c.rotate(e*1.3*(col===1?1:-1));
+      c.globalAlpha=1-0.25*e;
+      const spr=spriteFor(col,p>0?p:-p);
+      if(spr) c.drawImage(spr,-sq/2,-sq/2,sq,sq);
+      c.globalAlpha=1;
+      c.restore();
+    }
+  }
+  drawRings(c);
+  drawParts(c);
+  const vk=(simNow-vignetteT0)/450;
+  if(vk>=0&&vk<1){
+    c.globalAlpha=0.38*(1-vk);
+    c.fillStyle="#140803";
+    c.fillRect(0,0,size,size);
+    c.globalAlpha=1;
+  }
+  if(picker) renderPicker(c);
+}
+function renderPicker(c){
+  const cs=CFG.colors;
+  const k=Math.min(1,(simNow-picker.t0)/160);
+  const e=easeOutCubic(k);
+  c.globalAlpha=0.55*e;
+  c.fillStyle="rgba(24,17,10,0.8)"; c.fillRect(0,0,size,size);
+  c.globalAlpha=1;
+  const g=picker.geom;
+  const sc=0.85+0.15*e;
+  const ccx=g.x+g.w/2, ccy=g.y+g.h/2;
+  c.save();
+  c.translate(ccx,ccy); c.scale(sc,sc); c.translate(-ccx,-ccy);
+  rrPath(c,g.x,g.y,g.w,g.h,14);
+  c.fillStyle="#3a332b"; c.fill();
+  c.strokeStyle="#6b4f3a"; c.lineWidth=2; c.stroke();
+  const mover=Engine.turnOf();
+  for(let i=0;i<picker.opts.length;i++){
+    const o=picker.opts[i], r=o.rect;
+    rrPath(c,r.x,r.y,r.w,r.h,9);
+    c.fillStyle="#efe2c6"; c.fill();
+    c.strokeStyle="#4a3826"; c.lineWidth=2; c.stroke();
+    drawSpriteAt(c,mover,o.type,r.x+r.w/2,r.y+r.h/2,0.92,1);
+  }
+  c.restore();
+}
+
+/* ═══ SIM CLOCK + LOOP ═══ */
+function tick(t){
+  rafId=requestAnimationFrame(tick);
+  if(!running) return;
+  let dt=t-lastT; lastT=t;
+  if(dt<0) dt=0; if(dt>50) dt=50;
+  if(hitStop>0){ hitStop-=dt; dt=0; }
+  simNow+=dt;
+  update(dt);
+  if(curScreen==="game"){
+    if(bgDirty){ renderBG(); bgDirty=false; }
+    if(dirty||anim||pop||parts.length||rings.length||topple){ renderFG(); dirty=false; }
+  }
+}
+function update(dt){
+  if(timers.length){
+    const due=[];
+    for(let i=0;i<timers.length;i++){ if(simNow>=timers[i].at) due.push(timers[i]); }
+    if(due.length){
+      timers=timers.filter(function(t){ return t.at>simNow; });
+      for(let i=0;i<due.length;i++) due[i].fn();
+    }
+  }
+  if(anim){
+    anim.t+=dt;
+    if(anim.t>=anim.dur){
+      const a=anim; anim=null;
+      if(a.onDone) a.onDone();
+      dirty=true;
+    }
+  }
+  if(pop){
+    pop.t+=dt;
+    if(pop.t>=CFG.popMs) pop=null;
+    dirty=true;
+  }
+  if(picker&&simNow-picker.t0<180) dirty=true;
+  if(parts.length){ updateParts(dt); dirty=true; }
+  if(rings.length){
+    rings=rings.filter(function(r){ return (simNow-r.t0-r.delay)<r.dur; });
+    dirty=true;
+  }
+  if(topple&&simNow-topple.t0<750) dirty=true;
+  if(simNow-vignetteT0<450) dirty=true;
+  if(wrongSq>=0&&simNow>wrongUntil){ wrongSq=-1; dirty=true; }
+  if(shakeT>0){
+    shakeT-=dt;
+    if(shakeT<=0){ shakeT=0; try{ boardShake.style.transform=""; }catch(e){} }
+    else {
+      const kk=shakeT/shakeDur, m=shakeMag*kk;
+      const dx=((Math.random()*2-1)*m).toFixed(2);
+      const dy=((Math.random()*2-1)*m).toFixed(2);
+      try{ boardShake.style.transform="translate("+dx+"px,"+dy+"px)"; }catch(e){}
+    }
+  }
+  if(confirmBtn&&simNow>confirmUntil) resetConfirm();
+}
+
+/* ═══ GAME FLOW (chess) ═══ */
+function clearSel(){ sel=-1; dirty=true; }
+function refreshLegal(){
+  legalCache=result?[]:Engine.legalMoves();
+}
+function resultText(r){
+  if(r.type==="checkmate") return {t:(r.winner===1?"WHITE WINS":"BLACK WINS"), s:"by checkmate"};
+  if(r.type==="resign")    return {t:(r.winner===1?"WHITE WINS":"BLACK WINS"), s:"by resignation"};
+  if(r.type==="stalemate") return {t:"DRAW", s:"by stalemate"};
+  if(r.type==="fifty")     return {t:"DRAW", s:"fifty-move rule"};
+  if(r.type==="threefold") return {t:"DRAW", s:"threefold repetition"};
+  if(r.type==="material")  return {t:"DRAW", s:"insufficient material"};
+  return {t:"GAME OVER", s:""};
+}
+let endPfn=null, endSfn=null;
+function openEnd(title,sub,pl,pf,sl,sf){
+  overTitle.textContent=title;
+  overSub.textContent=sub;
+  overPrimary.textContent=pl; endPfn=pf||null;
+  overSecondary.textContent=sl; endSfn=sf||null;
+  pendingShieldAd=false;
+  openModal(overSheet);
+}
+function chessOverSheet(){
+  endIsChess=true;
+  const rt=resultText(result);
+  openEnd(rt.t, rt.s+(sans.length?(" — "+sans.length+" moves"):""),
+    "REMATCH", function(){ newGame(); },
+    "MAIN MENU", function(){ showScreen("intro"); });
+}
+function startAnim(m,moverColor,capType,capSq,res){
+  anim={
+    t:0, dur:CFG.animMs,
+    from:m.from, to:m.to,
+    piece:m.promo?P:m.piece, color:moverColor,
+    capType:capType, capSq:capSq,
+    rookFrom:-1, rookTo:-1,
+    onDone(){
+      AudioSys.play(capType>0?"capture":"move");
+      gameHaptic(capType>0?"medium":"light");
+      pop={sq:m.to,t:0};
+      if(res&&res.over){
+        if(curScreen==="game"&&mode==="chess"&&result){
+          const seq=++gameSeq;
+          if(result.type==="checkmate"){
+            AudioSys.play("mate"); gameHaptic("heavy");
+            const loserK=Engine.kingSq(Engine.turnOf());
+            spawnRings(cx(loserK),cy(loserK),"#d64545",3,true);
+            topple={sq:loserK,t0:simNow};
+            vignetteT0=simNow;
+            shake(260,5);
+            hitStop=Math.max(hitStop,70);
+            spawnConfetti();
+            after(860,function(){ if(seq===gameSeq&&curScreen==="game"&&result) chessOverSheet(); });
+          } else {
+            AudioSys.play("end"); gameHaptic("success");
+            after(280,function(){ if(seq===gameSeq&&curScreen==="game"&&result) chessOverSheet(); });
+          }
+        }
+      }
+      else if(res&&res.check){
+        AudioSys.play("check");
+        gameHaptic("medium");
+        const kSq=Engine.kingSq(Engine.turnOf());
+        spawnRings(cx(kSq),cy(kSq),"#d66d5a",2,false);
+      }
+    }
+  };
+  if(m.flag===FL_CK){ const r=moverColor===1?7:0; anim.rookFrom=r*8+7; anim.rookTo=r*8+5; }
+  if(m.flag===FL_CQ){ const r=moverColor===1?7:0; anim.rookFrom=r*8+0; anim.rookTo=r*8+3; }
+}
+function snap(){
+  return {fen:Engine.fen(), sans:sans.slice(), lastMove:lastMove,
+          result:result, keys:Engine.keys.slice()};
+}
+/* snapshot before PLAYER-initiated moves/resign (bot moves never call this) */
+function beginMoveSnapshot(){
+  snapPre=(mode==="chess")?snap():null;
+}
+function applySnap(s){
+  Engine.loadFEN(s.fen);
+  Engine.keys.length=0;
+  for(let i=0;i<s.keys.length;i++) Engine.keys.push(s.keys[i]);
+  sans=s.sans.slice(); lastMove=s.lastMove; result=s.result;
+  sel=-1; anim=null; pop=null; picker=null; wrongSq=-1;
+  clearTimers(); clearCinematics();
+  refreshLegal(); updateStatus(); persist(); updateCtlBars();
+  bgDirty=true; dirty=true;
+}
+function doMove(m){
+  resetConfirm();
+  const moverColor=Engine.turnOf();
+  const eb=Engine.boardArr();
+  let capType=0, capSq=-1;
+  if(m.flag===FL_EP){ capType=P; capSq=m.to+(moverColor===1?8:-8); }
+  else if(eb[m.to]!==0){ capType=eb[m.to]<0?-eb[m.to]:eb[m.to]; capSq=m.to; }
+  let res;
+  try{ res=Engine.make(m); }
+  catch(e){ console.error("move rejected:",e); refreshLegal(); clearSel(); return; }
+  if(capType>0){
+    const cs=CFG.colors;
+    const capCol=(-moverColor===1)?cs.wFill:cs.bFill;
+    spawnBurst(cx(capSq),cy(capSq),[capCol,"#e0b45c","#f3ead3"]);
+    shake(170,3);
+    hitStop=40;
+  }
+  sans.push(res.san);
+  lastMove={from:m.from,to:m.to};
+  if(res.over) result=res.result;
+  sel=-1; refreshLegal();
+  if(m.promo) pop={sq:m.to,t:0};
+  startAnim(m,moverColor,capType,capSq,res);
+  if(mode==="chess"){
+    if(snapPre){ undoStack.push(snapPre); redoStack.length=0; }
+    snapPre=null;
+    updateCtlBars();
+    if(setup.opp==="bot") after(CFG.animMs+90, maybeBotMove);
+  } else if(mode==="puzzle"&&pz){
+    pz.idx++;
+    if(pz.idx>=pz.line.length){
+      after(CFG.animMs+80, showPuzzleSolved);
+    } else if(pz.idx%2===0){
+      after(CFG.autoMs, playPly);
+      updateStatus();
+    } else {
+      updateStatus();
+    }
+  }
+  persist();
+  bgDirty=true; dirty=true;
+}
+function openPicker(moves){
+  const order=[Q,N,R,B];
+  const tile=Math.min(72,Math.floor((size-48)/4)), gap=10, pad=12, label=22;
+  const w=pad*2+tile*4+gap*3, h=pad*2+tile+label;
+  const gx=(size-w)/2, gy=(size-h)/2;
+  picker={geom:{x:gx,y:gy,w:w,h:h},opts:[],t0:simNow};
+  for(let i=0;i<4;i++){
+    let mv=null;
+    for(let j=0;j<moves.length;j++){ if(moves[j].promo===order[i]){ mv=moves[j]; break; } }
+    if(!mv) continue;
+    picker.opts.push({type:order[i],mv:mv,rect:{
+      x:gx+pad+i*(tile+gap), y:gy+pad+label, w:tile, h:tile
+    }});
+  }
+  dirty=true;
+}
+function onSquare(s){
+  resetConfirm();
+  if(result) return;
+  if(thinking) return;
+  if(mode==="puzzle"&&pz&&pz.idx%2===0) return;
+  let cands=[];
+  if(sel>=0){
+    for(let i=0;i<legalCache.length;i++){
+      const m=legalCache[i];
+      if(m.from===sel&&m.to===s) cands.push(m);
+    }
+  }
+  if(cands.length){
+    if(mode==="puzzle"&&pz){
+      const exp=pz.line[pz.idx];
+      if(cands[0].promo){ openPicker(cands); return; }
+      if(cands[0].from===exp.from&&cands[0].to===exp.to&&cands[0].promo===exp.promo){
+        doMove(cands[0]);
+      } else {
+        puzzleWrong(s);
+      }
+      return;
+    }
+    beginMoveSnapshot();
+    if(cands[0].promo){ openPicker(cands); return; }
+    doMove(cands[0]);
+    return;
+  }
+  const eb=Engine.boardArr(), p=eb[s];
+  if(p!==0&&(p>0)===(Engine.turnOf()>0)){
+    if(sel!==s){ sel=s; AudioSys.play("select"); dirty=true; }
+    else clearSel();
+  } else {
+    clearSel();
+  }
+}
+function puzzleWrong(sq){
+  pz.failed=true;
+  wrongSq=sq; wrongUntil=simNow+CFG.wrongMs;
+  AudioSys.play("wrong"); gameHaptic("heavy");
+  shake(140,2.5);
+  lastStatusText="Wrong — try again";
+  statusEl.textContent=lastStatusText;
+  bumpEl(statusEl);
+  clearSel();
+  dirty=true;
+  after(CFG.wrongMs+60, function(){ if(mode==="puzzle") updateStatus(); });
+}
+function newGame(){
+  cancelThink();
+  gameSeq++;
+  Engine.reset();
+  sans=[]; lastMove=null; result=null; sel=-1; pop=null; picker=null; anim=null;
+  undoStack.length=0; redoStack.length=0; wrongSq=-1; snapPre=null;
+  clearTimers(); clearCinematics();
+  refreshLegal();
+  bgDirty=true; dirty=true;
+  updateStatus(); persist(); updateCtlBars();
+  if(mode==="chess"&&setup.opp==="bot") after(480, maybeBotMove);
+}
+function doResign(){
+  if(result) return;
+  beginMoveSnapshot();
+  if(snapPre){ undoStack.push(snapPre); redoStack.length=0; }
+  snapPre=null;
+  result={type:"resign",winner:-Engine.turnOf()};
+  sel=-1; refreshLegal();
+  updateStatus(); persist(); updateCtlBars();
+  AudioSys.play("end"); gameHaptic("success");
+  bgDirty=true; dirty=true;
+  if(curScreen==="game"&&mode==="chess") chessOverSheet();
+}
+function onUndo(){
+  if(mode!=="chess"||thinking||anim||picker||!undoStack.length) return;
+  AudioSys.play("tap"); gameHaptic("light");
+  if(setup.opp==="bot"){
+    /* one tap = remove bot reply + player move (back to the decision point) */
+    redoStack.length=0;
+    redoStack.push(snap());
+    applySnap(undoStack.pop());
+    if(Engine.turnOf()===aiColor&&undoStack.length){
+      applySnap(undoStack.pop());
+    }
+  } else {
+    redoStack.push(snap());
+    applySnap(undoStack.pop());
+  }
+}
+function onRedo(){
+  if(mode!=="chess"||thinking||anim||picker||!redoStack.length) return;
+  AudioSys.play("tap"); gameHaptic("light");
+  undoStack.push(snap());
+  applySnap(redoStack.pop());   /* bot mode: restores player+bot pair exactly */
+}
+let ctlUndoBtns=[], ctlRedoBtns=[], ctlResignBtns=[];
+function setDisabled(arr,d){ for(let i=0;i<arr.length;i++) arr[i].disabled=d; }
+function updateCtlBars(){
+  const chess=(mode==="chess");
+  const twoP=(chess&&setup.opp!=="bot");
+  /* pass-and-play: bars both sides. Bot: player side only. Puzzles: none. */
+  ctlTop.style.display=twoP?"flex":"none";
+  ctlBottom.style.display=chess?"flex":"none";
+  if(!chess) return;
+  setDisabled(ctlUndoBtns, thinking||!undoStack.length);
+  setDisabled(ctlRedoBtns, thinking||!redoStack.length);
+  setDisabled(ctlResignBtns, thinking||!!result);
+}
+
+/* ═══ CONFIRM PATTERN ═══ */
+function armConfirm(btn,fn){
+  if(confirmBtn===btn){ resetConfirm(); fn(); return; }
+  resetConfirm();
+  confirmBtn=btn; confirmUntil=simNow+CFG.confirmMs;
+  if(btn.getAttribute("data-icon")==="1"){
+    btn.setAttribute("aria-label","Tap again to confirm");
+  } else {
+    btn.dataset.label=btn.textContent;
+    btn.textContent="SURE?";
+  }
+  btn.classList.add("arm");
+}
+function resetConfirm(){
+  if(!confirmBtn) return;
+  if(confirmBtn.getAttribute("data-icon")==="1"){
+    confirmBtn.setAttribute("aria-label","Resign");
+  } else {
+    confirmBtn.textContent=confirmBtn.dataset.label||confirmBtn.textContent;
+  }
+  confirmBtn.classList.remove("arm");
+  confirmBtn=null;
+}
+
+/* ═══ STATUS (no thinking text — the robot badge speaks) ═══ */
+function statusText(){
+  if(thinking) return "";
+  if(mode==="puzzle"&&pz){
+    const who=(pz.solver===1?"White":"Black");
+    if(pz.idx===0) return "Watch — opponent moves first";
+    return who+" to solve — find the best move";
+  }
+  if(result) return resultText(result).t+" — "+resultText(result).s;
+  return (Engine.turnOf()===1?"White to move":"Black to move")
+    +(Engine.inCheck()?" — check!":"");
+}
+function updateStatus(){
+  const t=statusText();
+  if(t!==lastStatusText){
+    lastStatusText=t;
+    statusEl.textContent=t;
+    if(t) bumpEl(statusEl);
+  }
+  let chk=false;
+  if(mode==="chess"&&!result&&!thinking) chk=Engine.inCheck();
+  statusEl.classList.toggle("chk",chk);
+}
+
+/* ═══ PUZZLES ═══ */
+function parseUCI(line){
+  const out=[];
+  const ps=String(line).trim().split(/\s+/);
+  for(let i=0;i<ps.length;i++){
+    const u=ps[i];
+    if(u.length<4) throw new Error("bad uci: "+u);
+    let promo=0;
+    if(u.length>=5){
+      promo=({q:Q,r:R,b:B,n:N})[u[4].toLowerCase()]||0;
+    }
+    out.push({from:Engine.sqFromName(u[0]+u[1]), to:Engine.sqFromName(u[2]+u[3]), promo:promo});
+  }
+  return out;
+}
+function startPuzzle(entry,tier,daily){
+  let line;
+  try{ line=parseUCI(entry[2]); }
+  catch(e){ console.error("[chess] puzzle parse failed:",entry[0],e); return; }
+  mode="puzzle";
+  gameSeq++;
+  pz={p:entry, tier:tier, daily:!!daily, failed:false, idx:0, line:line, solver:0};
+  Engine.loadFEN(entry[1]);
+  Engine.keys.length=0; Engine.keys.push(Engine.posKey());
+  pz.solver=-Engine.turnOf();
+  flipped=(pz.solver===-1);   /* solver's army at the bottom */
+  sans=[]; lastMove=null; result=null; sel=-1; anim=null; pop=null; picker=null; wrongSq=-1;
+  undoStack.length=0; redoStack.length=0; snapPre=null;
+  clearTimers(); clearCinematics();
+  refreshLegal(); updateStatus();
+  showScreen("game");
+  after(650, playPly);
+}
+function playPly(){
+  if(!pz||mode!=="puzzle"||curScreen!=="game") return;
+  const m=pz.line[pz.idx];
+  if(!m) return;
+  doMove(m);
+}
+function totalSolved(){
+  return (stats.solved.easy||0)+(stats.solved.normal||0)+(stats.solved.hard||0);
+}
+function showPuzzleSolved(){
+  if(!pz) return;
+  AudioSys.play("end"); gameHaptic("success");
+  if(lastMove) spawnRings(cx(lastMove.to),cy(lastMove.to),"#e0b45c",3,false);
+  stats.solved[pz.tier]=(stats.solved[pz.tier]||0)+1;
+  const everyN=totalSolved()%CFG.ads.rewardEveryN===0;
+  let extra="";
+  if(pz.daily){
+    const t=todayStr();
+    if(stats.lastDaily!==t){
+      const y=yesterdayStr();
+      let shieldNote="";
+      if(stats.lastDaily===y){
+        stats.streak++;
+      } else if(stats.shields>0){
+        stats.shields--;
+        stats.streak++;
+        shieldNote=" · shield used";
+      } else {
+        stats.streak=1;
+      }
+      if(stats.streak>stats.best) stats.best=stats.streak;
+      stats.lastDaily=t;
+      persistStats();
+      extra=" · Streak "+stats.streak+shieldNote
+        +(pz.failed?" (retry used — streak safe)":"");
+    } else {
+      extra=" · Streak "+stats.streak;
+    }
+  }
+  updateHub();
+  bumpEl(streakNow);
+  spawnConfetti();
+  endIsChess=false;
+  const tier=pz.tier;
+  pendingShieldAd=everyN;
+  openEnd("PUZZLE SOLVED","Rating "+pz.p[3]+extra,
+    "NEXT PUZZLE", function(){ const p=pickRandom(tier); if(p) startPuzzle(p,tier,false); },
+    everyN?("+1 SHIELD — WATCH AD"):("PUZZLE HUB"),
+    function(){
+      if(pendingShieldAd){
+        pendingShieldAd=false;
+        rewardedAd("puzzle_shield",function(){
+          stats.shields++;
+          persistStats();
+          updateHub();
+          bumpEl(streakShield);
+          openSoon("SHIELD EARNED","A Streak Shield protects your streak across one missed day.",null,null);
+        });
+      } else {
+        pz=null; showScreen("puzzles");
+      }
+    });
+}
+function pickRandom(tier){
+  const arr=PUZZLE_DATA[tier]||[];
+  if(!arr.length) return null;
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+function hashStr(s){
+  let h=5381;
+  for(let i=0;i<s.length;i++){ h=(((h<<5)+h)+s.charCodeAt(i))|0; }
+  return Math.abs(h);
+}
+function pad2(n){ return (n<10?"0":"")+n; }
+function dateStr(d){ return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate()); }
+function todayStr(){ return dateStr(new Date()); }
+function yesterdayStr(){ return dateStr(new Date(Date.now()-86400000)); }
+function dailyPick(){
+  const arr=PUZZLE_DATA.easy;
+  if(!arr.length) return null;
+  return arr[hashStr(todayStr())%arr.length];
+}
+
+/* ═══ PERSISTENCE (v3) ═══ */
+function persist(){
+  if(mode!=="chess") return;
+  const d={v:3, fen:Engine.fen(), sans:sans, keys:Engine.keys.slice(),
+    result:result, lastMove:lastMove, flipped:flipped};
+  if(setup.opp==="bot"){
+    d.bot={opp:"bot", level:setup.level, aiColor:aiColor};
+  }
+  Studio.save(CFG.saveKey, JSON.stringify(d));
+  refreshContinue();
+}
+function refreshContinue(){
+  continueBtn.style.display=(mode==="chess"&&sans.length>0&&!result)?"block":"none";
+}
+function restore(){
+  const raw=Studio.load(CFG.saveKey);
+  if(!raw) return false;
+  try{
+    const d=JSON.parse(raw);
+    if(!d||!d.fen) return false;
+    Engine.loadFEN(d.fen);
+    Engine.keys.length=0;
+    const ks=Array.isArray(d.keys)?d.keys:[];
+    for(let i=0;i<ks.length;i++) Engine.keys.push(ks[i]);
+    if(Engine.keys.length===0||Engine.keys[Engine.keys.length-1]!==Engine.posKey()){
+      Engine.keys.length=0;
+      Engine.keys.push(Engine.posKey());
+      console.warn("[chess] repetition history rebuilt from current position");
+    }
+    sans=Array.isArray(d.sans)?d.sans.slice():[];
+    lastMove=d.lastMove||null;
+    result=d.result||null;
+    flipped=!!d.flipped;
+    if(d.v>=2&&d.bot&&d.bot.opp==="bot"){
+      setup.opp="bot";
+      setup.level=d.bot.level||"easy";
+      aiColor=(d.bot.aiColor===-1)?-1:1;
+    }
+    return true;
+  }catch(e){
+    console.warn("[chess] save restore failed, starting fresh",e);
+    return false;
+  }
+}
+function loadStats(){
+  const raw=Studio.load(CFG.statsKey);
+  if(!raw) return;
+  try{
+    const d=JSON.parse(raw);
+    if(!d) return;
+    stats.streak=d.streak||0;
+    stats.best=d.best||0;
+    stats.shields=d.shields||0;
+    stats.lastDaily=d.lastDaily||"";
+    stats.solved={
+      easy:(d.solved&&d.solved.easy)||0,
+      normal:(d.solved&&d.solved.normal)||0,
+      hard:(d.solved&&d.solved.hard)||0
+    };
+  }catch(e){ console.warn("[chess] stats parse failed",e); }
+}
+function persistStats(){
+  Studio.save(CFG.statsKey, JSON.stringify(stats));
+}
+
+/* ═══ ENGINE SELF-TEST + PUZZLE VALIDATION ═══ */
+function scheduleSelfTest(){
+  testLock=true;
+  console.log("[chess] engine self-test running (input locked)...");
+  const cases=[
+    [START_FEN,3,8902],
+    ["r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",3,97862],
+    ["8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",4,43238],
+    ["r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1",3,9467],
+    ["rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8",3,62379]
+  ];
+  let i=0;
+  function restoreEng(sf,sk){
+    Engine.loadFEN(sf);
+    Engine.keys.length=0;
+    for(let k=0;k<sk.length;k++) Engine.keys.push(sk[k]);
+  }
+  (function step(){
+    if(i>=cases.length){ validateChunked(restoreEng); return; }
+    try{
+      const c=cases[i++];
+      const sf=Engine.fen(), sk=Engine.keys.slice();
+      Engine.loadFEN(c[0]);
+      const got=Engine.perft(c[1]);
+      restoreEng(sf,sk);
+      if(got!==c[2]) throw new Error("perft mismatch: "+c[0]+" depth "+c[1]
+        +" — got "+got+", expected "+c[2]);
+      if(Engine.undoDepth()!==0) throw new Error("unbalanced make/unmake stack");
+      setTimeout(step,0);
+    }catch(e){
+      showFatal("Engine self-test failed — "+e.message);
+    }
+  })();
+}
+function validateChunked(restoreEng){
+  const sf=Engine.fen(), sk=Engine.keys.slice();
+  const tiers=["easy","normal","hard"];
+  const badSet={};
+  let ti=0, pi=0, ok=0;
+  (function vstep(){
+    let processed=0;
+    while(ti<tiers.length&&processed<30){
+      const arr=PUZZLE_DATA[tiers[ti]];
+      if(pi>=arr.length){ ti++; pi=0; continue; }
+      const p=arr[pi]; pi++; processed++;
+      try{
+        Engine.loadFEN(p[1]);
+        const ms=parseUCI(p[2]);
+        for(let k=0;k<ms.length;k++) Engine.make(ms[k]);
+        ok++;
+      }catch(e){ badSet[tiers[ti]+":"+p[0]]=true; }
+    }
+    if(ti<tiers.length){ setTimeout(vstep,0); return; }
+    for(let t=0;t<tiers.length;t++){
+      const arr=PUZZLE_DATA[tiers[t]];
+      const keep=[];
+      for(let j=0;j<arr.length;j++){
+        if(!badSet[tiers[t]+":"+arr[j][0]]) keep.push(arr[j]);
+      }
+      PUZZLE_DATA[tiers[t]]=keep;
+    }
+    restoreEng(sf,sk);
+    testLock=false;
+    const badCount=Object.keys(badSet).length;
+    const total=PUZZLE_DATA.easy.length+PUZZLE_DATA.normal.length+PUZZLE_DATA.hard.length;
+    console.log("[chess] puzzle validation: "+ok+" playable ("+total+" live: E"
+      +PUZZLE_DATA.easy.length+"/N"+PUZZLE_DATA.normal.length+"/H"+PUZZLE_DATA.hard.length
+      +"), "+badCount+" dropped");
+    console.log("[chess] engine self-test PASSED — perft exact, puzzles verified, input unlocked");
+  })();
+}
+
+/* ═══ PUZZLE HUB UI ═══ */
+const DAYS=["SUN","MON","TUE","WED","THU","FRI","SAT"];
+const MONTHS=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+function updateHub(){
+  streakNow.textContent=stats.streak+(stats.streak===1?" DAY":" DAYS");
+  streakBest.textContent="BEST "+stats.best;
+  streakShield.textContent="SHIELDS "+(stats.shields||0);
+  solvedEasy.textContent=String(stats.solved.easy||0);
+  solvedNormal.textContent=String(stats.solved.normal||0);
+  solvedHard.textContent=String(stats.solved.hard||0);
+  const d=new Date();
+  dailyDate.textContent=DAYS[d.getDay()]+", "+MONTHS[d.getMonth()]+" "+d.getDate();
+}
+
+/* ═══ "SOON" SHEET ═══ */
+function openSoon(title,msg,altLabel,altFn){
+  soonTitle.textContent=title;
+  soonMsg.textContent=msg;
+  if(altLabel){
+    soonAlt.style.display="block";
+    soonAlt.textContent=altLabel;
+    soonAlt.onclick=function(){ closeModal(); if(altFn) altFn(); };
+  } else {
+    soonAlt.style.display="none";
+    soonAlt.onclick=null;
+  }
+  AudioSys.play("tap");
+  openModal(soonSheet);
+}
+
+/* ═══ SETUP SCREEN ═══ */
+function segInit(el,onPick){
+  const btns=el.getElementsByTagName("button");
+  function setV(v,fire){
+    for(let i=0;i<btns.length;i++){
+      btns[i].classList.toggle("on",btns[i].getAttribute("data-v")===v);
+    }
+    if(fire&&onPick) onPick(v);
+  }
+  for(let i=0;i<btns.length;i++){
+    (function(b){
+      b.addEventListener("click",function(){
+        AudioSys.unlock(); AudioSys.play("tap"); gameHaptic("light");
+        setV(b.getAttribute("data-v"),true);
+      });
+    })(btns[i]);
+  }
+  return {
+    get(){ for(let i=0;i<btns.length;i++){ if(btns[i].classList.contains("on")) return btns[i].getAttribute("data-v"); } return null; },
+    set(v){ setV(v,false); }
+  };
+}
+let oppCtl=null,lvlCtl=null,colCtl=null;
+function syncSetupUI(){
+  aiBlock.style.display=setup.opp==="bot"?"block":"none";
+}
+
+/* ═══ SETTINGS UI ═══ */
+function syncSettingsUI(){
+  sndTgl.classList.toggle("on",!gameMuted);
+  hapTgl.classList.toggle("on",hapticsOn);
+}
+
+/* ═══ LAYOUT / INPUT / LIFECYCLE ═══ */
+function layout(){
+  const appW=app.clientWidth||window.innerWidth-20;
+  let availH=0;
+  try{ availH=boardArea.clientHeight; }catch(e){}
+  if(!availH||availH<200) availH=Math.max(240,(window.innerHeight||600)-260);
+  size=Math.max(240,Math.min(appW,560,availH));
+  wrap.style.width=size+"px";
+  wrap.style.height=size+"px";
+  dpr=Math.min(window.devicePixelRatio||1,CFG.dprCap);
+  const px=Math.round(size*dpr);
+  bgCv.width=px; bgCv.height=px;
+  fgCv.width=px; fgCv.height=px;
+  frame=Math.max(6,Math.round(size*0.02));
+  sq=(size-2*frame)/8;
+  buildSprites();
+  drawPieceInto(knightCv,110,N,1);
+  drawPieceInto(modeKnightCv,36,N,1);
+  bgDirty=true; dirty=true;
+}
+function boardPress(x,y){
+  AudioSys.unlock();
+  if(testLock){ console.log("[chess] input locked during boot verification"); return; }
+  if(thinking) return;
+  if(anim) return;
+  resetConfirm();
+  const rect=fgCv.getBoundingClientRect();
+  const sx=rect.width>0?size/rect.width:1;
+  const sy=rect.height>0?size/rect.height:1;
+  const px=(x-rect.left)*sx, py=(y-rect.top)*sy;
+  if(picker){
+    const g=picker.geom;
+    if(px<g.x||px>g.x+g.w||py<g.y||py>g.y+g.h){ picker=null; clearSel(); dirty=true; return; }
+    for(let i=0;i<picker.opts.length;i++){
+      const o=picker.opts[i], r=o.rect;
+      if(px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.h){
+        const mv=o.mv; picker=null; dirty=true;
+        if(mode==="puzzle"&&pz){
+          const exp=pz.line[pz.idx];
+          if(mv.from===exp.from&&mv.to===exp.to&&mv.promo===exp.promo){
+            doMove(mv);
+          } else {
+            puzzleWrong(mv.to);
+          }
+          return;
+        }
+        beginMoveSnapshot();
+        doMove(mv);
+        return;
+      }
+    }
+    return;
+  }
+  const q0=Math.floor((px-frame)/sq), r0=Math.floor((py-frame)/sq);
+  if(q0<0||q0>7||r0<0||r0>7){ clearSel(); return; }
+  const c=flipped?7-q0:q0, r=flipped?7-r0:r0;
+  onSquare(r*8+c);
+}
+function onCanvasPointer(e){ boardPress(e.clientX,e.clientY); }
+function onCanvasTouch(e){
+  if(e.preventDefault) e.preventDefault();
+  const t=(e.changedTouches&&e.changedTouches.length)?e.changedTouches[0]:null;
+  if(t) boardPress(t.clientX,t.clientY);
+}
+function onCanvasMouse(e){ boardPress(e.clientX,e.clientY); }
+function onCtx(e){ e.preventDefault(); }
+function unlockOnce(){
+  AudioSys.unlock();
+  document.removeEventListener("pointerdown",unlockOnce);
+  document.removeEventListener("touchstart",unlockOnce);
+  document.removeEventListener("mousedown",unlockOnce);
+}
+function onStart(){
+  AudioSys.play("tap");
+  if(setup.opp==="bot"){
+    let col=setup.color;
+    if(col==="r") col=Math.random()<0.5?"w":"b";
+    aiColor=(col==="w")?-1:1;
+    flipped=(aiColor===1);   /* bot white -> bot on top, player black at bottom */
+  } else {
+    flipped=false;
+  }
+  mode="chess";
+  newGame();
+  showScreen("game");
+}
+function onVis(){
+  if(document.hidden){ persist(); pauseGame(); }
+  else resumeGame();
+}
+function onHide(){ persist(); }
+function onOrient(){
+  layout();
+  setTimeout(layout,300);
+}
+function bindCtlRow(row){
+  const bs=row.querySelectorAll("button[data-act]");
+  for(let i=0;i<bs.length;i++){
+    const b=bs[i], act=b.getAttribute("data-act");
+    if(act==="undo"){ ctlUndoBtns.push(b); b.addEventListener("click",onUndo); }
+    else if(act==="redo"){ ctlRedoBtns.push(b); b.addEventListener("click",onRedo); }
+    else if(act==="resign"){
+      ctlResignBtns.push(b);
+      b.addEventListener("click",function(e){
+        AudioSys.unlock();
+        if(thinking) return;
+        if(result) return;
+        armConfirm(e.currentTarget,doResign);
+      });
+    }
+  }
+}
+function bindEvents(){
+  if(window.PointerEvent){
+    fgCv.addEventListener("pointerdown",onCanvasPointer);
+  } else {
+    fgCv.addEventListener("touchstart",onCanvasTouch,{passive:false});
+    fgCv.addEventListener("mousedown",onCanvasMouse);
+  }
+  fgCv.addEventListener("contextmenu",onCtx);
+  document.addEventListener("pointerdown",unlockOnce);
+  document.addEventListener("touchstart",unlockOnce);
+  document.addEventListener("mousedown",unlockOnce);
+
+  bindCtlRow(ctlTop);
+  bindCtlRow(ctlBottom);
+
+  playBtn.addEventListener("click",function(){ AudioSys.unlock(); AudioSys.play("tap"); gameHaptic("light"); openModal(modeModal); });
+  continueBtn.addEventListener("click",function(){
+    AudioSys.unlock(); AudioSys.play("tap");
+    mode="chess";
+    showScreen("game");
+    if(setup.opp==="bot") after(420, maybeBotMove);
+  });
+  introGear.addEventListener("click",function(){ AudioSys.unlock(); AudioSys.play("tap"); syncSettingsUI(); openModal(settingsSheet); });
+
+  cardChess.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); showScreen("setup"); });
+  cardPuzzles.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); updateHub(); showScreen("puzzles"); });
+
+  setupBack.addEventListener("click",function(){ AudioSys.play("tap"); showScreen("intro"); });
+  startBtn.addEventListener("click",onStart);
+
+  pzBack.addEventListener("click",function(){ AudioSys.play("tap"); pz=null; showScreen("intro"); });
+  dailySolve.addEventListener("click",function(){
+    AudioSys.play("tap");
+    if(!PUZZLE_DATA.easy.length){
+      openSoon("DAILY PUZZLE","The puzzle pack is not loaded yet.",null,null);
+      return;
+    }
+    const t=todayStr();
+    if(stats.lastDaily===t){
+      openSoon("DAILY DONE","Already solved today — current streak "+stats.streak+".",
+        "PLAY RANDOM",function(){ const p=pickRandom("easy"); if(p) startPuzzle(p,"easy",false); });
+      return;
+    }
+    const p=dailyPick();
+    if(p) startPuzzle(p,"easy",true);
+  });
+  tierEasy.addEventListener("click",function(){
+    AudioSys.play("tap");
+    const p=pickRandom("easy");
+    if(p) startPuzzle(p,"easy",false);
+    else openSoon("EASY PACK","No valid puzzles in the pack right now.",null,null);
+  });
+  tierNormal.addEventListener("click",function(){
+    AudioSys.play("tap");
+    const p=pickRandom("normal");
+    if(p) startPuzzle(p,"normal",false);
+    else openSoon("NORMAL PACK","The NORMAL pack data hasn't been added yet — paste it into the marked slot in the file.",null,null);
+  });
+  tierHard.addEventListener("click",function(){
+    AudioSys.play("tap");
+    const p=pickRandom("hard");
+    if(p) startPuzzle(p,"hard",false);
+    else openSoon("HARD PACK","The HARD pack data hasn't been added yet — paste it into the marked slot in the file.",null,null);
+  });
+
+  pauseBtn.addEventListener("click",function(){
+    AudioSys.play("tap");
+    if(mode==="puzzle"){
+      pz=null; clearTimers();
+      updateHub(); showScreen("puzzles");
+      return;
+    }
+    pauseStatus.textContent=thinking?("Bot to move"):statusText();
+    openModal(pauseSheet);
+  });
+
+  pResume.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); });
+  pNew.addEventListener("click",function(){
+    armConfirm(pNew,function(){ newGame(); closeModal(); });
+  });
+  pMenu.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); showScreen("intro"); });
+
+  /* interstitial ONLY on chess game end (never puzzles) */
+  overPrimary.addEventListener("click",function(){
+    AudioSys.play("tap"); closeModal();
+    if(endIsChess){
+      gameInterstitial(function(){ if(endPfn) endPfn(); });
+    } else if(endPfn) endPfn();
+  });
+  overSecondary.addEventListener("click",function(){
+    AudioSys.play("tap"); closeModal();
+    if(endIsChess){
+      gameInterstitial(function(){ if(endSfn) endSfn(); });
+    } else if(endSfn) endSfn();
+  });
+
+  soonOk.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); });
+
+  sndTgl.addEventListener("click",function(){
+    gameMuted=!gameMuted;
+    Studio.save(CFG.mutedKey,gameMuted?"1":"0");
+    syncSettingsUI();
+    AudioSys.play("tap");
+    console.log("[chess] sound",gameMuted?"off":"on");
+  });
+  hapTgl.addEventListener("click",function(){
+    hapticsOn=!hapticsOn;
+    Studio.save(CFG.hapticsKey,hapticsOn?"1":"0");
+    syncSettingsUI();
+    gameHaptic("light");
+  });
+
+  modeModal.addEventListener("click",function(e){ if(e.target===modeModal) closeModal(); });
+  settingsSheet.addEventListener("click",function(e){ if(e.target===settingsSheet) closeModal(); });
+  pauseSheet.addEventListener("click",function(e){ if(e.target===pauseSheet) closeModal(); });
+  overSheet.addEventListener("click",function(e){ if(e.target===overSheet) closeModal(); });
+  soonSheet.addEventListener("click",function(e){ if(e.target===soonSheet) closeModal(); });
+  testAdEl.addEventListener("click",function(e){ /* test ad must not dismiss on backdrop */ });
+
+  errBanner.addEventListener("click",function(){
+    errBanner.style.display="none";
+    if(errToastTimer){ clearTimeout(errToastTimer); errToastTimer=0; }
+  });
+  fatalReload.addEventListener("click",function(){ try{ window.location.reload(); }catch(e){} });
+
+  window.addEventListener("resize",layout);
+  window.addEventListener("orientationchange",onOrient);
+  document.addEventListener("visibilitychange",onVis);
+  window.addEventListener("pagehide",onHide);
+}
+function pauseGame(){
+  running=false;
+  if(rafId){ cancelAnimationFrame(rafId); rafId=0; }
+}
+function resumeGame(){
+  if(running) return;
+  running=true;
+  lastT=performance.now();
+  rafId=requestAnimationFrame(tick);
+}
+
+/* Shell lifecycle hooks (PART 5) */
+window.Game={
+  pause(){ pauseGame(); persist(); },
+  resume(){ resumeGame(); },
+  setMuted(m){ gameMuted=!!m; syncSettingsUI(); },
+  destroy(){
+    pauseGame();
+    persist();
+    setBanner(false);
+    try{
+      fgCv.removeEventListener("pointerdown",onCanvasPointer);
+      fgCv.removeEventListener("touchstart",onCanvasTouch);
+      fgCv.removeEventListener("mousedown",onCanvasMouse);
+      fgCv.removeEventListener("contextmenu",onCtx);
+      document.removeEventListener("pointerdown",unlockOnce);
+      document.removeEventListener("touchstart",unlockOnce);
+      document.removeEventListener("mousedown",unlockOnce);
+      window.removeEventListener("resize",layout);
+      window.removeEventListener("orientationchange",onOrient);
+      document.removeEventListener("visibilitychange",onVis);
+      window.removeEventListener("pagehide",onHide);
+      bgx.clearRect(0,0,size,size); fgx.clearRect(0,0,size,size);
+    }catch(e){}
+  }
+};
+
+/* ═══ BOOT ═══ */
+function boot(){
+  let modeParam=null;
+  try{
+    const mm=location.search.match(/[?&]mode=([^&]+)/);
+    if(mm) modeParam=mm[1];
+  }catch(e){}
+  if(modeParam) console.log("[chess] shell mode param:",modeParam);
+  gameMuted=Studio.load(CFG.mutedKey)==="1";
+  hapticsOn=Studio.load(CFG.hapticsKey)!=="0";
+  loadStats();
+  const restored=restore();
+  if(!restored){ Engine.reset(); flipped=false; }
+  refreshLegal();
+  layout();
+  oppCtl=segInit(oppSeg,function(v){ setup.opp=v; syncSetupUI(); });
+  lvlCtl=segInit(lvlSeg,function(v){ setup.level=v; });
+  colCtl=segInit(colSeg,function(v){ setup.color=v; });
+  oppCtl.set(setup.opp); lvlCtl.set(setup.level); colCtl.set(setup.color);
+  syncSetupUI();
+  syncSettingsUI();
+  verLine.textContent=("V"+CFG.version+" — REDUNDANT STUDIOS").toUpperCase();
+  bindEvents();
+  updateStatus(); updateHub(); refreshContinue();
+  showScreen("intro");
+  running=true; lastT=performance.now();
+  rafId=requestAnimationFrame(tick);
+  booted=true;
+  console.log("[chess] booted | restored:"+restored+" | dpr:"+dpr
+    +" | puzzles live: E"+PUZZLE_DATA.easy.length+"/N"+PUZZLE_DATA.normal.length
+    +"/H"+PUZZLE_DATA.hard.length
+    +" | ads: "+(window.NativeBridge?"shell/AdMob":"simulated (no bridge)")
+    +(restored&&setup.opp==="bot"?" | bot game resumed ("+setup.level+")":""));
+  setTimeout(scheduleSelfTest,350);
+}
+try{ boot(); }
+catch(e){ showFatal((e&&e.stack)||String(e)); }
+window.addEventListener("error",e=>{
+  const m=(e&&e.message)?e.message:String(e);
+  if(booted) runtimeError(m); else showFatal(m);
+});
+window.addEventListener("unhandledrejection",e=>{
+  const r=e&&e.reason; const m=(r&&r.message)?r.message:String(r);
+  if(booted) runtimeError(m); else showFatal(m);
+});
+
+})();
+</script>
+</body>
+</html>

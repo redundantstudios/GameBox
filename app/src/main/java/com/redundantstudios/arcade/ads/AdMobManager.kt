@@ -126,8 +126,20 @@ class AdMobManager(private val activity: Activity) {
         rewardedAd = null
         // Register the callback BEFORE show(), otherwise early events are missed.
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdShowedFullScreenContent() {
+                // Cross-dissolve into the ad instead of a hard activity cut.
+                activity.overridePendingTransition(
+                    com.redundantstudios.arcade.R.anim.ad_fade_in,
+                    com.redundantstudios.arcade.R.anim.ad_fade_out
+                )
+            }
             override fun onAdDismissedFullScreenContent() {
                 Log.d(TAG, "Rewarded ad dismissed")
+                // ...and cross-dissolve back into the game.
+                activity.overridePendingTransition(
+                    com.redundantstudios.arcade.R.anim.ad_fade_in,
+                    com.redundantstudios.arcade.R.anim.ad_fade_out
+                )
                 loadRewardedAd()
                 onAdClosed()
             }
@@ -195,8 +207,18 @@ class AdMobManager(private val activity: Activity) {
         interstitialAd = null
         // Register the callback BEFORE show(), otherwise early events are missed.
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdShowedFullScreenContent() {
+                activity.overridePendingTransition(
+                    com.redundantstudios.arcade.R.anim.ad_fade_in,
+                    com.redundantstudios.arcade.R.anim.ad_fade_out
+                )
+            }
             override fun onAdDismissedFullScreenContent() {
                 Log.d(TAG, "Interstitial ad dismissed")
+                activity.overridePendingTransition(
+                    com.redundantstudios.arcade.R.anim.ad_fade_in,
+                    com.redundantstudios.arcade.R.anim.ad_fade_out
+                )
                 lastInterstitialTime = System.currentTimeMillis()
                 loadInterstitialAd()
                 onAdClosed()

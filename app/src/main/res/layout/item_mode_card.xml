@@ -35,6 +35,17 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <ImageView
+            android:id="@+id/modeIcon"
+            android:layout_width="76dp"
+            android:layout_height="76dp"
+            android:contentDescription="@string/party_tile_title"
+            android:visibility="gone"
+            app:layout_constraintBottom_toTopOf="@id/modeLabel"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <TextView
             android:id="@+id/modeLabel"
             android:layout_width="wrap_content"

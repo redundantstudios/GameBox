@@ -54,4 +54,15 @@
     <string name="haptic_heavy">Heavy</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+
+    <!-- Party games category -->
+    <string name="party_games">Party games</string>
+    <string name="party_tile_title">PARTY GAMES</string>
+    <string name="party_tile_subtitle">Coming soon</string>
+
+    <!-- Idea mailbox -->
+    <string name="idea_card_title">Got an idea?</string>
+    <string name="idea_card_hint">Tell us what to add to Shell and your idea could become the next game</string>
+    <string name="idea_mail_to">redundantstudios79@gmail.com</string>
+    <string name="idea_mail_subject">Shell idea / suggestion</string>
 </resources>

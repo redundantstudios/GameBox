@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -184,8 +184,70 @@
                     android:text="@string/no_games_hint"
                     android:textColor="@color/studio_border"
                     android:textSize="13sp" />
+
+
             </LinearLayout>
 
+            <!-- Idea mailbox: players mail us feature/game ideas straight from Home -->
+            <com.redundantstudios.arcade.ui.ChunkyCardView
+                android:id="@+id/ideaCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:layout_marginBottom="4dp"
+                android:clickable="true"
+                android:focusable="true"
+                app:ccBorderColor="@color/studio_border"
+                app:ccBorderWidth="2.5dp"
+                app:ccColor="@color/studio_surface"
+                app:ccCornerRadius="18dp"
+                app:ccShadowColor="#22000000"
+                app:ccShadowOffset="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingTop="14dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="14dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/idea_card_title"
+                        android:text="&#9993;"
+                        android:textColor="@color/studio_on_background"
+                        android:textSize="24sp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:letterSpacing="0.04"
+                            android:text="@string/idea_card_title"
+                            android:textColor="@color/studio_on_background"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/idea_card_hint"
+                            android:textColor="@color/studio_border"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.redundantstudios.arcade.ui.ChunkyCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

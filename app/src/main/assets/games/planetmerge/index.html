@@ -140,19 +140,25 @@ body{
 .help-btn{font:700 22px var(--font);width:48px;height:48px;border-radius:50%;border:2px solid #ecd9b4;background:#fff;color:#a58a68;
   display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
 .help-btn:active{transform:scale(0.9)}
-.tut-full-page{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;text-align:center}
-.tut-content{padding:0 40px}
-.tut-art{font-size:120px;line-height:1;margin-bottom:24px;filter:drop-shadow(0 10px 22px rgba(0,0,0,.15))}
-.tut-dot{width:10px;height:10px;border-radius:50%;background:#e8d9c2;cursor:pointer;transition:background .2s}
-.tut-dot.active{background:#ee6fa8}
-.tut-txt{font:600 22px var(--font);color:#7a4a2a;line-height:1.4}
-.tut-footer{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:400px;margin-top:48px}
-.tut-dots{display:flex;gap:12px}
-.tut-dot{width:10px;height:10px;border-radius:50%;background:#ecd9b4;transition:all .3s}
+/* Tutorial = centred popup card over a dimmed backdrop (tap empty space = cancel) */
+#tutorialOverlay{background:rgba(59,42,32,.5)}
+.tut-card{position:relative;text-align:center;width:min(86vw,340px);padding:30px 26px 24px;
+  border-radius:28px;background:#fff8e9;border:3px solid #f3dfb4;
+  box-shadow:0 24px 60px rgba(110,70,30,.35);transform:scale(.9);
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
+.overlay.show .tut-card{transform:scale(1)}
+.tut-art{height:168px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+.tut-art canvas{filter:drop-shadow(0 10px 20px rgba(110,70,30,.3))}
+#tutTitle{font:700 22px var(--font);color:#7a4a2a;margin:0 0 8px}
+.tut-txt{font:600 15.5px/1.5 var(--font);color:#a58a68;margin:0 0 16px}
+.tut-dots{display:flex;gap:10px;justify-content:center;margin-bottom:16px}
+.tut-dot{width:10px;height:10px;border-radius:50%;background:#ecd9b4;transition:all .3s;cursor:pointer}
 .tut-dot.active{background:#ee6fa8;width:24px;border-radius:5px}
-.tut-nav{display:flex;gap:16px}
-.tut-btn{background:#fff;border:2px solid #ecd9b4;color:#a58a68;font:700 16px var(--font);padding:12px 24px;border-radius:999px;cursor:pointer;transition:all .2s}
-.tut-btn:hover{background:#fdfbf7;border-color:#ee6fa8;color:#ee6fa8}
+.tut-nav{display:flex;gap:12px;justify-content:center}
+.tut-btn{background:#fff;border:2px solid #ecd9b4;color:#a58a68;font:700 15px var(--font);
+  padding:12px 24px;border-radius:999px;cursor:pointer;transition:all .15s}
+.tut-btn:active{transform:translateY(2px)}
+.tut-btn.primary{background:#ee6fa8;border-color:#ee6fa8;color:#fff;box-shadow:0 3px 0 #c94d86}
 
 /* ==== REWARDED-AD OFFER POPOVER + TOAST ====
    These rules were missing from the stylesheet entirely, so #adPop/#adBack
@@ -171,7 +177,7 @@ body{
 #adTitle{font:700 22px var(--font);color:#7a4a2a}
 #adSub{margin:10px 0 20px;font:500 14.5px/1.45 var(--font);color:#a58a68}
 #adRow{display:flex;flex-direction:column;align-items:center;gap:10px}
-#adWatch{width:100%;padding:14px 18px;border:none;border-radius:999px;cursor:pointer;
+#adWatch{width:auto;padding:14px 34px;border:none;border-radius:999px;cursor:pointer;
   background:#ee6fa8;color:#fff;font:600 18px var(--font);letter-spacing:.06em;
   box-shadow:0 5px 0 #c94d86,0 10px 20px rgba(180,60,110,.3);transition:transform .08s,box-shadow .08s}
 #adWatch:active{transform:translateY(4px);box-shadow:0 1px 0 #c94d86}
@@ -268,18 +274,15 @@ body{
 </div>
 
 <div class="overlay" id="tutorialOverlay">
-  <div class="tut-full-page">
-    <div id="tutContent" class="tut-content">
-      <div id="tutArt" class="tut-art"></div>
-      <h3 id="tutTitle"></h3>
-      <p id="tutText" class="tut-txt"></p>
-    </div>
-    <div class="tut-footer">
-      <div class="tut-dots" id="tutDots"></div>
-      <div class="tut-nav">
-        <button id="tutPrev" class="tut-btn">←</button>
-        <button id="tutNext" class="tut-btn">NEXT</button>
-      </div>
+  <div class="tut-card">
+    <div id="tutArt" class="tut-art"></div>
+    <h3 id="tutTitle"></h3>
+    <p id="tutText" class="tut-txt"></p>
+    <div class="tut-dots" id="tutDots"></div>
+    <div class="tut-nav">
+      <button id="tutPrev" class="tut-btn">Prev</button>
+      <button id="tutNext" class="tut-btn primary">Next</button>
+      <button id="tutGot" class="tut-btn primary" style="display:none">Got it</button>
     </div>
   </div>
 </div>
@@ -420,12 +423,29 @@ const store={
 };
 
 const TUTORIAL_DATA = [
-  {title: "Merge Planets", text: "Drop similar planets to merge them into larger ones!", art: "🪐"},
-  {title: "Watch the Line", text: "Keep your planets below the danger line to stay in the game.", art: "⚠️"},
-  {title: "Reach the Sun", text: "Merge your way up to the Sun for the ultimate score!", art: "☀️"}
+  {title: "Merge Planets", text: "Drag to aim, release to drop. Two matching planets that touch merge into a bigger one!", lvl: 5},
+  {title: "Watch the Line", text: "Keep your stack below the red line — planets left above it for too long end the run.", lvl: 3},
+  {title: "Reach the Sun", text: "Chain merges to grow your planets and combo your score. The Sun is the ultimate form!", lvl: 10}
 ];
 
 let tutIdx = 0;
+/* Tutorial art uses the EXACT in-game planet renderer (drawPlanetAt) */
+function buildTutArt(lvl){
+  const art = $('#tutArt'); if(!art) return;
+  art.innerHTML = '';
+  if (typeof drawPlanetAt !== 'function') return;
+  /* The sun's glow is drawn at r*4.4 — with r=54 that is ~238px, far wider than
+     the 160px card canvas, so the glow got chopped in a box. Use a radius the
+     glow can actually fit inside (34 -> ~150px glow) on the sun card. */
+  const r = lvl === 10 ? 34 : 54;
+  const S = 160, d = window.devicePixelRatio || 1;
+  const c = document.createElement('canvas');
+  c.width = S * d; c.height = S * d;
+  c.style.width = S + 'px'; c.style.height = S + 'px';
+  const g = c.getContext('2d'); g.scale(d, d);
+  drawPlanetAt(g, lvl, S/2, S/2 + 4, r, 0, 0);
+  art.appendChild(c);
+}
 function buildTutDots() {
   const dots = $('#tutDots');
   if (!dots || dots.childElementCount) return;
@@ -438,15 +458,18 @@ function buildTutDots() {
 }
 function updateTut() {
   const data = TUTORIAL_DATA[tutIdx];
-  const title = $('#tutTitle'), text = $('#tutText'), art = $('#tutArt');
-  if(!title || !text || !art) return;
+  const title = $('#tutTitle'), text = $('#tutText');
+  if(!title || !text) return;
   title.innerText = data.title;
   text.innerText = data.text;
-  art.innerText = data.art;
+  buildTutArt(data.lvl);
   document.querySelectorAll('.tut-dot').forEach((dot, i) => dot.classList.toggle('active', i === tutIdx));
-  const prev = $('#tutPrev'), next = $('#tutNext');
-  if(prev) prev.style.visibility = tutIdx === 0 ? 'hidden' : 'visible';
-  if(next) next.innerText = tutIdx === TUTORIAL_DATA.length - 1 ? 'Start!' : 'Next';
+  /* card 1: Next only · last card: Prev + Got it only */
+  const first = tutIdx === 0, last = tutIdx === TUTORIAL_DATA.length - 1;
+  const prev = $('#tutPrev'), next = $('#tutNext'), got = $('#tutGot');
+  if(prev) prev.style.display = first ? 'none' : '';
+  if(next) next.style.display = last ? 'none' : '';
+  if(got) got.style.display = last ? '' : 'none';
 }
 
 function showTutorial(force = false) {
@@ -882,7 +905,10 @@ function impactFX(pair){
 ============================================================ */
 let state='start';
 let queue=[],score=0,best=parseInt(store.get('pm_best')||'0',10)||0;
-let undos=CFG.undoCount,erases=CFG.eraseCount;
+/* One-time currency: undo/erase charges persist across games and sessions.
+   They are NOT refilled on reset — the only way back from 0 is a rewarded ad. */
+function loadBank(kind,dflt){const v=parseInt(store.get('pm:'+kind),10);return isNaN(v)||v<0?dflt:v;}
+let undos=loadBank('undo',CFG.undoCount),erases=loadBank('erase',CFG.eraseCount);
 let snapshots=[],bestLevel=1,runStartBest=best,newBest=false;
 let dropX=BW/2,targetX=BW/2,readyAt=0,dropReadyAt=0;
 let eraseMode=false,hoverBody=null;
@@ -931,7 +957,11 @@ function doDrop(){
   if(state!=='ready'&&state!=='aiming')return;
   const lvl=queue[0];if(!lvl)return;
   const r=RADII[lvl-1];
-  const x=clamp(dropX,WALL+r+2,BW-WALL-r-2);
+  /* Snap to the aimed position: dropX eases toward targetX every frame, so a
+     quick tap near a wall used to release while dropX was still travelling —
+     the planet landed with an offset from where the player tapped. */
+  dropX=clamp(targetX,WALL+r+2,BW-WALL-r-2);
+  const x=dropX;
   pushSnapshot();
   const b=makePlanetBody(lvl,x,CFG.dropY);
   Body.setVelocity(b,{x:0,y:CFG.dropSpeed});
@@ -973,7 +1003,8 @@ function dangerCheck(dt){
   }
 }
 function gameOver(){
-  Studio.ads.banner('hide');
+  /* The banner STAYS visible through game over: hiding it collapses the
+     container and resizes the WebView, which visibly drags the whole layout. */
   if(state==='over')return;
   state='over';eraseMode=false;hoverBody=null;boardLive=false;
   closeAdPop();
@@ -994,7 +1025,6 @@ function resetGame(){
   while(planetBodies.length)destroyBody(planetBodies[0]);
   merging.clear();mergeQueue.length=0;parts.length=0;floats.length=0;
   score=0;scoreVal.textContent='0';
-  undos=CFG.undoCount;erases=CFG.eraseCount;
   snapshots.length=0;bestLevel=1;runStartBest=best;newBest=false;comboN=0;
   overShowAt=0;
   queue=[];for(let i=0;i<4;i++)queue.push(genLevel());
@@ -1260,7 +1290,7 @@ function drawBody(g,b,t){
 function drawGuide(g,t){
   const lvl=queue[0];if(!lvl)return;
   const r=RADII[lvl-1],P=PLANETS[lvl-1];
-  const x=clamp(dropX,WALL+r+2,BW-WALL-r-2),ly=landingY(x,r);
+  const x=clamp(targetX,WALL+r+2,BW-WALL-r-2),ly=landingY(x,r);
   g.fillStyle='#e2574c';g.globalAlpha=0.75;
   for(let y=CFG.dropY+r+16;y<ly-r-6;y+=30){
     g.beginPath();g.arc(x,y,4.2,0,TAU);g.fill();
@@ -1352,7 +1382,7 @@ function draw(t){
       const lvl=queue[0];
       if(lvl){
         const P=PLANETS[lvl-1],r=RADII[lvl-1];
-        const x=clamp(dropX,WALL+r+2,BW-WALL-r-2),y=CFG.dropY-6+Math.sin(t*0.0035)*3;
+        const x=clamp(targetX,WALL+r+2,BW-WALL-r-2),y=CFG.dropY-6+Math.sin(t*0.0035)*3;
         const vis=easeOutBack(clamp((t-readyAt)/240,0,1));
         drawPlanetAt(g,lvl,x,y,Math.max(0.5,r*vis),t*0.0005,t);
         g.strokeStyle='rgba(255,255,255,'+(0.55+0.25*Math.sin(t*0.006))+')';
@@ -1388,6 +1418,8 @@ function setScore(v){
 function updateHUD(){
   scoreVal.textContent=score;bestVal.textContent=best;
   undoN.textContent=undos;eraseN.textContent=erases;
+  /* persist the banks so charges survive restarts and app relaunches */
+  store.set('pm:undo',undos);store.set('pm:erase',erases);
   /* Gold "ad offer" state whenever the charges hit 0 — it must never look
      greyed out, and it stays tappable (tap = watch ad for +1). */
   const inPlay=state!=='over'&&state!=='start';
@@ -1515,6 +1547,9 @@ on($('introBack'),'click',introBack);
 on($('helpBtn'),'click',openHelp);
 on($('tutNext'),'click',()=>{SFX.ensure();SFX.click();nextTut();});
 on($('tutPrev'),'click',()=>{SFX.ensure();SFX.click();prevTut();});
+on($('tutGot'),'click',()=>{SFX.ensure();SFX.click();finishTut();});
+/* tap on the dimmed empty space around the card = cancel */
+on($('tutorialOverlay'),'click',e=>{if(e.target&&e.target.id==='tutorialOverlay'){SFX.click();finishTut();}});
 on(undoBtn,'click',()=>{
   if(state==='over'||state==='start')return;
   SFX.ensure();SFX.click();
@@ -1544,8 +1579,8 @@ on($('adWatch'),'click',()=>{
     closeAdPop();
     if(result==='unavailable'){toast('No ad available right now');return;}
     if(result!=='granted'){toast('No reward \u2014 ad not completed');return;}
-    if(kind==='undo'){undos++;toast('+1 Undo!');}
-    else{erases++;toast('+1 Erase!');}
+    if(kind==='undo'){undos=Math.min(undos+1,CFG.undoCount);toast('+1 Undo!');}
+    else{erases=Math.min(erases+1,CFG.eraseCount);toast('+1 Erase!');}
     updateHUD();
   });
 });

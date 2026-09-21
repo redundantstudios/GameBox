@@ -112,6 +112,12 @@ abstract class ThemedActivity : AppCompatActivity() {
         SettingsManager.init(this)
         SettingsManager.applyTheme()
         super.onCreate(savedInstanceState)
+        // Screen-change motion is owned by one place: arm this screen's own
+        // open/close animation, then dissolve its content in as soon as it has
+        // been laid out (a plain View animation, so no platform version can
+        // turn the transition back into a hard cut).
+        ShellTransition.armSelf(this)
+        window.decorView.post { ShellTransition.playEnter(this) }
     }
 
     override fun onResume() {

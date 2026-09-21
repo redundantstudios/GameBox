@@ -11,6 +11,7 @@ import androidx.appcompat.widget.SwitchCompat
 import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.notifications.ArcadeNotifier
 import com.redundantstudios.arcade.notifications.ReminderScheduler
+import com.redundantstudios.arcade.ui.ShellTransition
 import com.redundantstudios.arcade.ui.ThemeTransition
 import com.redundantstudios.arcade.ui.ThemedActivity
 import com.redundantstudios.arcade.util.Haptics
@@ -36,6 +37,7 @@ class SettingsActivity : ThemedActivity() {
 
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
             ShellAudio.back(this)
+            ShellTransition.close(this)
             finish()
         }
 
@@ -203,5 +205,11 @@ class SettingsActivity : ThemedActivity() {
     override fun onPause() {
         super.onPause()
         sync()
+    }
+
+    /** System back / gesture back gets the same dissolve as the on-screen back. */
+    override fun onBackPressed() {
+        ShellTransition.close(this)
+        super.onBackPressed()
     }
 }

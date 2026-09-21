@@ -20,6 +20,7 @@ import com.redundantstudios.arcade.notifications.NotificationChannels
 import com.redundantstudios.arcade.notifications.ReminderScheduler
 import com.redundantstudios.arcade.ui.ModeAdapter
 import com.redundantstudios.arcade.ui.ModeActivity
+import com.redundantstudios.arcade.ui.ShellTransition
 import com.redundantstudios.arcade.ui.ThemedActivity
 import com.redundantstudios.arcade.util.ManifestParser
 import com.redundantstudios.arcade.util.SettingsManager
@@ -47,11 +48,13 @@ class MainActivity : ThemedActivity() {
 
         findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
             ShellAudio.tap(this)
+            ShellTransition.open(this)
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
         findViewById<View>(R.id.allGamesCard).setOnClickListener {
             ShellAudio.tap(this)
+            ShellTransition.open(this)
             startActivity(
                 Intent(this, ModeActivity::class.java).apply {
                     putExtra(ModeActivity.EXTRA_ALL_GAMES, true)
@@ -59,12 +62,38 @@ class MainActivity : ThemedActivity() {
             )
         }
 
+        // "Got an idea?" card — opens the mail app with a pre-filled draft so
+        // players can send us feature/game ideas straight from Home.
+        findViewById<View>(R.id.ideaCard).setOnClickListener {
+            ShellAudio.tap(this)
+            val to = getString(R.string.idea_mail_to)
+            startActivity(
+                Intent.createChooser(
+                    Intent(Intent.ACTION_SENDTO).apply {
+                        data = android.net.Uri.parse("mailto:$to")
+                        putExtra(Intent.EXTRA_SUBJECT, getString(R.string.idea_mail_subject))
+                    },
+                    getString(R.string.idea_card_title)
+                )
+            )
+        }
+
         val modeRecyclerView = findViewById<RecyclerView>(R.id.modeRecyclerView)
         modeRecyclerView.layoutManager = GridLayoutManager(this, 2)
 
         allGames = ManifestParser.scanGames(this)
-        modeRecyclerView.adapter = ModeAdapter(deriveModes(allGames)) { mode ->
-            startModeActivity(mode)
+        modeRecyclerView.adapter = ModeAdapter(deriveModes(allGames) + partyTile()) { mode ->
+            if (mode.playerCount == GameMode.PARTY_TILE) {
+                // Party category lives on the same games list, just filtered.
+                ShellTransition.open(this)
+                startActivity(
+                    Intent(this, ModeActivity::class.java).apply {
+                        putExtra(ModeActivity.EXTRA_PARTY, true)
+                    }
+                )
+            } else {
+                startModeActivity(mode)
+            }
         }
         bindHome()
     }
@@ -102,6 +131,7 @@ class MainActivity : ThemedActivity() {
             route.startsWith("game:") -> {
                 val id = route.removePrefix("game:")
                 val game = allGames.find { it.id == id } ?: return
+                ShellTransition.open(this)
                 startActivity(
                     Intent(this, GameActivity::class.java).apply {
                         putExtra("game_id", game.id)
@@ -109,11 +139,14 @@ class MainActivity : ThemedActivity() {
                     }
                 )
             }
-            route == "all_games" -> startActivity(
-                Intent(this, ModeActivity::class.java).apply {
-                    putExtra(ModeActivity.EXTRA_ALL_GAMES, true)
-                }
-            )
+            route == "all_games" -> {
+                ShellTransition.open(this)
+                startActivity(
+                    Intent(this, ModeActivity::class.java).apply {
+                        putExtra(ModeActivity.EXTRA_ALL_GAMES, true)
+                    }
+                )
+            }
         }
     }
 
@@ -171,7 +204,7 @@ class MainActivity : ThemedActivity() {
 
     /** Keeps the All Games band, the grid and the empty state in sync. */
     private fun bindHome() {
-        val modes = deriveModes(allGames)
+        val modes = deriveModes(allGames) + partyTile()
 
         (findViewById<RecyclerView>(R.id.modeRecyclerView).adapter as? ModeAdapter)
             ?.updateModes(modes)
@@ -200,10 +233,22 @@ class MainActivity : ThemedActivity() {
         }.filter { it.gameCount > 0 }
     }
 
+    /**
+     * The fixed "Party games" tile: always last on the grid, opening the
+     * party-games category page (Truth or Dare and future party games).
+     */
+    private fun partyTile() = GameMode(
+        playerCount = GameMode.PARTY_TILE,
+        label = "PARTY GAMES",
+        color = "#E91E63",
+        gameCount = 0
+    )
+
     private fun startModeActivity(mode: GameMode) {
         val intent = Intent(this, ModeActivity::class.java).apply {
             putExtra(ModeActivity.EXTRA_PLAYER_COUNT, mode.playerCount)
         }
+        ShellTransition.open(this)
         startActivity(intent)
     }
 }

@@ -23,15 +23,25 @@ class ModeActivity : ThemedActivity() {
         /** When true the screen ignores the player count and lists every game. */
         const val EXTRA_ALL_GAMES = "all_games"
 
+        /** When true the screen lists the party-games category. */
+        const val EXTRA_PARTY = "party"
+
+        /**
+         * Games belonging to the Party category (Truth or Dare lands here).
+         * A game is added by id the moment it is integrated.
+         */
+        val PARTY_GAME_IDS = setOf("truthordare")
+
         /** Single source of truth for which games belong to a player count. */
         fun filterGames(games: List<GameManifest>, playerCount: Int): List<GameManifest> =
             games.filter { game ->
                 if (playerCount == 1) {
-                    // A single human can play solo-only games (Planet Merge) or
-                    // games that can fill the other seats with bots (Ludo
-                    // ships aiSupport: true). Opening it never forces bot
-                    // mode - the game's own menu decides how seats are filled.
-                    (game.maxPlayers == 1) || canPlayWithBots(game)
+                    // A game that declares minPlayers 1 can be played by one
+                    // human on its own (Planet Merge's board, Chess's puzzles),
+                    // and a game with bots can fill the other seats (Ludo ships
+                    // aiSupport: true). Opening one never forces bot mode - the
+                    // game's own menu decides how seats are filled.
+                    (game.minPlayers == 1) || canPlayWithBots(game)
                 } else {
                     game.minPlayers <= playerCount && game.maxPlayers >= playerCount
                 }
@@ -59,13 +69,14 @@ class ModeActivity : ThemedActivity() {
         applyShellBackground()
 
         val allGamesMode = intent.getBooleanExtra(EXTRA_ALL_GAMES, false)
+        val partyMode = intent.getBooleanExtra(EXTRA_PARTY, false)
         val playerCount = intent.getIntExtra(EXTRA_PLAYER_COUNT, 1)
 
         val titleText = findViewById<TextView>(R.id.modeTitle)
-        titleText.text = if (allGamesMode) {
-            getString(R.string.all_games)
-        } else {
-            getString(R.string.n_player_games, playerCount)
+        titleText.text = when {
+            allGamesMode -> getString(R.string.all_games)
+            partyMode -> getString(R.string.party_games)
+            else -> getString(R.string.n_player_games, playerCount)
         }
 
         val recyclerView = findViewById<RecyclerView>(R.id.gamesRecyclerView)
@@ -74,7 +85,11 @@ class ModeActivity : ThemedActivity() {
         val allGames = ManifestParser.scanGames(this)
         Log.d(TAG, "Total games scanned: ${allGames.size}")
 
-        val filteredGames = if (allGamesMode) allGames else filterGames(allGames, playerCount)
+        val filteredGames = when {
+            allGamesMode -> allGames
+            partyMode -> allGames.filter { it.id in PARTY_GAME_IDS }
+            else -> filterGames(allGames, playerCount)
+        }
         Log.d(TAG, "Showing ${filteredGames.size} games (allGames=$allGamesMode, players=$playerCount)")
 
         findViewById<View>(R.id.emptyState).visibility =
@@ -84,7 +99,7 @@ class ModeActivity : ThemedActivity() {
             // All Games and 1 PLAYER open the game's own normal menu — bot mode
             // is never forced automatically. An N PLAYER page preselects that
             // count so play starts in one tap.
-            val preselect = if (allGamesMode || playerCount == 1) NO_PRESELECT else playerCount
+            val preselect = if (allGamesMode || partyMode || playerCount == 1) NO_PRESELECT else playerCount
             Log.d(TAG, "Game tile clicked: ${game.id}, preselect=$preselect, maxPlayers=${game.maxPlayers}")
 
             launchGame(game, preselect)
@@ -93,6 +108,7 @@ class ModeActivity : ThemedActivity() {
         val btnBack = findViewById<android.widget.ImageButton>(R.id.btnBack)
         btnBack.setOnClickListener {
             ShellAudio.back(this)
+            ShellTransition.close(this)
             finish()
         }
     }
@@ -106,6 +122,13 @@ class ModeActivity : ThemedActivity() {
                 putExtra("players", preselect)
             }
         }
+        ShellTransition.open(this)
         startActivity(intent)
+    }
+
+    /** System back / gesture back gets the same dissolve as the on-screen back. */
+    override fun onBackPressed() {
+        ShellTransition.close(this)
+        super.onBackPressed()
     }
 }
