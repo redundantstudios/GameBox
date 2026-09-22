@@ -1,18 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- NEW marker on a freshly added game tile: a gold starburst sticker, not a
-     green button pill. Gold is the shell's "attention" colour and does not
-     collide with the brand green used by the ALL GAMES band and the selected
-     states, and a burst shape reads as a sticker slapped on the tile rather
-     than as another button the player could press. -->
+<!-- NEW marker on a freshly added game tile: red ribbon banner with
+     folded tails, per the director reference screenshots. Vector so it
+     stays crisp at any density and costs no APK bytes. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="48dp"
-    android:height="24dp"
-    android:viewportWidth="48"
-    android:viewportHeight="24">
-    <path
-        android:fillColor="#FFD75E"
-        android:strokeColor="#4E342E"
-        android:strokeWidth="2"
-        android:strokeLineJoin="round"
-        android:pathData="M24.00,0.50 L28.27,4.76 L35.00,2.04 L35.67,6.70 L43.05,6.25 L39.94,10.06 L46.00,12.00 L39.94,13.94 L43.05,17.75 L35.67,17.30 L35.00,21.96 L28.27,19.24 L24.00,23.50 L19.73,19.24 L13.00,21.96 L12.33,17.30 L4.95,17.75 L8.06,13.94 L2.00,12.00 L8.06,10.06 L4.95,6.25 L12.33,6.70 L13.00,2.04 L19.73,4.76 Z" />
+    android:width="45dp"
+    android:height="25dp"
+    android:viewportWidth="90"
+    android:viewportHeight="50">
+    <path android:fillColor="#B0261E" android:strokeColor="#5E120C" android:strokeWidth="1.6" android:strokeLineJoin="round" android:pathData="M8.00,16.00 L23.00,16.00 L23.00,38.00 L12.00,43.00 L8.00,32.00 Z" />
+    <path android:fillColor="#B0261E" android:strokeColor="#5E120C" android:strokeWidth="1.6" android:strokeLineJoin="round" android:pathData="M82.00,16.00 L67.00,16.00 L67.00,38.00 L78.00,43.00 L82.00,32.00 Z" />
+    <path android:fillColor="#E33C32" android:strokeColor="#5E120C" android:strokeWidth="1.6" android:strokeLineJoin="round" android:pathData="M73.00,16.00 L17.00,16.00 L22.50,25.00 L17.00,34.00 L73.00,34.00 L67.50,25.00 Z" />
+    <path android:fillColor="#F66C60" android:pathData="M22.00,18.00 L68.00,18.00 L65.00,25.00 L25.00,25.00 Z" />
 </vector>
