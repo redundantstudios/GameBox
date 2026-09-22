@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- NEW tag on a freshly added game tile: brand green pill, chunky border + tiny
-     shadow so it sits in the same visual language as the rest of the tile. -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:left="2dp" android:top="2dp">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/brand_cta_shadow" />
-            <corners android:radius="12dp" />
-        </shape>
-    </item>
-    <item android:right="2dp" android:bottom="2dp">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/brand_cta_fill" />
-            <stroke android:width="2dp" android:color="@color/brand_cta_border" />
-            <corners android:radius="12dp" />
-        </shape>
-    </item>
-</layer-list>
+<!-- NEW marker on a freshly added game tile: a gold starburst sticker, not a
+     green button pill. Gold is the shell's "attention" colour and does not
+     collide with the brand green used by the ALL GAMES band and the selected
+     states, and a burst shape reads as a sticker slapped on the tile rather
+     than as another button the player could press. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="24dp"
+    android:viewportWidth="48"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFD75E"
+        android:strokeColor="#4E342E"
+        android:strokeWidth="2"
+        android:strokeLineJoin="round"
+        android:pathData="M24.00,0.50 L28.27,4.76 L35.00,2.04 L35.67,6.70 L43.05,6.25 L39.94,10.06 L46.00,12.00 L39.94,13.94 L43.05,17.75 L35.67,17.30 L35.00,21.96 L28.27,19.24 L24.00,23.50 L19.73,19.24 L13.00,21.96 L12.33,17.30 L4.95,17.75 L8.06,13.94 L2.00,12.00 L8.06,10.06 L4.95,6.25 L12.33,6.70 L13.00,2.04 L19.73,4.76 Z" />
+</vector>

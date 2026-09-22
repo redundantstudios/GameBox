@@ -84,6 +84,8 @@ block, the `window.Game` lifecycle (`pause` / `resume` / `destroy`), and a passi
 | RS-016 | **Egg Rush** | PLAYABLE | Arena | 2–4 + bots | 1 | `EggRush.html` | collect · rob · raid, landscape, golden eggs |
 | RS-017 | **Memory Grab** | PLAYABLE | Party | 2+ / vs AI | 1 | `MemeoryGrab.html` (filename has a typo) | memory pairs, hot-seat turn flip |
 | RS-018 | **Balloon Battle** | PLAYABLE | Arena | 2–4 | 1 | `balloonFight.html` | grab the pin, pop rivals' balloons |
+| RS-019 | **Letter Press** (typing, 3-5 pads) | IDEA | Party | 1-2 | 1 | - | print-shop theme; pads change + grow per wave |
+| RS-020 | **Cliff Rise** (floating tiles) | IDEA | Party | 1-6 | 1 | - | one safe tile per row; party learns, solo reads the tell |
 
 > Sizes are the raw `.html` file size — the `CONTRACT.md` budget unit.
 > **Type** is our own vocabulary, not a shell feature yet — see RS-008 for the "party section"
@@ -620,6 +622,99 @@ Add here first. Tag the source so future-us knows where it came from:
   names are too close. Decide when we get there: rename one (Last Balloon → "Don't Pop It!"), or
   ship the arena first.
 - **Next action:** add the manifest + Studio block, then a landscape device test.
+
+---
+
+### 6.17 RS-019 — Letter Press *(the typing game)*
+**Status:** IDEA · **Source:** — · **Type:** Party (solo + 2-player pass & play)
+
+- **Hook:** *you are the printing press.* Letter plates slide down the belt and you SLAM the matching
+  stamp pad before they reach the end. No keyboard — three to five big pads, and the pads themselves
+  are the alphabet.
+- **Why a print shop (theme decision).** Three candidates were considered:
+  1. **Letter Press (print shop)** — RECOMMENDED. The shell is already cream paper + brown ink
+     (`studio_background #FDF5E6`, `studio_ink #5D4037`), so this theme needs no new palette at all,
+     and the theme *is* the mechanic: plates, stamps, ink, paper, roller. Ink splats are the most
+     satisfying hit effect we could draw with plain canvas.
+  2. **Rocket Cargo** — dock the right crate. Rejected: every arcade game is already in space, and it
+     tells the player nothing about the controls.
+  3. **Jungle Drums** — letters on drums, rhythm framing. Rejected: rhythm timing makes it a music
+     game, and then the letters are decoration.
+- **Core loop:** a word (or a single letter, early on) rides the belt toward the press. The player taps
+  the pads that spell it, in order. Correct tap = the plate is stamped, ink sprays, the belt lurches
+  forward. Miss the window, or hit the wrong pad, and the plate jams (a paper jam is the "fail" beat,
+  which is far more on-theme than a death).
+- **The pads are the progression** (this is the whole design):
+  - Wave 1 starts with **3 pads** and a small letter set.
+  - Every wave, the **letters change** (the set is re-dealt) so muscle memory cannot fully carry over.
+  - Every few waves a **4th, then a 5th pad** is added — the pad count is the difficulty dial, and it is
+    visible, so the player always understands why it got harder.
+  - Later waves escalate the *content* instead of only the speed: single letters → two-letter plates →
+    short real words → famous long words. A "word" is just a queue of plates, so this costs the engine
+    nothing.
+- **Juice (non-negotiable for this one — it is a *feel* game):**
+  - belts that physically lurch on each correct stamp; plates that squash on impact
+  - ink splat particles in the shell's palette, plus a light paper-shake on every hit
+  - combo counter that climbs and changes the pad colour as it grows; combo break = the splat turns grey
+  - near-miss slow-motion (the last plate before the roller) — the single most effective tension trick
+  - a big satisfying "ker-CHUNK" drum hit per stamp, rising in pitch with the combo
+  - end-of-wave recap card: words stamped per minute, best combo, accuracy
+- **Modes:**
+  - **SOLO / ENDLESS** — survive waves, one life (or three, see economy), chase a wave + combo record.
+  - **PASS & PLAY (2P)** — alternating runs of three waves each; highest wave wins, tie broken by combo.
+    Deliberately *not* split-screen: one device, one player at a time, loud reactions. That is the shell's
+    pass-and-play language and it needs no new tech.
+- **Economy tie-in (parked with `COINS_ECONOMY_PLAN.md`):** one coin = one continue at the wave you
+  jammed on. That is the honest version of a continue — no energy timers, no pay-to-win.
+- **Accessibility thought:** because the pads carry their own letters, the game is playable without
+  reading the belt at all at low waves, which makes it our most kid-friendly reflex game.
+- **Proposed manifest:** `id letter-press`, `portrait`, `minPlayers 1`, `maxPlayers 2`, `aiSupport none`,
+  `tileColor #B08968` (ink brown; cream paper reads best in a portrait grid).
+- **Risks:** a reflex game lives or dies on frame pacing — this one must hold 60 fps with six plates on
+  screen, so the text must be cached, not re-shaped every frame (the same lesson Chicken Chaos taught us:
+  never write `ctx.letterSpacing` inside the per-frame text helper).
+- **Next action:** none yet — this is a `§12` prompt when its turn comes.
+
+---
+
+### 6.18 RS-020 — Cliff Rise *(the floating-tiles crossing)*
+**Status:** IDEA · **Source:** — · **Type:** Party (party + solo in ONE file)
+
+- **Hook:** *the bridge is a lie.* Every row of floating tiles has one safe landing — pick it, or fall
+  into the sky. Knowledge is shared, so the phone gets louder with every row.
+- **Is it a party game? YES — but only in the form below.** A group sharing one device, short loud turns,
+  and reactions worth watching: that is the definition the shell already uses for Ludo and Chicken Chaos.
+  The important judgement call: **a bridge where every column is a blind coin flip is not a game**, it is
+  a lottery. What makes it a party game is that **the bridge stays revealed for the whole round**, so each
+  player learns from the ones who fell. The tension is social — *do I trust the column they died on?* —
+  and that is the part worth building.
+- **Core loop:** the group stands on the near cliff. The field ahead is N columns wide (2–5, scaling with
+  the round) and one row taller each time. On your turn you pick a column and hop. Solid tile = you
+  advance (the tile *thuds*, dust puffs off the edge). Fake tile = it shatters, you drop, the screen
+  shakes, you lose a life. That row's safe column is now known to everyone.
+- **Modes (both in the same file — see the single-player note below):**
+  - **PARTY** — 2–6 players, take turns, 3 lives each, last one standing wins. Rounds add columns and a
+    hazard (a tile that looks solid but cracks on the *second* landing is a great late-round twist).
+  - **SOLO** — endless climb for the best row-count. A solo player has no one to learn from, so solo
+    **must** give information instead of luck: fake tiles carry a *tell* that gets subtler as you climb
+    (a faint seam, a missing rivet, a one-frame shimmer) — so solo is a perception game and party is a
+    memory-and-nerve game. Same bridge generator, two different skills, which is why they belong together.
+- **Single-player: inside the party game, not a separate copy.** Recommended, and recorded so it is not
+  re-litigated: a second file would duplicate the bridge generator, the tile art, the fall animation, the
+  audio and the shell wiring — roughly 70% of the code — and the two copies would drift. A mode toggle on
+  the start screen costs one variable (the shell already hands games a `mode` param, and Chicken Chaos
+  ships a `PARTY / SOLO` split this way). Ship one game, two modes.
+- **Juice:** tile crack-and-shatter, a real fall (scale down + spin + the tile shrinking in perspective),
+  wind streaks on the near-miss hop, screen shake on impact, a swelling heartbeat as the row count rises,
+  and a flourish when a row's safe tile is finally stood on. Party mode gets one extra: whoever falls
+  leaves a *ghost plate* on that column, so the board visibly records the dead.
+- **Shell notes:** no new shell work beyond the standard checklist. The coin economy would buy "peeks" in
+  solo later, and this is a natural first home for the leaderboard when it lands.
+- **Proposed manifest:** `id cliff-rise`, `portrait`, `minPlayers 1`, `maxPlayers 6`, `aiSupport none`,
+  `tileColor #78909C` (slate — separates it from every warm tile we already have).
+- **Risks:** the whole game is one decision repeated, so the *tell* system and the per-round twists have
+  to carry it, and a round must be short (a 6-player round should take about 90 seconds, not five).
+- **Next action:** none yet — a `§12` prompt when its turn comes.
 
 ---
 
