@@ -145,16 +145,12 @@ class GameActivity : AppCompatActivity() {
          */
         const val LANDSCAPE_BEAT_MS = 90L
 
-        /**
-         * Makes a game's flat page background transparent. Every game paints a wall
-         * of body colour long before its canvas has anything on it, and that wall
-         * is exactly what the branded backdrop exists to avoid.
-         */
-        const val HIDE_FLAT_PAGE_BACKGROUND =
-            "(function(){if(document.getElementById('shell-bg'))return;" +
-                "var s=document.createElement('style');s.id='shell-bg';" +
-                "s.textContent='html,body{background:transparent !important}';" +
-                "(document.head||document.documentElement).appendChild(s);})()"
+        /* The old "hide the game's flat page background" injection is gone on
+           purpose. It rewrote every game's own <body> background to transparent,
+           which flattened each game onto whatever colour the window happened to
+           be - and once the window became the shell's cream, dark games like
+           Chess lost the dark surface their whole UI is designed against. A game
+           is authored with its own background; it keeps it. */
 
         /** Tells a game that its portrait->landscape rotation has finished. */
         const val ORIENTATION_CHANGE_JS =
@@ -221,14 +217,17 @@ class GameActivity : AppCompatActivity() {
         this.bannerContainer = bannerContainer
 
         webView = WebView(this).apply {
-            // INVISIBLE, not covered: a WebView paints its page's flat body colour
-            // (Chicken Chaos's grass green) long before its canvas has anything on
-            // it, and that wall of colour is the "splash" nobody asked for. Held
-            // invisible until the game has loaded AND painted, the player sees the
-            // game's branded page during the transition instead, and the canvas
-            // appears on it as real content (see revealCanvas).
-            visibility = android.view.View.INVISIBLE
-            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            /* Visible from the very first frame, with its background set to the
+               game's own tile colour.
+
+               This used to be INVISIBLE until the page had loaded AND painted,
+               with the window behind it showing a solid backdrop - which is why
+               opening a game looked like "a wall of colour, then the game". Now
+               the game's own background is on screen from frame one and its real
+               content paints over it the moment it is ready, so there is no wall
+               and no flash of a colour the game never chose. */
+            visibility = android.view.View.VISIBLE
+            setBackgroundColor(backdropColor())
             layoutParams = LinearLayout.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 0,
@@ -272,7 +271,6 @@ class GameActivity : AppCompatActivity() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                     Log.d(TAG_TIME, "page loaded +${sinceLaunch()}ms")
-                    view?.evaluateJavascript(HIDE_FLAT_PAGE_BACKGROUND, null)
                     pageReady = true
                     maybeReveal()
                 }
@@ -488,10 +486,6 @@ class GameActivity : AppCompatActivity() {
         if (canvasShown || closing) return
         if (!force && (!pageReady || !paintSeen)) return
         canvasShown = true
-        // From here on the game owns the window: anything its page leaves
-        // unpainted shows the game's own colour rather than the shell's.
-        contentHost.setBackgroundColor(backdropColor())
-        webView.visibility = View.VISIBLE
         Log.d(TAG_TIME, "reveal +${sinceLaunch()}ms (force=$force)")
         if (landscapeGame && !turnLanded) {
             gameRoot.postDelayed({ startLandscapeTurn() }, LANDSCAPE_BEAT_MS)
