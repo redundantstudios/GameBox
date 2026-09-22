@@ -122,7 +122,10 @@ class ModeActivity : ThemedActivity() {
                 putExtra("players", preselect)
             }
         }
-        ShellTransition.open(this)
+        // A portrait game slides in like any other page; a landscape game is
+        // launched with no window animation, so the display turn that follows is
+        // the only motion on screen.
+        ShellTransition.openGame(this, game.orientation.equals("landscape", true))
         startActivity(intent)
     }
 

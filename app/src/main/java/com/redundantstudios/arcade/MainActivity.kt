@@ -131,7 +131,7 @@ class MainActivity : ThemedActivity() {
             route.startsWith("game:") -> {
                 val id = route.removePrefix("game:")
                 val game = allGames.find { it.id == id } ?: return
-                ShellTransition.open(this)
+                ShellTransition.openGame(this, game.orientation.equals("landscape", true))
                 startActivity(
                     Intent(this, GameActivity::class.java).apply {
                         putExtra("game_id", game.id)

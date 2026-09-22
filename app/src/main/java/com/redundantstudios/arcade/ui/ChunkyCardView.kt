@@ -45,6 +45,22 @@ class ChunkyCardView @JvmOverloads constructor(
             invalidate()
         }
 
+    /**
+     * Artwork that fills the card body, centre-cropped and clipped to the
+     * card's rounded shape. It is drawn by the card itself rather than as a
+     * child view on purpose: a child is laid out to the body rectangle and
+     * then has to be clipped by a *separate* outline, and any disagreement
+     * between the two curves shows up as a hairline of card colour along an
+     * edge or a sliver of art poking past a corner. Here the art is clipped
+     * with the exact same path the fill uses, and the border is stroked over
+     * it afterwards, so an edge between art and border cannot exist.
+     */
+    var artDrawable: android.graphics.drawable.Drawable? = null
+        set(value) {
+            field = value
+            invalidate()
+        }
+
     var borderColor: Int = ContextCompat.getColor(context, R.color.studio_border_dark)
 
     var shadowColor: Int = ContextCompat.getColor(context, R.color.studio_border_dark)
@@ -68,6 +84,7 @@ class ChunkyCardView @JvmOverloads constructor(
         cornerRadius = a.getDimension(R.styleable.ChunkyCardView_ccCornerRadius, cornerRadius)
         borderWidth = a.getDimension(R.styleable.ChunkyCardView_ccBorderWidth, borderWidth)
         shadowOffset = a.getDimension(R.styleable.ChunkyCardView_ccShadowOffset, shadowOffset)
+        a.getDrawable(R.styleable.ChunkyCardView_ccArt)?.let { artDrawable = it }
         a.recycle()
 
         strokePaint.strokeWidth = borderWidth
@@ -128,6 +145,31 @@ class ChunkyCardView @JvmOverloads constructor(
             overlayPaint.alpha = pressedAlpha
             canvas.drawRect(fillRect, overlayPaint)
             canvas.restoreToCount(checkpoint)
+        }
+
+        // 2c. Card artwork, clipped to the same rounded path as the fill and
+        //     drawn BEFORE the children so badges still read on top of it, and
+        //     BEFORE the border so the border is the very last thing on the edge.
+        artDrawable?.let { art ->
+            val iw = art.intrinsicWidth
+            val ih = art.intrinsicHeight
+            if (iw > 0 && ih > 0 && bodyW > 0 && bodyH > 0) {
+                bodyPath.reset()
+                bodyPath.addRoundRect(fillRect, r, r, Path.Direction.CW)
+                val checkpoint = canvas.save()
+                canvas.clipPath(bodyPath)
+                // centre-crop: uniform scale that covers the body, then centre
+                val scale = maxOf(bodyW / iw, bodyH / ih)
+                val dw = iw * scale
+                val dh = ih * scale
+                val saved = canvas.save()
+                canvas.translate((bodyW - dw) / 2f, (bodyH - dh) / 2f)
+                canvas.scale(scale, scale)
+                art.setBounds(0, 0, iw, ih)
+                art.draw(canvas)
+                canvas.restoreToCount(saved)
+                canvas.restoreToCount(checkpoint)
+            }
         }
 
         // 3. Children on top of the fill.

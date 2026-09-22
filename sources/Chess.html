@@ -129,6 +129,11 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
   .sideDot{width:12px;height:12px;min-width:12px;border-radius:7px;border:2px solid var(--line)}
   .sideDot.sp{margin-right:18px}
   .sideDot.ghost{visibility:hidden;margin-right:0;margin-left:18px}
+  #pzBar{display:none;align-items:center;justify-content:center;margin:4px 0 8px}
+  #pzBar button{margin:0 6px}
+  #pzBar.on{display:flex}
+  #pzStep{min-width:78px;text-align:center;font-size:12px;font-weight:800;
+    letter-spacing:2px;color:var(--ink-dim)}
   #boardArea{position:relative;flex:1 1 0;min-height:0}
   #boardWrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
     border-radius:12px;overflow:hidden;box-shadow:0 3px 14px rgba(0,0,0,.35)}
@@ -366,6 +371,21 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
         </svg>
       </button>
       <span class="sideDot ghost"></span>
+    </div>
+    <!-- Puzzle move scrubber: step the puzzle's line back and forth to review
+         what has moved and what comes next. Only shown in puzzle mode. -->
+    <div id="pzBar">
+      <button id="pzPrev" class="iconBtn" aria-label="Previous move">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M15 5.5 8.5 12 15 18.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <span id="pzStep">0 / 0</span>
+      <button id="pzNext" class="iconBtn" aria-label="Next move">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M9 5.5 15.5 12 9 18.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
     </div>
   </section>
 </main>
@@ -1428,23 +1448,46 @@ const PIECE_FN={
     rrPath(c,59,18,10,15,2); fsh(c,F,S,5);
   },
   [N](c,F,S){
+    /* Horse-head knight, facing left, drawn to sit on the same plinths as the
+       other pieces. The silhouette is one closed path: chest, throat, jaw,
+       muzzle, nose bridge, forehead, ear, then the mane down the back of the
+       neck. Details are eye, nostril, one mane strand and the jaw line - no
+       more, so it stays in the flat-pop language of the rest of the set. */
+    rrPath(c,30,71,40,9,3); fsh(c,F,S,5);
+    rrPath(c,24,80,52,9,3); fsh(c,F,S);
     c.beginPath();
-    c.moveTo(34,79);
-    c.bezierCurveTo(33,68,36,58,45,53);
-    c.bezierCurveTo(40,51,36,48,34,44);
-    c.bezierCurveTo(31,46,27,46,25,42);
-    c.bezierCurveTo(23,38,25,34,29,32);
-    c.lineTo(37,29);
-    c.bezierCurveTo(39,22,43,16,48,14);
-    c.lineTo(50,20);
-    c.lineTo(55,13);
-    c.lineTo(58,22);
-    c.bezierCurveTo(62,28,64,36,64,46);
-    c.bezierCurveTo(64,58,65,68,65,79);
+    c.moveTo(33,70);
+    c.bezierCurveTo(34,60,40,53,47,49);   /* chest rises to the shoulder */
+    c.bezierCurveTo(44,46,41,43,41,40);   /* throat tucks in */
+    c.bezierCurveTo(36,38,31,36,28,34);   /* jaw and lower lip, going forward */
+    c.bezierCurveTo(23,32,21,28,23,25);   /* muzzle tip curling up */
+    c.bezierCurveTo(25,22,29,21,33,21);   /* top of the nose */
+    c.bezierCurveTo(37,20,40,19,42,17);   /* nose bridge (the stop) */
+    c.bezierCurveTo(45,14,47,12,49,12);   /* forehead crown */
+    c.lineTo(52,17);                      /* ear notch */
+    c.lineTo(56,11);                      /* ear tip */
+    c.lineTo(61,20);                      /* ear back */
+    c.bezierCurveTo(69,25,71,34,71,45);   /* mane / back of the head */
+    c.bezierCurveTo(71,57,70,65,70,70);   /* back of the neck to the plinth */
     c.closePath(); fsh(c,F,S);
-    c.beginPath(); c.arc(45,27,1.9,0,Math.PI*2); c.fillStyle=S; c.fill();
-    c.beginPath(); c.arc(28.5,34,1.3,0,Math.PI*2); c.fill();
-    rrPath(c,28,78,44,8,3); fsh(c,F,S);
+    /* mane strand: one smooth line down the neck */
+    c.beginPath();
+    c.moveTo(59,21);
+    c.bezierCurveTo(66,27,68,34,66,41);
+    c.strokeStyle=S; c.lineWidth=3.4; c.lineCap="round"; c.stroke();
+    /* jaw separation */
+    c.beginPath();
+    c.moveTo(41,40);
+    c.lineTo(46,48);
+    c.stroke();
+    /* eye */
+    c.beginPath();
+    c.ellipse(43,26,2.4,3.0,0,0,Math.PI*2);
+    c.fillStyle=S; c.fill();
+    /* nostril */
+    c.beginPath();
+    c.arc(27,27,1.5,0,Math.PI*2);
+    c.fill();
   },
   [B](c,F,S){
     rrPath(c,30,78,40,8,3); fsh(c,F,S);
@@ -1533,6 +1576,7 @@ const app=$("app"), wrap=$("boardWrap"), boardShake=$("boardShake"),
       setupBack=$("setupBack"), oppSeg=$("oppSeg"), aiBlock=$("aiBlock"),
       lvlSeg=$("lvlSeg"), colSeg=$("colSeg"), startBtn=$("startBtn"),
       pzBack=$("pzBack"), streakNow=$("streakNow"), streakBest=$("streakBest"),
+      pzBar=$("pzBar"), pzPrev=$("pzPrev"), pzStep=$("pzStep"), pzNext=$("pzNext"),
       streakShield=$("streakShield"),
       dailyDate=$("dailyDate"), dailySolve=$("dailySolve"),
       solvedEasy=$("solvedEasy"), solvedNormal=$("solvedNormal"), solvedHard=$("solvedHard"),
@@ -1750,6 +1794,7 @@ function showScreen(n){
   scrPuzzles.classList.toggle("active",n==="puzzles");
   scrGame.classList.toggle("active",n==="game");
   curScreen=n;
+  if(typeof updatePzBar==="function") updatePzBar();
   if(n!=="game"){
     clearTimers(); cancelThink();
     parts.length=0; shakeT=0; hitStop=0;
@@ -2107,8 +2152,10 @@ function doMove(m){
     if(setup.opp==="bot") after(CFG.animMs+90, maybeBotMove);
   } else if(mode==="puzzle"&&pz){
     pz.idx++;
+    if(pz.idx>pz.furthest) pz.furthest=pz.idx;
+    updatePzBar();
     if(pz.idx>=pz.line.length){
-      after(CFG.animMs+80, showPuzzleSolved);
+      if(!pz.solved) after(CFG.animMs+80, showPuzzleSolved);
     } else if(pz.idx%2===0){
       after(CFG.autoMs, playPly);
       updateStatus();
@@ -2306,13 +2353,47 @@ function parseUCI(line){
   }
   return out;
 }
+/* ═══ PUZZLE AD GATE ═══
+   Five puzzles play free; the next five are unlocked with one rewarded ad.
+   Every entry point (the day's puzzle, a tier row, and NEXT PUZZLE on the
+   solved sheet) goes through beginPuzzle, so the gate cannot be stepped
+   around by picking a different button. */
+let pzSinceAd = 0;
+let pendingPuzzle = null;
+
+function beginPuzzle(entry, tier, daily){
+  if(pzSinceAd >= CFG.ads.rewardEveryN){
+    pendingPuzzle = {entry: entry, tier: tier, daily: daily};
+    endIsChess = false;
+    openSoon(
+      "FREE PUZZLES DONE",
+      "You've solved your " + CFG.ads.rewardEveryN + " puzzles. Watch a short ad to unlock "
+        + CFG.ads.rewardEveryN + " more.",
+      "WATCH AD",
+      function(){ rewardedAd("puzzle_unlock", unlockPuzzles); }
+    );
+    return;
+  }
+  startPuzzle(entry, tier, daily);
+}
+
+function unlockPuzzles(){
+  const p = pendingPuzzle;
+  pendingPuzzle = null;
+  if(!p) return;
+  pzSinceAd = 0;
+  startPuzzle(p.entry, p.tier, p.daily);
+}
+
 function startPuzzle(entry,tier,daily){
   let line;
   try{ line=parseUCI(entry[2]); }
   catch(e){ console.error("[chess] puzzle parse failed:",entry[0],e); return; }
   mode="puzzle";
+  pzSinceAd++;
   gameSeq++;
-  pz={p:entry, tier:tier, daily:!!daily, failed:false, idx:0, line:line, solver:0};
+  pz={p:entry, tier:tier, daily:!!daily, failed:false, idx:0, furthest:0,
+      line:line, solver:0, solved:false};
   Engine.loadFEN(entry[1]);
   Engine.keys.length=0; Engine.keys.push(Engine.posKey());
   pz.solver=-Engine.turnOf();
@@ -2322,7 +2403,51 @@ function startPuzzle(entry,tier,daily){
   clearTimers(); clearCinematics();
   refreshLegal(); updateStatus();
   showScreen("game");
+  updatePzBar();
   after(650, playPly);
+}
+
+/**
+ * Rewinds/replays a puzzle to ply [k]. Used by the ◀ / ▶ scrubber so the player
+ * can look at what has already been played and step forward again. The line is
+ * scripted, so the position is rebuilt by replaying it from the puzzle's FEN
+ * through the normal engine (every ply re-validated), which keeps repetition
+ * history, status text and legal-move highlighting honest.
+ *
+ * It never steps past [pz.furthest] - the deepest ply actually reached - so the
+ * scrubber reviews the game instead of letting the player walk into the future.
+ */
+function pzGoto(k){
+  if(mode!=="puzzle"||!pz||closing) return;
+  const target=Math.max(0,Math.min(k,pz.furthest));
+  Engine.loadFEN(pz.p[1]);
+  Engine.keys.length=0; Engine.keys.push(Engine.posKey());
+  sans=[]; lastMove=null; result=null; sel=-1; anim=null; pop=null; picker=null; wrongSq=-1;
+  clearTimers(); clearCinematics();
+  for(let i=0;i<target;i++){
+    const mv=pz.line[i];
+    try{
+      const res=Engine.make(mv);
+      sans.push(res.san);
+      lastMove={from:mv.from,to:mv.to};
+      if(res.over) result=res.result;
+    }catch(e){ break; }
+  }
+  pz.idx=target;
+  AudioSys.play("tap");
+  gameHaptic("light");
+  refreshLegal(); updateStatus(); updatePzBar();
+  bgDirty=true; dirty=true;
+}
+
+/** Shows the scrubber only while a puzzle is on screen, with an x / n readout. */
+function updatePzBar(){
+  const on=(mode==="puzzle"&&!!pz&&curScreen==="game");
+  pzBar.classList.toggle("on",on);
+  if(!on) return;
+  pzStep.textContent = pz.idx + " / " + pz.line.length;
+  pzPrev.disabled = (pz.idx<=0);
+  pzNext.disabled = (pz.idx>=pz.furthest);
 }
 function playPly(){
   if(!pz||mode!=="puzzle"||curScreen!=="game") return;
@@ -2334,7 +2459,9 @@ function totalSolved(){
   return (stats.solved.easy||0)+(stats.solved.normal||0)+(stats.solved.hard||0);
 }
 function showPuzzleSolved(){
-  if(!pz) return;
+  if(!pz||pz.solved) return;
+  pz.solved=true;
+  updatePzBar();
   AudioSys.play("end"); gameHaptic("success");
   if(lastMove) spawnRings(cx(lastMove.to),cy(lastMove.to),"#e0b45c",3,false);
   stats.solved[pz.tier]=(stats.solved[pz.tier]||0)+1;
@@ -2370,7 +2497,7 @@ function showPuzzleSolved(){
   const tier=pz.tier;
   pendingShieldAd=everyN;
   openEnd("PUZZLE SOLVED","Rating "+pz.p[3]+extra,
-    "NEXT PUZZLE", function(){ const p=pickRandom(tier); if(p) startPuzzle(p,tier,false); },
+    "NEXT PUZZLE", function(){ const p=pickRandom(tier); if(p) beginPuzzle(p,tier,false); },
     everyN?("+1 SHIELD — WATCH AD"):("PUZZLE HUB"),
     function(){
       if(pendingShieldAd){
@@ -2756,6 +2883,8 @@ function bindEvents(){
   startBtn.addEventListener("click",onStart);
 
   pzBack.addEventListener("click",function(){ AudioSys.play("tap"); pz=null; showScreen("intro"); });
+  pzPrev.addEventListener("click",function(){ if(pz) pzGoto(pz.idx-1); });
+  pzNext.addEventListener("click",function(){ if(pz) pzGoto(pz.idx+1); });
   dailySolve.addEventListener("click",function(){
     AudioSys.play("tap");
     if(!PUZZLE_DATA.easy.length){
@@ -2765,28 +2894,28 @@ function bindEvents(){
     const t=todayStr();
     if(stats.lastDaily===t){
       openSoon("DAILY DONE","Already solved today — current streak "+stats.streak+".",
-        "PLAY RANDOM",function(){ const p=pickRandom("easy"); if(p) startPuzzle(p,"easy",false); });
+        "PLAY RANDOM",function(){ const p=pickRandom("easy"); if(p) beginPuzzle(p,"easy",false); });
       return;
     }
     const p=dailyPick();
-    if(p) startPuzzle(p,"easy",true);
+    if(p) beginPuzzle(p,"easy",true);
   });
   tierEasy.addEventListener("click",function(){
     AudioSys.play("tap");
     const p=pickRandom("easy");
-    if(p) startPuzzle(p,"easy",false);
+    if(p) beginPuzzle(p,"easy",false);
     else openSoon("EASY PACK","No valid puzzles in the pack right now.",null,null);
   });
   tierNormal.addEventListener("click",function(){
     AudioSys.play("tap");
     const p=pickRandom("normal");
-    if(p) startPuzzle(p,"normal",false);
+    if(p) beginPuzzle(p,"normal",false);
     else openSoon("NORMAL PACK","The NORMAL pack data hasn't been added yet — paste it into the marked slot in the file.",null,null);
   });
   tierHard.addEventListener("click",function(){
     AudioSys.play("tap");
     const p=pickRandom("hard");
-    if(p) startPuzzle(p,"hard",false);
+    if(p) beginPuzzle(p,"hard",false);
     else openSoon("HARD PACK","The HARD pack data hasn't been added yet — paste it into the marked slot in the file.",null,null);
   });
 

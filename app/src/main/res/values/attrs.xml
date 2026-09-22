@@ -8,6 +8,10 @@
         <attr name="ccCornerRadius" format="dimension" />
         <attr name="ccBorderWidth" format="dimension" />
         <attr name="ccShadowOffset" format="dimension" />
+        <!-- Artwork that fills the card body, clipped to its rounded shape. Drawn
+             by the card itself (not as a child view) so it can never leave a
+             hairline between the art and the border on any tile. -->
+        <attr name="ccArt" format="reference" />
     </declare-styleable>
 
     <!-- Design-ref option card: beige when idle, green + check badge when selected -->

@@ -2,65 +2,116 @@ package com.redundantstudios.arcade.ui
 
 import android.app.Activity
 import android.os.Build
-import android.view.ViewGroup
 import com.redundantstudios.arcade.R
 
 /**
- * The shell's screen-change motion, kept in one place.
+ * The shell's navigation motion, kept in one place.
  *
- * Why this exists: Android 14 (API 34) replaced `overridePendingTransition` with
- * `overrideActivityTransition`, and for apps that target SDK 34+ the old call is
- * ignored. The theme still declares `windowAnimationStyle`, but on new devices
- * that alone left the shell hard-cutting between screens. So every screen change
- * goes through here, and [playEnter] backstops it with a plain View animation
- * that cannot be ignored by any platform transition policy.
+ * Shell pages: a SLIDE language. Forward (deeper) navigation pushes a page in
+ * from the right while the page beneath eases 30% to the left - parallax, so the
+ * two pages read as one surface moving. Back pops the page out to the right and
+ * brings the page beneath back from the left. Pure translation, no alpha and no
+ * blur: nothing dissolves, and a translation is the cheapest window animation
+ * there is, so it stays perfectly smooth.
+ *
+ * Games: a PORTRAIT game slides exactly like every other page - its branded page
+ * pushes in from the right while the page it came from eases away (see
+ * [openGame]). A LANDSCAPE game plays NO window animation at all: its transition
+ * is the display turning itself, and any window animation underneath that turn
+ * could only fight it.
+ *
+ * Why this exists: Android 14 (API 34) replaced `overridePendingTransition`
+ * with `overrideActivityTransition`, and for apps that target SDK 34+ the old
+ * call is ignored. The theme still declares `windowAnimationStyle` (see
+ * `NavWindowAnim`), but this makes the motion explicit for every screen change.
  */
 object ShellTransition {
 
-    /** Long enough to read as motion, short enough to never feel slow. */
-    private const val ENTER_MS = 320L
+    // ---- Shell pages: slide ------------------------------------------------
 
     /** Call right after `startActivity(...)` on the screen opening the next one. */
-    fun open(activity: Activity) = overrideTransitions(activity, Activity.OVERRIDE_TRANSITION_OPEN)
+    fun open(activity: Activity) {
+        overrideTransitions(
+            activity,
+            Activity.OVERRIDE_TRANSITION_OPEN,
+            R.anim.nav_in_right,
+            R.anim.nav_out_left
+        )
+    }
 
     /** Call right before `finish()` on the screen that is closing. */
-    fun close(activity: Activity) = overrideTransitions(activity, Activity.OVERRIDE_TRANSITION_CLOSE)
+    fun close(activity: Activity) {
+        overrideTransitions(
+            activity,
+            Activity.OVERRIDE_TRANSITION_CLOSE,
+            R.anim.nav_in_left,
+            R.anim.nav_out_right
+        )
+    }
 
     /**
      * Arms this screen's own open/close animation. Called from
-     * [ThemedActivity.onCreate] so a screen is animated even when something
-     * starts it without going through [open] / [close].
+     * [ThemedActivity.onCreate] so a screen slides even when something starts it
+     * without going through [open] / [close].
      */
     fun armSelf(activity: Activity) {
-        if (!supportsExplicitTransitions()) return
-        overrideTransitions(activity, Activity.OVERRIDE_TRANSITION_OPEN)
-        overrideTransitions(activity, Activity.OVERRIDE_TRANSITION_CLOSE)
+        overrideTransitions(
+            activity,
+            Activity.OVERRIDE_TRANSITION_OPEN,
+            R.anim.nav_in_right,
+            R.anim.nav_out_left
+        )
+        overrideTransitions(
+            activity,
+            Activity.OVERRIDE_TRANSITION_CLOSE,
+            R.anim.nav_in_left,
+            R.anim.nav_out_right
+        )
     }
 
-    private fun overrideTransitions(activity: Activity, type: Int) {
+    // ---- Games -------------------------------------------------------------
+
+    /**
+     * The screen launching a game. A portrait game uses the slide language it
+     * shares with every other page; a landscape game is launched with no window
+     * animation, because the display turn that follows IS its transition.
+     */
+    fun openGame(activity: Activity, landscape: Boolean) {
+        if (landscape) instant(activity) else open(activity)
+    }
+
+    /** The screen a game returns to: the exact reverse of [openGame]. */
+    fun closeGame(activity: Activity, landscape: Boolean) {
+        if (landscape) instant(activity) else close(activity)
+    }
+
+    /** Arms a game screen itself with the same two directions of the motion. */
+    fun armGame(activity: Activity, landscape: Boolean) {
+        if (landscape) instant(activity) else armSelf(activity)
+    }
+
+    /**
+     * 0 means "play no animation". A landscape game's window is left alone so the
+     * platform's rotation animation is the only motion on screen - which is what
+     * makes a portrait game turn smoothly into a landscape one instead of
+     * appearing in landscape with an animation after it.
+     */
+    fun instant(activity: Activity) {
+        overrideTransitions(activity, Activity.OVERRIDE_TRANSITION_OPEN, 0, 0)
+        overrideTransitions(activity, Activity.OVERRIDE_TRANSITION_CLOSE, 0, 0)
+    }
+
+    // ---- plumbing ---------------------------------------------------------
+
+    private fun overrideTransitions(activity: Activity, type: Int, enter: Int, exit: Int) {
         if (supportsExplicitTransitions()) {
-            activity.overrideActivityTransition(type, R.anim.fade_in, R.anim.fade_out)
+            activity.overrideActivityTransition(type, enter, exit)
             return
         }
         @Suppress("DEPRECATION")
-        activity.overridePendingTransition(R.anim.fade_in, R.anim.fade_out)
+        activity.overridePendingTransition(enter, exit)
     }
 
     private fun supportsExplicitTransitions() =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
-
-    /**
-     * Dissolves a freshly created screen's content in over the shell background.
-     *
-     * Alpha only, on purpose: the shell background is painted on this same root
-     * view, so translating or scaling it would drag the gradient and expose the
-     * window colour at the edges. A dissolve keeps the page anchored while the
-     * new content settles in.
-     */
-    fun playEnter(activity: Activity) {
-        val content = activity.findViewById<ViewGroup>(android.R.id.content) ?: return
-        val root = content.getChildAt(0) ?: return
-        root.alpha = 0f
-        root.animate().alpha(1f).setDuration(ENTER_MS).start()
-    }
 }

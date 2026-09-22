@@ -1,10 +1,12 @@
 <resources>
-    <!-- Fade window animations shared by every screen change. -->
-    <style name="FadeWindowAnim">
-        <item name="android:activityOpenEnterAnimation">@anim/fade_in</item>
-        <item name="android:activityOpenExitAnimation">@anim/fade_out</item>
-        <item name="android:activityCloseEnterAnimation">@anim/fade_in</item>
-        <item name="android:activityCloseExitAnimation">@anim/fade_out</item>
+    <!-- Shell navigation motion: slide push/pop for activity changes. The task
+         open/close (the app appearing from the launcher) stays a dissolve —
+         that is not a navigation event. -->
+    <style name="NavWindowAnim">
+        <item name="android:activityOpenEnterAnimation">@anim/nav_in_right</item>
+        <item name="android:activityOpenExitAnimation">@anim/nav_out_left</item>
+        <item name="android:activityCloseEnterAnimation">@anim/nav_in_left</item>
+        <item name="android:activityCloseExitAnimation">@anim/nav_out_right</item>
         <item name="android:taskOpenEnterAnimation">@anim/fade_in</item>
         <item name="android:taskOpenExitAnimation">@anim/fade_out</item>
         <item name="android:taskCloseEnterAnimation">@anim/fade_in</item>
@@ -25,7 +27,23 @@
         <item name="android:statusBarColor">@color/studio_background</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowBackground">@color/studio_background</item>
-        <item name="android:windowAnimationStyle">@style/FadeWindowAnim</item>
+        <item name="android:windowAnimationStyle">@style/NavWindowAnim</item>
+    </style>
+
+    <!-- Game windows are OPAQUE, and their background is the SHELL'S own colour.
+         Two reasons:
+           1. An opaque window is what lets the platform run its real rotation
+              animation. A translucent one is composited instead of snapshotted,
+              so a portrait -> landscape turn degrades into a crossfade - which
+              reads as "the landscape screen appeared, and then something
+              animated". Opaque = the content itself turns.
+           2. The instant between "the window exists" and "the game has painted"
+              shows this colour, so it has to be a colour the shell already is.
+              It used to be the game's tile colour, which meant a wall of that
+              game's colour (Chicken Chaos's grass green) flashed on open. -->
+    <style name="Theme.Shell.Game" parent="Theme.Shell">
+        <item name="android:windowBackground">@color/studio_background</item>
+        <item name="android:backgroundDimEnabled">false</item>
     </style>
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">

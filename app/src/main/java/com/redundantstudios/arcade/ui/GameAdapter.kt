@@ -24,7 +24,6 @@ class GameAdapter(
         val title: TextView = view.findViewById(R.id.gameTitle)
         val players: TextView = view.findViewById(R.id.playersBadge)
         val newBadge: TextView = view.findViewById(R.id.newBadge)
-        val art: android.widget.ImageView = view.findViewById(R.id.tileArt)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GameViewHolder {
@@ -42,19 +41,24 @@ class GameAdapter(
         } else {
             View.GONE
         }
-        // Tile artwork, generated from the game file by _gen_tiles.py. Looked up
-        // by name (see util.resName convention in that script); when it has not
-        // been generated yet the tile keeps its flat manifest colour.
+        // Tile artwork, generated from the game file by _gen_tiles.py and looked
+        // up by name (see util.resName convention in that script). When a game has
+        // no artwork yet the tile keeps its flat manifest colour and the title
+        // text becomes the label.
         val artId = holder.itemView.resources.getIdentifier(
             "tile_${game.id.lowercase().replace('-', '_')}", "drawable",
             holder.itemView.context.packageName
         )
         if (artId != 0) {
-            holder.art.setImageResource(artId)
-            holder.art.visibility = View.VISIBLE
+            /* The card draws its own art, clipped to its rounded body and stroked
+               over by the border - so no hairline or corner sliver can appear. */
+            holder.tileRoot.artDrawable =
+                ContextCompat.getDrawable(holder.itemView.context, artId)
+            /* The artwork already carries the game's name/logo — no overlay text. */
+            holder.title.visibility = View.GONE
         } else {
-            holder.art.setImageDrawable(null)
-            holder.art.visibility = View.GONE
+            holder.tileRoot.artDrawable = null
+            holder.title.visibility = View.VISIBLE
         }
 
         holder.itemView.setOnClickListener {

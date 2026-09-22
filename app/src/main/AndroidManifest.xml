@@ -36,13 +36,18 @@
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.Shell" />
+        <!-- screenOrientation is left unspecified ON PURPOSE: a landscape game is
+             created in the orientation the shell is already in, and only then asks
+             the display to turn (see GameActivity.startLandscapeTurn), so the
+             platform has a real, animatable rotation instead of an orientation that
+             changed before the first frame was ever drawn. -->
         <activity
             android:name=".GameActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:screenOrientation="portrait"
+            android:screenOrientation="unspecified"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
-            android:theme="@style/Theme.Shell" />
+            android:theme="@style/Theme.Shell.Game" />
     </application>
 
 </manifest>
