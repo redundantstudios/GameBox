@@ -12,6 +12,7 @@ import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.NestedScrollView
 import com.redundantstudios.arcade.audio.ShellAudio
+import com.redundantstudios.arcade.util.AndroidRotation
 import com.redundantstudios.arcade.util.SettingsManager
 
 /**
@@ -130,10 +131,13 @@ abstract class ThemedActivity : AppCompatActivity() {
             // palette the user is about to leave, then rebuild.
             ThemeTransition.remember(this)
             recreate()
-        } else {
-            playThemeTransition()
-            ShellAudio.hostResumed(this)
+            return
         }
+        playThemeTransition()
+        // A landscape game that just left turns the shell back in - the second
+        // half of the rotation it played on its way out. No-op unless one did.
+        AndroidRotation.playShellEntry(this)
+        ShellAudio.hostResumed(this)
     }
 
     /**

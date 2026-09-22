@@ -22,6 +22,7 @@ import com.redundantstudios.arcade.ui.ModeAdapter
 import com.redundantstudios.arcade.ui.ModeActivity
 import com.redundantstudios.arcade.ui.ShellTransition
 import com.redundantstudios.arcade.ui.ThemedActivity
+import com.redundantstudios.arcade.util.AndroidRotation
 import com.redundantstudios.arcade.util.ManifestParser
 import com.redundantstudios.arcade.util.SettingsManager
 
@@ -131,7 +132,11 @@ class MainActivity : ThemedActivity() {
             route.startsWith("game:") -> {
                 val id = route.removePrefix("game:")
                 val game = allGames.find { it.id == id } ?: return
-                ShellTransition.openGame(this, game.orientation.equals("landscape", true))
+                val toLandscape = game.orientation.equals("landscape", true)
+                // A landscape game's arrival is the snapshot of THIS screen
+                // turning away, so it has to be taken while we are still on it.
+                AndroidRotation.prepareGameEntry(this, toLandscape)
+                ShellTransition.openGame(this, toLandscape)
                 startActivity(
                     Intent(this, GameActivity::class.java).apply {
                         putExtra("game_id", game.id)
