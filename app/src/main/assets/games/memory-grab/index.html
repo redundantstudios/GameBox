@@ -1023,6 +1023,11 @@ function refreshToggles(){
 function bindSwitch(id,get,set){
   $(id).addEventListener('click',()=>{
     set(!get());saveSettings();refreshToggles();SFX.click();
+    // Local game toggles may temporarily override the shell's off state. The
+    // next actual shell payload (sent by GameActivity when the shell changes)
+    // is authoritative again.
+    if(id==='sw-sfx'&&sfxOn) masterMuted=false;
+    if(id==='sw-music'&&musicOn) masterMuted=false;
     if(id==='sw-music'){if(musicOn&&!masterMuted)Music.start();else Music.stop();}
   });
 }
