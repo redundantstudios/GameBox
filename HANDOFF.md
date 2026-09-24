@@ -51,14 +51,14 @@ selector was inverted — `applyPair(on, off, value)` must be called as
    `backup_pm_knowngood.html`, `previous_pm.html`, `previous_known_good.html`. The shipped copy is
    `app/src/main/assets/games/planetmerge/index.html`.
 3. **Chess integration.** The game is functionally complete; it needs the standard checklist
-   (manifest, lifecycle, settings sync, ads) plus puzzle mode built from `chess_puzzles.txt` —
+   (manifest, lifecycle, settings sync, ads) plus puzzle mode built from `sources/LockedGames/chess_puzzles.txt` —
    10 500 Lichess puzzles in easy/normal/hard buckets, 2.6 MB, so a packed subset must be chosen.
 4. **Integration queue, one game at a time** — Chicken Chaos (manifest already valid, so essentially
    QA) → Memory Grab → Egg Rush → Balloon Battle → Bomb Relay → Last Balloon → Pen Fight. Full table
-   and reasoning in `GAME_IDEAS.md §11`.
-5. **Game backlog and the two new rules** — `GAME_IDEAS.md` holds the status board (§1), the roadmap
+   and reasoning in `FuturePlans/GAME_IDEAS.md §11`.
+5. **Game backlog and the two new rules** — `FuturePlans/GAME_IDEAS.md` holds the status board (§1), the roadmap
    (§11) and **§12, the game-work request-prompt template**. Rules that now stand: (a) **we never
-   author a game from scratch here** — the root `.html` files are *finished, playable games awaiting
+   author a game from scratch here** — the finished source games in `sources/` are *finished, playable games awaiting
    shell integration*, not prototypes; (b) a new game is requested as a §12 **prompt** (the idea
    stated briefly + the shell-stack requirements), authored elsewhere, then integrated here.
 6. **Audio assets are generated, NOT committed** — the `.ogg` files in `app/src/main/res/raw/`

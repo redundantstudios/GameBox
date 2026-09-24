@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A GAME opening: the game RISES from the bottom edge (the director's call -
+     it must arrive from below, never slide in from the side). Pure translation,
+     no alpha, so nothing dissolves; the page it came from eases up and out at the
+     same time (see game_out), so the two read as one surface moving. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/decelerate_interpolator">
+    <translate android:fromYDelta="100%" android:toYDelta="0%"
+        android:duration="340" />
+</set>

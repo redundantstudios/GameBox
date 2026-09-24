@@ -4,6 +4,8 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.view.WindowManager
 import android.view.View
 import android.webkit.WebSettings
@@ -18,7 +20,7 @@ import com.redundantstudios.arcade.bridge.NativeBridge
 import com.redundantstudios.arcade.bridge.NativeBridgeContext
 import com.redundantstudios.arcade.model.GameManifest
 import com.redundantstudios.arcade.ui.ShellTransition
-import com.redundantstudios.arcade.util.AndroidRotation
+import com.redundantstudios.arcade.util.GameWindow
 import com.redundantstudios.arcade.util.ManifestParser
 import com.redundantstudios.arcade.util.SettingsManager
 
@@ -29,9 +31,6 @@ class GameActivity : AppCompatActivity() {
     private lateinit var bannerContainer: FrameLayout
     private var bannerRequestedVisible = false
 
-    /** True when this game wants landscape (the display turns for it). */
-    private var landscapeGame = false
-
     /** The view that holds the game (WebView + banner strip). */
     private lateinit var gameRoot: LinearLayout
 
@@ -40,6 +39,16 @@ class GameActivity : AppCompatActivity() {
 
     /** The window content: the game canvas (and the banner strip) live in here. */
     private lateinit var contentHost: FrameLayout
+
+    /**
+     * Fires the one piece of teardown that has to wait for the exit slide to
+     * finish (see [releaseSurface]). On the main looper, so it still runs when
+     * this screen is already gone.
+     */
+    private val teardownHandler = Handler(Looper.getMainLooper())
+
+    /** True once the game surface has really been handed back. */
+    private var surfaceReleased = false
 
     /** True once the page has finished loading - the canvas may be shown. */
     private var pageReady = false
@@ -52,18 +61,6 @@ class GameActivity : AppCompatActivity() {
 
     /** True once the game canvas has been revealed to the player. */
     private var canvasShown = false
-
-    /** True once a landscape game's display turn has landed. */
-    private var turnLanded = false
-
-    /**
-     * True when this landscape game's arrival is the animated turn - a snapshot
-     * of the shell screen is in hand, so the shell turns away, the display
-     * turns, and the game turns in. False on a cold start / deep link (there is
-     * no shell screen to snapshot), where the older reveal-then-ask path runs
-     * instead; either way the game itself still turns into place.
-     */
-    private var snapshotTurn = false
 
     /**
      * The colour that takes over as the canvas backdrop once the game's page has
@@ -127,6 +124,27 @@ class GameActivity : AppCompatActivity() {
         /** Transition timing traces (see sinceLaunch). */
         const val TAG_TIME = "GameTransition"
 
+        /**
+         * How long the exit slide (320ms, see `nav_out_right`) is given before
+         * the game surface is taken apart. Leaving is a WINDOW animation over
+         * this screen's last drawn frame, so that frame has to survive until
+         * the slide is over; tearing the WebView down any earlier would redraw
+         * the window as a blank shell-coloured page mid-slide.
+         */
+        const val SURFACE_RELEASE_MS = 500L
+
+        /**
+         * The screen that currently owns [NativeBridgeContext]'s handlers.
+         *
+         * The bridge is process-wide, and an incoming game installs its
+         * handlers in `onCreate` BEFORE the outgoing screen's `onDestroy` runs.
+         * A screen may therefore only clear handlers it installed itself -
+         * clearing unconditionally would leave the incoming game deaf.
+         * Always released in [clearBridgeHandlers].
+         */
+        @Volatile
+        private var bridgeOwner: GameActivity? = null
+
         /** Fallback canvas backdrop when a game has no tile colour. */
         const val DEFAULT_BACKDROP = 0xFF101014.toInt()
 
@@ -137,31 +155,12 @@ class GameActivity : AppCompatActivity() {
          */
         const val REVEAL_FALLBACK_MS = 2600L
 
-        /** Same safety net for a landscape game whose turn never lands. */
-        const val LANDSCAPE_FALLBACK_MS = 1800L
-
-        /**
-         * Safety net for the animated turn: if the display never reports the
-         * landscape change (a device held flat, an OEM that refuses the
-         * request), the game canvas is freed anyway. It must never be left
-         * invisible waiting for a rotation that is not coming.
-         */
-        const val SNAPSHOT_FALLBACK_MS = 2400L
-
         /**
          * A few frames of grace between "the game is loaded and painted" and
          * "show it": the canvas is still hidden here, so the game gets to render
          * real frames of its own before it appears.
          */
         const val REVEAL_GRACE_MS = 140L
-
-        /**
-         * How long a landscape game's own portrait splash stays up before the
-         * display turns. Just long enough for the splash's first frame to exist
-         * (a rotation of nothing is not a rotation), but short enough that the
-         * open reads as one continuous portrait -> landscape turn.
-         */
-        const val LANDSCAPE_BEAT_MS = 90L
 
         /* The old "hide the game's flat page background" injection is gone on
            purpose. It rewrote every game's own <body> background to transparent,
@@ -173,6 +172,9 @@ class GameActivity : AppCompatActivity() {
         /** Tells a game that its portrait->landscape rotation has finished. */
         const val ORIENTATION_CHANGE_JS =
             "if(window.Game&&Game.onOrientationChange){Game.onOrientationChange();}"
+
+        /** Stops a game's own loop, and lets it save, on its way out. */
+        const val JS_GAME_DESTROY = "window.Game && Game.destroy && Game.destroy();"
     }
 
 
@@ -198,7 +200,6 @@ class GameActivity : AppCompatActivity() {
 
         val allGames = ManifestParser.scanGames(this)
         currentGame = allGames.find { it.id == gameId }
-        landscapeGame = currentGame?.orientation?.lowercase() == "landscape"
 
         // The window is opaque and its background is the SHELL'S colour (see
         // Theme.Shell.Game). It used to be replaced here with the game's own tile
@@ -207,13 +208,11 @@ class GameActivity : AppCompatActivity() {
         // the game appears" flash. The shell colour is already on screen behind
         // the window, so nothing appears at all: the game simply arrives.
 
-        // A portrait game is locked straight away. A LANDSCAPE game is not: its
-        // window is created in the orientation the shell is already in, so the
-        // request to turn (see startLandscapeTurn) is a genuine rotation the
-        // platform can animate. An orientation applied before the first frame
-        // exists is not a rotation at all - it is a hard cut into a screen that
-        // was already landscape, which is what this game used to look like.
-        if (!landscapeGame) setupOrientation(currentGame?.orientation ?: "portrait")
+        // The game's manifest decides the orientation, and it is applied here -
+        // before the first frame exists - so the window is simply created the
+        // right way up. Nothing is animated: the page slide covers the arrival,
+        // and the display change a landscape game needs is the platform's own.
+        setupOrientation(currentGame?.orientation ?: "portrait")
 
         // Root layout to accommodate banner
         val rootLayout = LinearLayout(this).apply {
@@ -334,58 +333,23 @@ class GameActivity : AppCompatActivity() {
         setContentView(contentHost)
         gameRoot = rootLayout
 
-        // ── The turn ────────────────────────────────────────────────────────
-        // A landscape game arrives as ONE motion: the shell screen (snapshotted
-        // by the page the player came from) turns away, the display turns, and
-        // this game's canvas turns in from the opposite side - all on the same
-        // 400 ms curve, so it reads as the screen itself rotating.
-        //
-        // The canvas is invisible until its own turn begins: it has no business
-        // showing in a portrait window, and the entry animation in
-        // onConfigurationChanged brings it in at the right moment.
-        snapshotTurn = landscapeGame && AndroidRotation.hasShellShot()
-        if (snapshotTurn) {
-            gameRoot.alpha = 0f
-            gameRoot.post {
-                AndroidRotation.playShellExitAndTurn(this, gameRoot) {
-                    turnLanded = true
-                    webView.evaluateJavascript(ORIENTATION_CHANGE_JS, null)
-                }
-            }
-            // Safety net: a display turn that never lands must not leave the
-            // game invisible.
-            gameRoot.postDelayed({ freeTheCanvas() }, SNAPSHOT_FALLBACK_MS)
-        }
-
         // ── The transition ───────────────────────────────────────────────────
-        // Portrait game: the slide every shell page already uses, so opening a
-        // game feels like going one page deeper. The canvas is painted by the time
-        // the slide lands (the branded page carries the motion until then), so the
-        // first thing the player sees inside the game is the game.
-        //
-        // Landscape game: NO window animation at all. Its transition is the display
-        // turning itself, and anything animating underneath that turn would double
-        // it. The game's own portrait splash holds the screen for one short beat
-        // (see revealCanvas), the display turns THAT, and the game's menu drops in
-        // when we tell it the rotation finished (see onConfigurationChanged).
-        ShellTransition.armGame(this, landscapeGame)
+        // Games move BY ORIENTATION: a landscape game rises up from the bottom edge
+        // while the page it came from eases up and out (armGame → game_in / game_out),
+        // and the reverse takes it back down on the way out. A portrait game slides
+        // like every other page. Either way the display change itself is the
+        // platform's own - nothing here fights it or doubles it.
+        ShellTransition.armGame(
+            this, (currentGame?.orientation ?: "portrait").equals("landscape", ignoreCase = true)
+        )
 
         // Safety net: a game that never finishes loading would otherwise leave its
         // branded page on screen for ever.
         rootLayout.postDelayed({ revealCanvas(force = true) }, REVEAL_FALLBACK_MS)
 
-        if (landscapeGame) {
-            // Second safety net, for a turn that never lands (device held flat, an
-            // OEM that refuses the request): tell the game the beat happened
-            // anyway, so nothing stays frozen waiting for a rotation that is not
-            // coming.
-            rootLayout.postDelayed({
-                if (!turnLanded) webView.evaluateJavascript(ORIENTATION_CHANGE_JS, null)
-            }, LANDSCAPE_FALLBACK_MS)
-        }
         window.decorView.post {
             // Full-screen: drop the status + navigation bars for every game.
-            com.redundantstudios.arcade.util.AndroidRotation.goImmersive(window)
+            GameWindow.goImmersive(window)
         }
 
         webView.post {
@@ -399,6 +363,8 @@ class GameActivity : AppCompatActivity() {
             }
         }
 
+        // This screen now owns the process-wide bridge (see bridgeOwner).
+        bridgeOwner = this
         NativeBridgeContext.exitHandler = {
             exitGame()
         }
@@ -448,35 +414,6 @@ class GameActivity : AppCompatActivity() {
     }
 
     /**
-     * Asks the display to turn - but only once the game has actually drawn.
-     *
-     * The whole reason a landscape game used to look wrong: the request was made
-     * during onCreate, so the system applied it before the first frame existed and
-     * there was nothing for a rotation animation to turn. Requested after the
-     * game's own portrait splash has been painted (see [revealCanvas]), the
-     * platform's own rotation animation turns real content - the game itself -
-     * from portrait into landscape.
-     */
-    private fun startLandscapeTurn() {
-        if (!landscapeGame) return
-        val observer = contentHost.viewTreeObserver
-        observer.addOnPreDrawListener(object : android.view.ViewTreeObserver.OnPreDrawListener {
-            override fun onPreDraw(): Boolean {
-                val live = contentHost.viewTreeObserver
-                if (live.isAlive) live.removeOnPreDrawListener(this)
-                // A real frame has been drawn this pass; ask for the turn after it.
-                contentHost.post {
-                    if (!closing) {
-                        requestedOrientation =
-                            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                    }
-                }
-                return true
-            }
-        })
-    }
-
-    /**
      * Per-game rotation, done WITHOUT any overlay: the game's manifest decides,
      * and the activity rotates automatically. configChanges in the manifest keeps
      * the activity alive across the flip (no relaunch = no hard cut), so the
@@ -516,41 +453,14 @@ class GameActivity : AppCompatActivity() {
      * Shows the game canvas. [force] is the safety net for a page that never
      * finishes loading.
      *
-     * A landscape game then holds its own portrait splash for one short beat
-     * before asking the display to turn. That ordering is the whole point: the
-     * turn rotates REAL, already painted game content, so a portrait screen turns
-     * smoothly into a landscape one. Asking for the orientation before the first
-     * frame exists produces no rotation at all - the window is simply created
-     * landscape, which reads as a landscape screen appearing out of nowhere.
+     * A landscape game is revealed the same way: nothing here waits for a
+     * rotation, because the arrival is an ordinary page slide.
      */
     private fun revealCanvas(force: Boolean = false) {
         if (canvasShown || closing) return
         if (!force && (!pageReady || !paintSeen)) return
         canvasShown = true
         Log.d(TAG_TIME, "reveal +${sinceLaunch()}ms (force=$force)")
-        // A snapshot turn asks for the display turn itself, once the shell has
-        // finished turning away - asking here as well would cut the animation
-        // short mid-flight.
-        if (landscapeGame && !turnLanded && !snapshotTurn) {
-            gameRoot.postDelayed({ startLandscapeTurn() }, LANDSCAPE_BEAT_MS)
-        }
-    }
-
-    /**
-     * Frees the game canvas from the turn, unconditionally. Only ever needed by
-     * the safety timer: if the display never reports the landscape change, the
-     * player would otherwise be sitting in front of an invisible game.
-     */
-    private fun freeTheCanvas() {
-        if (closing || turnLanded) return
-        turnLanded = true
-        gameRoot.animate().cancel()
-        gameRoot.rotation = 0f
-        gameRoot.scaleX = 1f
-        gameRoot.scaleY = 1f
-        gameRoot.alpha = 1f
-        Log.w(TAG_TIME, "the turn never landed - canvas freed +${sinceLaunch()}ms")
-        webView.evaluateJavascript(ORIENTATION_CHANGE_JS, null)
     }
 
     /**
@@ -562,33 +472,21 @@ class GameActivity : AppCompatActivity() {
         super.onConfigurationChanged(newConfig)
         Log.d(TAG_TIME, "config change +${sinceLaunch()}ms (${newConfig.orientation})")
         // Rotation can restore the system bars — drop them again.
-        com.redundantstudios.arcade.util.AndroidRotation.goImmersive(window)
+        GameWindow.goImmersive(window)
         // Games normally reflow via the WebView's own resize event; this hook is
         // for any game that exposes an explicit resize entry point.
         webView.evaluateJavascript("if(window.Game&&Game.onResize){Game.onResize();}", null)
 
-        // A turn the shell started drives itself: the game canvas rotates in
-        // from the opposite side, or this screen is on its way back to the
-        // portrait shell. Neither is an ordinary resize.
-        val ours = com.redundantstudios.arcade.util.AndroidRotation
-            .onOrientationChanged(this, newConfig, gameRoot)
-        if (ours) {
-            if (newConfig.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT) {
-                finish()
-            }
-            return
-        }
-
-        if (newConfig.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
-            turnLanded = true
-        }
-        // The snapshot turn reports its own landing (see the entry animation);
-        // the older path needs the settle beat here.
-        if (!snapshotTurn) {
-            webView.postDelayed({
-                webView.evaluateJavascript(ORIENTATION_CHANGE_JS, null)
-            }, orientationSettleMs)
-        }
+        // The WebView is re-laid out on the frame after the change, so the game
+        // is told once that has happened: it has to read the real size to place
+        // its menu.
+        webView.postDelayed({
+            // The screen can already be gone (a turn immediately followed by
+            // leaving): a WebView that has been destroyed must not be asked to
+            // run script.
+            if (surfaceReleased) return@postDelayed
+            webView.evaluateJavascript(ORIENTATION_CHANGE_JS, null)
+        }, orientationSettleMs)
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -596,7 +494,7 @@ class GameActivity : AppCompatActivity() {
         if (hasFocus) {
             // Keep the game full-screen whenever focus returns (rotation,
             // dialogs, swipe-revealed bars).
-            com.redundantstudios.arcade.util.AndroidRotation.goImmersive(window)
+            GameWindow.goImmersive(window)
         }
     }
 
@@ -626,36 +524,77 @@ class GameActivity : AppCompatActivity() {
         webView.evaluateJavascript("window.Game && Game.resume && Game.resume();", null)
     }
 
+    /**
+     * Hands every resource this screen created back to the system.
+     *
+     * Opening and closing games repeatedly used to leave all of it behind: a
+     * WebView that is dropped instead of destroyed keeps a live renderer frame,
+     * a JS heap and the game's own audio graph with it, and a banner AdView
+     * keeps a whole Activity. A handful of open/close cycles piled those up,
+     * and that pile - not the transition - is what made the shell, and the game
+     * being played at the time, stutter more with every cycle.
+     */
     override fun onDestroy() {
+        // The game gets its own shutdown first, while its page still exists:
+        // this is the call that stops a game's animation loop (Chicken Chaos
+        // runs its loop until `Game.destroy()` says otherwise) and lets the
+        // games that save on destroy write their progress. It used to be issued
+        // after super.onDestroy(), where it never stood a chance of running.
+        if (::webView.isInitialized) {
+            webView.evaluateJavascript(JS_GAME_DESTROY, null)
+            webView.stopLoading()
+        }
+        clearBridgeHandlers()
+
+        // Everything else waits out the exit slide (see SURFACE_RELEASE_MS).
+        teardownHandler.postDelayed({ releaseSurface() }, SURFACE_RELEASE_MS)
         super.onDestroy()
-        webView.evaluateJavascript("window.Game && Game.destroy && Game.destroy();", null)
+    }
+
+    /**
+     * Takes the game surface apart. This runs once the exit slide has painted
+     * its last frame, so leaving looks exactly as it always has.
+     */
+    private fun releaseSurface() {
+        if (surfaceReleased) return
+        surfaceReleased = true
+        if (::adMobManager.isInitialized) adMobManager.destroy()
+        if (!::webView.isInitialized) return
+        (webView.parent as? android.view.ViewGroup)?.removeView(webView)
+        webView.destroy()
+    }
+
+    /**
+     * Releases the process-wide bridge handlers, but only if this screen is the
+     * one that installed them (see [bridgeOwner]).
+     */
+    private fun clearBridgeHandlers() {
+        if (bridgeOwner !== this) return
+        bridgeOwner = null
+        NativeBridgeContext.callback = null
+        NativeBridgeContext.exitHandler = null
+        NativeBridgeContext.adHandler = null
+        NativeBridgeContext.interstitialHandler = null
+        NativeBridgeContext.bannerHandler = null
     }
 
     override fun onBackPressed() {
-        // A turn in flight owns the screen: back is ignored so a rotation can
-        // never be double-triggered or left half-played.
-        if (AndroidRotation.isRotating()) return
         exitGame()
     }
 
     /**
-     * Leaves the game the way it arrived. A landscape game turns itself away to
-     * the portrait shell (the shell then turns itself in); a portrait game slides
-     * back out to the right like every other shell page.
+     * Leaves the game the way it arrived: a landscape game sinks back DOWN off the
+     * bottom edge while the shell page eases back in from above (closeGame →
+     * game_back_in / game_back_out); a portrait game pops back like any other page.
+     * A landscape game's display change back to portrait is the platform's own,
+     * exactly as it was on the way in.
      */
     private fun exitGame() {
         if (closing) return
-        // A landscape game mid-session leaves through the animated turn. The
-        // pre-turn states (still arriving) fall through to the plain exit: there
-        // is nothing worth animating yet.
-        if (landscapeGame && AndroidRotation.state == AndroidRotation.ScreenState.GAME) {
-            closing = true
-            ShellTransition.closeGame(this, true)
-            AndroidRotation.playGameExitAndTurn(this, contentHost) { finish() }
-            return
-        }
         closing = true
-        ShellTransition.closeGame(this, landscapeGame)
+        ShellTransition.closeGame(
+            this, (currentGame?.orientation ?: "portrait").equals("landscape", ignoreCase = true)
+        )
         finish()
     }
 }

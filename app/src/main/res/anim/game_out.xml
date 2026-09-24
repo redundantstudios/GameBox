@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The page a game is launched from: it eases 30% up and out of the way
+     (parallax), the vertical twin of nav_out_left. Pure translation, no alpha. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/decelerate_interpolator">
+    <translate android:fromYDelta="0%" android:toYDelta="-30%"
+        android:duration="340" />
+</set>

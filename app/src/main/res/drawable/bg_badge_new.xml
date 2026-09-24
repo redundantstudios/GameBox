@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- NEW marker on a freshly added game tile: red ribbon banner with
-     folded tails, per the director reference screenshots. Vector so it
-     stays crisp at any density and costs no APK bytes. -->
+<!-- Compact green NEW flag for a newly added game tile. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="45dp"
-    android:height="25dp"
-    android:viewportWidth="90"
-    android:viewportHeight="50">
-    <path android:fillColor="#B0261E" android:strokeColor="#5E120C" android:strokeWidth="1.6" android:strokeLineJoin="round" android:pathData="M8.00,16.00 L23.00,16.00 L23.00,38.00 L12.00,43.00 L8.00,32.00 Z" />
-    <path android:fillColor="#B0261E" android:strokeColor="#5E120C" android:strokeWidth="1.6" android:strokeLineJoin="round" android:pathData="M82.00,16.00 L67.00,16.00 L67.00,38.00 L78.00,43.00 L82.00,32.00 Z" />
-    <path android:fillColor="#E33C32" android:strokeColor="#5E120C" android:strokeWidth="1.6" android:strokeLineJoin="round" android:pathData="M73.00,16.00 L17.00,16.00 L22.50,25.00 L17.00,34.00 L73.00,34.00 L67.50,25.00 Z" />
-    <path android:fillColor="#F66C60" android:pathData="M22.00,18.00 L68.00,18.00 L65.00,25.00 L25.00,25.00 Z" />
+    android:width="54dp"
+    android:height="26dp"
+    android:viewportWidth="108"
+    android:viewportHeight="52">
+    <path android:fillColor="#087A58" android:strokeColor="#087F5B" android:strokeWidth="1.5" android:strokeLineJoin="round" android:pathData="M88.00,14.00 L103.00,20.00 L88.00,26.00 Z" />
+    <path android:fillColor="#12B886" android:strokeColor="#087F5B" android:strokeWidth="2.0" android:strokeLineJoin="round" android:pathData="M6.00,12.00 L91.00,12.00 L100.00,19.00 L92.00,26.00 L91.00,40.00 L6.00,40.00 Z" />
+    <path android:fillColor="#42D3A0" android:pathData="M11.00,15.00 L88.00,15.00 L91.00,19.00 L11.00,19.00 Z" />
+    <path android:fillColor="#087A58" android:pathData="M10.00,35.00 L88.00,35.00 L91.00,39.00 L10.00,39.00 Z" />
 </vector>

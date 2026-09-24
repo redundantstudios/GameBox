@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The game leaving: it sinks back DOWN off the bottom edge, the exact reverse
+     of game_in, so a game leaves the way it arrived. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/decelerate_interpolator">
+    <translate android:fromYDelta="0%" android:toYDelta="100%"
+        android:duration="340" />
+</set>

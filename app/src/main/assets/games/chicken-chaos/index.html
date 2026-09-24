@@ -9,7 +9,56 @@ maxPlayers: 4
 aiSupport: true
 online: false
 tileColor: #6BCB4A
-version: 1
+version: 4
+-->
+<!--
+REDUNDANT STUDIOS — GAMEBOX MANIFEST
+game: Chicken Chaos | version: 4
+tier: 1 (Vanilla JS + Canvas 2D) | ads: interstitial when the player taps PLAY AGAIN
+        or MENU on the result card — never over the result itself. The shell's banner
+        is untouched, rewarded helper wired to the bridge.
+locked: landscape (the SHELL owns the turn — GameActivity → SENSOR_LANDSCAPE), one
+        in-game exit (BACK), settings synced both ways (Game.setSettings), lifecycle
+        pause/resume/destroy, gesture-gated audio unlock, no input lock.
+modes: 2-4 players on one screen | VS BOTS (1 human + 1-3 bots)
+changelog 4: Device-feedback round on the v3 look. Back / gear are now the game's own
+        UNSELECTED toggle button — the dark translucent brown of LOCAL / VS BOTS —
+        with white icons, and the in-game pause keeps its ORIGINAL dark translucent
+        disc with a light rim ('rgba(40,30,20,.6)' / 'rgba(255,255,255,.4)'). Catch
+        boxes are a little SMALLER than the round pause button (37 vs 43 px here).
+        The GRAB THE CHICKEN hint moved to the BOTTOM band (it was crowding the HUD
+        strip at the top). Result card: narrower (658 px here, was 776 = 90% of the
+        screen), the board is a cream-to-wood vertical gradient, the LEFT half is a
+        grass paddock SIZED TO THE BIRD with the START-PAGE chicken standing on it —
+        plain white, no colour wash, drawn straight onto the canvas so the comb and
+        beak are no longer cropped by the old sprite box — and the win/tie headline
+        wears the TIME UP! styling (yellow ' #ffd23e' with the dark-brown outline).
+changelog 3: In-game texts are now captions, not billboards: GO!, the countdown
+        digits, the "GRAB THE CHICKEN" pill (which hugs its text) and TIME UP! are
+        all viewport-scaled and much smaller. Back / gear / pause are drawn as the
+        game's OWN green action button (same face, outline and gloss as PLAY) with a
+        white icon — the shell's cream card look is gone from the chrome. The DASH
+        caption is removed, so the chevrons sit exactly on the button centre. Result
+        card rebuilt: the winner's chicken fills the LEFT half (own contact shadow +
+        winner-colour halo, sized from the half), the RIGHT half carries
+        "NAME WINS!" / "IT'S A TIE!", a per-player catch table (colour chip, colour
+        name, count, and the winner named in words) and the two buttons. The colour
+        WINNER BAND and every star are gone. The winner chicken's tint no longer
+        leaves a translucent colour square across the bird's lower half — the tint
+        rect now covers the whole sprite instead of one quadrant. Interstitial moved
+        off match end: it runs when the player taps PLAY AGAIN / MENU.
+changelog 2: A chicken caught is now the ONLY score (the "/10" target is gone and
+        nobody can end the match early — the winner is whoever caught more inside
+        MATCH_TIME). Square, larger catch boxes flanking the timer / pause. In-game
+        texts (GO! / hint pill / TIME UP!) size to the viewport and auto-fit instead
+        of being fixed 100-140px. Chicken slowed (208 → 168, calmer panic sprint,
+        slower turn). Last-10-second warning ticks, harder inside the last 5. DASH
+        icon centred on its button. Result pop-up rebuilt in the game's cream/wood
+        card language with one catch tile per player. Interstitial ad on match end.
+        Back / gear / pause chrome drawn in the game theme (no flat "cut" gloss, no
+        offset glyphs). First tap is audible: the pre-unlock audio queue can no
+        longer be eaten by the idle cluck. Game.setSettings + shell volume, WebView
+        fullscreen request removed (the shell's turn is the only display change).
 -->
 <html lang="en">
 <head>
@@ -99,13 +148,28 @@ const Studio = (() => {
       if(b&&b.exitGame){ try{ b.exitGame(); }catch(_){} }
     },
     ads:{
+      /* The shell fires the rewarded callback with NO argument on success (and
+         "closed" / "unavailable" otherwise), so testing for 'granted' swallowed
+         every reward — the same landmine Ludo hit (PROGRESS.md). Anything that
+         is not an explicit failure counts as a reward. */
       rewarded(placement,onReward){
         const b=bridge();
-        if(!b) return;
-        window.__studioAdCb = function(result){
-          if(result==='granted') onReward();
+        if(!b||!b.showRewardedAd) return;
+        window.__studioAdCb=function(result){
+          if(result!=='closed'&&result!=='unavailable'&&onReward) onReward();
         };
-        b.showRewardedAd('__studioAdCb');
+        try{ b.showRewardedAd('__studioAdCb'); }catch(_){}
+      },
+      /* Match-end break. The shell always answers — 'closed' when the ad played,
+         'unavailable' when it could not (offline / no fill) — so the game always
+         gets its continuation back and can never hang on a missing callback. */
+      interstitial(onDone){
+        const b=bridge();
+        if(b&&b.showInterstitial){
+          window.__studioInterCb=function(){ if(onDone) onDone(); };
+          try{ b.showInterstitial('__studioInterCb'); return; }catch(_){}
+        }
+        if(onDone) onDone();
       }
     }
   };
@@ -128,7 +192,10 @@ window.addEventListener('error',ev=>{ if(document.getElementById('err').style.di
 ============================================================ */
 const CFG = {
   MATCH_TIME: 60,
-  WIN_SCORE: 10,
+  /* Last seconds of the match get a per-second warning tick; inside the final
+     five the tick is louder and the handset buzzes. */
+  WARN_SEC: 10,
+  FINAL_SEC: 5,
 
   PLAYER_RADIUS: 24,
   PLAYER_OBSTACLE_RADIUS: 18,
@@ -138,9 +205,12 @@ const CFG = {
   CARRY_SPEED_MULT: 0.9,
 
   CHICKEN_RADIUS: 17,
-  CHICKEN_SPEED: 208,
-  CHICKEN_TURN: 5.2,
-  CHICKEN_FLEE: 150,
+  /* Slower bird: a carrying player (255 x 0.9 = 229) can actually close on it.
+     Panic is a nudge, not a sprint, and the turn rate keeps it catchable. */
+  CHICKEN_SPEED: 168,
+  CHICKEN_TURN: 4.6,
+  CHICKEN_FLEE: 132,
+  CHICKEN_PANIC: 1.10,
 
   CARRY_TIME: 2,
 
@@ -225,6 +295,40 @@ function txt(g,s,x,y,size,fill,stroke,lw,weight,align){
 const hap=k=>Studio.haptic(k);
 
 /* ============================================================
+   UI PALETTE — the game's own wood-and-cream language, shared by
+   every piece of chrome (HUD, settings panel, result card, corner
+   buttons) so the look can never drift apart again.
+============================================================ */
+const UI={
+  face:'#fdf6e4',        /* cream card / button face */
+  edge:'#4a3323',        /* the dark brown outline used everywhere */
+  icon:'#fff',           /* icons drawn ON a dark chrome button */
+  ink:'#3b2b1e',         /* body text on cream */
+  dim:'#7a5a3a',
+  shadow:'rgba(30,20,10,.34)',
+  /* the UNSELECTED toggle face (LOCAL / VS BOTS) — the corner chrome uses this
+     pair so back / gear read as the game's own controls, never as shell cards */
+  btnDark:'rgba(60,50,35,.72)', btnDarkEdge:'#241c10',
+  green:'#59c126', greenEdge:'#2e6b12',
+  amber:'#f6b41e', amberEdge:'#8f6206',
+  grey:'#8a8f98', greyEdge:'#4c5058'
+};
+/* Width of a text run in the game's display font (tracking included). */
+function measureTxt(s,size,weight){
+  try{
+    ctx.font=(weight||900)+' '+size+'px '+FONT;
+    return ctx.measureText(s).width*1.07;    /* txt() adds 0.055em tracking */
+  }catch(_){ return String(s).length*size*0.45; }
+}
+/* Text that must always fit its plate: shrink until it does. */
+function fitSize(s,maxW,start,min,weight){
+  let fs=start;
+  const w=measureTxt(s,fs,weight);
+  if(w>maxW&&w>0) fs=Math.max(min||8,fs*maxW/w);
+  return fs;
+}
+
+/* ============================================================
    CANVAS / MEASURE / SAFE AREA / ORIENTATION
    DISPLAY SIZE: 100% of the viewport, guaranteed by CSS.
    measure() NEVER touches canvas style width/height, so a bad
@@ -269,21 +373,49 @@ if(window.visualViewport&&visualViewport.addEventListener)
    AUDIO — synthesized, one central manager
 ============================================================ */
 const Snd=(()=>{
-  let ac=null,master=null,noiseBuf=null,pending=null;
+  const BASE_VOL=0.5;                    /* the shell's volume multiplies this */
+  let ac=null,master=null,noiseBuf=null,pending=null,pendingAt=0,vol=1;
   const lastAt={};
   function init(){
     if(ac) return;
     const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
     ac=new AC();
-    master=ac.createGain(); master.gain.value=game.muted?0:0.5;
+    master=ac.createGain(); master.gain.value=game.muted?0:BASE_VOL*vol;
     const comp=ac.createDynamicsCompressor();
     master.connect(comp); comp.connect(ac.destination);
     noiseBuf=ac.createBuffer(1,Math.floor(ac.sampleRate*0.6),ac.sampleRate);
     const d=noiseBuf.getChannelData(0);
     for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
   }
-  function resume(){ if(ac&&ac.state==='suspended') ac.resume(); }
-  function setMuted(m){ if(master) master.gain.value=m?0:0.5; }
+  /* Unlock the context AND warm it up: one silent sample makes the graph really
+     start on WebView builds that only report "running" once a buffer has played. */
+  function resume(){
+    if(!ac) return;
+    if(ac.state==='suspended'){
+      try{ const p=ac.resume(); if(p&&p.catch) p.catch(()=>{}); }catch(_){}
+    }
+    try{
+      const s=ac.createBufferSource();
+      s.buffer=ac.createBuffer(1,1,ac.sampleRate);
+      s.connect(master||ac.destination);
+      s.start(0);
+    }catch(_){}
+  }
+  function setMuted(m){ if(master) master.gain.value=m?0:BASE_VOL*vol; }
+  function setVolume(v){
+    vol=clamp(typeof v==='number'?v:1,0,1);
+    if(master) master.gain.value=game.muted?0:BASE_VOL*vol;
+  }
+  /* Fires the moment the context reports "running": replay the request made
+     during the unlocking gesture, but ONLY if it is fresh. A sound queued before
+     the first touch (the idle chicken clucking at the menu) must never stand in
+     for the tap that actually unlocked audio. */
+  function onCtxState(){
+    if(!ac||ac.state!=='running') return;
+    const n=pending, at=pendingAt;
+    pending=null;
+    if(n&&performance.now()-at<400) play(n);
+  }
   function ok(n){ const t=performance.now(); if(lastAt[n]&&t-lastAt[n]<70) return false; lastAt[n]=t; return true; }
   function tone(o){
     if(!ac) return;
@@ -318,22 +450,19 @@ const Snd=(()=>{
     if(!ac) return;
     if(ac.state!=='running'){
       /* A context created inside this very gesture is still suspended, and
-         anything scheduled on it now is dropped - that was the "no sound
-         until the second tap" bug. Remember the request and replay it the
-         moment the context is running. */
+         anything scheduled on it now is dropped - that was the "no sound until
+         the second tap" bug. Keep only the NEWEST request plus its timestamp and
+         let onCtxState replay it the moment the context starts running. */
       try{ ac.resume(); }catch(_){ }
-      if(!pending){
-        pending=n;
-        ac.onstatechange=function(){
-          if(ac.state==='running'&&pending){ const p=pending; pending=null; play(p); }
-        };
-      }
+      pending=n; pendingAt=performance.now();
+      if(!ac.onstatechange) ac.onstatechange=onCtxState;
       return;
     }
     if(!ok(n)) return;
     switch(n){
       case 'click': tone({type:'square',f:700,f2:520,d:0.07,v:0.14}); break;
       case 'tick': tone({type:'triangle',f:520,d:0.1,v:0.22}); noise({f:1800,d:0.05,v:0.05}); break;
+      case 'warn': tone({type:'triangle',f:760,f2:600,d:0.13,v:0.26}); noise({ft:'highpass',f:2200,d:0.05,v:0.05}); break;
       case 'go': tone({type:'triangle',f:840,d:0.3,v:0.26}); tone({type:'sine',f:1240,d:0.32,v:0.14,at:0.02}); break;
       case 'catch': tone({type:'triangle',f:480,f2:900,d:0.1,v:0.24}); tone({type:'triangle',f:720,f2:1250,d:0.12,v:0.18,at:0.06}); noise({f:1400,d:0.05,v:0.06}); break;
       case 'cluck': tone({type:'square',f:340,f2:200,d:0.08,v:0.1}); tone({type:'square',f:300,f2:170,d:0.07,v:0.08,at:0.09}); break;
@@ -350,7 +479,7 @@ const Snd=(()=>{
       case 'pop': tone({type:'square',f:500,f2:900,d:0.08,v:0.12}); break;
     }
   }
-  return {init,resume,play,setMuted,get ctx(){return ac;}};
+  return {init,resume,play,setMuted,setVolume,get ctx(){return ac;}};
 })();
 
 /* ============================================================
@@ -364,7 +493,8 @@ const game={
   skill: clamp(parseFloat(qp.get('skill'))||0.5,0,1),
   demo:true, muted: Studio.settings.sound===false,
   matchT:CFG.MATCH_TIME, countT:0, prevC:4, goT:0, hintT:0, hitStop:0, simT:0,
-  winnerSeat:-1, tie:false, puT:3, autoPaused:false
+  winnerSeat:-1, tie:false, puT:3, autoPaused:false,
+  warnSec:0, adBusy:false
 };
 try{
   const s=Studio.load('cc:pref');
@@ -413,15 +543,30 @@ function circleBtn(id,x,y,r,label,o){
   return uiBtn(id,x-r,y-r,r*2,r*2,label,Object.assign({round:r},o||{}));
 }
 const _drawBtn=drawBtn;
+/* ROUND CHROME (back / gear) — the game's OWN unselected toggle button (the dark
+   translucent brown of LOCAL / VS BOTS when they are OFF) with a white icon, so
+   the corner buttons belong to Chicken Chaos and not to the shell's cream cards.
+   The gloss is painted INSIDE a clip, so nothing can leave a straight "cut" edge
+   across the button the way an unclipped half-disc highlight would. */
 drawBtn=function(b){
   if(b.flat) return;
   if(!b.round){ _drawBtn(b); return; }
   const dy=b.down?2:0, cx=b.x+b.round, cyy=b.y+b.round, r=b.round;
-  ctx.fillStyle='rgba(30,20,10,.3)'; ctx.beginPath(); ctx.arc(cx,cyy+4,r,0,TAU); ctx.fill();
-  ctx.fillStyle=b.fill||'#59c126'; ctx.beginPath(); ctx.arc(cx,cyy+dy,r,0,TAU); ctx.fill();
-  ctx.lineWidth=4; ctx.strokeStyle=b.stroke||'#2e6b12'; ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,.25)'; ctx.beginPath(); ctx.arc(cx,cyy+dy-r*0.28,r*0.55,PI,TAU); ctx.fill();
-  if(b.label) txt(ctx,b.label,cx,cyy+dy+1,b.fs||r*0.9,b.labelCol||'#fff','rgba(0,0,0,.45)',3.5);
+  ctx.save();
+  ctx.fillStyle=UI.shadow;
+  ctx.beginPath(); ctx.arc(cx,cyy+4,r,0,TAU); ctx.fill();
+  ctx.fillStyle=b.fill||UI.btnDark;
+  ctx.beginPath(); ctx.arc(cx,cyy+dy,r,0,TAU); ctx.fill();
+  ctx.lineWidth=Math.max(4,r*0.19); ctx.strokeStyle=b.stroke||UI.btnDarkEdge; ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,cyy+dy,r,0,TAU); ctx.clip();
+  const gg=ctx.createRadialGradient(cx-r*0.34,cyy+dy-r*0.46,r*0.05,
+                                    cx-r*0.16,cyy+dy-r*0.24,r*1.05);
+  gg.addColorStop(0,'rgba(255,255,255,.16)');
+  gg.addColorStop(0.55,'rgba(255,255,255,.04)');
+  gg.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(cx,cyy+dy,r,0,TAU); ctx.fill();
+  ctx.restore();
+  if(b.label) txt(ctx,b.label,cx,cyy+dy+1,b.fs||r*0.9,b.labelCol||UI.icon,null,0);
 };
 
 const zones={};
@@ -640,18 +785,15 @@ cv.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
 
 /* ============================================================
-   LANDSCAPE LOCK — best effort, user-gesture only
+   LANDSCAPE LOCK — best effort, user-gesture only.
+   The SHELL owns the real turn (GameActivity applies the manifest's landscape
+   via SENSOR_LANDSCAPE), so this is only a nudge for a plain browser tab.
+   The old WebView requestFullscreen() call is GONE on purpose: a WebView
+   fullscreen request is routed to the native custom-view path and can blank a
+   game that already fills the screen.
 ============================================================ */
 function tryLandscapeLock(){
   if(!('ontouchstart' in window)) return;
-  try{
-    const el=document.documentElement;
-    const fs=el.requestFullscreen||el.webkitRequestFullscreen;
-    if(fs&&!document.fullscreenElement){
-      const p=fs.call(el);
-      if(p&&p.catch) p.catch(()=>{});
-    }
-  }catch(_){}
   try{
     const so=screen.orientation;
     if(so&&so.lock){
@@ -1294,6 +1436,8 @@ function steal(car,atk,nx,ny,rel){
   game.hitStop=0.07; cam.shake=CFG.CAMERA_SHAKE_MAX;
 }
 function scoreCarry(p){
+  /* SCORE = CHICKENS CAUGHT, and that is the whole win condition: nobody can
+     end a match early, so the player who caught more inside MATCH_TIME wins. */
   p.score++; p.pop=1; p.scorePop=1;
   p.carrying=false; p.carryT=0;
   ck.state='pop'; ck.carrier=null;
@@ -1301,7 +1445,6 @@ function scoreCarry(p){
   addFloat(p.x,p.y-60,'+1','#ffd23e',38);
   stars(p.x,p.y-40,8); ringFx(p.x,p.y,'rgba(255,210,62,',10,50);
   Snd.play('score'); Snd.play('pop'); hap('medium'); cam.shake=1.6;
-  if(!game.demo&&p.score>=CFG.WIN_SCORE&&game.state==='PLAYING') endMatch();
 }
 function collideObstacles(e){
   const er=(e.or!==undefined)? e.or : e.r;
@@ -1388,9 +1531,9 @@ function updateChicken(dt){
     if(ck.y-AR.y<m)dy+=(1-(ck.y-AR.y)/m)*1.8; if(AR.y+AR.h-ck.y<m)dy-=(1-(AR.y+AR.h-ck.y)/m)*1.8;
     const l2=Math.hypot(dx,dy)||1;
     const ta=Math.atan2(dy/l2,dx/l2);
-    const turn=CFG.CHICKEN_TURN*(panic?1.5:1);
+    const turn=CFG.CHICKEN_TURN*(panic?1.35:1);
     ck.a+=clamp(nang(ta-ck.a),-turn*dt,turn*dt);
-    const sp=CFG.CHICKEN_SPEED*(panic?1.16:1);
+    const sp=CFG.CHICKEN_SPEED*(panic?CFG.CHICKEN_PANIC:1);
     ck.x+=Math.cos(ck.a)*sp*dt; ck.y+=Math.sin(ck.a)*sp*dt;
     bounceArena(ck); collideObstacles(ck);
     ck.runT+=dt*(0.7+sp/160);
@@ -1611,23 +1754,12 @@ function drawChickenAt(x,y,sc,o){
   drawChickenShape(ctx,o);
   ctx.restore();
 }
-/* WINNER CHICKEN — same character, tinted with the winning
-   player's color via a temp canvas + 'source-atop'. */
-const tintC=document.createElement('canvas');
-function drawWinnerChicken(x,y,sc,color){
-  const S=120;
-  tintC.width=Math.max(2,Math.round(S*sc*2)); tintC.height=tintC.width;
-  const t=tintC.getContext('2d');
-  t.setTransform(1,0,0,1,0,0);
-  t.clearRect(0,0,tintC.width,tintC.height);
-  t.scale(tintC.width/S,tintC.height/S);
-  t.translate(S/2,S/2);
-  drawChickenShape(t,{t:game.simT,face:1,open:0.12,flap:1});
-  t.globalCompositeOperation='source-atop';
-  t.globalAlpha=0.5; t.fillStyle=color; t.fillRect(0,0,S,S);
-  t.globalAlpha=1;
-  ctx.drawImage(tintC,x-S/2*sc,y-S/2*sc,S*sc,S*sc);
-}
+/* The tinted winner sprite (`drawWinnerChicken` + its temp canvas) is GONE: the
+   director wants the START-PAGE chicken in the result card — plain white, no
+   colour wash — so the card calls drawChickenAt() directly. That also removes the
+   clipping the sprite box caused (the comb tops out at y ≈ -26.3 and the beak at
+   x ≈ +26 with its 2px stroke, both outside the old 120-unit box) and the
+   quadrant tint rectangle that used to show as a "yellow square" at its feet. */
 function drawPlayer(p){
   const s=dsc(p.y);
   ctx.save(); ctx.translate(p.x,p.y); ctx.scale(s,s);
@@ -1830,23 +1962,25 @@ function renderWorld(){
    UI — TOP HUD: color score boxes (no captions) around an
    EXACTLY CENTERED timer; corner controls; screens
 ============================================================ */
-/* COLOR SCORE BOX — the box IS the player (red/yellow/blue/
-   purple). Score inside as CURRENT/TARGET. No P1-P4 text and
-   no color-name caption below the box. */
-function drawScoreBox(p,cx,cy,w,h){
+/* CATCH BOX — one per player, in that player's own colour, holding ONLY the
+   number of chickens they have caught: no "/10" target and no caption, because
+   the colour IS the player's name. Square and larger so the count reads at a
+   glance mid-chase. */
+function drawScoreBox(p,cx,cy,s){
   p.scorePop=Math.max(0,p.scorePop-0.03);
-  const sc=1+p.scorePop*0.2;
+  const sc=1+p.scorePop*0.18;
   const darkText=(p.seat===1);        // yellow bg -> dark text
-  const label=p.score+'/'+CFG.WIN_SCORE;
+  const rad=s*0.30;
   ctx.save(); ctx.translate(cx,cy); ctx.scale(sc,sc);
-  ctx.fillStyle='rgba(30,20,10,.3)'; rr(ctx,-w/2+2,-h/2+3,w,h,h*0.32); ctx.fill();
-  ctx.fillStyle=p.col.m; rr(ctx,-w/2,-h/2,w,h,h*0.32); ctx.fill();
-  ctx.lineWidth=p.carrying?4+Math.sin(game.simT*8)*1.2:3;
+  ctx.fillStyle=UI.shadow; rr(ctx,-s/2+2,-s/2+4,s,s,rad); ctx.fill();
+  ctx.fillStyle=p.col.m; rr(ctx,-s/2,-s/2,s,s,rad); ctx.fill();
+  ctx.lineWidth=p.carrying?4.5+Math.sin(game.simT*8)*1.2:3.5;
   ctx.strokeStyle=p.col.d; ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,.28)'; rr(ctx,-w/2+4,-h/2+3,w-8,h*0.24,4); ctx.fill();
-  txt(ctx,label,0,1,clamp(h*0.42,11,15),
+  ctx.fillStyle='rgba(255,255,255,.30)';
+  rr(ctx,-s/2+s*0.10,-s/2+s*0.09,s*0.80,s*0.20,rad*0.5); ctx.fill();
+  txt(ctx,''+p.score,0,s*0.03,s*0.56,
       darkText?'#3b2b1e':'#fff8ec',
-      darkText?null:'rgba(0,0,0,.35)',2.5);
+      darkText?null:'rgba(0,0,0,.35)',3);
   ctx.restore();
 }
 /* BIG CENTER TIMER — arcade badge. The ONLY gameplay timer.
@@ -1867,46 +2001,49 @@ function drawTimer(x,y,w,h){
   txt(ctx,''+t,0,h*0.05,fs,'#fff8ec',null,0);
   ctx.restore();
 }
-/* HUD row: [left boxes] [TIMER at exact center] [PAUSE] [right boxes]
-   2P:  RED | TIMER | YELLOW
-   3P:  RED YELLOW | TIMER | BLUE
-   4P:  RED YELLOW | TIMER | BLUE PURPLE
-   No text below the boxes — box color alone identifies players. */
+/* HUD row: [LEFT catch boxes] [TIMER dead centre] [PAUSE] [RIGHT catch boxes]
+   2P:  RED | TIMER | PAUSE | YELLOW
+   3P:  RED YELLOW | TIMER | PAUSE | BLUE
+   4P:  RED YELLOW | TIMER | PAUSE | BLUE PURPLE
+   The left group is right-aligned against the timer and the right group starts
+   once past the pause button, so the two groups stay balanced around a timer
+   that is always EXACTLY centred. No captions under the boxes. */
 function drawHUD(){
   const act=players.filter(p=>!game.demo);
   if(!act.length) return;
   const timH=clamp(ch*0.13,58,88);
   const timW=clamp(timH*1.6,110,190);
-  const gap=7;
-  const pr=clamp(Math.min(cw,ch)*0.058,17.5,25);
+  const bs=clamp(Math.min(cw,ch)*0.09,32,45);       /* square catch box: kept a
+                                                       little SMALLER than the
+                                                       round pause button */
+  const gap=clamp(Math.min(cw,ch)*0.022,7,13);
+  const pr=clamp(Math.min(cw,ch)*0.052,16,22);      /* pause radius */
   const showPause=(game.state==='PLAYING'||game.state==='COUNTDOWN');
-  const bw=clamp(cw*0.052,44,70), bh=clamp(ch*0.052,26,36);
   const left=act.filter(p=>p.seat<2), right=act.filter(p=>p.seat>=2);
   // TIMER EXACTLY CENTERED — independent of box count / pause
   const tX=(cw-timW)/2, ty=safeT+6, cyT=ty+timH/2;
-  // boxes vertically centered on the timer
-  const boxCy=cyT;
-  // left group right-aligned against the timer's left edge
-  let x=tX-gap;
+  // left group: the innermost box sits closest to the timer
+  let x=tX-gap-bs/2;
   for(let i=left.length-1;i>=0;i--){
-    drawScoreBox(left[i],x-bw/2,boxCy,bw,bh);
-    x-=bw+gap;
+    drawScoreBox(left[i],x,cyT,bs);
+    x-=bs+gap;
   }
   drawTimer(tX,ty,timW,timH);
-  // pause beside the timer (right side), then right group
+  // right side: PAUSE beside the timer, then the right group
   x=tX+timW+gap;
   if(showPause){
+    /* the ORIGINAL in-game pause look: dark translucent disc, light rim */
     circleBtn('pause',x+pr,cyT,pr,'',
       {fill:'rgba(40,30,20,.6)',stroke:'rgba(255,255,255,.4)',fn:()=>Game.pause()});
     const bw2=pr*0.26, bh2=pr*0.82, gp=pr*0.3;
-    ctx.fillStyle='#fff';
+    ctx.fillStyle=UI.icon;
     rr(ctx,x+pr-gp/2-bw2,cyT-bh2/2,bw2,bh2,3); ctx.fill();
     rr(ctx,x+pr+gp/2,cyT-bh2/2,bw2,bh2,3); ctx.fill();
     x+=pr*2+gap;
   }
   for(const p of right){
-    drawScoreBox(p,x+bw/2,boxCy,bw,bh);
-    x+=bw+gap;
+    drawScoreBox(p,x+bs/2,cyT,bs);
+    x+=bs+gap;
   }
 }
 function drawControls(){
@@ -1945,13 +2082,16 @@ function drawControls(){
     ctx.lineWidth=4; ctx.strokeStyle=OUT; ctx.stroke();
     ctx.fillStyle='rgba(255,255,255,.28)';
     ctx.beginPath(); ctx.arc(0,-z.dr*0.24,z.dr*0.55,PI,TAU); ctx.fill();
-    ctx.strokeStyle='#fff'; ctx.lineWidth=z.dr*0.13; ctx.lineCap='round'; ctx.lineJoin='round';
+    ctx.strokeStyle='#fff'; ctx.lineWidth=z.dr*0.14; ctx.lineCap='round'; ctx.lineJoin='round';
+    /* Icon only — the DASH caption is gone, so the two mirrored chevrons now sit
+       on the exact centre of the button (no group offset to compensate for). */
+    ctx.save();
     for(const off of [-z.dr*0.16,z.dr*0.16]){
       ctx.beginPath();
-      ctx.moveTo(off-z.dr*0.14,-z.dr*0.3); ctx.lineTo(off+z.dr*0.08,0); ctx.lineTo(off-z.dr*0.14,z.dr*0.3);
+      ctx.moveTo(off-z.dr*0.13,-z.dr*0.27); ctx.lineTo(off+z.dr*0.13,0); ctx.lineTo(off-z.dr*0.13,z.dr*0.27);
       ctx.stroke();
     }
-    txt(ctx,'DASH',0,z.dr*0.6,z.dr*0.32,'#fff','rgba(0,0,0,.45)',3);
+    ctx.restore();
     ctx.globalAlpha=1;
     if(!ready){
       const frac=clamp(p.dashCD/CFG.DASH_COOLDOWN,0,1);
@@ -1982,16 +2122,17 @@ function saveSettings(){
     sound:!game.muted, haptics:Studio.settings.haptics!==false
   })); }catch(_){}
 }
-function drawGear(x,y,r){
+function drawGear(x,y,r,col,hole){
   ctx.save(); ctx.translate(x,y);
-  ctx.fillStyle='#fff';
+  /* teeth + body in white ink, hub punched back to the button face */
+  ctx.fillStyle=col||UI.icon;
   for(let i=0;i<8;i++){
     ctx.save(); ctx.rotate(i*TAU/8);
     ctx.fillRect(-r*0.14,-r*0.98,r*0.28,r*0.36);
     ctx.restore();
   }
   ctx.beginPath(); ctx.arc(0,0,r*0.62,0,TAU); ctx.fill();
-  ctx.fillStyle='rgba(40,30,20,.9)';
+  ctx.fillStyle=hole||UI.btnDarkEdge;
   ctx.beginPath(); ctx.arc(0,0,r*0.26,0,TAU); ctx.fill();
   ctx.restore();
 }
@@ -2023,10 +2164,10 @@ function drawHapticIcon(x,y,on){
   ctx.restore();
 }
 function drawSettingsBtn(){
-  const r=clamp(Math.min(cw,ch)*0.055,22,32);
+  const r=clamp(Math.min(cw,ch)*0.058,23,29);
   const x=cw-safeR-r-14, y=safeT+r+14;
-  circleBtn('setGear',x,y,r,'',{fill:'rgba(40,30,20,.55)',stroke:'rgba(255,255,255,.35)',
-    fn:()=>{ game.settingsOpen=!game.settingsOpen; if(game.settingsOpen) game.setT=0; }});
+  circleBtn('setGear',x,y,r,'',
+    {fn:()=>{ game.settingsOpen=!game.settingsOpen; if(game.settingsOpen) game.setT=0; }});
   drawGear(x,y,r*0.62);
 }
 function drawSettingsPanel(){
@@ -2061,23 +2202,32 @@ function drawCountdown(){
   const sc=1+frac*0.4;
   ctx.save(); ctx.translate(cw/2,ch/2); ctx.scale(sc,sc);
   ctx.globalAlpha=clamp(1.4-frac,0,1);
-  txt(ctx,''+n,0,0,clamp(ch*0.17,54,104),'#fff',OUT,Math.max(9,ch*0.024));
+  txt(ctx,''+n,0,0,clamp(ch*0.115,34,60),'#fff',OUT,Math.max(8,ch*0.017));
   ctx.restore();
 }
 function drawGo(){
   const t=1-game.goT/0.8;
   const sc=1.6-t*0.6;
+  const fs=clamp(ch*0.105,30,56);    /* hero, but only ~1.3x the timer digits */
   ctx.save(); ctx.translate(cw/2,ch*0.42); ctx.scale(sc,sc);
   ctx.globalAlpha=clamp(game.goT*2.5,0,1);
-  txt(ctx,'GO!',0,0,140,'#7ee04a',OUT,20);
+  txt(ctx,'GO!',0,0,fs,'#7ee04a',OUT,fs*0.15);
   ctx.restore();
 }
 function drawHint(){
   if(game.hintT<=0) return;
   ctx.globalAlpha=clamp(game.hintT,0,1);
-  const w=Math.min(430,cw*0.6);
-  ctx.fillStyle='rgba(30,22,14,.72)'; rr(ctx,cw/2-w/2,ch*0.16,w,52,26); ctx.fill();
-  txt(ctx,'GRAB THE CHICKEN - HOLD IT FOR 2 SECONDS!',cw/2,ch*0.16+26,Math.min(21,w*0.046),'#ffe9a8');
+  const msg='GRAB THE CHICKEN - HOLD IT FOR 2 SECONDS!';
+  const fs=clamp(ch*0.036,12,16);              /* a caption, not a billboard */
+  const h=Math.max(fs*2.0,clamp(ch*0.085,30,40));
+  const w=Math.min(cw*0.70,measureTxt(msg,fs)+fs*2.2);
+  /* BOTTOM band, not the top: the top strip is the HUD and the middle is the
+     countdown, so the hint sits along the bottom edge, clear of the corner
+     joystick / dash controls. */
+  const y=clamp(ch-safeB-h-ch*0.055,safeT+4,Math.max(safeT+4,ch-h-4));
+  ctx.fillStyle='rgba(30,22,14,.72)'; rr(ctx,cw/2-w/2,y,w,h,h/2); ctx.fill();
+  ctx.lineWidth=2.5; ctx.strokeStyle='rgba(255,233,168,.45)'; ctx.stroke();
+  txt(ctx,msg,cw/2,y+h/2,fs,'#ffe9a8');
   ctx.globalAlpha=1;
 }
 function drawPortraitSplash(){
@@ -2097,14 +2247,15 @@ function drawPortraitSplash(){
   ctx.restore();
   drawChickenAt(cw/2,hy,sc,{t:game.simT,face:1,open:ck.open});
 }
-/* Back arrow, drawn as lines so it stays crisp at any radius. */
-function drawBackIcon(x,y,r){
+/* Back arrow, drawn as lines so it stays crisp at any radius. Tip, arms and
+   shaft are mirrored about the button centre, so the glyph can never read as
+   sitting off-centre (the old version ended its shaft at +0.42r — a stub). */
+function drawBackIcon(x,y,r,col){
   ctx.save(); ctx.translate(x,y);
-  ctx.strokeStyle='#fff'; ctx.lineWidth=r*0.20; ctx.lineCap='round'; ctx.lineJoin='round';
-  ctx.beginPath();
-  ctx.moveTo(r*0.30,-r*0.52); ctx.lineTo(-r*0.30,0); ctx.lineTo(r*0.30,r*0.52);
-  ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(-r*0.30,0); ctx.lineTo(r*0.42,0); ctx.stroke();
+  ctx.strokeStyle=col||UI.icon; ctx.lineWidth=r*0.22;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(-r*0.34,0); ctx.lineTo(r*0.34,0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r*0.12,-r*0.40); ctx.lineTo(-r*0.34,0); ctx.lineTo(r*0.12,r*0.40); ctx.stroke();
   ctx.restore();
 }
 function drawMenu(){
@@ -2112,12 +2263,12 @@ function drawMenu(){
   const g=ctx.createLinearGradient(0,ch*0.45,0,ch);
   g.addColorStop(0,'rgba(20,26,10,0)'); g.addColorStop(1,'rgba(18,24,8,.65)');
   ctx.fillStyle=g; ctx.fillRect(0,ch*0.45,cw,ch*0.55);
-  /* Back to the shell, top-left of the start page. */
-  const br=clamp(Math.min(cw,ch)*0.052,22,30);
-  circleBtn('backBtn',safeL+br+14,safeT+br+14,br,'',{
-    fill:'rgba(40,30,20,.55)',stroke:'rgba(255,255,255,.35)',
-    fn:()=>{ try{ Studio.exitGame(); }catch(_){} }});
-  drawBackIcon(BTN.backBtn.x+br,BTN.backBtn.y+br,br*0.66);
+  /* Back to the shell, top-left of the start page — same size, same 14px inset
+     and the same theme as the gear opposite it, so the pair reads as one pair. */
+  const br=clamp(Math.min(cw,ch)*0.058,23,29);
+  circleBtn('backBtn',safeL+br+14,safeT+br+14,br,'',
+    {fn:()=>{ try{ Studio.exitGame(); }catch(_){} }});
+  drawBackIcon(BTN.backBtn.x+br,BTN.backBtn.y+br,br*0.62);
   /* Drop-in choreography: each beat eases in after the portrait->landscape
      rotation (menuT resets on Game.onOrientationChange and on toMenu). */
   const mt=game.menuT||0;
@@ -2185,24 +2336,19 @@ function drawMenu(){
 }
 function savePref(){ try{ Studio.save('cc:pref',JSON.stringify({players:game.playerCount,solo:game.solo})); }catch(_){} }
 
-/* 5-point cartoon star (result panel decoration) */
-function drawStar(x,y,r,fill,stroke,rot){
-  ctx.save(); ctx.translate(x,y); ctx.rotate(rot||0);
-  ctx.beginPath();
-  for(let i=0;i<10;i++){
-    const rad=i%2?r*0.45:r, a=-PI/2+i/10*TAU;
-    ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad);
-  }
-  ctx.closePath();
-  ctx.fillStyle=fill; ctx.fill();
-  if(stroke){ ctx.lineWidth=Math.max(2,r*0.16); ctx.lineJoin='round'; ctx.strokeStyle=stroke; ctx.stroke(); }
-  ctx.restore();
-}
+/* (the 5-point star helper used by v2's result panel is gone — no stars now) */
 
 /* ============================================================
-   WIN / RESULT PANEL — winner by COLOR (RED/YELLOW/BLUE/
-   PURPLE WINS!), tinted winner chicken, highlighted score rows
+   RESULT CARD — one cream board in the game's own language.
+   LEFT HALF: the winner's chicken at full size. RIGHT HALF: who
+   won, then the catch table, then the two options. No colour band
+   and no stars: the winner is said in words and shown by the
+   colour of their own row and of the bird.
 ============================================================ */
+function hexA(h,a){                     /* '#rrggbb' + alpha -> rgba() */
+  const n=parseInt(String(h).slice(1),16);
+  return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+}
 function drawResult(){
   ctx.fillStyle='rgba(20,26,10,.55)'; ctx.fillRect(0,0,cw,ch);
   for(const c of confetti){
@@ -2212,67 +2358,103 @@ function drawResult(){
   const ranked=[...players].sort((a,b)=>b.score-a.score);
   const win=ranked[0];
   const tie=ranked.length>1&&ranked[1].score===win.score;
-  const wc=tie?'#f6b41e':win.col.m;
-  const wname=tie?null:win.col.cn;
-  const pw=Math.min(560,cw*0.74), ph=Math.min(ch*0.94,440);
-  const px=cw/2-pw/2, py=(ch-ph)/2;
+  const wc=tie?UI.amber:win.col.m;                   /* the accent colour */
+  const wtxt=tie?"IT'S A TIE!":(win.col.cn+' WINS!');
   const pop=clamp(1-(1.2-game.stateT)*3,0,1);
+  const psc=0.94+0.06*pop;                           /* a small settle, so the drawn
+                                                        card stays inside the taps */
+
+  /* Narrower than the first cut: the right half only carries a headline, the
+     catch table and two buttons, so the card does not need the whole screen. */
+  const ph=clamp(ch*0.92,210,ch*0.97), pw=clamp(ch*1.60,330,cw*0.84);
+  const px=cw/2-pw/2, py=(ch-ph)/2;
+  const rad=clamp(ph*0.075,14,26);
+  const pad=clamp(ph*0.055,10,22);
+  const gap=clamp(pw*0.022,7,16);
+  const leftW=pw*0.44;                               /* LEFT HALF: the paddock */
+  const rx=px+leftW+gap*0.6, rw=px+pw-pad-rx;         /* RIGHT HALF: text+table */
+  const bh=clamp(ch*0.11,42,54);
+  const bw=(rw-gap)/2;
+  const by=py+ph-pad-bh;
+
   ctx.save();
-  ctx.translate(cw/2,py+ph/2);
-  ctx.scale(0.7+pop*0.3,0.7+pop*0.3);
+  ctx.translate(cw/2,py+ph/2); ctx.scale(psc,psc);
   ctx.translate(-cw/2,-(py+ph/2));
-  ctx.fillStyle='rgba(15,10,5,.4)'; rr(ctx,px+5,py+9,pw,ph,26); ctx.fill();
-  ctx.fillStyle=wc; rr(ctx,px-4,py-4,pw+8,ph+8,30); ctx.fill();
-  ctx.fillStyle='#fdf6e4'; rr(ctx,px,py,pw,ph,26); ctx.fill();
-  ctx.lineWidth=7; ctx.strokeStyle='#4a3323'; ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,.55)';
-  rr(ctx,px+9,py+9,pw-18,ph*0.12,14); ctx.fill();
-  const cxp=cw/2;
-  drawStar(cxp,py+ph*0.085,ph*0.052,'#ffd23e','#b98a1e',Math.sin(game.simT*2)*0.12);
-  const chickY=py+ph*0.30+Math.sin(game.simT*3)*3;
-  const csc=Math.min(1.4,ph/300);
-  drawWinnerChicken(cxp,chickY,csc,wc);
-  ctx.save(); ctx.translate(cxp+2*0,chickY-52*csc);
-  const crw=18*csc;
-  ctx.fillStyle='#ffd23e';
-  ctx.beginPath();
-  ctx.moveTo(-crw,crw*0.4); ctx.lineTo(-crw*1.1,-crw*0.6); ctx.lineTo(-crw*0.45,0);
-  ctx.lineTo(0,-crw*0.85); ctx.lineTo(crw*0.45,0); ctx.lineTo(crw*1.1,-crw*0.6); ctx.lineTo(crw,crw*0.4);
-  ctx.closePath(); ctx.fill();
-  ctx.lineWidth=2.2*csc; ctx.lineJoin='round'; ctx.strokeStyle='#b98a1e'; ctx.stroke();
-  ctx.restore();
-  const tY=py+ph*0.50;
-  if(tie){
-    txt(ctx,"IT'S A TIE!",cxp,tY,clamp(pw*0.11,24,44),'#f6b41e',OUT,7);
-  } else {
-    const s=wname+' WINS!';
-    txt(ctx,s,cxp,tY,clamp(pw*0.115,24,50),wc,OUT,8);
-  }
-  const bx=px+pw*0.10, bw2=pw*0.80;
-  const by=py+ph*0.60, bh2=py+ph*0.80-by;
-  ctx.fillStyle='rgba(74,51,35,.14)'; rr(ctx,bx,by,bw2,bh2,14); ctx.fill();
-  ctx.lineWidth=3; ctx.strokeStyle='#4a3323'; rr(ctx,bx,by,bw2,bh2,14); ctx.stroke();
-  txt(ctx,'FINAL SCORE',bx+bw2/2,by+bh2*0.16,Math.max(11,bh2*0.17),'#7a5a3a');
-  const rows=ranked.length;
-  const rh=(bh2*0.74)/rows;
-  const ry0=by+bh2*0.26;
+
+  /* --- the board: cream warming into the game's wood tan, brown outline --- */
+  ctx.fillStyle='rgba(15,10,5,.42)'; rr(ctx,px+5,py+9,pw,ph,rad); ctx.fill();
+  const bg=ctx.createLinearGradient(0,py,0,py+ph);
+  bg.addColorStop(0,'#fffdf6'); bg.addColorStop(1,'#f0ddb8');
+  ctx.fillStyle=bg; rr(ctx,px,py,pw,ph,rad); ctx.fill();
+  ctx.lineWidth=7; ctx.strokeStyle=UI.edge; ctx.stroke();
+
+  /* --- LEFT HALF: a grass paddock with the winner's chicken standing on it ---
+     The paddock is sized to the BIRD (not to the card's full height), so the
+     grass reads as ground under it instead of an empty green column. */
+  const gx0=px+pad*0.62, gw=leftW-pad*1.24;
+  const csc=clamp((gw-pad*1.2)/52,1.1,6.0);
+  const gh=Math.min(ph-pad*1.24,37.5*csc+pad*2.6);
+  const gy0=py+(ph-gh)/2;
+  const ggd=ctx.createLinearGradient(0,gy0,0,gy0+gh);
+  ggd.addColorStop(0,'#82d35c'); ggd.addColorStop(1,'#57a838');
+  ctx.fillStyle=ggd; rr(ctx,gx0,gy0,gw,gh,rad*0.7); ctx.fill();
+  ctx.lineWidth=4; ctx.strokeStyle=UI.edge; ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.14)';              /* sun on the grass */
+  rr(ctx,gx0+5,gy0+5,gw-10,gh*0.24,rad*0.5); ctx.fill();
+  const ccx=gx0+gw/2, ccy=gy0+gh/2;
+  const bx0=ccx-csc, by0=ccy+7.4*csc;                 /* ink centre above the feet */
+  const shR=52*csc/2.6;                               /* the menu's contact shadow */
+  const sh=ctx.createRadialGradient(bx0,by0+11*csc+2,2,bx0,by0+11*csc+2,shR);
+  sh.addColorStop(0,'rgba(12,32,8,.40)'); sh.addColorStop(1,'rgba(12,32,8,0)');
+  ctx.fillStyle=sh; ctx.beginPath();
+  ctx.ellipse(bx0,by0+11*csc+2,shR*0.92,shR*0.30,0,0,TAU); ctx.fill();
+  /* the start-page chicken itself: plain white, no colour tint */
+  drawChickenAt(bx0,by0,csc,{t:game.simT,face:1,open:ck.open});
+
+  /* --- RIGHT HALF: who won, in the TIME UP! headline style + a 6px accent rule --- */
+  const titleFs=fitSize(wtxt,rw,clamp(ph*0.155,20,40),14);
+  const titleY=py+pad+titleFs*0.62;
+  ctx.fillStyle=wc; rr(ctx,rx,titleY-titleFs*0.46,6,titleFs*0.92,3); ctx.fill();
+  txt(ctx,wtxt,rx+18,titleY,titleFs,'#ffd23e',OUT,Math.max(3,titleFs*0.16),'900','left');
+
+  /* --- the catch table: one row per player, the winner named in words --- */
+  const capFs=clamp(ph*0.042,11,15);
+  const capY=titleY+titleFs*0.82;
+  txt(ctx,tie?'EVERYONE CAUGHT THE SAME':'CHICKENS CAUGHT',rx+18,capY,capFs,UI.dim,null,0,'900','left');
+  const rgap=clamp(ph*0.016,4,8);
+  const listTop=capY+capFs*1.5, room=(by-16)-listTop;    /* keep 16px clear of the buttons */
+  const rowH=clamp(Math.min(ph*0.125,(room-(ranked.length-1)*rgap)/ranked.length),26,50);
+  const listH=ranked.length*rowH+(ranked.length-1)*rgap;
+  const listY=listTop+Math.max(0,(room-listH)/2);
   ranked.forEach((p,i)=>{
-    const ry=ry0+rh*(i+0.5);
-    const isTop=p.score===ranked[0].score;
-    if(isTop){
-      ctx.fillStyle=wc; ctx.globalAlpha=0.18;
-      rr(ctx,bx+5,ry-rh*0.42,bw2-10,rh*0.84,8); ctx.fill();
-      ctx.globalAlpha=1;
-    }
+    const ry=listY+i*(rowH+rgap), isTop=p.score===win.score;
+    ctx.fillStyle=isTop?hexA(p.col.m,0.22):'rgba(74,51,35,.06)';
+    rr(ctx,rx,ry,rw,rowH,rowH*0.34); ctx.fill();
+    ctx.lineWidth=isTop?4:2.5;
+    ctx.strokeStyle=isTop?p.col.d:'rgba(74,51,35,.20)'; ctx.stroke();
+    const chip=rowH*0.56;                            /* the player's colour chip */
     ctx.fillStyle=p.col.m;
-    ctx.beginPath(); ctx.arc(bx+bw2*0.14,ry,rh*0.24,0,TAU); ctx.fill();
-    ctx.lineWidth=2; ctx.strokeStyle='rgba(0,0,0,.25)'; ctx.stroke();
-    txt(ctx,p.col.cn,bx+bw2*0.20,ry,rh*0.34,'#3b2b1e',null,0,'900','left');
-    txt(ctx,''+p.score,bx+bw2*0.84,ry,rh*0.42,isTop?p.col.d:'#3b2b1e');
+    rr(ctx,rx+rowH*0.30,ry+rowH/2-chip/2,chip,chip,chip*0.32); ctx.fill();
+    ctx.lineWidth=2.6; ctx.strokeStyle=OUT; ctx.stroke();
+    txt(ctx,p.col.cn,rx+rowH*0.30+chip+rowH*0.26,ry+rowH/2,
+        clamp(rowH*0.36,11,17),isTop?UI.ink:UI.dim,null,0,'900','left');
+    const sfs=clamp(rowH*0.52,14,26), sww=measureTxt(''+p.score,sfs);
+    txt(ctx,''+p.score,rx+rw-rowH*0.34,ry+rowH/2,sfs,
+        isTop?p.col.d:UI.ink,null,0,'900','right');
+    if(isTop&&!tie){                                 /* said in words, not a star */
+      const tag='WINNER', t2=clamp(rowH*0.30,9,14), tw2=measureTxt(tag,t2)+16;
+      const tX=rx+rw-rowH*0.34-sww-10-tw2;
+      ctx.fillStyle=UI.face; rr(ctx,tX,ry+rowH/2-rowH*0.19,tw2,rowH*0.38,rowH*0.19); ctx.fill();
+      ctx.lineWidth=2.4; ctx.strokeStyle=p.col.d; ctx.stroke();
+      txt(ctx,tag,tX+tw2/2,ry+rowH/2,t2,p.col.d);
+    }
   });
-  const bw3=pw*0.42, bh3=clamp(ch*0.095,40,54);
-  uiBtn('rem',cxp-bw3-10,py+ph-bh3-14,bw3,bh3,'PLAY AGAIN',{fill:'#59c126',stroke:'#2e6b12',fs:bh3*0.3,fn:startMatch});
-  uiBtn('menu',cxp+10,py+ph-bh3-14,bw3,bh3,'MENU',{fill:'#8a8f98',stroke:'#4c5058',fs:bh3*0.3,fn:toMenu});
+
+  /* --- the two options: the ad runs only when one of THESE is chosen --- */
+  uiBtn('rem',rx,by,bw,bh,'PLAY AGAIN',
+    {fill:UI.green,stroke:UI.greenEdge,fs:bh*0.30,fn:()=>adBreak(startMatch)});
+  uiBtn('menu',rx+bw+gap,by,bw,bh,'MENU',
+    {fill:UI.grey,stroke:UI.greyEdge,fs:bh*0.30,fn:()=>adBreak(toMenu)});
   ctx.restore();
 }
 function drawPaused(){
@@ -2292,8 +2474,9 @@ function drawPaused(){
 function drawTimeUp(){
   ctx.fillStyle='rgba(20,26,10,.35)'; ctx.fillRect(0,0,cw,ch);
   const sc=1+Math.sin(game.simT*6)*0.02;
+  const fs=clamp(ch*0.095,28,54);    /* was a fixed 100px, then still too loud */
   ctx.save(); ctx.translate(cw/2,ch*0.42); ctx.scale(sc,sc);
-  txt(ctx,'TIME UP!',0,0,100,'#ffd23e',OUT,18);
+  txt(ctx,'TIME UP!',0,0,fs,'#ffd23e',OUT,fs*0.16);
   ctx.restore();
 }
 
@@ -2346,6 +2529,7 @@ function startMatch(){
   resetZonePointers();
   game.puT=3; game.matchT=CFG.MATCH_TIME;
   game.state='COUNTDOWN'; game.countT=3.0; game.prevC=4; game.goT=0; game.hintT=0;
+  game.warnSec=0;
   cam.x=WORLD_W/2; cam.y=WORLD_H/2; cam.zoom=1;
 }
 function toMenu(){
@@ -2355,6 +2539,7 @@ function toMenu(){
   powerups.length=0; floats.length=0; confetti.length=0;
   resetZonePointers();
   game.puT=2; game.state='MENU'; game.autoPaused=false;
+  game.warnSec=0; game.adBusy=false;
   game.menuT=0; game.settingsOpen=false; game.setT=0;
 }
 function endMatch(){
@@ -2369,6 +2554,18 @@ function endMatch(){
   stars(cw/2,ch*0.3,14);
   ringFx(cw/2,ch*0.3,'rgba(255,210,62,',10,60);
   Snd.play('victory'); hap('success');
+}
+/* Result-card ad: ONE interstitial, asked of the shell only when the player
+   CHOOSES to leave the card (PLAY AGAIN / MENU) — never popped over the result
+   the instant the match ends. The shell always answers (too-early, frequency
+   cap, not-loaded and offline all call back immediately), so the game never
+   waits on it, and `next` is whatever the player actually tapped. */
+function adBreak(next){
+  let done=false;
+  const go=function(){ if(done) return; done=true; game.adBusy=false; if(next) next(); };
+  if(game.demo||game.adBusy){ if(next) next(); return; }   /* one ask at a time */
+  game.adBusy=true;
+  try{ Studio.ads.interstitial(go); }catch(_){ go(); }
 }
 function updateConfetti(dt){
   for(const c of confetti){
@@ -2420,6 +2617,13 @@ function update(dt){
     updateChicken(dt);
     updatePowerups(dt,active);
     updParticles(dt); updFloats(dt);
+    /* Last seconds: one tick per second, harder inside the final five. */
+    const sec=Math.ceil(game.matchT);
+    if(sec>0&&sec<=CFG.WARN_SEC&&sec!==game.warnSec){
+      game.warnSec=sec;
+      Snd.play(sec<=CFG.FINAL_SEC?'warn':'tick');
+      if(sec<=CFG.FINAL_SEC) hap('light');
+    }
     if(game.matchT<=0){
       game.matchT=0; game.state='TIMEUP'; game.stateT=1.3;
       Snd.play('timeup'); hap('medium');
@@ -2508,6 +2712,17 @@ const Game={
     if(game.state==='PAUSED'){ game.state=game.prevState; lastT=performance.now(); }
   },
   setMuted(m){ setMuted(!!m); },
+  /* Pushed in by the shell (GameActivity.onResume) whenever sound / haptics /
+     volume changed while this game was paused — same contract as Ludo's. */
+  setSettings(s){
+    try{
+      if(!s) return;
+      if(typeof s.sound==='boolean') setMuted(!s.sound);
+      if(typeof s.haptics==='boolean') Studio.settings.haptics=!!s.haptics;
+      if(typeof s.volume==='number') Snd.setVolume(s.volume>1? s.volume/100 : s.volume);
+      saveSettings();
+    }catch(_){}
+  },
   onOrientationChange(){
     /* Called by the shell when its portrait->landscape rotation completes —
        the menu replays its drop-in choreography from this beat. */

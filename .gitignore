@@ -24,18 +24,20 @@ __pycache__/
 
 # Generated audio assets - NOT in git on purpose (keeps the repo text-only).
 # They are produced from the committed generator scripts; run both before building:
-#     python _gen_audio.py     (sfx_tap / sfx_select / sfx_back / sfx_tick + bgm take 1)
-#     python _gen_bgm.py       (bgm_shell, seamless loop - overwrites the take-1 bgm)
+#     python Tools/_gen_audio.py   (sfx_tap / sfx_select / sfx_back / sfx_tick + bgm take 1)
+#     python Tools/_gen_bgm.py     (bgm_shell, seamless loop - overwrites the take-1 bgm)
 # Requires ffmpeg with libvorbis on PATH. See BUILD.md, Audio Assets section.
 # notif_chime.ogg has NO committed generator yet - see the note in BUILD.md.
 app/src/main/res/raw/*.ogg
 app/src/main/res/raw/*.wav
 
 # Raw puzzle source dump (2.7 MB Lichess export). The runtime asset
-# games/chess/puzzles.js IS committed; regenerate it with: python _gen_puzzles.py
-chess_puzzles.txt
+# games/chess/puzzles.js IS committed; regenerate it with:
+#     python Tools/_gen_puzzles.py
+sources/LockedGames/chess_puzzles.txt
 # One-off debugging scratch from device sessions (the committed tooling is
-# _gen_puzzles.py / _install_chess.py / _validate_chess.js / _check_chess_syntax.js)
+# Tools/_gen_puzzles.py / Tools/_install_chess.py / Tools/_validate_chess.js /
+# Tools/_check_chess_syntax.js)
 _cd*.js
 _pm_probe.py
 _fix_pm.py

@@ -49,6 +49,7 @@ class AdMobManager(private val activity: Activity) {
 
     /** Releases a queued request that never got an ad, so no game hangs forever. */
     private fun failPendingReward(reason: String) {
+        if (destroyed) return
         val queued = pendingReward ?: return
         pendingReward = null
         mainHandler.removeCallbacks(pendingTimeoutRunnable)
@@ -65,8 +66,24 @@ class AdMobManager(private val activity: Activity) {
     /** How long a queued rewarded request waits for the ad before giving up. */
     private val pendingTimeoutMs = 7000L
 
+    /**
+     * The banner this manager put on screen. An AdView is a live view holding
+     * its own Activity, so it is kept here to be handed back with the screen
+     * instead of being dropped (see [destroy]).
+     */
+    private var bannerView: AdView? = null
+
+    /**
+     * True once the screen that owns this manager is gone. An ad load resolves
+     * asynchronously, so a load started just before the game closed can call
+     * back afterwards; every entry point checks this so no callback ever
+     * touches a dead Activity.
+     */
+    @Volatile
+    private var destroyed = false
+
     fun loadRewardedAd() {
-        if (isRewardedLoading || rewardedAd != null) return
+        if (destroyed || isRewardedLoading || rewardedAd != null) return
         isRewardedLoading = true
         val adRequest = AdRequest.Builder().build()
         RewardedAd.load(activity, rewardedUnitId,
@@ -106,6 +123,7 @@ class AdMobManager(private val activity: Activity) {
         onAdClosed: () -> Unit,
         onAdUnavailable: () -> Unit = onAdClosed
     ) {
+        if (destroyed) return
         activity.runOnUiThread { showRewardedInternal(onRewardEarned, onAdClosed, onAdUnavailable) }
     }
 
@@ -114,6 +132,7 @@ class AdMobManager(private val activity: Activity) {
         onAdClosed: () -> Unit,
         onAdUnavailable: () -> Unit
     ) {
+        if (destroyed) return
         val ad = rewardedAd
         if (ad == null) {
             Log.w(TAG, "Rewarded ad not loaded yet - queuing the request")
@@ -158,7 +177,7 @@ class AdMobManager(private val activity: Activity) {
     }
 
     fun loadInterstitialAd() {
-        if (isInterstitialLoading || interstitialAd != null) return
+        if (destroyed || isInterstitialLoading || interstitialAd != null) return
         isInterstitialLoading = true
         val adRequest = AdRequest.Builder().build()
         InterstitialAd.load(activity, interstitialUnitId,
@@ -177,6 +196,7 @@ class AdMobManager(private val activity: Activity) {
     }
 
     fun showInterstitialAd(onAdClosed: () -> Unit) {
+        if (destroyed) return
         // Same threading rule as rewarded ads: show() must run on the UI thread.
         activity.runOnUiThread { showInterstitialInternal(onAdClosed) }
     }
@@ -234,6 +254,7 @@ class AdMobManager(private val activity: Activity) {
     }
 
     fun loadBannerAd(container: ViewGroup, onLoaded: (() -> Unit)? = null) {
+        if (destroyed) return
         val adView = AdView(activity).apply {
             // AdSize expects width in dp, not raw pixels
             val density = activity.resources.displayMetrics.density
@@ -243,7 +264,9 @@ class AdMobManager(private val activity: Activity) {
             adListener = object : AdListener() {
                 override fun onAdLoaded() {
                     Log.d(TAG, "Banner ad loaded")
-                    onLoaded?.invoke()
+                    // The game screen may already be gone (it left while the
+                    // banner was still loading).
+                    if (!destroyed) onLoaded?.invoke()
                 }
                 override fun onAdFailedToLoad(adError: LoadAdError) {
                     Log.e(TAG, "Banner ad failed to load: ${adError.message}")
@@ -251,6 +274,32 @@ class AdMobManager(private val activity: Activity) {
             }
         }
         container.addView(adView)
+        bannerView = adView
         adView.loadAd(AdRequest.Builder().build())
+    }
+
+    /**
+     * Hand-back for everything this manager asked the SDK for.
+     *
+     * Called once the game screen is gone (see `GameActivity.releaseSurface`).
+     * Without it, every open/close cycle left behind a banner AdView - and with
+     * an AdView, the whole Activity that owns it - plus the rewarded and
+     * interstitial objects the SDK was holding on its behalf. A few cycles of
+     * that is what turned into the shell and the running game stuttering.
+     *
+     * Runs on the UI thread (the screen's teardown), which is where
+     * `AdView.destroy()` is required to be called.
+     */
+    fun destroy() {
+        destroyed = true
+        mainHandler.removeCallbacks(pendingTimeoutRunnable)
+        pendingReward = null
+        rewardedAd = null
+        interstitialAd = null
+        bannerView?.let { view ->
+            (view.parent as? ViewGroup)?.removeView(view)
+            view.destroy()
+        }
+        bannerView = null
     }
 }

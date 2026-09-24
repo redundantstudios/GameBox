@@ -7,18 +7,18 @@ import com.redundantstudios.arcade.R
 /**
  * The shell's navigation motion, kept in one place.
  *
- * Shell pages: a SLIDE language. Forward (deeper) navigation pushes a page in
- * from the right while the page beneath eases 30% to the left - parallax, so the
- * two pages read as one surface moving. Back pops the page out to the right and
- * brings the page beneath back from the left. Pure translation, no alpha and no
- * blur: nothing dissolves, and a translation is the cheapest window animation
- * there is, so it stays perfectly smooth.
+ * ONE language for every page change: a SLIDE. Forward (deeper) navigation
+ * pushes a page in from the right while the page beneath eases 30% to the left -
+ * parallax, so the two pages read as one surface moving. Back pops the page out
+ * to the right and brings the page beneath back from the left. Pure translation,
+ * no alpha and no blur: nothing dissolves, and a translation is the cheapest
+ * window animation there is, so it stays perfectly smooth.
  *
- * Games: a PORTRAIT game slides exactly like every other page - its branded page
- * pushes in from the right while the page it came from eases away (see
- * [openGame]). A LANDSCAPE game plays NO window animation at all: its transition
- * is the display turning itself, and any window animation underneath that turn
- * could only fight it.
+ * A GAME is a page and it moves BY ORIENTATION. A LANDSCAPE game rises up from the
+ * bottom edge and sinks back down on the way out: its own display turn makes a side
+ * slide. A PORTRAIT game uses its own full-width LEFT-to-RIGHT slide: it enters
+ * from the left, the shell beneath drifts right, and exit reverses that motion.
+ * Nothing here fights the platform's rotation.
  *
  * Why this exists: Android 14 (API 34) replaced `overridePendingTransition`
  * with `overrideActivityTransition`, and for apps that target SDK 34+ the old
@@ -69,36 +69,67 @@ object ShellTransition {
         )
     }
 
-    // ---- Games -------------------------------------------------------------
+    // ---- Games: the vertical pair for LANDSCAPE, the slide for PORTRAIT ------
 
     /**
-     * The screen launching a game. A portrait game uses the slide language it
-     * shares with every other page; a landscape game is launched with no window
-     * animation, because the display turn that follows IS its transition.
+     * The screen launching a game. A LANDSCAPE game RISES from the bottom edge
+     * (`game_in`) while the page it came from eases 30% up and out (`game_out`) -
+     * the vertical twin of [open]'s slide. A PORTRAIT game instead slides fully
+     * from left to right, independent from normal shell-page navigation.
      */
     fun openGame(activity: Activity, landscape: Boolean) {
-        if (landscape) instant(activity) else open(activity)
-    }
-
-    /** The screen a game returns to: the exact reverse of [openGame]. */
-    fun closeGame(activity: Activity, landscape: Boolean) {
-        if (landscape) instant(activity) else close(activity)
-    }
-
-    /** Arms a game screen itself with the same two directions of the motion. */
-    fun armGame(activity: Activity, landscape: Boolean) {
-        if (landscape) instant(activity) else armSelf(activity)
+        if (!landscape) {
+            // Portrait games deliberately travel LEFT -> RIGHT. The full-width
+            // enter is distinct from the shell's 30% back-navigation parallax.
+            overrideTransitions(
+                activity,
+                Activity.OVERRIDE_TRANSITION_OPEN,
+                R.anim.portrait_game_in,
+                R.anim.portrait_game_out
+            )
+            return
+        }
+        overrideTransitions(
+            activity,
+            Activity.OVERRIDE_TRANSITION_OPEN,
+            R.anim.game_in,
+            R.anim.game_out
+        )
     }
 
     /**
-     * 0 means "play no animation". A landscape game's window is left alone so the
-     * platform's rotation animation is the only motion on screen - which is what
-     * makes a portrait game turn smoothly into a landscape one instead of
-     * appearing in landscape with an animation after it.
+     * Arms the game screen itself with its own orientation's motion, so it arrives
+     * correctly even when something starts it without going through [openGame].
      */
-    fun instant(activity: Activity) {
-        overrideTransitions(activity, Activity.OVERRIDE_TRANSITION_OPEN, 0, 0)
-        overrideTransitions(activity, Activity.OVERRIDE_TRANSITION_CLOSE, 0, 0)
+    fun armGame(activity: Activity, landscape: Boolean) {
+        openGame(activity, landscape)
+        closeGame(activity, landscape)
+    }
+
+    /**
+     * The game leaving: a LANDSCAPE game sinks back DOWN off the bottom
+     * (`game_back_out`) while the shell page eases back in from above
+     * (`game_back_in`) - the exact reverse of [openGame], so a game leaves the way
+     * it arrived. A PORTRAIT game exits right while the shell returns from the left.
+     */
+    fun closeGame(activity: Activity, landscape: Boolean) {
+        if (!landscape) {
+            // Exact reverse: the portrait game exits to the right while the shell
+            // returns from the left, matching the opening direction.
+            overrideTransitions(
+                activity,
+                Activity.OVERRIDE_TRANSITION_CLOSE,
+                R.anim.portrait_game_back_in,
+                R.anim.portrait_game_back_out
+            )
+            return
+        }
+        overrideTransitions(
+            activity,
+            Activity.OVERRIDE_TRANSITION_CLOSE,
+            R.anim.game_back_in,
+            R.anim.game_back_out
+        )
     }
 
     // ---- plumbing ---------------------------------------------------------

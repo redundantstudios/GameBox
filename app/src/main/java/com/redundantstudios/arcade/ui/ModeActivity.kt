@@ -11,7 +11,6 @@ import com.redundantstudios.arcade.GameActivity
 import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.model.GameManifest
-import com.redundantstudios.arcade.util.AndroidRotation
 import com.redundantstudios.arcade.util.ManifestParser
 
 class ModeActivity : ThemedActivity() {
@@ -123,12 +122,10 @@ class ModeActivity : ThemedActivity() {
                 putExtra("players", preselect)
             }
         }
-        // A landscape game's arrival is the snapshot of THIS screen turning
-        // away, so it has to be taken while we are still on it. A portrait game
-        // slides in like any other page and needs none of this.
-        val toLandscape = game.orientation.equals("landscape", true)
-        AndroidRotation.prepareGameEntry(this, toLandscape)
-        ShellTransition.openGame(this, toLandscape)
+        // Games move BY ORIENTATION: a landscape game rises from the bottom edge
+        // (game_in + game_out, because its own display turn makes a side slide read
+        // as a top-down move); a portrait game uses the ordinary page slide.
+        ShellTransition.openGame(this, game.orientation.equals("landscape", ignoreCase = true))
         startActivity(intent)
     }
 
