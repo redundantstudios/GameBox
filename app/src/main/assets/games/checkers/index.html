@@ -1,0 +1,3394 @@
+<!--
+STUDIO_GAME_MANIFEST
+id: checkers
+title: Checkers
+orientation: portrait
+minPlayers: 1
+maxPlayers: 2
+aiSupport: full
+online: false
+tileColor: #A97C50
+version: 2
+-->
+<!--
+REDUNDANT STUDIOS — GAMEBOX MANIFEST
+game: Checkers | version: 0.5.2 (iteration 5, UX corrections round two)
+tier: 1 (Vanilla JS + Canvas 2D) | renderer: Canvas 2D, DPR <= 2
+modes: PLAY popup (CHECKERS / PUZZLES) | pass | VS BOT | puzzles (Gould DB)
+convention: WHITE moves first, sets up at BOTTOM. BLACK on top.
+changelog 0.5.2: TUTORIAL REBUILT as single canvas + single text block (the old
+five-canvas version never toggled page container visibility, so NEXT appeared dead:
+board vanished, description stuck; coins failed to render on page one). Now every
+page swaps canvas drawing and text together, dots update, content vertically
+centered, five distinct diagrams. COPY AUDIT REDONE: every visible string is free
+of em dashes and placeholder dashes (status joins, tutorial pages, hub defaults,
+version line). CHAIN SOUND: each hop of a capture chain now knocks at boot time of
+that landing (sim-clock scheduled), pitch and volume step up per hop. CHAIN SPEED:
+200ms per hop (was 130). CAPTURE MARKS: doomed square gets translucent red fill
+plus double ring with cream underlay for contrast on dark squares; must-capture
+pulsing rings same treatment; landing dots cream. Ember stays removed.
+changelog 0.5.1: CHECKERS popup label, backdrop dismiss, tutorial centering,
+Black/White rename (white bottom first), Ember removed, star power button.
+changelog 0.5.0: mode popup, both-side bars, Gould pipeline, tutorial, bot glow.
+changelog 0.4.0: puzzles (generator). 0.3.x: Power Crown, bot/undo fixes.
+changelog 0.2.0: shell + bot. 0.1.x: engine + self-tests.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Checkers - RedundantStudios</title>
+<style>
+  :root{
+    --bg:#2b2723; --panel:#38322b; --panel2:#413a31; --ink:#efe6d6;
+    --ink-dim:#b3a78f; --line:#4a3826; --accent:#e0b45c; --accent-ink:#2b2416;
+    --danger:#a05a3d;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overscroll-behavior:none; user-select:none; -webkit-user-select:none;
+    padding:calc(env(safe-area-inset-top,0px) + 10px)
+            calc(env(safe-area-inset-right,0px) + 12px)
+            calc(env(safe-area-inset-bottom,0px) + 10px)
+            calc(env(safe-area-inset-left,0px) + 12px);
+  }
+  #app{height:100%;max-width:560px;margin:0 auto;position:relative}
+  #scr-game{align-items:center}
+  #scr-game>*{width:100%;max-width:560px}
+  #gameBar,#ctlTop,#ctlBottom{max-width:560px;padding:0 2px}
+  .screen{display:none;height:100%;flex-direction:column}
+  .screen.active{display:flex;animation:screenIn .22s ease-out}
+  @keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  button{transition:background-color .15s ease-out,transform .08s ease-out,opacity .15s ease-out}
+  .iconBtn{width:44px;height:44px;min-width:44px;border-radius:12px;border:2px solid var(--line);
+    background:var(--panel);color:var(--ink);display:flex;align-items:center;justify-content:center}
+  .iconBtn:active{transform:translateY(1px) scale(.96);background:var(--panel2)}
+  .iconBtn:disabled{opacity:.35}
+  .btn{height:52px;border-radius:14px;border:2px solid var(--line);background:var(--panel);
+    color:var(--ink);font-weight:800;letter-spacing:1px;font-size:15px}
+  .btn:active{transform:translateY(1px);background:var(--panel2)}
+  .btn.primary{background:var(--accent);border-color:#c79a45;color:var(--accent-ink)}
+  .btn.arm{background:var(--danger);border-color:#c06a48;color:#f5ded6}
+  .lbl{font-size:11px;letter-spacing:2px;color:var(--ink-dim);font-weight:800;margin:16px 0 6px}
+  .card{background:var(--panel);border:2px solid var(--line);border-radius:16px;padding:14px}
+  .seg{display:flex;border:2px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+  .seg button{flex:1;height:44px;border:none;background:transparent;color:var(--ink-dim);
+    font-weight:800;font-size:13px;letter-spacing:.5px}
+  .seg button+button{border-left:2px solid var(--line)}
+  .seg button.on{background:var(--accent);color:var(--accent-ink)}
+  .sw{width:54px;height:30px;min-width:54px;border-radius:15px;border:2px solid var(--line);
+    background:var(--panel2);position:relative}
+  .sw::after{content:"";position:absolute;width:22px;height:22px;border-radius:11px;
+    top:2px;left:3px;background:var(--ink-dim);transition:left .15s ease-out}
+  .sw.on{background:var(--accent);border-color:#c79a45}
+  .sw.on::after{left:27px;background:var(--accent-ink)}
+
+  #scr-intro{justify-content:space-between;align-items:center}
+  #introTop{width:100%;display:flex;justify-content:space-between;align-items:center}
+  .introMid{display:flex;flex-direction:column;align-items:center;flex:1;justify-content:center}
+  .bigTitle{font-size:42px;font-weight:800;letter-spacing:5px}
+  .tagLine{font-size:12px;font-weight:700;letter-spacing:3px;color:var(--ink-dim);margin-top:6px}
+  #playBtn{width:240px;margin-top:24px}
+  #howBtn{width:240px;margin-top:10px}
+  #continueBtn{width:240px;margin-top:10px}
+  .brand{font-size:11px;font-weight:800;letter-spacing:4px;color:var(--ink-dim);padding-bottom:6px}
+  .scrHead{display:flex;align-items:center;min-height:48px;margin-bottom:10px;padding:0 2px}
+  .scrHead h2{font-size:17px;font-weight:800;letter-spacing:1.6px;margin-left:8px;flex:1;line-height:1.2}
+  .scrollBody{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 2px 18px}
+  .scrollBody>.card{margin-bottom:10px;padding:16px;border-radius:14px}
+  .dailyHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .dailyTitle{font-size:12px;font-weight:800;letter-spacing:1.6px;color:var(--ink-dim);line-height:1.3}
+  .badge{font-size:10px;font-weight:800;letter-spacing:1px;background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 9px;color:var(--accent);white-space:nowrap}
+  #pzDailyDate{font-size:20px;font-weight:800;margin-top:5px;min-height:25px;line-height:1.25}
+  #pzDailyBtn{margin-top:13px;width:100%;height:46px}
+  #startBtn{width:100%;margin-top:22px}
+
+  .pzRow{display:flex;align-items:center;width:100%;margin-top:10px;text-align:left;
+    padding:0;border:none;background:transparent;color:var(--ink)}
+  .pzRow .card{flex:1;display:flex;align-items:center;width:100%}
+  .pzRow:active .card{transform:scale(.985);background:var(--panel2)}
+  .pzName{font-size:15px;font-weight:800;letter-spacing:1px;flex:1;color:var(--accent)}
+  .pzInfo{font-size:12px;font-weight:700;color:var(--ink-dim);text-align:right;line-height:1.5}
+  .streakFlame{width:34px;height:34px;min-width:34px;border-radius:10px;background:var(--panel2);
+    border:2px solid var(--line);display:flex;align-items:center;justify-content:center;margin-right:12px}
+  #pzStreak{font-size:22px;font-weight:800}
+  #pzBest{font-size:12px;font-weight:700;color:var(--ink-dim);margin-top:1px}
+  .dailyHead{display:flex;align-items:center}
+  .dailyTitle{font-size:13px;font-weight:800;letter-spacing:2px;color:var(--ink-dim);flex:1}
+  .badge{font-size:10px;font-weight:800;letter-spacing:1px;background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;padding:3px 8px;color:var(--accent)}
+  /* One compact three-line puzzle prompt, attached directly below the board. */
+  #pzPrompt{display:none;position:absolute;left:50%;top:0;transform:translateX(-50%);
+    width:calc(100% - 16px);max-width:340px;margin:0 auto;padding:6px 10px;text-align:center;
+    font-size:11px;line-height:1.35;color:var(--ink-dim);background:rgba(25,18,12,.92);
+    border:1px solid var(--line);border-radius:9px;pointer-events:none}
+  #pzPrompt.show{display:block}
+  #pzPrompt div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  #pzDailyDate{font-size:19px;font-weight:800;margin-top:6px;min-height:24px}
+  #pzDailyBtn{margin-top:12px;width:100%;height:44px}
+
+  #gameBar{display:flex;align-items:center;margin-bottom:8px}
+  #status{flex:1;text-align:center;font-size:15px;font-weight:700;color:var(--ink-dim);min-height:22px}
+  #status.chain{color:var(--accent)}
+  .barSpacer{width:44px;min-width:44px}
+  #botBadge{width:44px;min-width:44px;display:none;flex-direction:column;align-items:center}
+  #botBadge .bico{width:28px;height:28px;color:var(--ink-dim)}
+  #botDots{display:flex;margin-top:2px;height:6px}
+  #botDots span{width:5px;height:5px;border-radius:3px;background:var(--ink-dim);margin:0 2px;opacity:.25}
+  #botBadge.thinking .bico{color:var(--accent)}
+  #botBadge.thinking #botDots span{animation:dotBlink 1s infinite}
+  #botBadge.thinking #botDots span:nth-child(2){animation-delay:.18s}
+  #botBadge.thinking #botDots span:nth-child(3){animation-delay:.36s}
+  @keyframes dotBlink{0%,100%{opacity:.2}45%{opacity:1;background:var(--accent)}}
+  .ctlRow{display:flex;align-items:center;justify-content:center;margin:6px 0}
+  .ctlRow .iconBtn{margin:0 4px}
+  #boardArea{position:relative;flex:1 1 0;min-height:0}
+  #boardWrap{position:absolute;left:50%;top:calc(50% - 24px);transform:translate(-50%,-50%);
+    border-radius:12px;overflow:hidden;box-shadow:0 3px 14px rgba(0,0,0,.35)}
+  #boardShake{position:absolute;left:0;top:0;width:100%;height:100%}
+  #boardWrap canvas{position:absolute;left:0;top:0;width:100%;height:100%;
+    display:block;touch-action:none}
+
+  /* tutorial: single canvas + text, whole block centered vertically */
+  #tutCenter{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .tutCv{border-radius:12px;box-shadow:0 3px 14px rgba(0,0,0,.35);margin-bottom:14px}
+  .tutH{font-size:17px;font-weight:800;letter-spacing:1px;margin-bottom:8px;text-align:center}
+  .tutP{font-size:14px;font-weight:600;color:var(--ink-dim);line-height:1.65;text-align:center;
+    max-width:340px;min-height:90px}
+  .tutP b{color:var(--accent)}
+  .tutDots{display:flex;margin:14px 0 4px}
+  .tutDots span{width:8px;height:8px;border-radius:4px;background:var(--panel2);
+    border:1px solid var(--line);margin:0 4px}
+  .tutDots span.on{background:var(--accent)}
+  .tutNav{display:flex;width:100%;max-width:340px;margin-top:8px}
+  .tutNav .btn{flex:1}
+  .tutNav .btn+.btn{margin-left:10px}
+
+  .modalWrap{display:none;position:fixed;left:0;top:0;right:0;bottom:0;
+    background:rgba(15,10,6,.72);z-index:50;align-items:center;justify-content:center;padding:22px}
+  .modalWrap.show{display:flex;animation:fadeIn .16s ease-out}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes popIn{0%{transform:scale(.86);opacity:0}70%{transform:scale(1.02)}100%{transform:scale(1);opacity:1}}
+  .modalWrap.show .modalBox{animation:popIn .24s cubic-bezier(.2,.8,.3,1.1)}
+  .modalBox{width:100%;max-width:380px;background:var(--panel);border:2px solid var(--line);
+    border-radius:18px;padding:18px}
+  .modalBox h3{font-size:16px;font-weight:800;letter-spacing:2px;margin-bottom:4px}
+  .modalBox .sub{font-size:13px;font-weight:600;color:var(--ink-dim);line-height:1.5}
+  .modeCard{display:flex;align-items:center;width:100%;margin-top:12px;padding:14px;
+    border-radius:16px;border:2px solid var(--line);background:var(--panel2);color:var(--ink);
+    text-align:left}
+  .modeCard:active{transform:translateY(1px);background:#4a4237}
+  .modeIco{width:44px;height:44px;min-width:44px;border-radius:10px;background:var(--panel);
+    border:2px solid var(--line);display:flex;align-items:center;justify-content:center;margin-right:12px}
+  .modeName{font-size:16px;font-weight:800;letter-spacing:1px}
+  .modeHint{font-size:11px;font-weight:600;color:var(--ink-dim);margin-top:2px}
+  .pwrCard{display:flex;align-items:center;width:100%;margin-top:10px;padding:12px;
+    border-radius:14px;border:2px solid var(--line);background:var(--panel2);color:var(--ink)}
+  .pwrCard:active{transform:translateY(1px);background:#4a4237}
+  .pwrIco{width:40px;height:40px;min-width:40px;border-radius:10px;background:var(--panel);
+    border:2px solid var(--line);display:flex;align-items:center;justify-content:center;margin-right:12px}
+  .pwrName{font-size:15px;font-weight:800;letter-spacing:1px}
+  .pwrHint{font-size:11px;font-weight:600;color:var(--ink-dim);margin-top:2px;line-height:1.4}
+  .sheetBtn{width:100%;margin-top:10px;height:48px}
+  #resignYes{background:var(--danger);border-color:#c06a48;color:#f5ded6}
+  #resignYes:active{background:#8a4b32}
+  .setRow{display:flex;align-items:center;margin-top:14px}
+  .setRow .lbl2{flex:1;font-size:14px;font-weight:800;letter-spacing:1px}
+  .setFoot{margin-top:18px;font-size:11px;font-weight:700;letter-spacing:2px;
+    color:var(--ink-dim);text-align:center}
+  #fatal{display:none;position:fixed;left:0;top:0;right:0;bottom:0;
+    background:#43201c;color:#f5ded6;z-index:99;padding:28px;overflow:auto}
+  /* Startup errors must be visible during development, but must never cover the
+     playable UI in the shipping shell. Keep this hidden and log the details. */
+  #fatal h2{margin-bottom:10px;font-size:18px}
+  #fatal pre{white-space:pre-wrap;font-size:13px;line-height:1.5;word-break:break-word}
+  #fatal button{margin-top:14px;height:48px;padding:0 22px;border-radius:12px;
+    border:2px solid #a05a3d;background:#8a4b32;color:#f5ded6;font-weight:800;font-size:15px}
+</style>
+</head>
+<body>
+<main id="app">
+
+  <section id="scr-intro" class="screen active">
+    <div id="introTop">
+      <button id="introBack" class="iconBtn" aria-label="Back">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button id="introGear" class="iconBtn" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+    <div class="introMid">
+      <div class="bigTitle">CHECKERS</div>
+      <div class="tagLine">POWER CROWN EDITION</div>
+      <button id="playBtn" class="btn primary">PLAY</button>
+      <button id="howBtn" class="btn">HOW TO PLAY</button>
+      <button id="continueBtn" class="btn" style="display:none">CONTINUE</button>
+    </div>
+    <div class="brand">REDUNDANT STUDIOS</div>
+  </section>
+
+  <section id="scr-setup" class="screen">
+    <div class="scrHead">
+      <button id="setupBack" class="iconBtn" aria-label="Back">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <h2>NEW GAME</h2>
+    </div>
+    <div class="scrollBody">
+      <div class="lbl">OPPONENT</div>
+      <div class="seg" id="oppSeg">
+        <button data-v="2p" class="on">2 PLAYERS</button>
+        <button data-v="bot">VS BOT</button>
+      </div>
+      <div id="botBlock" style="display:none">
+        <div class="lbl">BOT STRENGTH</div>
+        <div class="seg" id="lvlSeg">
+          <button data-v="easy" class="on">EASY</button>
+          <button data-v="medium">MEDIUM</button>
+          <button data-v="hard">HARD</button>
+        </div>
+        <div class="lbl">YOU PLAY AS</div>
+        <div class="seg" id="colSeg">
+          <button data-v="light" class="on">WHITE (1st)</button>
+          <button data-v="dark">BLACK (2nd)</button>
+          <button data-v="r">RANDOM</button>
+        </div>
+      </div>
+      <button id="startBtn" class="btn primary">START GAME</button>
+    </div>
+  </section>
+
+  <section id="scr-puzzles" class="screen">
+    <div class="scrHead">
+      <button id="pzBack" class="iconBtn" aria-label="Back">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <h2>PUZZLES</h2>
+    </div>
+    <div class="scrollBody">
+      <div class="card" style="display:flex;align-items:center">
+        <div class="streakFlame">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M12 2c1 4-3 5.5-3 9a3 3 0 0 0 6 .2C16.4 13 18 11 17 8c2.6 1.7 4 4.4 4 7a9 9 0 1 1-18 0C3 9.5 8.5 7.5 12 2z" fill="#e08a3c"/>
+          </svg>
+        </div>
+        <div>
+          <div id="pzStreak">0 DAYS</div>
+          <div id="pzBest">BEST 0</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div class="dailyHead">
+          <div class="dailyTitle">DAILY SHOT</div>
+          <div class="badge">GOULD</div>
+        </div>
+        <div id="pzDailyDate"></div>
+        <button id="pzDailyBtn" class="btn primary">SOLVE</button>
+      </div>
+      <button class="pzRow" id="pzTierEasy">
+        <div class="card">
+          <div class="pzName">EASY</div>
+          <div class="pzInfo"><span id="pzSolvedEasy">0</span> solved<br><span id="pzStatEasy"></span></div>
+        </div>
+      </button>
+      <button class="pzRow" id="pzTierNormal">
+        <div class="card">
+          <div class="pzName">MEDIUM</div>
+          <div class="pzInfo"><span id="pzSolvedNormal">0</span> solved<br><span id="pzStatNormal"></span></div>
+        </div>
+      </button>
+      <button class="pzRow" id="pzTierHard">
+        <div class="card">
+          <div class="pzName">HARD</div>
+          <div class="pzInfo"><span id="pzSolvedHard">0</span> solved<br><span id="pzStatHard"></span></div>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <section id="scr-game" class="screen">
+    <div id="gameBar">
+      <button id="pauseBtn" class="iconBtn" aria-label="Pause">
+        <svg id="icoPause" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <rect x="6.5" y="5" width="4" height="14" rx="1.4" fill="currentColor"/>
+          <rect x="13.5" y="5" width="4" height="14" rx="1.4" fill="currentColor"/>
+        </svg>
+        <svg id="icoBack" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" style="display:none">
+          <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div id="status">White to move</div>
+      <div class="barSpacer" id="barSpacer"></div>
+      <div id="botBadge">
+        <svg class="bico" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="5" y="8.5" width="14" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
+          <circle cx="9.5" cy="13.5" r="1.6" fill="currentColor"/>
+          <circle cx="14.5" cy="13.5" r="1.6" fill="currentColor"/>
+          <path d="M12 8.5V5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="12" cy="4" r="1.4" fill="currentColor"/>
+        </svg>
+        <div id="botDots"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+    <div id="ctlTop" class="ctlRow">
+      <button class="iconBtn" data-act="undo" aria-label="Undo">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M8.5 4.5 3.5 9.5l5 5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3.5 9.5H14a6 6 0 0 1 0 12h-3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="iconBtn" data-act="redo" aria-label="Redo">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M15.5 4.5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20.5 9.5H10a6 6 0 0 0 0 12h3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="iconBtn" data-act="power" aria-label="Use power">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M12 3l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8L3 9.2l5.9-.9L12 3z"
+            fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="iconBtn" data-act="resign" aria-label="Resign">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+    <div id="boardArea">
+      <div id="boardWrap"><div id="boardShake"><canvas id="bg"></canvas><canvas id="fg"></canvas></div></div>
+      <div id="pzPrompt" class="pzPrompt" aria-live="polite">
+        <div id="pzPromptTurn">You play WHITE</div>
+        <div id="pzPromptPieces">White pieces against black pieces</div>
+        <div>Find the winning shot.</div>
+      </div>
+    </div>
+
+    <div id="ctlBottom" class="ctlRow">
+      <button class="iconBtn" data-act="undo" aria-label="Undo">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M8.5 4.5 3.5 9.5l5 5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3.5 9.5H14a6 6 0 0 1 0 12h-3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="iconBtn" data-act="redo" aria-label="Redo">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M15.5 4.5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20.5 9.5H10a6 6 0 0 0 0 12h3" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="iconBtn" data-act="power" aria-label="Use power">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M12 3l2.6 5.3 5.9.9-4.2 4.1 1 5.8-5.3-2.8-5.3 2.8 1-5.8L3 9.2l5.9-.9L12 3z"
+            fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <button class="iconBtn" data-act="resign" aria-label="Resign">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <section id="scr-tutorial" class="screen">
+    <div class="scrHead">
+      <button id="tutBack" class="iconBtn" aria-label="Back">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <h2>HOW TO PLAY</h2>
+    </div>
+    <div id="tutCenter">
+      <canvas id="tutCv" class="tutCv"></canvas>
+      <div class="tutH" id="tutH"></div>
+      <div class="tutP" id="tutP"></div>
+      <div class="tutDots" id="tutDots">
+        <span class="on"></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="tutNav">
+        <button id="tutPrev" class="btn">BACK</button>
+        <button id="tutNext" class="btn primary">NEXT</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="modeModal" class="modalWrap">
+  <div class="modalBox">
+    <h3>CHOOSE MODE</h3>
+    <div class="sub">What are we playing today?</div>
+    <button id="cardChess" class="modeCard">
+      <div class="modeIco">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8" fill="none" stroke="#e0b45c" stroke-width="2"/>
+          <circle cx="12" cy="12" r="3.5" fill="#e0b45c"/>
+        </svg>
+      </div>
+      <div><div class="modeName">CHECKERS</div>
+      <div class="modeHint">2 players or vs Bot</div></div>
+    </button>
+    <button id="cardPuzzles" class="modeCard">
+      <div class="modeIco">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+          <rect x="4" y="4" width="7" height="7" rx="2" fill="none" stroke="#e0b45c" stroke-width="2"/>
+          <rect x="13" y="4" width="7" height="7" rx="2" fill="none" stroke="#e0b45c" stroke-width="2"/>
+          <rect x="4" y="13" width="7" height="7" rx="2" fill="none" stroke="#e0b45c" stroke-width="2"/>
+          <rect x="13" y="13" width="7" height="7" rx="2" fill="none" stroke="#e0b45c" stroke-width="2"/>
+        </svg>
+      </div>
+      <div><div class="modeName">PUZZLES</div>
+      <div class="modeHint">Daily shot plus 3 difficulty tiers</div></div>
+    </button>
+  </div>
+</div>
+
+<div id="crownModal" class="modalWrap">
+  <div class="modalBox">
+    <div style="text-align:center;margin-bottom:2px">
+      <svg viewBox="0 0 24 24" width="44" height="44" aria-hidden="true">
+        <path d="M3 18h18l-1.5-9-4.5 4-3-6-3 6-4.5-4L3 18z" fill="#e0b45c"/>
+        <circle cx="12" cy="4.5" r="1.6" fill="#e0b45c"/>
+      </svg>
+    </div>
+    <h3 style="text-align:center">CROWNED!</h3>
+    <div class="sub" style="text-align:center">Pick one power for this king. It can be used a single time.</div>
+    <button id="pwShield" class="pwrCard">
+      <div class="pwrIco">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M12 3l7 3v5c0 5-3.2 8.4-7 10-3.8-1.6-7-5-7-10V6l7-3z" fill="none" stroke="#e0b45c" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div><div class="pwrName">SHIELD</div>
+      <div class="pwrHint">This king survives the first capture against it and stays on its square.</div></div>
+    </button>
+    <button id="pwLeap" class="pwrCard">
+      <div class="pwrIco">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M4 20L20 4" stroke="#e0b45c" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="3 4"/>
+          <circle cx="5" cy="19" r="2.4" fill="#e0b45c"/>
+          <circle cx="19" cy="5" r="2.4" fill="none" stroke="#e0b45c" stroke-width="2"/>
+        </svg>
+      </div>
+      <div><div class="pwrName">LONG LEAP</div>
+      <div class="pwrHint">One time, this king jumps two diagonal squares over an empty gap.</div></div>
+    </button>
+    <button id="pwSwap" class="pwrCard">
+      <div class="pwrIco">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path d="M7 8h10M17 8l-3-3M17 8l-3 3M17 16H7M7 16l3-3M7 16l3 3" fill="none" stroke="#e0b45c" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div><div class="pwrName">SWAP</div>
+      <div class="pwrHint">One time, this king trades places with a touching friendly piece.</div></div>
+    </button>
+  </div>
+</div>
+
+<div id="resignSheet" class="modalWrap">
+  <div class="modalBox">
+    <h3>RESIGN?</h3>
+    <div class="sub">The side to move will lose this game.</div>
+    <button id="resignYes" class="btn sheetBtn">RESIGN</button>
+    <button id="resignNo" class="btn primary sheetBtn">KEEP PLAYING</button>
+  </div>
+</div>
+
+<div id="msgSheet" class="modalWrap">
+  <div class="modalBox">
+    <h3 id="msgTitle"></h3>
+    <div class="sub" id="msgSub"></div>
+    <button id="msgOk" class="btn primary sheetBtn">OK</button>
+  </div>
+</div>
+
+<div id="settingsSheet" class="modalWrap">
+  <div class="modalBox">
+    <h3>SETTINGS</h3>
+    <div class="setRow">
+      <div class="lbl2">SOUND</div>
+      <button id="sndTgl" class="sw on" aria-label="Toggle sound"></button>
+    </div>
+    <div class="setRow">
+      <div class="lbl2">HAPTICS</div>
+      <button id="hapTgl" class="sw on" aria-label="Toggle haptics"></button>
+    </div>
+    <div class="setFoot" id="verLine">V0.5.2 REDUNDANT STUDIOS</div>
+  </div>
+</div>
+
+<div id="pauseSheet" class="modalWrap">
+  <div class="modalBox">
+    <h3>PAUSED</h3>
+    <div class="sub" id="pauseStatus">White to move</div>
+    <button id="pResume" class="btn primary sheetBtn">RESUME</button>
+    <button id="pNew" class="btn sheetBtn">NEW GAME</button>
+    <button id="pMenu" class="btn sheetBtn">MAIN MENU</button>
+
+  </div>
+</div>
+
+<div id="overSheet" class="modalWrap">
+  <div class="modalBox">
+    <h3 id="overTitle">WHITE WINS</h3>
+    <div class="sub" id="overSub"></div>
+    <button id="overPrimary" class="btn primary sheetBtn">REMATCH</button>
+    <button id="overSecondary" class="btn sheetBtn">MAIN MENU</button>
+  </div>
+</div>
+
+<div id="fatal"><div><h2>Something broke</h2><pre id="fatalMsg"></pre><button id="fatalReload">RELOAD</button></div></div>
+<script src="puzzles.js"></script>
+
+
+<script>
+/* ═══ STUDIO SDK (inlined, ES2015 normalized) ═══ */
+const Studio = (() => {
+  const bridge = () => window.NativeBridge || null;
+  const ls = { get k(){ try { return localStorage; } catch(e) { return null; } } };
+  let settings = { sound: true, haptics: true };
+
+  try {
+    const b0 = bridge();
+    const s0 = b0 ? b0.load('shell:settings') : (ls.k ? ls.k.getItem('shell:settings') : null);
+    if (s0) settings = Object.assign(settings, JSON.parse(s0));
+  } catch(e) {}
+  return {
+    save: (k, v) => {
+      const b = bridge();
+      if (b) b.save(k, v);
+      else try { ls.k.setItem(k, v); } catch(e) {}
+    },
+    load: (k) => {
+      const b = bridge();
+      if (b) return b.load(k);
+      try { return ls.k ? ls.k.getItem(k) : null; } catch(e) { return null; }
+    },
+    getSetting: (k) => {
+      const b = bridge();
+      return (b && b.getSetting) ? b.getSetting(k) : null;
+    },
+    haptic: (kind) => {
+      if (!settings.haptics) return;
+      const b = bridge();
+      if (!b) return;
+      const map = { light: 15, medium: 30, heavy: 60, success: 45 };
+      try { b.haptic(typeof map[kind] === 'number' ? map[kind] : 0); } catch(e) {}
+    },
+    settings,
+    exitGame: () => {
+      const b = bridge();
+      if (b && b.exitGame) { try { b.exitGame(); } catch(e) {} }
+    },
+    ads: {
+      banner(visible) {
+        const b = bridge();
+        if (!b) return;
+        /* The bridge exposes showBanner()/hideBanner(); the old call used a
+           b.banner() that does not exist, so the banner never appeared. */
+        try {
+          if (visible) { if (b.showBanner) b.showBanner(); }
+          else { if (b.hideBanner) b.hideBanner(); }
+        } catch(e) {}
+      },
+      available() {
+        const b = bridge();
+        return !!(b && b.showRewardedAd);
+      },
+      rewarded(placement, onReward, onFail) {
+        const fail = function(why) { if (onFail) onFail(why); };
+        const b = bridge();
+        if (b && b.showRewardedAd) {
+          let settled = false;
+          const done = function(ok, why) {
+            if (settled) return;
+            settled = true;
+            clearTimeout(watchdog);
+            if (ok) onReward(); else fail(why);
+          };
+          /* No callback at all means the ad could not be served. Report that
+             instead of doing nothing, so the UI can offer a retry. */
+          const watchdog = setTimeout(function() { done(false, "timeout"); }, 45000);
+          /* A reward callback that arrives with NO argument means GRANTED.
+             Requiring the string "granted" swallowed every reward on devices
+             that call back bare. */
+          window.__studioAdCb = function(result) {
+            done(result === undefined || result === null || result === "" ||
+                 result === "granted", "closed");
+          };
+          try { b.showRewardedAd('__studioAdCb'); }
+          catch(e) { done(false, "error"); }
+          return;
+        }
+        const cg = (window.CrazyGames && window.CrazyGames.SDK) || null;
+        if (cg && cg.ad && /(^|.)crazygames.(com|co)$/i.test(location.hostname)) {
+          try {
+            cg.ad.requestAd('rewarded', {
+              adFinished: function() { onReward(); },
+              adError: function() { fail("closed"); }
+            });
+          } catch(e) { fail("error"); }
+          return;
+        }
+        /* No bridge and no portal: never fake an ad. */
+        fail("offline");
+      },
+      interstitial(onDone) {
+        const b = bridge();
+        if (b && b.showInterstitial) {
+          window.__studioInterCb = function() { if (onDone) onDone(); };
+          b.showInterstitial('__studioInterCb');
+          return;
+        }
+        if (onDone) onDone();
+      }
+    }
+  };
+})();
+</script>
+
+<script>
+"use strict";
+(function(){
+
+const CFG = {
+  version: "0.5.2",
+  dprCap: 2,
+  animMsPerHop: 200,     /* normal game movement */
+  tutorialMsPerHop: 260, /* tutorial remains independently readable */
+  confirmMs: 2500,
+  drawPlies: 80,
+  saveKey: "checkers:save:v4",
+  mutedKey: "checkers:muted:v1",
+  hapticsKey: "checkers:haptics:v1",
+  pstatsKey: "checkers:pstats:v1",
+  ads: { rewardEveryN: 5, freePuzzleReward: 5 },
+  colors: {
+    lightSq:"#efddb9", darkSq:"#a97c50", frame:"#6b4f3a",
+    sel:"rgba(127,176,105,0.55)", last:"rgba(242,193,78,0.45)",
+    dot:"rgba(243,234,211,0.85)",
+    capFill:"rgba(232,86,63,0.35)", capRed:"#e8563f", capCream:"#f3ead3",
+    pwrDot:"rgba(224,180,92,0.9)",
+    wFill:"#f3ead3", wStroke:"#4a3826",
+    bFill:"#453a2f", bStroke:"#1a120b",
+    kingGold:"#e0b45c", groove:"rgba(0,0,0,0.18)", grooveHi:"rgba(255,255,255,0.14)"
+  },
+  /* +50% over the original 0.5 master (director request). The shell
+     volume multiplies this, so the effective gain remains capped at 1.0. */
+  /* The WebView volume control is commonly conservative on Android. Use a
+     modest post-volume boost, while keeping the final gain bounded to 1.25
+     to avoid harsh digital clipping. */
+  sound: { master: 1.25 },
+  bot: {
+    easy:   { maxDepth:2, budget:400,  noise:90 },
+    medium: { maxDepth:4, budget:700,  noise:22 },
+    hard:   { maxDepth:6, budget:1400, noise:0 }
+  },
+  /* Puzzle verdict search: every legal move of the puzzle position is scored
+     once with the bot's own alpha-beta, so the app can tell the player which
+     moves are inside the winning path (chess-puzzle style feedback) instead
+     of silently accepting anything. Depth scales down with piece count so the
+     table is ready in a couple of frames. */
+  judge: { small:10, mid:8, big:6, margin:60, shotGap:60,
+           nodes:40000, budgetMs:700 }
+};
+/* Shell volume (0..1) pushed in by Game.setSettings; multiplies the master gain. */
+let shellVolume=1;
+
+/* ═══ CHECKERS ENGINE. WHITE first, bottom. +1 man +2 king white, -1/-2 black. */
+const Ck=(()=>{
+  const bd=new Int8Array(64);
+  let turn=1;
+  let noProg=0;
+  const undoStack=[];
+  const keys=[];
+  const emp=new Map();
+  const DIRS_W=[[-1,-1],[-1,1]];
+  const DIRS_B=[[1,-1],[1,1]];
+  const DIRS_ALL=DIRS_W.concat(DIRS_B);
+  const crownRow=color=>color===1?0:7;
+  const onBoard=r=>r>=0&&r<8;
+  const playable=(r,c)=>((r+c)&1)===1;
+
+  function reset(){
+    bd.fill(0);
+    for(let r=5;r<8;r++)for(let c=0;c<8;c++)
+      if(playable(r,c)) bd[r*8+c]=1;
+    for(let r=0;r<3;r++)for(let c=0;c<8;c++)
+      if(playable(r,c)) bd[r*8+c]=-1;
+    turn=1; noProg=0;
+    undoStack.length=0; keys.length=0;
+    emp.clear();
+    keys.push(posKey());
+  }
+  function loadPos(list,firstTurn){
+    bd.fill(0);
+    for(let i=0;i<list.length;i++){
+      const it=list[i];
+      bd[it[0]*8+it[1]]=it[2];
+    }
+    turn=firstTurn||1; noProg=0;
+    undoStack.length=0; keys.length=0;
+    emp.clear();
+    keys.push(posKey());
+  }
+  function empKey(){
+    if(emp.size===0) return "";
+    const parts=[];
+    emp.forEach(function(v,k){ parts.push(k+":"+(v.used?"1":"0")); });
+    parts.sort();
+    return "|"+parts.join(",");
+  }
+  function posKey(){ return bd.join(",")+"|"+turn+empKey(); }
+
+  function dfs(cur,val,isKing,color,path,captured,out){
+    const dirs=isKing?DIRS_ALL:(color===1?DIRS_W:DIRS_B);
+    const r=cur>>3, c=cur&7;
+    let any=false;
+    for(let i=0;i<dirs.length;i++){
+      const mr=r+dirs[i][0], mc=c+dirs[i][1];
+      const lr=r+2*dirs[i][0], lc=c+2*dirs[i][1];
+      if(!onBoard(mr)||mc<0||mc>7||!onBoard(lr)||lc<0||lc>7) continue;
+      const mid=mr*8+mc, land=lr*8+lc;
+      const mp=bd[mid];
+      if(mp===0||(mp>0)===(val>0)) continue;
+      if(captured.has(mid)) continue;
+      if(bd[land]!==0) continue;
+      any=true;
+      captured.add(mid); path.push(land);
+      bd[cur]=0; bd[land]=val;
+      const crowned=!isKing && lr===crownRow(color);
+      if(crowned){
+        out.push({from:path[0],steps:path.slice(),caps:[...captured]});
+      } else {
+        const deeper=dfs(land,val,isKing,color,path,captured,out);
+        if(!deeper) out.push({from:path[0],steps:path.slice(),caps:[...captured]});
+      }
+      bd[land]=0; bd[cur]=val;
+      path.pop(); captured.delete(mid);
+    }
+    return any;
+  }
+  function movesFor(s){
+    const v=bd[s];
+    const isKing=(v===2||v===-2), color=v>0?1:-1;
+    const out=[], path=[s], cap=new Set();
+    dfs(s,v,isKing,color,path,cap,out);
+    return out;
+  }
+  function genMoves(){
+    const caps=[];
+    for(let s=0;s<64;s++){
+      const v=bd[s];
+      if(v===0||(v>0)!==(turn>0)) continue;
+      const ms=movesFor(s);
+      for(let i=0;i<ms.length;i++) caps.push(ms[i]);
+    }
+    if(caps.length) return caps;
+    const quiet=[];
+    for(let s=0;s<64;s++){
+      const v=bd[s];
+      if(v===0||(v>0)!==(turn>0)) continue;
+      const isKing=(v===2||v===-2), color=v>0?1:-1;
+      const dirs=isKing?DIRS_ALL:(color===1?DIRS_W:DIRS_B);
+      const r=s>>3, c=s&7;
+      for(let i=0;i<dirs.length;i++){
+        const nr=r+dirs[i][0], nc=c+dirs[i][1];
+        if(!onBoard(nr)||nc<0||nc>7) continue;
+        if(bd[nr*8+nc]!==0) continue;
+        quiet.push({from:s,steps:[s,nr*8+nc],caps:[]});
+      }
+    }
+    return quiet;
+  }
+  function leapTargets(s){
+    const out=[];
+    const e=emp.get(s);
+    if(!e||e.p!=="L"||e.used) return out;
+    const v=bd[s];
+    if(v!==2&&v!==-2) return out;
+    const r=s>>3, c=s&7;
+    const D=[[-1,-1],[-1,1],[1,-1],[1,1]];
+    for(let i=0;i<4;i++){
+      const mr=r+D[i][0], mc=c+D[i][1];
+      const lr=r+2*D[i][0], lc=c+2*D[i][1];
+      if(!onBoard(mr)||mc<0||mc>7||!onBoard(lr)||lc<0||lc>7) continue;
+      if(bd[mr*8+mc]!==0) continue;
+      if(bd[lr*8+lc]!==0) continue;
+      out.push(lr*8+lc);
+    }
+    return out;
+  }
+  function swapTargets(s){
+    const out=[];
+    const e=emp.get(s);
+    if(!e||e.p!=="W"||e.used) return out;
+    const v=bd[s];
+    if(v!==2&&v!==-2) return out;
+    const r=s>>3, c=s&7;
+    const D=[[-1,-1],[-1,1],[1,-1],[1,1]];
+    for(let i=0;i<4;i++){
+      const nr=r+D[i][0], nc=c+D[i][1];
+      if(!onBoard(nr)||nc<0||nc>7) continue;
+      const t=nr*8+nc, tv=bd[t];
+      if(tv!==0&&(tv>0)===(v>0)) out.push(t);
+    }
+    return out;
+  }
+  function applyMove(mv,rec){
+    let cur=mv.steps[0];
+    const val=bd[cur];
+    rec.wasMan=(val===1||val===-1);
+    const color=val>0?1:-1;
+    bd[cur]=0;
+    const oe=emp.get(cur);
+    if(oe){ rec.empFrom=cur; emp.delete(cur); }
+    for(let i=1;i<mv.steps.length;i++){
+      const s=mv.steps[i];
+      if(Math.abs((s>>3)-(cur>>3))===2){
+        const mid=(cur+s)>>1;
+        const me=emp.get(mid);
+        if(me&&me.p==="S"&&!me.used){
+          me.used=true; rec.shields.push(mid);
+        } else {
+          rec.caps.push(mid); rec.capVals.push(bd[mid]);
+          const ce=emp.get(mid);
+          if(ce){ rec.empLost.push([mid,ce]); emp.delete(mid); }
+          bd[mid]=0;
+        }
+      }
+      cur=s;
+    }
+    bd[cur]=val;
+    if(oe) emp.set(cur,oe);
+    if(rec.wasMan && (cur>>3)===crownRow(color)){
+      rec.promoted=true; bd[cur]=color*2;
+    }
+    noProg=(rec.caps.length>0||rec.wasMan)?0:noProg+1;
+    turn=-turn;
+  }
+  function postStatus(){
+    const oppHas=genMoves().length>0;
+    if(!oppHas) return {over:true,result:{type:"nomoves",winner:-turn}};
+    if(noProg>=CFG.drawPlies) return {over:true,result:{type:"progress",winner:0}};
+    const cur2=keys[keys.length-1];
+    let rep=0;
+    for(let i=0;i<keys.length;i++) if(keys[i]===cur2) rep++;
+    if(rep>=3) return {over:true,result:{type:"rep",winner:0}};
+    return {over:false,result:null};
+  }
+  function make(mv){
+    const rec={mv,caps:[],capVals:[],shields:[],empLost:[],
+      empFrom:-1,promoted:false,wasMan:false,prevNo:noProg};
+    applyMove(mv,rec);
+    keys.push(posKey());
+    undoStack.push(rec);
+    return postStatus();
+  }
+  function makeLeap(from,to){
+    const e=emp.get(from); if(!e) return {over:false,result:null};
+    e.used=true;
+    const v=bd[from];
+    bd[from]=0; bd[to]=v;
+    noProg++; turn=-turn;
+    keys.push(posKey());
+    return postStatus();
+  }
+  function makeSwap(a,b){
+    const e=emp.get(a); if(!e) return {over:false,result:null};
+    e.used=true;
+    const va=bd[a], vb=bd[b];
+    bd[a]=vb; bd[b]=va;
+    emp.delete(a); emp.set(b,e);
+    noProg++; turn=-turn;
+    keys.push(posKey());
+    return postStatus();
+  }
+  function grantPower(sq,p){
+    const v=bd[sq];
+    if(v!==2&&v!==-2) return;
+    if(emp.has(sq)) return;
+    emp.set(sq,{p:p,used:false});
+    keys[keys.length-1]=posKey();
+  }
+  function makeFast(mv){
+    const rec={mv,caps:[],capVals:[],shields:[],empLost:[],
+      empFrom:-1,promoted:false,wasMan:false,prevNo:noProg};
+    applyMove(mv,rec);
+    undoStack.push(rec);
+  }
+  function unmakeFast(){
+    const rec=undoStack.pop(); if(!rec) return;
+    turn=-turn; noProg=rec.prevNo;
+    const last=rec.mv.steps[rec.mv.steps.length-1];
+    let val=bd[last];
+    if(rec.promoted) val=(turn>0)?1:-1;
+    if(rec.empFrom>=0){ const e=emp.get(last); if(e) emp.delete(last); emp.set(rec.empFrom,e); }
+    for(let i=0;i<rec.shields.length;i++){
+      const en=emp.get(rec.shields[i]);
+      if(en) en.used=false;
+    }
+    for(let i=0;i<rec.caps.length;i++) bd[rec.caps[i]]=rec.capVals[i];
+    for(let i=0;i<rec.empLost.length;i++) emp.set(rec.empLost[i][0],rec.empLost[i][1]);
+    bd[last]=0;
+    bd[rec.mv.steps[0]]=val;
+  }
+  function findMove(steps){
+    const all=genMoves();
+    for(let i=0;i<all.length;i++){
+      const m=all[i];
+      if(m.steps.length!==steps.length) continue;
+      let ok=true;
+      for(let j=0;j<steps.length;j++)
+        if(m.steps[j]!==steps[j]){ ok=false; break; }
+      if(ok) return m;
+    }
+    return null;
+  }
+  return {
+    reset, loadPos, genMoves, make, makeLeap, makeSwap, grantPower,
+    leapTargets, swapTargets, makeFast, unmakeFast, findMove, posKey,
+    boardArr:()=>bd, turnOf:()=>turn, noProgress:()=>noProg,
+    keys, emp, playable
+  };
+})();
+
+/* ═══ GOULD PUZZLE DATABASE (paste batches below) ═══ */
+const GOULD_BATCHES=(window.CHECKERS_PUZZLES||[]);
+const MATE=100000;
+function pdnTo64(n){
+  /* PDN squares run 1..32 from the top-left dark square, left to right.
+     Column parity must come from the ROW WE JUST COMPUTED: pairing a
+     flipped row with the unflipped column parity lands every piece on a
+     light square. */
+  const i=n-1;
+  const r=Math.floor(i/4);
+  const colInRow=i%4;
+  const c=(r%2===0)?(colInRow*2+1):(colInRow*2);
+  return r*8+c;
+}
+function buildPos(entry){
+  const b=new Int8Array(64);
+  const wm=new Set(entry.kingsW||[]);
+  const bm=new Set(entry.kingsB||[]);
+  let placed=true;
+  for(let i=0;i<(entry.white||[]).length;i++){
+    const sq=pdnTo64(entry.white[i]);
+    if(b[sq]!==0) placed=false;
+    b[sq]=wm.has(entry.white[i])?2:1;
+  }
+  for(let i=0;i<(entry.black||[]).length;i++){
+    const sq=pdnTo64(entry.black[i]);
+    if(b[sq]!==0) placed=false;
+    b[sq]=bm.has(entry.black[i])?-2:-1;
+  }
+  return {b:b,placed:placed};
+}
+function flipPos(b){
+  const out=new Int8Array(64);
+  for(let s=0;s<64;s++){
+    const v=b[s];
+    if(v===0) continue;
+    out[63-s]=-v;
+  }
+  return out;
+}
+function toList(b){
+  const list=[];
+  for(let s=0;s<64;s++) if(b[s]!==0) list.push([s>>3,s&7,b[s]]);
+  return list;
+}
+function winSearch(depth,alpha,beta){
+  const ms=Ck.genMoves();
+  if(!ms.length) return -MATE;
+  if(depth<=0) return 0;
+  let best=-Infinity;
+  for(let i=0;i<ms.length;i++){
+    Ck.makeFast(ms[i]);
+    const sc=-winSearch(depth-1,-beta,-alpha);
+    Ck.unmakeFast();
+    if(sc>best) best=sc;
+    if(best>alpha) alpha=best;
+    if(alpha>=beta) break;
+    if(best>=MATE-1) break;
+  }
+  return best;
+}
+function winningMoves(depth){
+  const ms=Ck.genMoves();
+  const winners=[];
+  for(let i=0;i<ms.length;i++){
+    Ck.makeFast(ms[i]);
+    const sc=-winSearch(depth-1,-Infinity,Infinity);
+    Ck.unmakeFast();
+    if(sc>=MATE-1) winners.push(ms[i]);
+  }
+  return winners;
+}
+function verifyGould(entry){
+  if(!entry) return null;
+  /* Fast path: solutions/precomputed coordinates from build time
+     (see Tools/_gen_checkers_puzzles.js). No searching on device. */
+  if(entry.list&&entry.list.length){
+    const tier=tierOf(entry);
+    if(!tier) return null;
+    return {list:entry.list, tier:tier, depth:entry.depth||0,
+            solutions:entry.solutions||[], id:entry.id||"gould"};
+  }
+  if(!entry.white||!entry.black) return null;
+  if((entry.white.length===0)||(entry.black.length===0)) return null;
+  const built=buildPos(entry);
+  if(!built.placed) return null;
+  /* The side to move is the solver. The book "result" field is the source
+     game's outcome, not the problem solution, so it is not a gate. */
+  const solverIsWhiteSource=(entry.side==="W");
+  let b=built.b;
+  if(!solverIsWhiteSource) b=flipPos(b);
+  const list=toList(b);
+  const MAXD=12;
+  let sols=null, depthUsed=0;
+  for(let d=4;d<=MAXD;d+=2){
+    Ck.loadPos(list,1);
+    const w=winningMoves(d);
+    if(w.length){
+      sols=w.map(function(m){ return {from:m.from,steps:m.steps.slice()}; });
+      depthUsed=d;
+      break;
+    }
+  }
+  if(!sols) return null;
+  const tier=tierOf(entry)||((depthUsed<=4)?"easy":(depthUsed<=8)?"medium":"hard");
+  return {list:list, tier:tier, depth:depthUsed,
+          solutions:sols, id:entry.id||"gould"};
+}
+function tierOf(entry){
+  const d=(entry.difficulty==="normal")?"medium":entry.difficulty;
+  if(d==="easy"||d==="medium"||d==="hard") return d;
+  const t=entry.tier;
+  return (t==="easy"||t==="medium"||t==="hard")?t:"";
+}
+function matchesSolution(p,mv){
+  if(!p||!p.solutions) return false;
+  for(let i=0;i<p.solutions.length;i++){
+    const s=p.solutions[i];
+    if(s.from===mv.from&&sameSteps(s.steps,mv.steps)) return true;
+  }
+  return false;
+}
+const PZDB=(()=>{
+  const tiers={easy:[],medium:[],hard:[]};
+  let built=false, rejected=0, checked=0;
+  function build(){
+    if(built) return;
+    built=true;
+    const seen={};
+    for(let i=0;i<GOULD_BATCHES.length;i++){
+      const e=GOULD_BATCHES[i];
+      if(!e||!e.id||seen[e.id]) continue;
+      seen[e.id]=true;
+      checked++;
+      const v=verifyGould(e);
+      if(v){ v.id=e.id; tiers[v.tier].push(v); }
+      else rejected++;
+    }
+    console.log("[checkers] gould DB: "+checked+" checked, "
+      +tiers.easy.length+" easy / "+tiers.medium.length+" medium / "
+      +tiers.hard.length+" hard, "+rejected+" rejected");
+  }
+  function dailyIndex(tier){
+    const pool=tiers[tier];
+    if(!pool.length) return -1;
+    const d=new Date();
+    const key=d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+    let h=5381;
+    for(let i=0;i<key.length;i++){ h=(((h<<5)+h)+key.charCodeAt(i))|0; }
+    return Math.abs(h)%pool.length;
+  }
+  return {build, tiers, dailyIndex, ready:()=>built,
+    count:()=>tiers.easy.length+tiers.medium.length+tiers.hard.length};
+})();
+
+/* ═══ BOT ═══ */
+function evalBoard(){
+  const b=Ck.boardArr(); let s=0;
+  const emp=Ck.emp;
+  for(let i=0;i<64;i++){
+    const v=b[i]; if(v===0) continue;
+    const r=i>>3, c=i&7;
+    const center=(c>=2&&c<=5)?4:0;
+    let t=0;
+    if(v===1)      t=100+(7-r)*3+center-((c===0||c===7)?2:0);
+    else if(v===2) t=175+center+((r>=2&&r<=5)?4:0);
+    else if(v===-1) t=-(100+r*3+center-((c===0||c===7)?2:0));
+    else           t=-(175+center+((r>=2&&r<=5)?4:0));
+    const e=emp.get(i);
+    if(e&&!e.used) t+=(v>0?30:-30);
+    s+=t;
+  }
+  return s;
+}
+function orderMoves(ms){
+  for(let i=0;i<ms.length;i++) ms[i]._s=ms[i].caps.length*1000;
+  ms.sort(function(a,b){ return b._s-a._s; });
+}
+function negamax(depth,alpha,beta,ply){
+  const side=Ck.turnOf();
+  const ms=Ck.genMoves();
+  if(!ms.length) return -(MATE-ply);
+  /* Puzzle verdicts run under a node budget so one deep position can never
+     stall a frame; the bot itself keeps judgeNodes at -1 and is unaffected. */
+  if(judgeNodes>=0&&++judgeNodes>judgeNodeCap) judgeAbort=true;
+  if(judgeAbort) return evalBoard()*side;
+  const inCapture=(ms[0].caps.length>0);
+  if(depth<=0&&(!inCapture||ply>24)) return evalBoard()*side;
+  orderMoves(ms);
+  let best=-Infinity;
+  for(let i=0;i<ms.length;i++){
+    if(depth<=0&&!ms[i].caps.length) break;
+    Ck.makeFast(ms[i]);
+    const sc=-negamax(depth<=0?0:depth-1,-beta,-alpha,ply+1);
+    Ck.unmakeFast();
+    if(sc>best) best=sc;
+    if(best>alpha) alpha=best;
+    if(alpha>=beta) break;
+  }
+  return best;
+}
+let think=null;
+function startThink(){
+  if(!thinking) return;
+  const conf=CFG.bot[setup.level]||CFG.bot.easy;
+  const rootMoves=Ck.genMoves();
+  if(!rootMoves.length){ finishThink(null); return; }
+  orderMoves(rootMoves);
+  think={moves:rootMoves, scores:[], idx:0, depth:1, maxDepth:conf.maxDepth,
+    deadline:performance.now()+conf.budget, noise:conf.noise,
+    best:null, bestScore:-Infinity};
+  after(0,thinkChunk);
+}
+function thinkChunk(){
+  if(!thinking||!think) return;
+  const t=think;
+  if(performance.now()>t.deadline){ finishThink(t.best||t.moves[0]); return; }
+  if(t.idx>=t.moves.length){
+    if(t.depth>=t.maxDepth||performance.now()>t.deadline-80){
+      finishThink(t.best||t.moves[0]); return;
+    }
+    const paired=t.moves.map(function(m,i){ return {m:m,s:(t.scores[i]!==undefined)?t.scores[i]:0}; });
+    paired.sort(function(a,b){ return b.s-a.s; });
+    t.moves=paired.map(function(x){ return x.m; });
+    t.scores=[]; t.idx=0; t.depth++;
+    after(0,thinkChunk); return;
+  }
+  const m=t.moves[t.idx];
+  Ck.makeFast(m);
+  let sc=-negamax(t.depth-1,-Infinity,Infinity,1);
+  Ck.unmakeFast();
+  if(t.noise) sc+=(Math.random()*2-1)*t.noise;
+  t.scores[t.idx]=sc;
+  if(sc>t.bestScore){ t.bestScore=sc; t.best=m; }
+  t.idx++;
+  after(0,thinkChunk);
+}
+function finishThink(mv){
+  think=null;
+  if(!thinking) return;
+  thinking=false;
+  setBotBadge(false);
+  if(mv&&(mode==="chess"||mode==="puzzle")&&!result&&curScreen==="game"&&Ck.turnOf()===botColor()){
+    execute(mv,true);
+  } else {
+    updateStatus();
+  }
+}
+function cancelThink(){ thinking=false; think=null; setBotBadge(false); }
+function setBotBadge(on){
+  try{ botBadge.classList.toggle("thinking",!!on); }catch(e){}
+}
+function botColor(){ return (mode==="puzzle")?-1:aiColor; }
+function maybeBotMove(){
+  if(mode!=="chess"&&mode!=="puzzle") return;
+  if(mode==="chess"&&setup.opp!=="bot") return;
+  if(result||thinking) return;
+  if(pendingPower>=0) return;
+  if(Ck.turnOf()!==botColor()) return;
+  thinking=true;
+  setBotBadge(true);
+  updateStatus();
+  after(380, startThink);
+}
+
+/* ═══ PUZZLE JUDGE ═══
+   Gould's book carries no move list, so the winning path is derived with the
+   same engine that defends: every legal move of the current puzzle position is
+   scored once, in one-move-per-frame chunks, and the player's move is checked
+   against that table before it is allowed to commit.
+     - a shot (mate inside the search) is a strict single-move solution
+     - otherwise the move must stay inside the winning margin of the best move
+   The player is always the light pieces: the DB stores every position flipped
+   so the solver moves first, and this reports that plainly. */
+function pzJudgeDepth(n){
+  if(n<=10) return CFG.judge.small;
+  if(n<=16) return CFG.judge.mid;
+  return CFG.judge.big;
+}
+function pzJudgeStop(){
+  pzJudge=null;
+}
+function pzJudgeStart(){
+  pzJudge=null;
+  pzTries=0; pzHintFrom=-1; pzBadTo=-1;
+  if(mode!=="puzzle"||!pzActive||result) return;
+  const moves=Ck.genMoves();
+  if(!moves.length) return;
+  orderMoves(moves);
+  const bd=Ck.boardArr();
+  let pieces=0;
+  for(let i=0;i<64;i++) if(bd[i]!==0) pieces++;
+  pzJudge={moves:moves, scores:new Array(moves.length), idx:0,
+    depth:pzJudgeDepth(pieces), ready:false, strict:false,
+    best:-Infinity, bestIdx:-1, second:-Infinity, mate:[], move:null};
+  after(0,pzJudgeChunk);
+}
+function pzJudgeChunk(){
+  const j=pzJudge;
+  if(!j||mode!=="puzzle") return;
+  if(j.idx>=j.moves.length){ pzJudgeFinish(j); return; }
+  const m=j.moves[j.idx];
+  Ck.makeFast(m);
+  const sc=-negamax(j.depth-1,-Infinity,Infinity,1);
+  Ck.unmakeFast();
+  j.scores[j.idx]=sc;
+  j.idx++;
+  if(j.idx>=j.moves.length) pzJudgeFinish(j);
+  else after(0,pzJudgeChunk);
+}
+function pzJudgeFinish(j){
+  j.ready=true;
+  for(let i=0;i<j.moves.length;i++){
+    const sc=j.scores[i];
+    if(sc>j.best){ j.second=j.best; j.best=sc; j.bestIdx=i; }
+    else if(sc>j.second) j.second=sc;
+    if(sc>=MATE-64) j.mate.push(i);
+  }
+  if(j.mate.length){
+    /* a proven shot inside the search: only the fastest mates are solutions */
+    let top=-Infinity;
+    for(let k=0;k<j.mate.length;k++) if(j.scores[j.mate[k]]>top) top=j.scores[j.mate[k]];
+    j.mate=j.mate.filter(function(i){ return j.scores[i]===top; });
+    j.move=j.moves[j.mate[0]];
+    j.strict=true;
+  } else {
+    /* no shot proven: one move that towers over the rest is the key move */
+    j.move=j.moves[j.bestIdx];
+    j.strict=(j.best-j.second)>=CFG.judge.shotGap&&j.best>=200;
+  }
+  dirty=true;
+}
+/* verdict for a concrete player move: known=false while the table is warming */
+function pzVerdict(mv){
+  const j=pzJudge;
+  if(!j||!j.ready||j.bestIdx<0) return {known:false,ok:true,shot:false};
+  for(let i=0;i<j.moves.length;i++){
+    const m=j.moves[i];
+    if(m.from!==mv.from||!sameSteps(m.steps,mv.steps)) continue;
+    if(j.mate.length){
+      for(let k=0;k<j.mate.length;k++)
+        if(j.mate[k]===i) return {known:true,ok:true,shot:true,move:m};
+      return {known:true,ok:false,shot:true,move:j.move};
+    }
+    const sc=j.scores[i];
+    if(j.strict) return {known:true,ok:(i===j.bestIdx),shot:false,move:j.move};
+    return {known:true,ok:(sc>=j.best-CFG.judge.margin),shot:false,move:j.move};
+  }
+  return {known:false,ok:true,shot:false};
+}
+/* a move outside the winning path is refused, never played */
+function pzReject(mv,v){
+  pzTries++;
+  pzBadTo=mv.steps[mv.steps.length-1];
+  pzBadUntil=simNow+900;
+  pzHintFrom=(pzTries>=2&&v&&v.move)?v.move.from:-1;
+  clearSel(); anim=null;
+  AudioSys.play("deny"); gameHaptic("heavy"); shake(200,4);
+  bumpStatus(pzHintFrom>=0
+    ? "Not the winning line. The ringed piece is the one."
+    : "Not the winning line. Try again.","chain");
+  bgDirty=true; dirty=true;
+}
+
+/* ═══ AUDIO (wooden; incremental chain knocks) ═══ */
+function effectiveMuted(){
+  if(gameMuted) return true;
+  if(shellVolume<=0) return true;
+  if(Studio.settings&&Studio.settings.sound===false) return true;
+  try{ if(Studio.getSetting&&Studio.getSetting("sound")===false) return true; }catch(e){}
+  return false;
+}
+function gameHaptic(kind){
+  if(!hapticsOn) return;
+  try{ Studio.haptic(kind); }catch(e){}
+}
+const AudioSys=(()=>{
+  let ctx=null, master=null, limiter=null, lastAt=0, noiseBuf=null;
+  function unlock(){
+    try{
+      if(!ctx){
+        const AC=window.AudioContext||window.webkitAudioContext;
+        if(!AC) return;
+        ctx=new AC();
+        master=ctx.createGain();
+        if(effectiveMuted()) master.gain.value=0;
+        else master.gain.value=Math.min(2.4,CFG.sound.master*shellVolume*1.9);
+        limiter=ctx.createDynamicsCompressor();
+        limiter.threshold.value=-8; limiter.knee.value=6; limiter.ratio.value=8;
+        limiter.attack.value=0.003; limiter.release.value=0.12;
+        master.connect(limiter); limiter.connect(ctx.destination);
+        const len=Math.ceil(ctx.sampleRate*0.5);
+        noiseBuf=ctx.createBuffer(1,len,ctx.sampleRate);
+        const ch=noiseBuf.getChannelData(0);
+        for(let i=0;i<len;i++) ch[i]=Math.random()*2-1;
+      }
+      if(ctx.state==="suspended") ctx.resume();
+    }catch(e){ console.warn("audio init failed",e); }
+  }
+  function decay(param,t0,peak,dur){
+    param.setValueAtTime(0.0001,t0);
+    param.linearRampToValueAtTime(peak,t0+0.002);
+    param.exponentialRampToValueAtTime(0.0001,t0+dur);
+  }
+  function woodTap(t0,freq,vol,dur){
+    const src=ctx.createBufferSource(); src.buffer=noiseBuf;
+    src.playbackRate.value=0.8+Math.random()*0.4;
+    const bp=ctx.createBiquadFilter(); bp.type="bandpass";
+    bp.frequency.value=freq; bp.Q.value=1.6;
+    const g=ctx.createGain(); decay(g.gain,t0,vol,dur);
+    src.connect(bp); bp.connect(g); g.connect(master);
+    src.start(t0,Math.random()*0.3); src.stop(t0+dur+0.05);
+    const o=ctx.createOscillator(); o.type="sine";
+    o.frequency.setValueAtTime(freq*0.14,t0);
+    const g2=ctx.createGain(); decay(g2.gain,t0,vol*0.7,dur*1.4);
+    o.connect(g2); g2.connect(master);
+    o.start(t0); o.stop(t0+dur*1.4+0.05);
+  }
+  function marimba(t0,freq,vol,dur){
+    const o=ctx.createOscillator(); o.type="sine";
+    o.frequency.setValueAtTime(freq,t0);
+    const g=ctx.createGain(); decay(g.gain,t0,vol,dur);
+    o.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0+dur+0.05);
+    const o2=ctx.createOscillator(); o2.type="sine";
+    o2.frequency.setValueAtTime(freq*4,t0);
+    const g2=ctx.createGain(); decay(g2.gain,t0,vol*0.18,dur*0.4);
+    o2.connect(g2); g2.connect(master);
+    o2.start(t0); o2.stop(t0+dur*0.4+0.05);
+  }
+  function gate(){
+    if(effectiveMuted()||!ctx) return false;
+    const now=performance.now();
+    if(now-lastAt<60) return false;
+    lastAt=now;
+    return true;
+  }
+  function play(kind){
+    if(!gate()) return;
+    try{
+      const t=ctx.currentTime+0.001;
+      if(kind==="capture"){ woodTap(t,680,0.88,0.075); woodTap(t+0.05,1050,0.38,0.04); }
+      else if(kind==="select"){ marimba(t,840,0.14,0.09); }
+      else if(kind==="king"){ marimba(t,523,0.20,0.2); marimba(t+0.1,784,0.17,0.24); }
+      else if(kind==="power"){ marimba(t,660,0.17,0.14); marimba(t+0.09,990,0.14,0.16); }
+      else if(kind==="shieldhit"){ woodTap(t,420,0.5,0.09); marimba(t+0.08,330,0.1,0.14); }
+      else if(kind==="chain"){ marimba(t,523,0.12,0.14); marimba(t+0.08,659,0.12,0.14); marimba(t+0.16,784,0.13,0.2); }
+      else if(kind==="deny"){ woodTap(t,300,0.5,0.1); }
+      else if(kind==="end"){ marimba(t,392,0.13,0.22); marimba(t+0.1,494,0.11,0.22); marimba(t+0.2,587,0.11,0.28); }
+      else if(kind==="tap"){ marimba(t,520,0.06,0.06); }
+    }catch(e){ console.warn("[checkers] audio skipped:",e&&e.message); }
+  }
+  /* one knock per chain hop; pitch and volume rise with each successive capture */
+  function chainHop(i){
+    if(!gate()) return;
+    try{
+      const t=ctx.currentTime+0.001;
+      const freq=980+i*115;
+      const vol=Math.min(0.85,0.48+i*0.09);
+      woodTap(t,freq,vol,0.055);
+    }catch(e){ console.warn("[checkers] audio skipped:",e&&e.message); }
+  }
+  /* Shell volume + lifecycle. Master sound OFF must mean silence: the gain is
+     driven to 0, not merely gated. */
+  function setVolume(v){
+    try{
+      const vol=Number(v);
+      if(isFinite(vol)) shellVolume=Math.max(0,Math.min(1,vol));
+      if(master) master.gain.value=effectiveMuted()?0:Math.min(2.4,CFG.sound.master*shellVolume*1.9);
+    }catch(e){}
+  }
+  function suspend(){ try{ if(ctx&&ctx.state==="running") ctx.suspend(); }catch(e){} }
+  function resume(){ try{ if(ctx&&ctx.state==="suspended") ctx.resume(); }catch(e){} }
+  return {unlock,play,chainHop,setVolume,suspend,resume};
+})();
+
+/* ═══ UI STATE ═══ */
+const $=id=>{ const el=document.getElementById(id); if(!el){throw new Error("missing element: "+id);} return el; };
+const app=$("app"), wrap=$("boardWrap"), boardShake=$("boardShake"),
+      boardArea=$("boardArea"), bgCv=$("bg"), fgCv=$("fg"),
+      statusEl=$("status"), pauseBtn=$("pauseBtn"),
+      icoPause=$("icoPause"), icoBack=$("icoBack"),
+      barSpacer=$("barSpacer"), botBadge=$("botBadge"),
+      ctlTop=$("ctlTop"), ctlBottom=$("ctlBottom"),
+      fatalEl=$("fatal"), fatalMsg=$("fatalMsg"),
+      scrIntro=$("scr-intro"), scrSetup=$("scr-setup"),
+      scrPuzzles=$("scr-puzzles"), scrGame=$("scr-game"),
+      scrTutorial=$("scr-tutorial"),
+      introGear=$("introGear"), introBack=$("introBack"), playBtn=$("playBtn"), continueBtn=$("continueBtn"),
+      howBtn=$("howBtn"),
+      modeModal=$("modeModal"), cardChess=$("cardChess"), cardPuzzles=$("cardPuzzles"),
+      setupBack=$("setupBack"), oppSeg=$("oppSeg"), botBlock=$("botBlock"),
+      lvlSeg=$("lvlSeg"), colSeg=$("colSeg"), startBtn=$("startBtn"),
+      pzBack=$("pzBack"),
+      pzStreak=$("pzStreak"), pzBest=$("pzBest"),
+      pzDailyDate=$("pzDailyDate"), pzDailyBtn=$("pzDailyBtn"),
+      pzSolvedEasy=$("pzSolvedEasy"), pzSolvedNormal=$("pzSolvedNormal"),
+      pzSolvedHard=$("pzSolvedHard"),
+      pzStatEasy=$("pzStatEasy"), pzStatNormal=$("pzStatNormal"), pzStatHard=$("pzStatHard"),
+      pzTierEasy=$("pzTierEasy"), pzTierNormal=$("pzTierNormal"), pzTierHard=$("pzTierHard"),
+      tutBack=$("tutBack"), tutPrev=$("tutPrev"), tutNext=$("tutNext"),
+      tutDots=$("tutDots"), tutCv=$("tutCv"), tutH=$("tutH"), tutP=$("tutP"),
+      crownModal=$("crownModal"),
+      pwShield=$("pwShield"), pwLeap=$("pwLeap"), pwSwap=$("pwSwap"),
+      resignSheet=$("resignSheet"), resignYes=$("resignYes"), resignNo=$("resignNo"),
+      msgSheet=$("msgSheet"), msgTitle=$("msgTitle"), msgSub=$("msgSub"), msgOk=$("msgOk"),
+      settingsSheet=$("settingsSheet"), sndTgl=$("sndTgl"), hapTgl=$("hapTgl"),
+      verLine=$("verLine"),
+      pauseSheet=$("pauseSheet"), pResume=$("pResume"), pNew=$("pNew"),
+      pMenu=$("pMenu"), pauseStatus=$("pauseStatus"),
+      overSheet=$("overSheet"), overTitle=$("overTitle"), overSub=$("overSub"),
+      overPrimary=$("overPrimary"), overSecondary=$("overSecondary"),
+      pzPrompt=$("pzPrompt"), pzPromptTurn=$("pzPromptTurn"), pzPromptPieces=$("pzPromptPieces");
+const bgx=bgCv.getContext("2d"), fgx=fgCv.getContext("2d");
+
+let size=0, sq=0, mgn=0, dpr=1;
+let flipped=false;
+let sel=-1, walk=null, powerMode=false, powerTargets=[];
+let lastMove=null, result=null;
+let anim=null, kingFx=null;
+let gameMuted=false, hapticsOn=true, testLock=false;
+let simNow=0, running=false, rafId=0, lastT=0, bgDirty=true, dirty=true;
+let confirmBtn=null, confirmUntil=0;
+let booted=false, curScreen="intro", curModal=null;
+let mode="chess";
+const setup={opp:"2p", level:"easy", color:"light"};
+let aiColor=-1;
+let thinking=false;
+let pendingPower=-1;
+const undoStack=[], redoStack=[];
+let started=false, chessLive=false;
+let timers=[];
+let shakeT=0, shakeDur=0, shakeMag=0;
+const parts=[];
+let statusTimer=0;
+const mustList=[];
+let capFlashUntil=0;
+let pzActive=null, pzSnap=null, pzBusy=false, pzTier="easy", pzIsDaily=false;
+let pzJudge=null, pzTries=0, pzBadTo=-1, pzBadUntil=0, pzHintFrom=-1;
+let pzSolvedShot=false;
+let judgeNodes=-1, judgeNodeCap=0, judgeAbort=false;
+let pzDailyGenerating=false;
+let pstats={streak:0,best:0,lastDaily:"",solved:{easy:0,normal:0,hard:0}};
+let tutPage=0;
+
+function dispX(s){ const c=flipped?7-(s&7):(s&7); return mgn+c*sq+sq/2; }
+function dispY(s){ const r=flipped?7-(s>>3):(s>>3); return mgn+r*sq+sq/2; }
+const easeOutCubic=k=>1-Math.pow(1-k,3);
+
+function showFatal(msg){
+  try{
+    fatalMsg.textContent=String(msg).slice(0,900);
+    // Do not replace a player's usable start screen with a development error
+    // surface. NativeBridge.toast still reports unexpected failures, and the
+    // full message remains available in WebView/device logs.
+    if(window.NativeBridge&&typeof NativeBridge.toast==="function"){
+      NativeBridge.toast("Checkers could not finish loading");
+    }
+  }catch(e){}
+  console.error("[checkers] FATAL:",msg);
+}
+function after(ms,fn){ timers.push({at:simNow+ms,fn:fn}); }
+function clearTimers(){ timers.length=0; }
+function pad2(n){ return (n<10?"0":"")+n; }
+function todayStr(){
+  const d=new Date();
+  return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+}
+function yesterdayStr(){
+  const d=new Date(Date.now()-86400000);
+  return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate());
+}
+
+/* ═══ JUICE ═══ */
+const CONF_COLORS=["#e0b45c","#f3ead3","#d66d5a","#b3a78f"];
+function partPush(p){ if(parts.length>140) parts.shift(); parts.push(p); }
+function spawnConfetti(){
+  for(let i=0;i<60;i++){
+    partPush({x:Math.random()*size,y:-10-Math.random()*80,
+      vx:(Math.random()-.5)*70,vy:90+Math.random()*130,g:300,life:0,
+      max:1200+Math.random()*600,size:4+Math.random()*4,
+      color:CONF_COLORS[i%CONF_COLORS.length],rot:Math.random()*6.28,vr:(Math.random()-.5)*9});
+  }
+}
+function spawnBurst(x,y,n){
+  const count=n||10;
+  for(let i=0;i<count;i++){
+    const a=Math.random()*Math.PI*2, sp=50+Math.random()*120;
+    partPush({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-60,g:420,life:0,
+      max:380+Math.random()*220,size:2+Math.random()*2.5,
+      color:CONF_COLORS[i%CONF_COLORS.length],rot:Math.random()*6.28,vr:(Math.random()-.5)*10});
+  }
+}
+function updateParts(dt){
+  const s=dt/1000;
+  for(let i=parts.length-1;i>=0;i--){
+    const p=parts[i];
+    p.life+=dt;
+    if(p.life>=p.max){ parts.splice(i,1); continue; }
+    p.vy+=p.g*s; p.x+=p.vx*s; p.y+=p.vy*s; p.rot+=p.vr*s;
+  }
+}
+function drawParts(c){
+  for(let i=0;i<parts.length;i++){
+    const p=parts[i], a=1-p.life/p.max;
+    c.globalAlpha=a;
+    c.fillStyle=p.color;
+    c.save();
+    c.translate(p.x,p.y); c.rotate(p.rot);
+    c.fillRect(-p.size/2,-p.size/2,p.size,p.size*0.7);
+    c.restore();
+  }
+  c.globalAlpha=1;
+}
+function shake(ms,mag){ shakeT=ms; shakeDur=ms; shakeMag=mag; }
+function bumpStatus(txt,cls){
+  statusEl.textContent=txt;
+  statusEl.classList.toggle("chain",cls==="chain");
+  if(statusTimer){ clearTimeout(statusTimer); statusTimer=0; }
+  if(cls){
+    /* cosmetic toast auto-hide only */
+    statusTimer=setTimeout(function(){
+      statusTimer=0;
+      updateStatus();
+    },1400);
+  }
+}
+
+/* ═══ SCREENS + MODALS ═══ */
+function showScreen(n){
+  scrIntro.classList.toggle("active",n==="intro");
+  scrSetup.classList.toggle("active",n==="setup");
+  scrPuzzles.classList.toggle("active",n==="puzzles");
+  scrGame.classList.toggle("active",n==="game");
+  scrTutorial.classList.toggle("active",n==="tutorial");
+  curScreen=n;
+  try { Studio.ads.banner(n==="game"); } catch(e) {}
+  if(n==="intro") refreshContinue();
+  if(n==="puzzles") updateHub();
+  if(n==="tutorial"){ setTutPage(tutPage); TUT_GAME.start(tutCv,function(i){ AudioSys.chainHop(i); },function(){ return effectiveMuted(); }); }
+  if(n!=="game"){
+    clearTimers(); cancelThink();
+    if(n!=="tutorial") TUT_GAME.stop();
+    parts.length=0; shakeT=0;
+    try{ boardShake.style.transform=""; }catch(e){}
+  }
+  pzPrompt.classList.toggle("show",mode==="puzzle");
+  if(n==="game"){
+    layout();
+    syncGameBar(); updateCtlBars();
+    bgDirty=true; dirty=true;
+  }
+}
+function syncGameBar(){
+  const bot=(mode==="chess"&&setup.opp==="bot");
+  botBadge.style.display=bot?"flex":"none";
+  barSpacer.style.display=bot?"none":"block";
+  setBotBadge(thinking);
+  icoPause.style.display=(mode==="puzzle")?"none":"block";
+  icoBack.style.display=(mode==="puzzle")?"block":"none";
+  pauseBtn.setAttribute("aria-label",(mode==="puzzle")?"Back":"Pause");
+}
+function openModal(el){
+  if(curModal&&curModal!==el) curModal.classList.remove("show");
+  el.classList.add("show");
+  curModal=el;
+}
+function closeModal(){
+  if(confirmBtn) resetConfirm();
+  if(curModal){ curModal.classList.remove("show"); curModal=null; }
+}
+function openMsg(title,sub){
+  msgTitle.textContent=title;
+  msgSub.textContent=sub;
+  openModal(msgSheet);
+}
+
+/* ═══ RENDERING ═══ */
+function drawDisc(c,x,y,rad,dark,isKing){
+  const cs=CFG.colors;
+  const F=dark?cs.bFill:cs.wFill, S=dark?cs.bStroke:cs.wStroke;
+  c.beginPath(); c.arc(x,y,rad,0,Math.PI*2);
+  c.fillStyle=F; c.fill();
+  c.lineWidth=Math.max(2,rad*0.12); c.strokeStyle=S; c.stroke();
+  c.beginPath(); c.arc(x,y,rad*0.68,0,Math.PI*2);
+  c.lineWidth=Math.max(1,rad*0.07); c.strokeStyle=cs.groove; c.stroke();
+  c.beginPath(); c.arc(x,y,rad*0.45,0,Math.PI*2);
+  c.strokeStyle=cs.grooveHi; c.stroke();
+  if(isKing){
+    c.beginPath(); c.arc(x,y,rad*0.86,0,Math.PI*2);
+    c.lineWidth=Math.max(1.5,rad*0.09); c.strokeStyle=cs.kingGold; c.stroke();
+    const w=rad*0.62, h=rad*0.4;
+    c.beginPath();
+    c.moveTo(x-w/2,y+h/2);
+    c.lineTo(x-w/2,y-h/4);
+    c.lineTo(x-w/4,y+h/8);
+    c.lineTo(x,y-h/2);
+    c.lineTo(x+w/4,y+h/8);
+    c.lineTo(x+w/2,y-h/4);
+    c.lineTo(x+w/2,y+h/2);
+    c.closePath();
+    c.fillStyle=cs.kingGold; c.fill();
+  }
+}
+function drawDiscFull(c,s){
+  const bd=Ck.boardArr();
+  const v=bd[s];
+  const rad=sq*0.42;
+  const x=dispX(s), y=dispY(s);
+  const dark=v<0, isKing=(v===2||v===-2);
+  const cs=CFG.colors;
+  const e=Ck.emp.get(s);
+  if(e&&e.p==="S"&&!e.used){
+    c.beginPath();
+    c.arc(x+rad*0.55,y-rad*0.55,rad*0.34,0,Math.PI*2);
+    c.fillStyle="#78a0dc"; c.globalAlpha=0.95; c.fill();
+    c.globalAlpha=1;
+    c.beginPath();
+    c.moveTo(x+rad*0.55-rad*0.13,y-rad*0.55-rad*0.08);
+    c.lineTo(x+rad*0.55,y-rad*0.55-rad*0.18);
+    c.lineTo(x+rad*0.55+rad*0.13,y-rad*0.55-rad*0.08);
+    c.lineTo(x+rad*0.55+rad*0.13,y-rad*0.55+rad*0.06);
+    c.lineTo(x+rad*0.55,y-rad*0.55+rad*0.18);
+    c.lineTo(x+rad*0.55-rad*0.13,y-rad*0.55+rad*0.06);
+    c.closePath();
+    c.fillStyle="#f3ead3"; c.fill();
+  } else if(e&&!e.used&&(e.p==="L"||e.p==="W")){
+    c.beginPath();
+    c.arc(x-rad*0.55,y-rad*0.55,rad*0.3,0,Math.PI*2);
+    c.fillStyle=cs.kingGold; c.globalAlpha=0.95; c.fill();
+    c.globalAlpha=1;
+    c.fillStyle="#2b2416";
+    c.font="800 "+Math.round(rad*0.34)+"px -apple-system,Segoe UI,Roboto,Arial,sans-serif";
+    c.textAlign="center"; c.textBaseline="middle";
+    c.fillText(e.p, x-rad*0.55, y-rad*0.55+rad*0.02);
+  }
+  drawDisc(c,x,y,rad,dark,isKing);
+}
+/* doomed-piece mark: red square tint + cream-under double ring, pops on dark wood */
+function drawDoomMark(c,s,alpha){
+  const cs=CFG.colors;
+  const x=dispX(s), y=dispY(s);
+  c.globalAlpha=alpha*0.38;
+  c.fillStyle=cs.capRed;
+  c.fillRect(dispX(s)-sq/2, dispY(s)-sq/2, sq, sq);
+  c.globalAlpha=alpha;
+  c.beginPath(); c.arc(x,y,sq*0.47,0,Math.PI*2);
+  c.lineWidth=Math.max(3.5,sq*0.10); c.strokeStyle=cs.capCream; c.stroke();
+  c.beginPath(); c.arc(x,y,sq*0.47,0,Math.PI*2);
+  c.lineWidth=Math.max(2,sq*0.055); c.strokeStyle=cs.capRed; c.stroke();
+  c.globalAlpha=1;
+}
+function renderBG(){
+  const c=bgx, cs=CFG.colors;
+  c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle=cs.frame; c.fillRect(0,0,size,size);
+  for(let r=0;r<8;r++)for(let q=0;q<8;q++){
+    c.fillStyle=((r+q)&1)===0?cs.lightSq:cs.darkSq;
+    const w=(q<7)?sq+0.6:sq, h=(r<7)?sq+0.6:sq;
+    c.fillRect(mgn+q*sq, mgn+r*sq, w, h);
+  }
+  if(lastMove){
+    c.fillStyle=cs.last;
+    for(let i=0;i<lastMove.length;i++){
+      const s=lastMove[i];
+      c.fillRect(dispX(s)-sq/2, dispY(s)-sq/2, sq, sq);
+    }
+  }
+}
+function renderFG(){
+  const c=fgx, cs=CFG.colors;
+  const bd=Ck.boardArr();
+  /* During a tutorial move the logical board is already at its final state.
+     Suppress every path square, including the destination, so the animated
+     coin/crown is the only piece shown until the hop completes. */
+  const activePath=anim?new Set(anim.path):null;
+  c.setTransform(dpr,0,0,dpr,0,0);
+  c.clearRect(0,0,size,size);
+  /* Selection tint and legal-move dots belong to the interactive state only.
+     While a move is animating they are stale, so they are never drawn. */
+  if(sel>=0&&!anim){
+    c.fillStyle=cs.sel;
+    c.fillRect(dispX(sel)-sq/2, dispY(sel)-sq/2, sq, sq);
+  }
+  const doom=[];
+  if(walk&&!anim){
+    const at=walk.walked.length;
+    const prev=walk.walked[walk.walked.length-1];
+    const seen={};
+    for(let i=0;i<walk.seqs.length;i++){
+      const m=walk.seqs[i];
+      if(m.steps.length<=at) continue;
+      const nxt=m.steps[at];
+      if(seen[nxt]) continue;
+      seen[nxt]=true;
+      c.beginPath();
+      c.arc(dispX(nxt),dispY(nxt),sq*0.14,0,Math.PI*2);
+      c.fillStyle=cs.dot; c.fill();
+      if(prev>=0&&Math.abs((nxt>>3)-(prev>>3))===2){
+        const mid=(prev+nxt)>>1;
+        if(bd[mid]!==0) doom.push(mid);
+      }
+    }
+  }
+  if(powerMode){
+    for(let i=0;i<powerTargets.length;i++){
+      const t=powerTargets[i];
+      c.beginPath();
+      c.arc(dispX(t),dispY(t),sq*0.2,0,Math.PI*2);
+      c.fillStyle=cs.pwrDot; c.fill();
+      c.lineWidth=Math.max(1.5,sq*0.03); c.strokeStyle=cs.capCream; c.stroke();
+    }
+  }
+  /* Quietly identify the player's pieces while it is White's turn. This is
+     intentionally a ring, not a fill, so legal moves and board contrast stay
+     clear. */
+  if(!anim&&Ck.turnOf()===1){
+    c.save(); c.globalAlpha=0.22; c.lineWidth=Math.max(1.5,sq*0.045);
+    c.strokeStyle=cs.kingGold;
+    for(let s=0;s<64;s++) if(bd[s]>0){ c.beginPath(); c.arc(dispX(s),dispY(s),sq*0.43,0,Math.PI*2); c.stroke(); }
+    c.restore();
+  }
+  for(let s=0;s<64;s++){
+    const v=bd[s]; if(v===0) continue;
+    if(anim&&activePath.has(s)) continue;
+    drawDiscFull(c,s);
+  }
+  /* doomed-piece marks draw over pieces so they are always visible */
+  for(let i=0;i<doom.length;i++) drawDoomMark(c,doom[i],0.95);
+  if(!anim&&mustList.length){
+    const flash=simNow<capFlashUntil;
+    for(let i=0;i<mustList.length;i++){
+      const s=mustList[i];
+      const pulse=flash?0.95:(0.4+0.22*Math.sin(simNow/220+i));
+      drawDoomMark(c,s,pulse);
+    }
+  }
+  /* puzzle coaching marks: the piece to look at (after a second miss) and the
+     square a refused move wanted to reach */
+  if(mode==="puzzle"&&!anim){
+    if(pzHintFrom>=0){
+      c.beginPath(); c.arc(dispX(pzHintFrom),dispY(pzHintFrom),sq*0.46,0,Math.PI*2);
+      c.lineWidth=Math.max(3,sq*0.07); c.strokeStyle=cs.kingGold; c.stroke();
+    }
+    if(pzBadTo>=0&&simNow<pzBadUntil){
+      c.beginPath(); c.arc(dispX(pzBadTo),dispY(pzBadTo),sq*0.46,0,Math.PI*2);
+      c.lineWidth=Math.max(3,sq*0.07); c.strokeStyle=cs.capRed; c.stroke();
+    }
+  }
+  if(anim){
+    const segs=anim.path.length-1;
+    const per=anim.dur/segs;
+    let t=anim.t, si=0;
+    while(si<segs-1&&t>per){ t-=per; si++; }
+    const k=easeOutCubic(Math.min(1,t/per));
+    for(let i=0;i<anim.caps.length;i++){
+      if(i>=si+1) continue;
+      const mid=anim.caps[i], cv=anim.capVals[i];
+      c.globalAlpha=Math.max(0.12,1-k);
+      drawDisc(c,dispX(mid),dispY(mid),sq*0.42,cv<0,cv===2||cv===-2);
+      c.globalAlpha=1;
+    }
+    if(anim.crowned&&anim.t>anim.dur*0.7){
+      const lk=(anim.t-anim.dur*0.7)/(anim.dur*0.3);
+      c.globalAlpha=1-lk;
+      c.beginPath();
+      c.arc(dispX(anim.path[segs]),dispY(anim.path[segs]),sq*(0.5+0.5*lk),0,Math.PI*2);
+      c.lineWidth=3; c.strokeStyle=cs.kingGold; c.stroke();
+      c.globalAlpha=1;
+    }
+    const x=dispX(anim.path[si])+(dispX(anim.path[si+1])-dispX(anim.path[si]))*k;
+    const y=dispY(anim.path[si])+(dispY(anim.path[si+1])-dispY(anim.path[si]))*k;
+    drawDisc(c,x,y,sq*0.42,anim.dark,anim.isKing);
+  }
+  if(kingFx){
+    const k=Math.min(1,(simNow-kingFx.t0)/500);
+    if(k<1){
+      c.globalAlpha=1-k;
+      c.beginPath();
+      c.arc(dispX(kingFx.sq),dispY(kingFx.sq),sq*(0.4+k*0.9),0,Math.PI*2);
+      c.lineWidth=3; c.strokeStyle=cs.kingGold; c.stroke();
+      c.globalAlpha=1;
+      dirty=true;
+    } else kingFx=null;
+  }
+  drawParts(c);
+}
+
+/* ═══ SIM CLOCK + LOOP ═══ */
+function tick(t){
+  rafId=requestAnimationFrame(tick);
+  if(!running) return;
+  let dt=t-lastT; lastT=t;
+  if(dt<0) dt=0; if(dt>50) dt=50;
+  simNow+=dt;
+  if(timers.length){
+    const due=[];
+    for(let i=0;i<timers.length;i++){ if(simNow>=timers[i].at) due.push(timers[i]); }
+    if(due.length){
+      timers=timers.filter(function(tm){ return tm.at>simNow; });
+      for(let i=0;i<due.length;i++) due[i].fn();
+    }
+  }
+  if(anim){
+    anim.t+=dt;
+    if(anim.t>=anim.dur){
+      const a=anim; anim=null;
+      if(a.onDone) a.onDone();
+    }
+    dirty=true;
+  }
+  if(mustList.length){ dirty=true; }
+  if(mode==="puzzle"&&(simNow<pzBadUntil||pzHintFrom>=0)) dirty=true;
+  if(parts.length){ updateParts(dt); dirty=true; }
+  if(shakeT>0){
+    shakeT-=dt;
+    if(shakeT<=0){ shakeT=0; try{ boardShake.style.transform=""; }catch(e){} }
+    else {
+      const kk=shakeT/shakeDur, m=shakeMag*kk;
+      const dx=((Math.random()*2-1)*m).toFixed(2);
+      const dy=((Math.random()*2-1)*m).toFixed(2);
+      try{ boardShake.style.transform="translate("+dx+"px,"+dy+"px)"; }catch(e){}
+    }
+  }
+  if(confirmBtn&&simNow>confirmUntil) resetConfirm();
+  if(curScreen==="game"){
+    if(bgDirty){ renderBG(); bgDirty=false; }
+    if(dirty){ renderFG(); dirty=false; }
+  }
+}
+
+/* ═══ INPUT ═══ */
+function clearSel(){ sel=-1; walk=null; powerMode=false; powerTargets=[]; dirty=true; }
+function boardPress(x,y){
+  AudioSys.unlock();
+  if(testLock||thinking||pendingPower>=0||pzBusy) return;
+  if(anim) return;
+  if(curModal) return;
+  resetConfirm();
+  const rect=fgCv.getBoundingClientRect();
+  const px=(x-rect.left)*(size/rect.width);
+  const py=(y-rect.top)*(size/rect.height);
+  const q0=Math.floor((px-mgn)/sq), r0=Math.floor((py-mgn)/sq);
+  if(q0<0||q0>7||r0<0||r0>7){ clearSel(); return; }
+  const c=flipped?7-q0:q0, r=flipped?7-r0:r0;
+  const s=r*8+c;
+  if(result) return;
+  const bd=Ck.boardArr();
+  if(powerMode){
+    if(powerTargets.indexOf(s)>=0){
+      const from=sel;
+      clearSel();
+      execPower(from,s);
+      return;
+    }
+    powerMode=false; powerTargets=[]; dirty=true;
+    return;
+  }
+  if(walk){
+    /* Tapping the piece that is already selected (chained or not) keeps the
+       selection alive: it must never wipe the coin and its move markers. */
+    if(s===sel) return;
+    const at=walk.walked.length;
+    const cont=[];
+    for(let i=0;i<walk.seqs.length;i++){
+      const m=walk.seqs[i];
+      if(m.steps.length>at&&m.steps[at]===s) cont.push(m);
+    }
+    if(cont.length){
+      if(cont.every(m=>m.steps.length===at+1)){
+        execute(cont[0],false); return;
+      }
+      walk.seqs=cont; walk.walked.push(s); sel=s;
+      dirty=true; return;
+    }
+    clearSel(); return;
+  }
+  const v=bd[s];
+  if(v!==0&&(v>0)===(Ck.turnOf()>0)){
+    const seqs=Ck.genMoves().filter(m=>m.from===s);
+    if(!seqs.length){
+      if(mustList.length){
+        bumpStatus("You must capture!","chain");
+        capFlashUntil=simNow+1200;
+        AudioSys.play("deny");
+        gameHaptic("medium");
+      }
+      clearSel();
+      return;
+    }
+    sel=s; walk={seqs:seqs,walked:[s]};
+    AudioSys.play("select"); dirty=true;
+    updateCtlBars();
+    return;
+  }
+  clearSel();
+}
+
+/* ═══ SNAPSHOTS ═══ */
+function snapshot(){
+  const bd=Ck.boardArr();
+  const list=[];
+  for(let s=0;s<64;s++) if(bd[s]!==0) list.push([s>>3,s&7,bd[s]]);
+  const el=[];
+  Ck.emp.forEach(function(v,k){ el.push([k,{p:v.p,used:v.used}]); });
+  return {pieces:list, emp:el, turn:Ck.turnOf(), noProg:Ck.noProgress(),
+          keys:Ck.keys.slice(), lastMove:lastMove, result:result};
+}
+function applySnapshot(s){
+  Ck.loadPos(s.pieces, s.turn);
+  Ck.emp.clear();
+  for(let i=0;i<s.emp.length;i++) Ck.emp.set(s.emp[i][0],s.emp[i][1]);
+  Ck.keys.length=0;
+  const ks=Array.isArray(s.keys)?s.keys:[];
+  for(let i=0;i<ks.length;i++) Ck.keys.push(ks[i]);
+  if(Ck.keys.length===0||Ck.keys[Ck.keys.length-1]!==Ck.posKey()){
+    Ck.keys.length=0; Ck.keys.push(Ck.posKey());
+  }
+  lastMove=s.lastMove||null;
+  result=s.result||null;
+  clearSel(); anim=null; kingFx=null;
+  clearTimers();
+  pendingPower=-1;
+  pzBusy=false;
+  updateStatus();
+  bgDirty=true; dirty=true;
+}
+
+function puzzleFailed(msg){
+  bumpStatus(msg,"chain");
+  AudioSys.play("deny"); gameHaptic("heavy");
+  pzBusy=true; pzJudgeStop();
+  updateStatus();
+  after(950,function(){
+    applySnapshot(pzSnap);
+    pzTries=0; pzHintFrom=-1; pzBadTo=-1;
+    pzJudgeStart();
+  });
+}
+function sameSteps(a,b){
+  if(a.length!==b.length) return false;
+  for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return false;
+  return true;
+}
+
+function execute(mv,byBot){
+  /* Puzzle rules first: a move outside the winning path is refused outright
+     and the position is left untouched, so the coin never silently vanishes. */
+  pzSolvedShot=false;
+  if(mode==="puzzle"&&!byBot&&!pzBusy&&!result){
+    const v=pzVerdict(mv);
+    if(v.known&&!v.ok){ pzReject(mv,v); return; }
+    pzSolvedShot=!!(v.known&&v.shot);
+  }
+  const bd=Ck.boardArr();
+  const startVal=bd[mv.from];
+  const capsHere=[];
+  const shieldsHere=[];
+  for(let i=1;i<mv.steps.length;i++){
+    if(Math.abs((mv.steps[i]>>3)-(mv.steps[i-1]>>3))===2){
+      const mid=(mv.steps[i-1]+mv.steps[i])>>1;
+      const me=Ck.emp.get(mid);
+      if(me&&me.p==="S"&&!me.used) shieldsHere.push(mid);
+      else capsHere.push(mid);
+    }
+  }
+  const capVals=capsHere.map(s2=>bd[s2]);
+  const wasMan=(startVal===1||startVal===-1);
+  const crown=(startVal>0)?0:7;
+  const crowned=wasMan&&((mv.steps[mv.steps.length-1]>>3)===crown);
+  if(!byBot&&mode==="chess"){
+    undoStack.push(snapshot());
+    redoStack.length=0;
+  }
+  /* one knock per hop, rising in pitch and volume along the chain */
+  const hops=mv.steps.length-1;
+  for(let h=1;h<=hops;h++){
+    (function(hh){
+      after(hh*CFG.animMsPerHop, function(){ AudioSys.chainHop(hh-1); });
+    })(h);
+  }
+  /* The move commits now: drop the selection and its legal-move markers so
+     the animation can never trail a stale white dot behind the piece. This
+     also covers the puzzle branches that return before the normal cleanup. */
+  clearSel();
+  anim={
+    t:0, dur:CFG.animMsPerHop*hops,
+    from:mv.from, path:mv.steps.slice(),
+    caps:capsHere.slice(), capVals:capVals,
+    capSet:new Set(capsHere.concat(shieldsHere)),
+    dark:startVal<0, isKing:!wasMan, crowned:crowned,
+    onDone(){
+      const nCaps=capsHere.length;
+      const nShields=shieldsHere.length;
+      const destSq=mv.steps[mv.steps.length-1];
+      gameHaptic(nCaps>0?"medium":"light");
+      if(nShields>0){
+        AudioSys.play("shieldhit");
+        bumpStatus("SHIELD!",null);
+      }
+      lastMove=mv.steps.slice();
+      const res=Ck.make(mv);
+      if(mode==="puzzle"){
+        updateCtlBars(); bgDirty=true; dirty=true;
+        if(byBot){ pzJudgeStart(); updateStatus(); return; }
+        if(pzSolvedShot||matchesSolution(pzActive,mv)){
+          onPuzzleSolved(true);
+          return;
+        }
+        if(res.over){
+          const w=res.result?res.result.winner:0;
+          if(w===1) onPuzzleSolved(false);
+          else puzzleFailed(w===0?"Draw. The shot was in there, so try again.":"The defence held. Try again.");
+          return;
+        }
+        updateStatus();
+        after(140,maybeBotMove);
+        return;
+      }
+      if(crowned){
+        AudioSys.play("king"); gameHaptic("success");
+        kingFx={sq:destSq,t0:simNow};
+      }
+      if(res.over){
+        result=res.result;
+        AudioSys.play("end"); gameHaptic("success");
+        if(crowned){
+          const ps=["S","L","W"];
+          Ck.grantPower(destSq,ps[Math.floor(Math.random()*3)]);
+        }
+        if(curScreen==="game") showOverSheet();
+      } else {
+        if(crowned){
+          const mover=Ck.turnOf()===1?-1:1;
+          const isBotSide=(setup.opp==="bot"&&mover===aiColor);
+          if(isBotSide){
+            after(500,function(){
+              const ps=["S","L","W"];
+              Ck.grantPower(destSq,ps[Math.floor(Math.random()*3)]);
+              bumpStatus("Bot crowned!",null);
+              bgDirty=true; dirty=true;
+            });
+          } else {
+            pendingPower=destSq;
+            bumpStatus("CROWN POWER!",null);
+            openModal(crownModal);
+          }
+        } else if(nCaps>=3){
+          spawnConfetti();
+          shake(200,4);
+          AudioSys.play("chain"); gameHaptic("success");
+          bumpStatus("TRIPLE CAPTURE!","chain");
+          spawnBurst(dispX(destSq),dispY(destSq),12);
+        }
+      }
+      clearSel();
+      updateStatus(); persist(); updateCtlBars();
+      if(mode==="chess"&&setup.opp==="bot"&&!result&&pendingPower<0)
+        after(120, maybeBotMove);
+      bgDirty=true; dirty=true;
+    }
+  };
+  dirty=true;
+}
+function execPower(from,to){
+  const e=Ck.emp.get(from);
+  if(!e) return;
+  const kind=e.p;
+  undoStack.push(snapshot());
+  redoStack.length=0;
+  const res=kind==="L"?Ck.makeLeap(from,to):Ck.makeSwap(from,to);
+  lastMove=[from,to];
+  AudioSys.play("power"); gameHaptic("medium");
+  bumpStatus(kind==="L"?"LONG LEAP!":"SWAP!","chain");
+  if(res.over){
+    result=res.result;
+    AudioSys.play("end"); gameHaptic("success");
+    if(curScreen==="game") showOverSheet();
+  }
+  clearSel();
+  updateStatus(); persist(); updateCtlBars();
+  if(mode==="chess"&&setup.opp==="bot"&&!result) after(200, maybeBotMove);
+  bgDirty=true; dirty=true;
+}
+
+/* ═══ STATUS / RESULT ═══ */
+function resultText(r){
+  if(r.type==="nomoves") return {t:((r.winner===1?"WHITE":"BLACK")+" WINS"), s:"opponent has no moves"};
+  if(r.type==="resign")  return {t:((r.winner===1?"WHITE":"BLACK")+" WINS"), s:"by resignation"};
+  if(r.type==="progress")return {t:"DRAW", s:"40 moves without progress"};
+  return {t:"DRAW", s:"repetition"};
+}
+function updateStatus(){
+  statusEl.classList.remove("chain");
+  if(pendingPower>=0){ statusEl.textContent="Choose a crown power"; mustList.length=0; return; }
+  if(mode==="puzzle"){
+    mustList.length=0;
+    if(pzBusy){ statusEl.textContent="The defence held. Resetting"; return; }
+    statusEl.textContent="";
+    pzPrompt.classList.add("show");
+    computeMustList();
+    return;
+  }
+  if(result){
+    const rt=resultText(result);
+    statusEl.textContent=rt.t+", "+rt.s;
+    mustList.length=0;
+    return;
+  }
+  if(thinking){ statusEl.textContent=""; mustList.length=0; return; }
+  statusEl.textContent=(Ck.turnOf()===1?"White to move":"Black to move");
+  computeMustList();
+  dirty=true;
+}
+function computeMustList(){
+  mustList.length=0;
+  if(mode==="chess"&&result) return;
+  if(mode==="chess"&&setup.opp==="bot"&&Ck.turnOf()===aiColor) return;
+  const ms=Ck.genMoves();
+  if(ms.length&&ms[0].caps.length>0){
+    const seen={};
+    for(let i=0;i<ms.length;i++){
+      const f=ms[i].from;
+      if(!seen[f]){ seen[f]=true; mustList.push(f); }
+    }
+  }
+  dirty=true;
+}
+let overKind="chess";
+function showOverSheet(){
+  overKind="chess";
+  const rt=resultText(result);
+  overTitle.textContent=rt.t;
+  overSub.textContent=rt.s;
+  overPrimary.textContent="REMATCH";
+  overSecondary.textContent="MAIN MENU";
+  try { Studio.ads.interstitial(); } catch(e) {}
+  openModal(overSheet);
+}
+
+/* ═══ PUZZLE FLOW ═══ */
+function startPuzzle(p,daily){
+  mode="puzzle";
+  pzActive=p; pzIsDaily=!!daily;
+  pzTier=p.tier;
+  Ck.loadPos(p.list,1);
+  flipped=false;
+  lastMove=null; result=null;
+  clearSel(); anim=null; kingFx=null;
+  undoStack.length=0; redoStack.length=0;
+  clearTimers();
+  pendingPower=-1; pzBusy=false;
+  pzTries=0; pzBadTo=-1; pzBadUntil=0; pzHintFrom=-1; pzSolvedShot=false;
+  pzSnap=snapshot();
+  started=true;
+  showScreen("game");
+  updateStatus();
+  pzJudgeStart();
+  const nWhite=pzActive.list.filter(function(p){ return p[2]>0; }).length;
+  const nBlack=pzActive.list.length-nWhite;
+  pzPromptTurn.textContent="You play WHITE";
+  pzPromptPieces.textContent=nWhite+" pieces against "+nBlack+" pieces";
+}
+function onPuzzleSolved(exactShot){
+  AudioSys.play("end"); gameHaptic("success");
+  spawnConfetti();
+  if(lastMove) spawnBurst(dispX(lastMove[lastMove.length-1]),dispY(lastMove[lastMove.length-1]),12);
+  pstats.solved[pzTier]=(pstats.solved[pzTier]||0)+1;
+  pstats.puzzlesSinceAd=(pstats.puzzlesSinceAd||0)+1;
+  if(pstats.puzzlesSinceAd>=CFG.ads.rewardEveryN){
+    pstats.puzzlesSinceAd=0;
+    try { Studio.ads.rewarded("puzzle_unlock", function(){
+      pstats.freePuzzles=(pstats.freePuzzles||0)+CFG.ads.freePuzzleReward;
+      persistPStats(); updateHub();
+    }, function(){}); } catch(e){}
+  }
+  let extra="";
+  if(pzIsDaily&&pstats.lastDaily!==todayStr()){
+    if(pstats.lastDaily===yesterdayStr()) pstats.streak++;
+    else pstats.streak=1;
+    if(pstats.streak>pstats.best) pstats.best=pstats.streak;
+    pstats.lastDaily=todayStr();
+    extra=" Streak "+pstats.streak;
+  }
+  persistPStats();
+  updateHub();
+  overKind="puzzle";
+  overTitle.textContent=exactShot?"SHOT FOUND!":"PUZZLE SOLVED!";
+  overSub.textContent=(pzIsDaily?"Daily solved."+extra:(pzTier.toUpperCase()+" solved."));
+  overPrimary.textContent="NEXT PUZZLE";
+  overSecondary.textContent="PUZZLE HUB";
+  openModal(overSheet);
+}
+function tierStats(t){
+  const db=(PZDB.ready())?PZDB.tiers[t]:null;
+  const n=db?db.length:0;
+  if(n>0) return n+" ready";
+  return GOULD_BATCHES.length?"verifying on boot":"add puzzles to file";
+}
+function updateHub(){
+  pzStreak.textContent=pstats.streak+(pstats.streak===1?" DAY":" DAYS");
+  pzBest.textContent="BEST "+pstats.best;
+  pzSolvedEasy.textContent=String(pstats.solved.easy||0);
+  pzSolvedNormal.textContent=String(pstats.solved.normal||0);
+  pzSolvedHard.textContent=String(pstats.solved.hard||0);
+  const d=new Date();
+  const days=["SUN","MON","TUE","WED","THU","FRI","SAT"];
+  const mons=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  pzDailyDate.textContent=days[d.getDay()]+", "+mons[d.getMonth()]+" "+d.getDate();
+  pzDailyBtn.textContent=(pstats.lastDaily===todayStr())?"SOLVED":"SOLVE";
+  pzStatEasy.textContent=tierStats("easy");
+  pzStatNormal.textContent=tierStats("medium");
+  pzStatHard.textContent=tierStats("hard");
+}
+
+/* ═══ PERSISTENCE ═══ */
+function persist(){
+  if(mode!=="chess"){ refreshContinue(); return; }
+  const bd=Ck.boardArr();
+  const list=[];
+  for(let s=0;s<64;s++) if(bd[s]!==0) list.push([s>>3,s&7,bd[s]]);
+  const d={v:4, pieces:list, turn:Ck.turnOf(), noProg:Ck.noProgress(),
+    keys:Ck.keys.slice(), lastMove:lastMove, result:result, flipped:flipped};
+  if(setup.opp==="bot"){
+    d.bot={opp:"bot", level:setup.level, aiColor:aiColor};
+  }
+  chessLive=!result;
+  Studio.save(CFG.saveKey, JSON.stringify(d));
+  refreshContinue();
+}
+function refreshContinue(){
+  continueBtn.style.display=(chessLive)?"block":"none";
+}
+function restore(){
+  const raw=Studio.load(CFG.saveKey);
+  if(!raw) return false;
+  try{
+    const d=JSON.parse(raw);
+    if(!d||d.v!==4||!Array.isArray(d.pieces)||d.pieces.length===0) return false;
+    Ck.loadPos(d.pieces, d.turn===-1?-1:1);
+    Ck.emp.clear();
+    if(Array.isArray(d.emp)) for(let i=0;i<d.emp.length;i++) Ck.emp.set(d.emp[i][0],d.emp[i][1]);
+    Ck.keys.length=0;
+    const ks=Array.isArray(d.keys)?d.keys:[];
+    for(let i=0;i<ks.length;i++) Ck.keys.push(ks[i]);
+    if(Ck.keys.length===0||Ck.keys[Ck.keys.length-1]!==Ck.posKey()){
+      Ck.keys.length=0; Ck.keys.push(Ck.posKey());
+    }
+    lastMove=Array.isArray(d.lastMove)?d.lastMove:null;
+    result=d.result||null;
+    flipped=!!d.flipped;
+    if(d.bot&&d.bot.opp==="bot"){
+      setup.opp="bot";
+      setup.level=d.bot.level||"easy";
+      aiColor=(d.bot.aiColor===-1)?-1:1;
+    }
+    started=true;
+    chessLive=!result;
+    return true;
+  }catch(e){
+    console.warn("[checkers] save restore failed",e);
+    return false;
+  }
+}
+function loadPStats(){
+  const raw=Studio.load(CFG.pstatsKey);
+  if(!raw) return;
+  try{
+    const d=JSON.parse(raw);
+    if(!d) return;
+    pstats.streak=d.streak||0;
+    pstats.best=d.best||0;
+    pstats.lastDaily=d.lastDaily||"";
+    pstats.solved={
+      easy:(d.solved&&d.solved.easy)||0,
+      normal:(d.solved&&d.solved.normal)||0,
+      hard:(d.solved&&d.solved.hard)||0
+    };
+  }catch(e){ console.warn("[checkers] pstats parse failed",e); }
+}
+function persistPStats(){
+  Studio.save(CFG.pstatsKey, JSON.stringify(pstats));
+}
+function newGame(){
+  cancelThink();
+  Ck.reset();
+  lastMove=null; result=null; clearSel(); anim=null; kingFx=null;
+  undoStack.length=0; redoStack.length=0;
+  clearTimers();
+  pendingPower=-1; pzBusy=false;
+  started=true; chessLive=true;
+  bgDirty=true; dirty=true;
+  updateStatus(); persist(); updateCtlBars();
+  if(mode==="chess"&&setup.opp==="bot") after(480, maybeBotMove);
+}
+function doResign(){
+  if(result) return;
+  undoStack.push(snapshot()); redoStack.length=0;
+  result={type:"resign",winner:-Ck.turnOf()};
+  chessLive=false;
+  clearSel(); anim=null;
+  updateStatus(); persist(); updateCtlBars();
+  AudioSys.play("end"); gameHaptic("success");
+  if(curScreen==="game") showOverSheet();
+}
+function onUndo(){
+  if(mode!=="chess"||thinking||anim||pendingPower>=0||!undoStack.length) return;
+  AudioSys.play("tap"); gameHaptic("light");
+  if(setup.opp==="bot"){
+    redoStack.length=0;
+    redoStack.push(snapshot());
+    applySnapshot(undoStack.pop());
+    if(Ck.turnOf()===aiColor&&undoStack.length){
+      applySnapshot(undoStack.pop());
+    }
+  } else {
+    redoStack.push(snapshot());
+    applySnapshot(undoStack.pop());
+  }
+  persist(); updateCtlBars();
+}
+function onRedo(){
+  if(mode!=="chess"||thinking||anim||pendingPower>=0||!redoStack.length) return;
+  if(setup.opp==="bot") return;
+  AudioSys.play("tap"); gameHaptic("light");
+  undoStack.push(snapshot());
+  applySnapshot(redoStack.pop());
+  persist(); updateCtlBars();
+}
+function updateCtlBars(){
+  const show=(mode==="chess");
+  ctlTop.style.display=(show&&setup.opp!=="bot")?"flex":"none";
+  ctlBottom.style.display=show?"flex":"none";
+  if(!show) return;
+  const rows=[ctlTop,ctlBottom];
+  for(let ri=0;ri<rows.length;ri++){
+    const bs=rows[ri].querySelectorAll("button[data-act]");
+    for(let i=0;i<bs.length;i++){
+      const act=bs[i].getAttribute("data-act");
+      if(act==="undo") bs[i].disabled=thinking||pendingPower>=0||!undoStack.length;
+      else if(act==="redo") bs[i].disabled=thinking||pendingPower>=0||setup.opp==="bot"||!redoStack.length;
+      else if(act==="resign") bs[i].disabled=thinking||pendingPower>=0||!!result;
+      else if(act==="power"){
+        let showPwr=false;
+        if(!thinking&&!result&&pendingPower<0&&sel>=0&&!walk){
+          const e=Ck.emp.get(sel);
+          if(e&&!e.used&&(e.p==="L"||e.p==="W")) showPwr=true;
+        }
+        bs[i].style.display=showPwr?"flex":"none";
+      }
+    }
+  }
+}
+
+/* ═══ CONFIRM (pause New Game only) ═══ */
+function armConfirm(btn,fn){
+  if(confirmBtn===btn){ resetConfirm(); fn(); return; }
+  resetConfirm();
+  confirmBtn=btn; confirmUntil=simNow+CFG.confirmMs;
+  btn.dataset.label=btn.textContent;
+  btn.textContent="TAP AGAIN";
+  btn.classList.add("arm");
+}
+function resetConfirm(){
+  if(!confirmBtn) return;
+  confirmBtn.textContent=confirmBtn.dataset.label||confirmBtn.textContent;
+  confirmBtn.classList.remove("arm");
+  confirmBtn=null;
+}
+
+/* ═══ TUTORIAL: one canvas, one text block, five distinct diagrams ═══ */
+function tutDiscT(c,x,y,rad,dark,isKing){
+  const cs=CFG.colors;
+  const F=dark?cs.bFill:cs.wFill, S=dark?cs.bStroke:cs.wStroke;
+  c.beginPath(); c.arc(x,y,rad,0,Math.PI*2);
+  c.fillStyle=F; c.fill();
+  c.lineWidth=Math.max(2,rad*0.12); c.strokeStyle=S; c.stroke();
+  c.beginPath(); c.arc(x,y,rad*0.68,0,Math.PI*2);
+  c.lineWidth=Math.max(1,rad*0.07); c.strokeStyle=cs.groove; c.stroke();
+  if(isKing){
+    c.beginPath(); c.arc(x,y,rad*0.86,0,Math.PI*2);
+    c.lineWidth=Math.max(1.5,rad*0.09); c.strokeStyle=cs.kingGold; c.stroke();
+    const w=rad*0.62, h=rad*0.4;
+    c.beginPath();
+    c.moveTo(x-w/2,y+h/2);
+    c.lineTo(x-w/2,y-h/4);
+    c.lineTo(x-w/4,y+h/8);
+    c.lineTo(x,y-h/2);
+    c.lineTo(x+w/4,y+h/8);
+    c.lineTo(x+w/2,y-h/4);
+    c.lineTo(x+w/2,y+h/2);
+    c.closePath();
+    c.fillStyle=cs.kingGold; c.fill();
+  }
+}
+function tutArrow(c,x1,y1,x2,y2,color){
+  c.strokeStyle=color; c.fillStyle=color;
+  c.lineWidth=3; c.setLineDash([6,5]);
+  c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  c.setLineDash([]);
+  const ang=Math.atan2(y2-y1,x2-x1);
+  c.beginPath();
+  c.moveTo(x2,y2);
+  c.lineTo(x2-9*Math.cos(ang-0.45),y2-9*Math.sin(ang-0.45));
+  c.lineTo(x2-9*Math.cos(ang+0.45),y2-9*Math.sin(ang+0.45));
+  c.closePath(); c.fill();
+}
+/* each page draws its own story on the board */
+/* ═══ TUTORIAL: looping auto-played mini game, one canvas ═══
+   A scripted real game plays itself on the canvas with full animation and
+   wooden sound. Each tutorial page pauses the loop at its teaching beat. */
+const TUT_GAME=(()=>{
+  /* positions in [row,col,dark,king] form. START + LINE are one real game
+     verified move by move against the shipping engine, so every tutorial
+     frame is legal checkers (the old hand-written script contained a NaN
+     path step that deleted a piece and a jump that never reached row 0). */
+  const START=[
+    [5,0,0,0],[5,2,0,0],[5,4,0,0],[6,1,0,0],[6,5,0,0],[7,2,0,0],
+    [1,0,1,0],[1,4,1,0],[2,3,1,0],[2,7,1,0],[3,2,1,0]
+  ];
+  /* one pair of coordinates per hop: [fromRow,fromCol, toRow,toCol, ...] */
+  const LINE=[
+    {w:[5,0,4,1]},                        /* ply 0  white opens                 */
+    {b:[3,2,5,0]},                        /* ply 1  black jumps, takes the shot  */
+    {w:[5,2,4,1]},                        /* ply 2  white answers                */
+    {b:[1,0,2,1]},                        /* ply 3  black advances               */
+    {w:[4,1,3,0]},                        /* ply 4  white advances               */
+    {b:[1,4,2,5]},                        /* ply 5  black advances               */
+    {w:[3,0,1,2]},                        /* ply 6  white jumps back             */
+    {b:[2,3,3,2]},                        /* ply 7  black advances               */
+    {w:[1,2,0,1]},                        /* ply 8  white reaches row 0: CROWNS  */
+    {b:[2,5,3,4]},                        /* ply 9  black advances               */
+    {w:[0,1,1,0]},                        /* ply 10 the king steps down          */
+    {b:[2,7,3,6]},                        /* ply 11 black advances               */
+    {w:[1,0,2,1]},                        /* ply 12 the king steps back in       */
+    {b:[3,6,4,7]},                        /* ply 13 black advances               */
+    {w:[2,1,4,3,2,5]},                    /* ply 14 the king sweeps two men      */
+    {b:[4,7,5,6]},                        /* ply 15 black advances               */
+    {w:[6,5,4,7]}                         /* ply 16 the final shot: no moves left */
+  ];
+  /* one scene per tutorial page: the position the lesson talks about, the
+     consecutive plies that lesson demonstrates, and the hint mark. Because
+     each page rebuilds its own position and replays only its own move, no two
+     pages can ever look like the same running game. */
+  const SCENES=[
+    {base:0,  demos:[0],              wait:900, hold:1800, mark:"move" },
+    {base:1,  demos:[1,2,3,4,5,6],    wait:900, hold:1800, mark:"capture" },
+    {base:8,  demos:[8],              wait:900, hold:2000, mark:"crown" },
+    {base:14, demos:[14],             wait:900, hold:2000, mark:"power" },
+    {base:16, demos:[16],             wait:900, hold:2200, mark:"end" }
+  ];
+  let cv=null, ctx=null, anim=null, board=null;
+  let sceneIdx=0, demoIdx=0, phase="wait", phaseUntil=0, lastDemo=null;
+  let raf=0, mutedRef=function(){return true;}, soundRef=null, runningRef=false;
+  function build(){
+    const b=new Int8Array(64);
+    for(let i=0;i<START.length;i++){
+      const it=START[i];
+      b[it[0]*8+it[1]]=it[3]?(it[2]?-2:2):(it[2]?-1:1);
+    }
+    return b;
+  }
+  function applySeg(b,seg){
+    const path=[];
+    const fr=seg.w?seg.w[0]:seg.b[0];
+    const fc=seg.w?seg.w[1]:seg.b[1];
+    path.push(fr*8+fc);
+    const steps=seg.w?seg.w:seg.b;
+    /* only complete coordinate pairs become path hops: a trailing single
+       value used to push a NaN step, which deleted a piece from the board */
+    for(let i=2;i+1<steps.length;i+=2){
+      path.push(steps[i]*8+steps[i+1]);
+    }
+    const dark=seg.b?true:false;
+    let val=b[path[0]];
+    b[path[0]]=0;
+    let cur=path[0];
+    const caps=[];
+    for(let i=1;i<path.length;i++){
+      const s=path[i];
+      if(Math.abs((s>>3)-(cur>>3))===2){
+        const mid=(cur+s)>>1;
+        caps.push({sq:mid,val:b[mid]});
+        b[mid]=0;
+      }
+      cur=s;
+    }
+    b[cur]=val;
+    if(Math.abs(val)===1&&(cur>>3)===(dark?7:0)) b[cur]=dark?-2:2;
+    return {path:path,caps:caps,dark:dark,val:val,crowned:(Math.abs(val)===1)};
+  }
+  function draw(){
+    if(!ctx) return;
+    const d=Math.min(window.devicePixelRatio||1,2);
+    /* Cap by width AND by the height left under the head bar, so the board,
+       the copy, the dots and the nav all stay on screen on short phones. */
+    const cssW=(document.getElementById("app").clientWidth||340)-40;
+    const cssH=(window.innerHeight||640)-320;
+    const css=Math.max(150,Math.min(300,cssW,cssH));
+    const px=Math.round(css*d);
+    cv.width=px; cv.height=px;
+    cv.style.width=css+"px"; cv.style.height=css+"px";
+    ctx.setTransform(d,0,0,d,0,0);
+    const cs=CFG.colors;
+    const m=Math.max(4,Math.round(css*0.02));
+    const q=(css-2*m)/8;
+    ctx.fillStyle=cs.frame; ctx.fillRect(0,0,css,css);
+    for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+      ctx.fillStyle=((r+c)&1)===0?cs.lightSq:cs.darkSq;
+      ctx.fillRect(m+c*q,m+r*q,q+0.5,q+0.5);
+    }
+    const cx=col=>m+col*q+q/2, cy=row=>m+row*q+q/2;
+    let moving=null;
+    if(anim){
+      const segs=anim.path.length-1;
+      const per=anim.dur/segs;
+      let t=anim.t, si=0;
+      while(si<segs-1&&t>per){ t-=per; si++; }
+      const k=easeOutCubic(Math.min(1,t/per));
+      for(let i=0;i<anim.caps.length;i++){
+        if(i>=si+1) continue;
+        const mid=anim.caps[i];
+        ctx.globalAlpha=Math.max(0.15,1-k);
+        drawD(ctx,cx(mid.sq%8),cy(mid.sq>>3),q*0.4,mid.val<0,Math.abs(mid.val)===2);
+        ctx.globalAlpha=1;
+      }
+      const x=cx(anim.path[si]%8)+(cx(anim.path[si+1]%8)-cx(anim.path[si]%8))*k;
+      const y=cy(anim.path[si]>>3)+(cy(anim.path[si+1]>>3)-cy(anim.path[si]>>3))*k;
+      moving={x:x,y:y,dark:anim.dark,king:anim.crowned||(Math.abs(anim.val)===2)};
+    }
+    for(let s=0;s<64;s++){
+      const v=board[s]; if(v===0) continue;
+      if(anim&&anim.path.indexOf(s)>=0) continue;
+      drawD(ctx,cx(s%8),cy(s>>3),q*0.4,v<0,Math.abs(v)===2);
+    }
+    if(moving) drawD(ctx,moving.x,moving.y,q*0.42,moving.dark,moving.king);
+    /* Coaching rings/tints are intentionally not rendered on the tutorial
+       canvas. On small WebView sizes they visually read as stale pieces or
+       capture marks, so the narration carries the lesson without overlays. */
+  }
+  /* page hint marks: a ring, a row tint or a badge. No arrows. */
+  function drawMark(c,m,q){
+    const kind=SCENES[sceneIdx].mark;
+    const cs=CFG.colors;
+    const cx=col=>m+col*q+q/2, cy=row=>m+row*q+q/2;
+    const steps=LINE[SCENES[sceneIdx].demos[0]].w||LINE[SCENES[sceneIdx].demos[0]].b;
+    function ring(sq,color,alpha){
+      c.globalAlpha=alpha;
+      c.beginPath(); c.arc(cx(sq&7),cy(sq>>3),q*0.46,0,Math.PI*2);
+      c.lineWidth=Math.max(3,q*0.09); c.strokeStyle=color; c.stroke();
+      c.globalAlpha=1;
+    }
+    if(kind==="move"){
+      ring(steps[0]*8+steps[1],cs.capCream,0.85);
+    } else if(kind==="capture"){
+      for(let k=2;k+1<steps.length;k+=2){
+        const a=steps[k-2]*8+steps[k-1], b=steps[k]*8+steps[k+1];
+        if(Math.abs((b>>3)-(a>>3))===2)
+          ring(((a>>3)+((b>>3)-(a>>3))/2)*8+((a&7)+((b&7)-(a&7))/2),
+               cs.capRed,0.95);
+      }
+    } else if(kind==="crown"){
+      c.globalAlpha=0.22; c.fillStyle=cs.kingGold;
+      c.fillRect(m,m,8*q,q);
+      c.globalAlpha=1;
+    } else if(kind==="power"){
+      const s=steps[0]*8+steps[1];
+      const px=cx(s&7)+q*0.32, py=cy(s>>3)-q*0.32;
+      c.beginPath(); c.arc(px,py,q*0.2,0,Math.PI*2);
+      c.fillStyle=cs.kingGold; c.fill();
+      c.beginPath();
+      c.moveTo(px-q*0.1,py+q*0.06);
+      c.lineTo(px-q*0.1,py-q*0.02);
+      c.lineTo(px-q*0.04,py+q*0.03);
+      c.lineTo(px,py-q*0.06);
+      c.lineTo(px+q*0.04,py+q*0.03);
+      c.lineTo(px+q*0.1,py-q*0.02);
+      c.lineTo(px+q*0.1,py+q*0.06);
+      c.closePath(); c.fillStyle="#2b2416"; c.fill();
+    } else if(kind==="end"){
+      for(let s=0;s<64;s++){ if(board[s]>=0) continue; ring(s,cs.capRed,0.8); }
+    }
+  }
+  function drawD(c,x,y,rad,dark,king){
+    const cs=CFG.colors;
+    const F=dark?cs.bFill:cs.wFill, S=dark?cs.bStroke:cs.wStroke;
+    c.beginPath(); c.arc(x,y,rad,0,Math.PI*2);
+    c.fillStyle=F; c.fill();
+    c.lineWidth=Math.max(2,rad*0.12); c.strokeStyle=S; c.stroke();
+    c.beginPath(); c.arc(x,y,rad*0.68,0,Math.PI*2);
+    c.lineWidth=Math.max(1,rad*0.07); c.strokeStyle=cs.groove; c.stroke();
+    if(king){
+      c.beginPath(); c.arc(x,y,rad*0.86,0,Math.PI*2);
+      c.lineWidth=Math.max(1.5,rad*0.09); c.strokeStyle=cs.kingGold; c.stroke();
+      const w=rad*0.62, h=rad*0.4;
+      c.beginPath();
+      c.moveTo(x-w/2,y+h/2);
+      c.lineTo(x-w/2,y-h/4);
+      c.lineTo(x-w/4,y+h/8);
+      c.lineTo(x,y-h/2);
+      c.lineTo(x+w/4,y+h/8);
+      c.lineTo(x+w/2,y-h/4);
+      c.lineTo(x+w/2,y+h/2);
+      c.closePath();
+      c.fillStyle=cs.kingGold; c.fill();
+    }
+  }
+  /* rebuild the position this page talks about */
+  function rebuild(){
+    board=build();
+    const sc=SCENES[sceneIdx];
+    for(let i=0;i<sc.base;i++) applySeg(board,LINE[i]);
+    demoIdx=0; anim=null; lastDemo=null;
+  }
+  function startDemo(){
+    const sc=SCENES[sceneIdx];
+    if(demoIdx>=sc.demos.length){
+      phase="hold"; phaseUntil=Date.now()+sc.hold; return;
+    }
+    const seg=LINE[sc.demos[demoIdx]];
+    const view=applySeg(board,seg);
+    lastDemo=view;
+    anim={t:0,dur:CFG.tutorialMsPerHop*(view.path.length-1),
+      path:view.path,caps:view.caps,dark:view.dark,val:view.val,
+      crowned:view.crowned};
+    demoIdx++;
+    if(soundRef&&!mutedRef()){
+      const hops=view.path.length-1;
+      for(let h=1;h<=hops;h++){
+        (function(hh){ setTimeout(function(){ soundRef(hh-1); },hh*CFG.tutorialMsPerHop); })(h);
+      }
+    }
+  }
+  function step(){
+    if(!runningRef) return;
+    raf=requestAnimationFrame(step);
+    if(!cv||cv.style.display==="none") return;
+    const sc=SCENES[sceneIdx];
+    const now=Date.now();
+    if(phase==="wait"){
+      if(now>=phaseUntil){ phase="play"; startDemo(); }
+    } else if(phase==="play"){
+      if(anim){
+        anim.t+=16;
+        if(anim.t>=anim.dur){ anim=null; }
+      } else {
+        startDemo();               /* next ply of this page, or the hold */
+      }
+    } else if(now>=phaseUntil){    /* hold finished: replay the same lesson */
+      rebuild();
+      phase="wait"; phaseUntil=Date.now()+sc.wait;
+    }
+    draw();
+  }
+  return {
+    start:function(canvas,playSound,isMuted){
+      cv=canvas; soundRef=playSound; mutedRef=isMuted; runningRef=true;
+      /* The tutorial canvas is the whole How to Play renderer. Without a
+         bound 2d context draw() bails on its first line, so the page showed
+         an empty board and the tutorial looked broken. Bind it once here. */
+      if(cv&&!ctx){
+        try{ ctx=cv.getContext("2d"); }catch(e){ ctx=null; }
+      }
+      if(!board) rebuild();
+      anim=null; phase="play";
+      if(!raf) raf=requestAnimationFrame(step);
+    },
+    /* page focus: stand on this lesson's position and replay its own move */
+    focus:function(page){
+      sceneIdx=Math.max(0,Math.min(SCENES.length-1,page|0));
+      rebuild(); anim=null; lastDemo=null; demoIdx=0;
+      phase="wait"; phaseUntil=Date.now()+SCENES[sceneIdx].wait;
+    },
+    stop:function(){
+      runningRef=false; anim=null; lastDemo=null; demoIdx=0;
+      if(raf){ cancelAnimationFrame(raf); raf=0; }
+    }
+  };
+})();
+const TUT_TEXT=[
+  {h:"THE GAME BEGINS",
+   p:"Watch the board: White moves first from the bottom, Black answers from the top. Every piece is a man that slides one diagonal step forward, and every piece lives on a dark square only. This little game is playing itself right now, and it contains everything you are about to learn."},
+  {h:"CAPTURES ARE THE LAW",
+   p:"A jump over an enemy into the empty square behind it removes that piece. If any capture exists you must take it, even when it hurts. Watch the dark man jump, then watch White strike back and win a piece of his own. Chains keep going in the same turn, one tap per landing square."},
+  {h:"CROWNING A KING",
+   p:"A man that reaches the far row is crowned a King, marked with the gold ring. Watch the top row light up as White's man steps onto it. Kings then move and capture in all four diagonal directions, and crowning ends the move immediately, even if a jump could continue."},
+  {h:"CROWN POWERS",
+   p:"At the crowning moment you pick one secret power for that king. SHIELD lets it survive the first capture against it. LEAP jumps two diagonal squares over an empty gap, one time. SWAP trades places with a touching friendly piece, one time. Watch the crowned king turn around and sweep two men in one turn, one tap per landing square. In a real game you tap the gold star button while your empowered king is selected."},
+  {h:"HOW IT ENDS",
+   p:"The final shot lands and Black is left with no legal move, which ends the game just the same as capturing every piece. Draws come from repetition or forty quiet moves. Now start your own game and take the crown."}
+];
+function setTutPage(i){
+  tutPage=Math.max(0,Math.min(4,i));
+  tutH.textContent=TUT_TEXT[tutPage].h; tutP.textContent=TUT_TEXT[tutPage].p;
+  const dots=tutDots.getElementsByTagName("span"); for(let k=0;k<dots.length;k++) dots[k].classList.toggle("on",k===tutPage);
+  tutPrev.style.visibility=tutPage===0?"hidden":"visible"; tutNext.textContent=(tutPage===4)?"GOT IT":"NEXT"; TUT_GAME.focus(tutPage);
+}
+
+/* ═══ SELF-TEST SUITE ═══ */
+function scheduleSelfTest(){
+  testLock=true;
+  console.log("[checkers] engine self-test running (input locked)...");
+  const tests=[
+    ["opening: 7 moves, white at bottom moves first",function(){
+      Ck.reset();
+      const ms=Ck.genMoves();
+      if(ms.length!==7) throw new Error("got "+ms.length+" moves, expected 7");
+      for(let i=0;i<ms.length;i++)
+        if(ms[i].caps.length) throw new Error("capture in opening?!");
+      if(Ck.turnOf()!==1) throw new Error("white must move first");
+      const bd2=Ck.boardArr();
+      if(bd2[5*8+0]!==1||bd2[0*8+1]!==-1)
+        throw new Error("white not at bottom / black not at top");
+    }],
+    ["forced capture",function(){
+      Ck.loadPos([[5,2,1],[4,3,-1],[7,0,1]],1);
+      const ms=Ck.genMoves();
+      if(ms.length!==1) throw new Error("got "+ms.length+", expected 1 jump");
+      const m=ms[0];
+      if(m.steps[1]!==3*8+4) throw new Error("wrong landing");
+      if(m.caps.length!==1||m.caps[0]!==4*8+3) throw new Error("wrong capture");
+    }],
+    ["multi-jump fork: maximal + free choice",function(){
+      Ck.loadPos([[4,1,1],[3,2,-1],[1,4,-1],[1,6,-1],[2,7,1]],1);
+      const ms=Ck.genMoves();
+      if(ms.length!==2) throw new Error("got "+ms.length+", expected 2 sequences");
+      let dbl=false;
+      for(let i=0;i<ms.length;i++)
+        if(ms[i].steps.length===3) dbl=true;
+      if(!dbl) throw new Error("missing double-jump branch");
+      for(let i=0;i<ms.length;i++)
+        if(ms[i].steps.length===2&&ms[i].steps[0]===4*8+1)
+          throw new Error("non-maximal sequence offered");
+    }],
+    ["crowning mid-jump ends move + promotes",function(){
+      Ck.loadPos([[2,2,1],[1,3,-1],[1,5,-1]],1);
+      const ms=Ck.genMoves();
+      if(ms.length!==1) throw new Error("got "+ms.length+", expected 1");
+      const m=ms[0];
+      if(m.steps[m.steps.length-1]!==0*8+4) throw new Error("must end at crown row");
+      const res=Ck.make(m);
+      const bd2=Ck.boardArr();
+      if(bd2[0*8+4]!==2) throw new Error("not promoted to white king");
+      if(res.over) throw new Error("should not be over");
+    }],
+    ["circular capture: both directions, all maximal",function(){
+      Ck.loadPos([[4,3,2],[3,4,-1],[1,4,-1],[1,2,-1],[3,2,-1]],1);
+      const ms=Ck.genMoves();
+      if(!ms.length) throw new Error("no moves found");
+      for(let i=0;i<ms.length;i++){
+        const m=ms[i];
+        if(m.steps.length!==5) throw new Error("non-maximal sequence");
+        if(m.steps[4]!==m.steps[0]) throw new Error("must return to origin");
+        if(m.caps.length!==4) throw new Error("must capture all 4");
+      }
+    }],
+    ["total block = zero moves",function(){
+      Ck.loadPos([
+        [3,2,-1],
+        [4,1,1],[4,3,1],[5,0,1],[5,4,1]
+      ],-1);
+      const ms=Ck.genMoves();
+      if(ms.length!==0) throw new Error("black has "+ms.length+" moves, expected 0");
+    }],
+    ["threefold repetition draw",function(){
+      Ck.loadPos([[0,1,2],[7,6,-2]],1);
+      let sawDraw=false;
+      for(let ply=0;ply<40;ply++){
+        const t=Ck.turnOf();
+        const m=t===1?Ck.findMove([0*8+1,1*8+0])||Ck.findMove([1*8+0,0*8+1])
+                     :Ck.findMove([7*8+6,6*8+5])||Ck.findMove([6*8+5,7*8+6]);
+        if(!m) throw new Error("shuffle move missing");
+        const res=Ck.make(m);
+        if(res.over&&res.result.type==="rep"){ sawDraw=true; break; }
+        if(res.over) throw new Error("unexpected early end");
+      }
+      if(!sawDraw) throw new Error("threefold never fired");
+    }],
+    ["80-ply no-progress draw",function(){
+      Ck.loadPos([[0,1,2],[7,6,-2]],1);
+      let sawDraw=false;
+      for(let ply=0;ply<CFG.drawPlies+4;ply++){
+        Ck.keys.length=1;
+        const t=Ck.turnOf();
+        const m=t===1?Ck.findMove([0*8+1,1*8+0])||Ck.findMove([1*8+0,0*8+1])
+                     :Ck.findMove([7*8+6,6*8+5])||Ck.findMove([6*8+5,7*8+6]);
+        if(!m) throw new Error("shuffle move missing");
+        const res=Ck.make(m);
+        if(res.over&&res.result.type==="progress"){ sawDraw=true; break; }
+        if(res.over) throw new Error("unexpected end");
+      }
+      if(!sawDraw) throw new Error("no-progress draw never fired");
+    }],
+    ["SHIELD: survives capture, consumed, jumper lands",function(){
+      Ck.loadPos([[5,2,1],[4,3,-1]],1);
+      Ck.emp.set(4*8+3,{p:"S",used:false});
+      const ms=Ck.genMoves();
+      if(ms.length!==1) throw new Error("jump must still be legal");
+      Ck.make(ms[0]);
+      const bd2=Ck.boardArr();
+      if(bd2[4*8+3]!==-1) throw new Error("shielded man must survive");
+      if(bd2[3*8+4]!==1) throw new Error("jumper must land");
+      const e=Ck.emp.get(4*8+3);
+      if(!e||!e.used) throw new Error("shield must be consumed");
+    }],
+    ["LEAP + SWAP generation and application",function(){
+      Ck.loadPos([[4,3,2],[0,1,-1]],1);
+      Ck.emp.set(4*8+3,{p:"L",used:false});
+      const lt=Ck.leapTargets(4*8+3);
+      if(lt.length!==4) throw new Error("leap targets: got "+lt.length+", expected 4");
+      Ck.loadPos([[4,3,2],[5,4,1],[0,1,-1]],1);
+      Ck.emp.set(4*8+3,{p:"W",used:false});
+      const st=Ck.swapTargets(4*8+3);
+      if(st.length!==1||st[0]!==5*8+4) throw new Error("swap target wrong: got "+st.length);
+      const res=Ck.makeSwap(4*8+3,5*8+4);
+      const bd2=Ck.boardArr();
+      if(bd2[5*8+4]!==2||bd2[4*8+3]!==1) throw new Error("swap did not exchange");
+      if(Ck.turnOf()!==-1) throw new Error("swap must flip turn");
+      if(res.over) throw new Error("should not be over");
+      const e=Ck.emp.get(5*8+4);
+      if(!e||e.p!=="W"||!e.used) throw new Error("power must travel with king, consumed");
+    }],
+    ["search integrity: makeFast/unmakeFast preserves state",function(){
+      Ck.reset();
+      const k0=Ck.posKey(), n0=Ck.keys.length;
+      const ms=Ck.genMoves();
+      for(let i=0;i<ms.length;i++){
+        Ck.makeFast(ms[i]);
+        const inner=Ck.genMoves();
+        for(let j=0;j<inner.length;j++){
+          Ck.makeFast(inner[j]);
+          Ck.unmakeFast();
+        }
+        Ck.unmakeFast();
+      }
+      if(Ck.posKey()!==k0) throw new Error("position drifted");
+      if(Ck.keys.length!==n0) throw new Error("keys length changed");
+      if(Ck.turnOf()!==1) throw new Error("turn drifted");
+    }],
+    ["PDN mapping: pasted rows land on playable squares",function(){
+      if(!GOULD_BATCHES.length){
+        console.log("[checkers] pdn mapping: no data pasted yet (ok, non-fatal)");
+        return;
+      }
+      let checkedN=0;
+      for(let i=0;i<GOULD_BATCHES.length&&checkedN<20;i++){
+        const e=GOULD_BATCHES[i];
+        if(!e||!e.white) continue;
+        const built=buildPos(e);
+        if(!built.placed) throw new Error("overlap in "+(e.id||"?"));
+        const b=built.b;
+        for(let s=0;s<64;s++){
+          if(b[s]!==0&&!Ck.playable(s>>3,s&7))
+            throw new Error("piece on unplayable square in "+(e.id||"?"));
+        }
+        checkedN++;
+      }
+      console.log("[checkers] pdn mapping: "+checkedN+" entries mapped cleanly");
+    }],
+    ["gould DB: verification pipeline (if data present)",function(){
+      PZDB.build();
+      const total=PZDB.count();
+      if(GOULD_BATCHES.length&&total===0){
+        throw new Error("data present but 0 puzzles verified, check mapping and log");
+      }
+      if(total>0){
+        const t=PZDB.tiers;
+        for(const k of ["easy","medium","hard"]){
+          for(let i=0;i<t[k].length;i++){
+            const p=t[k][i];
+            Ck.loadPos(p.list,1);
+            const ms=Ck.genMoves();
+            let legal=false;
+            for(let j=0;j<ms.length;j++){
+              for(let k=0;k<p.solutions.length;k++){
+                const s=p.solutions[k];
+                if(ms[j].from===s.from&&sameSteps(ms[j].steps,s.steps)){ legal=true; break; }
+              }
+              if(legal) break;
+            }
+            if(!legal) throw new Error("stored solution illegal in "+p.id);
+          }
+        }
+        console.log("[checkers] gould DB: all stored solutions re-verified legal");
+      }
+    }],
+    ["fuzz: 200 random games, invariants held",function(){
+      let finished=0, draws=0;
+      for(let g=0;g<200;g++){
+        Ck.reset();
+        let plies=0, over=null;
+        while(plies<400){
+          const ms=Ck.genMoves();
+          if(!ms.length){ over="blocked"; break; }
+          const res=Ck.make(ms[Math.floor(Math.random()*ms.length)]);
+          plies++;
+          if(res.over){ over=res.result.type; break; }
+        }
+        const bd3=Ck.boardArr();
+        let dark=0, light=0;
+        for(let s=0;s<64;s++){
+          const v=bd3[s];
+          if(v===0) continue;
+          if(!Ck.playable(s>>3,s&7))
+            throw new Error("piece on unplayable square");
+          if(v>0) dark++; else light++;
+          if(dark>12||light>12) throw new Error("piece count inflation");
+        }
+        if(over){ finished++; if(over==="progress"||over==="rep") draws++; }
+      }
+      console.log("[checkers] fuzz: 200 games, "+finished
+        +" finished naturally ("+draws+" draws)");
+    }]
+  ];
+  let i=0;
+  (function step(){
+    if(i>=tests.length){
+      Ck.reset();
+      testLock=false;
+      console.log("[checkers] engine self-test PASSED — "
+        +tests.length+" tests, rules + powers + pipeline proven, input unlocked");
+      updateStatus();
+      return;
+    }
+    try{
+      const t=tests[i++];
+      t[1]();
+      console.log("[checkers]   ✓ "+t[0]);
+      setTimeout(step,0);
+    }catch(e){
+      showFatal("Self-test failed: "+tests[i-1][0]+" — "+e.message);
+    }
+  })();
+}
+
+/* ═══ SETUP SEGMENTS ═══ */
+function segInit(el,onPick){
+  const btns=el.getElementsByTagName("button");
+  function setV(v,fire){
+    for(let i=0;i<btns.length;i++){
+      btns[i].classList.toggle("on",btns[i].getAttribute("data-v")===v);
+    }
+    if(fire&&onPick) onPick(v);
+  }
+  for(let i=0;i<btns.length;i++){
+    (function(b){
+      b.addEventListener("click",function(){
+        AudioSys.unlock(); AudioSys.play("tap"); gameHaptic("light");
+        setV(b.getAttribute("data-v"),true);
+      });
+    })(btns[i]);
+  }
+  return {
+    set(v){ setV(v,false); }
+  };
+}
+let oppCtl=null,lvlCtl=null,colCtl=null;
+function syncSetupUI(){
+  botBlock.style.display=setup.opp==="bot"?"block":"none";
+}
+function onStart(){
+  AudioSys.play("tap");
+  let pc=setup.color;
+  if(setup.opp==="bot"){
+    if(pc==="r") pc=Math.random()<0.5?"light":"dark";
+    aiColor=(pc==="light")?-1:1;
+    flipped=(pc==="dark");
+  } else {
+    flipped=false;
+  }
+  mode="chess";
+  newGame();
+  showScreen("game");
+}
+
+/* ═══ LAYOUT / EVENTS / LIFECYCLE ═══ */
+function layout(){
+  const appW=app.clientWidth||window.innerWidth-20;
+  let availH=0;
+  try{ availH=boardArea.clientHeight; }catch(e){}
+  if(!availH||availH<200) availH=Math.max(240,(window.innerHeight||600)-230);
+  size=Math.max(240,Math.min(appW,560,availH));
+  wrap.style.width=size+"px";
+  scrGame.style.maxWidth=size+"px";
+  wrap.style.height=size+"px";
+  pzPrompt.style.top="calc(50% - 24px + "+(size/2)+"px + 4px)";
+  dpr=Math.min(window.devicePixelRatio||1,CFG.dprCap);
+  const px=Math.round(size*dpr);
+  bgCv.width=px; bgCv.height=px;
+  fgCv.width=px; fgCv.height=px;
+  mgn=Math.max(6,Math.round(size*0.02));
+  sq=(size-2*mgn)/8;
+  bgDirty=true; dirty=true;
+}
+function syncSoundIcon(){
+  sndTgl.classList.toggle("on",!gameMuted);
+  hapTgl.classList.toggle("on",hapticsOn);
+}
+function onPointer(e){ boardPress(e.clientX,e.clientY); }
+function onTouch(e){
+  if(e.preventDefault) e.preventDefault();
+  const t=(e.changedTouches&&e.changedTouches.length)?e.changedTouches[0]:null;
+  if(t) boardPress(t.clientX,t.clientY);
+}
+function onMouse(e){ boardPress(e.clientX,e.clientY); }
+function onCtx(e){ e.preventDefault(); }
+function unlockOnce(){
+  AudioSys.unlock();
+  document.removeEventListener("pointerdown",unlockOnce);
+  document.removeEventListener("touchstart",unlockOnce);
+  document.removeEventListener("mousedown",unlockOnce);
+}
+function bindCtlRow(row){
+  const bs=row.querySelectorAll("button[data-act]");
+  for(let i=0;i<bs.length;i++){
+    (function(b){
+      b.addEventListener("click",function(){
+        const act=b.getAttribute("data-act");
+        if(act==="undo") onUndo();
+        else if(act==="redo") onRedo();
+        else if(act==="resign"){
+          AudioSys.unlock();
+          if(thinking||pendingPower>=0||result) return;
+          AudioSys.play("tap");
+          openModal(resignSheet);
+        }
+        else if(act==="power"){
+          AudioSys.unlock();
+          if(sel<0) return;
+          if(powerMode){ powerMode=false; powerTargets=[]; dirty=true; updateCtlBars(); return; }
+          const empE=Ck.emp.get(sel);
+          if(!empE||empE.used) return;
+          powerTargets=empE.p==="L"?Ck.leapTargets(sel):Ck.swapTargets(sel);
+          if(!powerTargets.length) return;
+          powerMode=true;
+          AudioSys.play("tap");
+          dirty=true; updateCtlBars();
+        }
+      });
+    })(bs[i]);
+  }
+}
+function bindEvents(){
+  if(window.PointerEvent){
+    fgCv.addEventListener("pointerdown",onPointer);
+  } else {
+    fgCv.addEventListener("touchstart",onTouch,{passive:false});
+    fgCv.addEventListener("mousedown",onMouse);
+  }
+  fgCv.addEventListener("contextmenu",onCtx);
+  document.addEventListener("pointerdown",unlockOnce);
+  document.addEventListener("touchstart",unlockOnce);
+  document.addEventListener("mousedown",unlockOnce);
+
+  playBtn.addEventListener("click",function(){ AudioSys.unlock(); AudioSys.play("tap"); gameHaptic("light"); openModal(modeModal); });
+  howBtn.addEventListener("click",function(){ AudioSys.unlock(); AudioSys.play("tap"); setTutPage(0); showScreen("tutorial"); });
+  continueBtn.addEventListener("click",function(){
+    AudioSys.unlock(); AudioSys.play("tap");
+    mode="chess";
+    showScreen("game");
+    if(setup.opp==="bot") after(420, maybeBotMove);
+  });
+  introBack.addEventListener("click",function(){ AudioSys.unlock(); AudioSys.play("tap"); if(window.NativeBridge&&window.NativeBridge.exitGame){ try{window.NativeBridge.exitGame();}catch(e){} } else { showScreen("intro"); } });
+  introGear.addEventListener("click",function(){ AudioSys.unlock(); AudioSys.play("tap"); syncSoundIcon(); openModal(settingsSheet); });
+
+  modeModal.addEventListener("click",function(e){ if(e.target===modeModal) closeModal(); });
+  cardChess.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); showScreen("setup"); });
+  cardPuzzles.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); PZDB.build(); updateHub(); showScreen("puzzles"); });
+
+  setupBack.addEventListener("click",function(){ AudioSys.play("tap"); showScreen("intro"); });
+  startBtn.addEventListener("click",onStart);
+
+  pzBack.addEventListener("click",function(){ AudioSys.play("tap"); showScreen("intro"); });
+
+  function tierTap(tier){
+    AudioSys.play("tap");
+    PZDB.build();
+    const pool=PZDB.tiers[tier];
+    if(pool&&pool.length){
+      const p=pool[Math.floor(Math.random()*pool.length)];
+      startPuzzle(p,false);
+      return;
+    }
+    openMsg("NO PUZZLES YET","Paste the Gould batches into the marked slot in the game file. Every entry is verified automatically on boot.");
+  }
+  pzTierEasy.addEventListener("click",function(){ tierTap("easy"); });
+  pzTierNormal.addEventListener("click",function(){ tierTap("medium"); });
+  pzTierHard.addEventListener("click",function(){ tierTap("hard"); });
+
+  pzDailyBtn.addEventListener("click",function(){
+    AudioSys.play("tap");
+    if(pstats.lastDaily===todayStr()){
+      openMsg("DAILY SOLVED","You already solved today. Current streak is "+pstats.streak+". Come back tomorrow!");
+      return;
+    }
+    if(pzDailyGenerating) return;
+    PZDB.build();
+    const idx=PZDB.dailyIndex("easy");
+    if(idx<0){
+      openMsg("NO PUZZLES YET","Paste the Gould batches into the marked slot in the game file.");
+      return;
+    }
+    startPuzzle(PZDB.tiers.easy[idx],true);
+  });
+
+  pauseBtn.addEventListener("click",function(){
+    AudioSys.play("tap");
+    if(mode==="puzzle"){
+      pzActive=null;
+      pzJudgeStop();
+      updateHub();
+      showScreen("puzzles");
+      return;
+    }
+    pauseStatus.textContent=thinking?("Bot to move"):statusEl.textContent;
+    openModal(pauseSheet);
+  });
+  pResume.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); });
+  pNew.addEventListener("click",function(){
+    armConfirm(pNew,function(){ newGame(); closeModal(); });
+  });
+  pMenu.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); persist(); showScreen("intro"); });
+
+  overPrimary.addEventListener("click",function(){
+    AudioSys.play("tap"); closeModal();
+    if(overKind==="puzzle"){
+      const pool=PZDB.tiers[pzTier];
+      if(pool&&pool.length){
+        const p=pool[Math.floor(Math.random()*pool.length)];
+        startPuzzle(p,false);
+      } else {
+        updateHub(); showScreen("puzzles");
+      }
+    } else {
+      newGame();
+    }
+  });
+  overSecondary.addEventListener("click",function(){
+    AudioSys.play("tap"); closeModal();
+    if(overKind==="puzzle"){
+      pzActive=null;
+      pzJudgeStop();
+      updateHub();
+      showScreen("puzzles");
+    } else {
+      persist(); showScreen("intro");
+    }
+  });
+
+  sndTgl.addEventListener("click",function(){
+    gameMuted=!gameMuted;
+    Studio.save(CFG.mutedKey,gameMuted?"1":"0");
+    syncSoundIcon();
+    AudioSys.play("tap");
+  });
+  hapTgl.addEventListener("click",function(){
+    hapticsOn=!hapticsOn;
+    Studio.save(CFG.hapticsKey,hapticsOn?"1":"0");
+    syncSoundIcon();
+    gameHaptic("light");
+  });
+
+  bindCtlRow(ctlTop);
+  bindCtlRow(ctlBottom);
+
+  resignYes.addEventListener("click",function(){
+    AudioSys.play("tap");
+    closeModal();
+    doResign();
+  });
+  resignNo.addEventListener("click",function(){
+    AudioSys.play("tap");
+    closeModal();
+  });
+
+  function choose(p){
+    if(pendingPower<0) return;
+    const sq2=pendingPower;
+    pendingPower=-1;
+    closeModal();
+    Ck.grantPower(sq2,p);
+    AudioSys.play("power"); gameHaptic("success");
+    kingFx={sq:sq2,t0:simNow};
+    const names={S:"SHIELD armed",L:"LONG LEAP ready",W:"SWAP ready"};
+    bumpStatus(names[p],"chain");
+    updateStatus(); persist(); updateCtlBars();
+    bgDirty=true; dirty=true;
+    if(mode==="chess"&&setup.opp==="bot"&&!result) after(200, maybeBotMove);
+  }
+  pwShield.addEventListener("click",function(){ AudioSys.play("tap"); choose("S"); });
+  pwLeap.addEventListener("click",function(){ AudioSys.play("tap"); choose("L"); });
+  pwSwap.addEventListener("click",function(){ AudioSys.play("tap"); choose("W"); });
+
+  msgOk.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); });
+
+  tutBack.addEventListener("click",function(){ AudioSys.play("tap"); showScreen("intro"); });
+  tutPrev.addEventListener("click",function(){
+    AudioSys.play("tap");
+    if(tutPage>0) setTutPage(tutPage-1);
+  });
+  tutNext.addEventListener("click",function(){
+    AudioSys.play("tap");
+    if(tutPage<4) setTutPage(tutPage+1);
+    else showScreen("intro");
+  });
+
+  settingsSheet.addEventListener("click",function(e){ if(e.target===settingsSheet) closeModal(); });
+  pauseSheet.addEventListener("click",function(e){ if(e.target===pauseSheet) closeModal(); });
+  overSheet.addEventListener("click",function(e){ if(e.target===overSheet) closeModal(); });
+  resignSheet.addEventListener("click",function(e){ if(e.target===resignSheet) closeModal(); });
+
+  window.addEventListener("resize",function(){
+    layout();
+  });
+  document.addEventListener("visibilitychange",function(){
+    if(document.hidden){ persist(); pauseGame(); }
+    else resumeGame();
+  });
+  window.addEventListener("pagehide",function(){ persist(); });
+  window.addEventListener("orientationchange",function(){
+    layout(); setTimeout(layout,300);
+  });
+}
+function pauseGame(){
+  running=false;
+  if(rafId){ cancelAnimationFrame(rafId); rafId=0; }
+  /* Nothing may keep simulating in the background: queued sim-clock timers,
+     the status toast, the bot's search, the tutorial's own loop, and audio. */
+  clearTimers();
+  if(statusTimer){ clearTimeout(statusTimer); statusTimer=0; }
+  thinking=false; think=null; setBotBadge(false);
+  try{ TUT_GAME.stop(); }catch(e){}
+  try{ AudioSys.suspend(); }catch(e){}
+}
+function resumeGame(){
+  if(running) return;
+  running=true;
+  lastT=performance.now();
+  try{ AudioSys.resume(); }catch(e){}
+  rafId=requestAnimationFrame(tick);
+  if(curScreen==="tutorial"){
+    try{ TUT_GAME.start(tutCv,function(i){ AudioSys.chainHop(i); },function(){ return effectiveMuted(); }); TUT_GAME.focus(tutPage); }catch(e){}
+  } else if(mode==="chess"||mode==="puzzle"){
+    after(180,maybeBotMove);
+  }
+}
+window.Game={
+  pause(){ pauseGame(); persist(); },
+  resume(){ resumeGame(); },
+  setMuted(m){ gameMuted=!!m; syncSoundIcon(); try{ AudioSys.setVolume(shellVolume); }catch(e){} },
+  /* The shell pushes {sound, volume, haptics, haptic, preset} on resume and
+     whenever the player changes a setting while the game is paused. */
+  setSettings(s){
+    if(!s||typeof s!=="object") return;
+    if(s.sound!==undefined) gameMuted=!s.sound;
+    if(s.haptics!==undefined) hapticsOn=!!s.haptics;
+    if(s.volume!==undefined){
+      const v=Number(s.volume);
+      if(isFinite(v)) shellVolume=Math.max(0,Math.min(1,v/100));
+    }
+    try{
+      Studio.settings=Object.assign(Studio.settings||{},
+        {sound:!gameMuted,haptics:hapticsOn,volume:Math.round(shellVolume*100)});
+    }catch(e){}
+    try{ AudioSys.setVolume(shellVolume); }catch(e){}
+    syncSoundIcon();
+  },
+  onResize(){ layout(); },
+  destroy(){
+    pauseGame();
+    persist();
+    try{ AudioSys.setVolume(0); AudioSys.suspend(); }catch(e){}
+    try{ Studio.ads.banner(false); }catch(e){}
+    try{ Studio.save(CFG.mutedKey,gameMuted?"1":"0"); Studio.save(CFG.hapticsKey,hapticsOn?"1":"0"); }catch(e){}
+  }
+};
+
+/* ═══ BOOT ═══ */
+function boot(){
+  gameMuted=Studio.load(CFG.mutedKey)==="1";
+  hapticsOn=Studio.load(CFG.hapticsKey)!=="0";
+  loadPStats();
+  const restored=restore();
+  if(!restored) Ck.reset();
+  oppCtl=segInit(oppSeg,function(v){ setup.opp=v; syncSetupUI(); });
+  lvlCtl=segInit(lvlSeg,function(v){ setup.level=v; });
+  colCtl=segInit(colSeg,function(v){ setup.color=v; });
+  oppCtl.set(setup.opp); lvlCtl.set(setup.level);
+  colCtl.set(aiColor===1?"dark":"light");
+  syncSetupUI();
+  syncSoundIcon();
+  verLine.textContent="V"+CFG.version+" REDUNDANT STUDIOS";
+  layout();
+  bindEvents();
+  updateStatus(); refreshContinue(); updateHub();
+  showScreen("intro");
+  running=true; lastT=performance.now();
+  rafId=requestAnimationFrame(tick);
+  booted=true;
+  console.log("[checkers] booted | restored:"+restored+" | dpr:"+dpr
+    +" | board:"+Math.round(size)+"px | white at bottom, moves first"
+    +" | gould rows: "+GOULD_BATCHES.length);
+        // The engine self-test is a development diagnostic, not a production
+        // input gate. Never leave the shipped UI behind a global test lock.
+        testLock=false;
+        console.log("[checkers] runtime self-test skipped; input enabled");
+}
+try{ boot(); }
+catch(e){ showFatal((e&&e.stack)||String(e)); }
+window.addEventListener("error",e=>{
+  if(booted) console.error("[checkers] runtime error:",e.message);
+  else showFatal(e.message||String(e));
+});
+window.addEventListener("unhandledrejection",e=>{
+  const r=e&&e.reason;
+  if(booted) console.error("[checkers] runtime error:",(r&&r.message)||String(r));
+  else showFatal((r&&r.message)||String(r));
+});
+
+})();
+</script>
+</body>
+</html>

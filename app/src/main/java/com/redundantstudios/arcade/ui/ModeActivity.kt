@@ -33,19 +33,42 @@ class ModeActivity : ThemedActivity() {
         val PARTY_GAME_IDS = setOf("truthordare")
 
         /** Single source of truth for which games belong to a player count. */
-        fun filterGames(games: List<GameManifest>, playerCount: Int): List<GameManifest> =
-            games.filter { game ->
-                if (playerCount == 1) {
-                    // A game that declares minPlayers 1 can be played by one
-                    // human on its own (Planet Merge's board, Chess's puzzles),
-                    // and a game with bots can fill the other seats (Ludo ships
-                    // aiSupport: true). Opening one never forces bot mode - the
-                    // game's own menu decides how seats are filled.
-                    (game.minPlayers == 1) || canPlayWithBots(game)
-                } else {
-                    game.minPlayers <= playerCount && game.maxPlayers >= playerCount
+        fun filterGames(games: List<GameManifest>, playerCount: Int): List<GameManifest> {
+            if (playerCount < 1) return newestFirst(games)
+            // The first group is exact 1P-only games (for example Planet Merge).
+            // Multi-player games are grouped by their declared minimum, so 2P
+            // starts with 2P games, 3P starts with 3P games, and so on.
+            return games
+                .filter { game -> exactGroup(game) >= playerCount || playerCount == 1 }
+                .groupBy { exactGroup(it) }
+                .filterKeys { it >= playerCount }
+                .toSortedMap()
+                .values
+                .flatMap { newestFirst(it) }
+        }
+
+        private fun exactGroup(game: GameManifest): Int {
+            return if (game.maxPlayers == 1) 1 else game.minPlayers.coerceAtLeast(2)
+        }
+
+        /** Newest means the greatest semantic manifest version, with id as a stable tie-break. */
+        private fun newestFirst(games: List<GameManifest>): List<GameManifest> {
+            fun versionParts(version: String): List<Int> = version
+                .split('.', '-', '_')
+                .map { token -> token.takeWhile(Char::isDigit).toIntOrNull() ?: 0 }
+            return games.sortedWith(Comparator { a, b ->
+                val left = versionParts(a.version)
+                val right = versionParts(b.version)
+                val length = maxOf(left.size, right.size)
+                var comparison = 0
+                for (index in 0 until length) {
+                    val l = left.getOrElse(index) { 0 }
+                    val r = right.getOrElse(index) { 0 }
+                    if (l != r) { comparison = l.compareTo(r); break }
                 }
-            }
+                if (comparison != 0) -comparison else a.id.lowercase().compareTo(b.id.lowercase())
+            })
+        }
 
         /**
          * Player count used when a game is opened from All Games or the 1
@@ -86,8 +109,10 @@ class ModeActivity : ThemedActivity() {
         Log.d(TAG, "Total games scanned: ${allGames.size}")
 
         val filteredGames = when {
-            allGamesMode -> allGames
-            partyMode -> allGames.filter { it.id in PARTY_GAME_IDS }
+            allGamesMode -> newestFirst(allGames)
+            partyMode -> newestFirst(allGames.filter { it.id in PARTY_GAME_IDS })
+            // Player pages form a descending series. 1 PLAYER shows every game,
+            // 2 PLAYER drops 1P-only games, 3P drops 1P/2P-only games, and so on.
             else -> filterGames(allGames, playerCount)
         }
         Log.d(TAG, "Showing ${filteredGames.size} games (allGames=$allGamesMode, players=$playerCount)")

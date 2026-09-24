@@ -164,6 +164,7 @@ object SettingsManager {
     fun getSettingsJson(): String {
         return org.json.JSONObject().apply {
             put("sound", soundEnabled)
+            put("music", musicEnabled)
             put("volume", soundVolume)
             put("haptics", vibrationEnabled)
             put("haptic", hapticProfile.lowercase())

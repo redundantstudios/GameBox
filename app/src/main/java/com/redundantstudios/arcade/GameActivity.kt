@@ -162,6 +162,9 @@ class GameActivity : AppCompatActivity() {
          */
         const val REVEAL_GRACE_MS = 140L
 
+        /** Entry transition duration before the manifest orientation is applied. */
+        const val ORIENTATION_AFTER_TRANSITION_MS = 520L
+
         /* The old "hide the game's flat page background" injection is gone on
            purpose. It rewrote every game's own <body> background to transparent,
            which flattened each game onto whatever colour the window happened to
@@ -208,11 +211,12 @@ class GameActivity : AppCompatActivity() {
         // the game appears" flash. The shell colour is already on screen behind
         // the window, so nothing appears at all: the game simply arrives.
 
-        // The game's manifest decides the orientation, and it is applied here -
-        // before the first frame exists - so the window is simply created the
-        // right way up. Nothing is animated: the page slide covers the arrival,
-        // and the display change a landscape game needs is the platform's own.
-        setupOrientation(currentGame?.orientation ?: "portrait")
+        val manifestOrientation = currentGame?.orientation ?: "portrait"
+        val isLandscape = manifestOrientation.equals("landscape", ignoreCase = true)
+        // Lock portrait games before the activity is created, so a device that
+        // was held sideways never shows a landscape first frame during entry.
+        if (isLandscape) setupOrientation(manifestOrientation)
+        else setupOrientation(manifestOrientation)
 
         // Root layout to accommodate banner
         val rootLayout = LinearLayout(this).apply {
@@ -332,6 +336,9 @@ class GameActivity : AppCompatActivity() {
         )
         setContentView(contentHost)
         gameRoot = rootLayout
+        // Both orientations are already locked above; do not rotate again after
+        // the entry animation.
+        gameRoot.post { /* orientation is stable before first frame */ }
 
         // ── The transition ───────────────────────────────────────────────────
         // Games move BY ORIENTATION: a landscape game rises up from the bottom edge
