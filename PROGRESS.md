@@ -1,5 +1,66 @@
 # Project Progress
 
+## Portrait game orientation from a landscape device — FIXED, awaiting director's device pass — 2026-09-25
+- **Root cause found.** `GameActivity` declared `android:screenOrientation="unspecified"`, so the
+  system chose the launch orientation from the sensor/user-rotation. On a phone held in landscape
+  the activity was **created in a landscape configuration**, and only then did `onCreate`'s
+  `requestedOrientation = PORTRAIT` turn it: the portrait game's first frame was genuinely sideways,
+  and the display rotated to portrait afterwards. A runtime request alone can never close that
+  window, because it runs *after* the launch configuration is already decided.
+- **Fix (two layers, no overlay, no new screen):**
+  1. `AndroidManifest.xml` — `GameActivity` now pins `android:screenOrientation="portrait"`, so the
+     activity is always CREATED portrait whatever the caller, the sensor or a previous landscape
+     game left behind.
+  2. `GameActivity.onCreate` keeps its early `requestedOrientation = SCREEN_ORIENTATION_PORTRAIT`
+     as the second layer (a launch that arrives with the activity already in the task).
+  A **landscape** game is unaffected in intent: it is created portrait, then `setupOrientation`
+  (game manifest) asks the display to turn, so the platform still animates a real rotation instead
+  of the activity starting up already sideways.
+- **`setupOrientation` no longer has an `unspecified` branch** — landscape turns the display,
+  anything else stays portrait. `unspecified` was the bug: it hands the choice to the sensor.
+- **Dead code removed:** the unused `ORIENTATION_AFTER_TRANSITION_MS` constant (the old
+  "apply the orientation after the entry transition" idea) and an empty `gameRoot.post {}` whose
+  comment claimed the orientation was still to be applied after the animation.
+- **Device evidence (A059, `user_rotation=1` / display ROTATION_90 with Chrome in front, app task
+  force-stopped so a brand-new instance was created while the display was landscape):**
+  - portrait game (`checkers`): display went ROTATION_90 -> ROTATION_0, and logcat showed
+    `page started/loaded/paint/reveal` with **no `config change` line at all** — the activity was
+    created straight in portrait, which is exactly what the fix claims.
+  - landscape game (`chicken-chaos`): `config change +946ms (2)` then page load/reveal at +1642ms,
+    display ROTATION_90 — the real rotation is intact.
+- **Still to confirm by the director on the device:** the visible symptom is gone when a portrait
+  game is opened from a phone held in landscape (and that back-to-back landscape -> portrait game
+  changes still read cleanly). Not to be treated as verified until then.
+
+
+## Checkers puzzles — Gould set wired up and playable — 2026-09-24
+- **`Checkers_puzzels_goulds_problems_all.json` is now live in the game.** All 678 records
+  load from `app/src/main/assets/games/checkers/puzzles.js` (`window.CHECKERS_PUZZLES`),
+  which `index.html` already loads via `<script src="puzzles.js">`. Tiers: 206 easy /
+  262 medium / 210 hard, 0 rejected, DB builds in ~11 ms on device.
+- **Three bugs were stopping every puzzle from being accepted, and the hub said
+  "NO PUZZLES YET" for all three:**
+  1. `pdnTo64()` mirrored the row but took the column parity from the *unflipped* row, so
+     **all 32 PDN squares mapped onto light squares** - every puzzle board was nonsense.
+     The runtime self-test that would have caught it is deliberately skipped in `boot()`.
+  2. `verifyGould()` required the source `result` winner to be the side to move, but the
+     JSON pairs them inverted in **641/678** records (`W,0-1` = 364; `B,1-0` = 277), so it
+     threw away ~95% of the set by construction. The field is the source game's outcome,
+     not the problem solution, so it is no longer a gate - the side to move is the solver.
+  3. It demanded **exactly one** winning move inside 12 plies; real positions have several
+     (`gould-008` has two at depth 12) and Gould's long wins need 20+ plies.
+- **Puzzle mode is now "win the position" instead of "match one stored move."** Gould's
+  JSON carries no solutions, and deep search cannot prove them on a phone, so
+  `Tools/_gen_checkers_puzzles.js` bakes engine-ready coordinates at build time and the
+  bot defends while the player must actually win (`botColor()`, `puzzleFailed()`,
+  `matchesSolution()`; the bot now moves in puzzle mode too). Where offline search *did*
+  prove a first move the instant-shop path still fires ("SHOT FOUND!"): 6 records so far.
+  Tools: `_build_checkers_puzzles.js` (offline prover), `_gen_checkers_puzzles.js`
+  (asset writer), `_check_checkers_db.js` (loads the asset through the real PZDB path).
+- **Verified on device** (Pixel, debug): logcat `[checkers] gould DB: 678 checked,
+  206 easy / 262 medium / 210 hard, 0 rejected`; hub reads "206 ready / 262 ready /
+  210 ready"; a puzzle opens with every piece on a dark square and the bot replies.
+
 ## Brand, badge and folder structure — 2026-09-24
 - **New app logo: `sources/shellDesignReferences/app logo.jpeg`.** It is the launcher icon
   now - all five mipmap densities, the round variants, and the adaptive icon (the

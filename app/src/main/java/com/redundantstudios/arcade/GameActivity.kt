@@ -162,9 +162,6 @@ class GameActivity : AppCompatActivity() {
          */
         const val REVEAL_GRACE_MS = 140L
 
-        /** Entry transition duration before the manifest orientation is applied. */
-        const val ORIENTATION_AFTER_TRANSITION_MS = 520L
-
         /* The old "hide the game's flat page background" injection is gone on
            purpose. It rewrote every game's own <body> background to transparent,
            which flattened each game onto whatever colour the window happened to
@@ -182,6 +179,17 @@ class GameActivity : AppCompatActivity() {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Layer 1 of the portrait lock: the manifest pins GameActivity to portrait
+        // (android:screenOrientation="portrait"), so the activity is CREATED portrait
+        // no matter what the caller, the sensor or a previous landscape game left
+        // behind. Layer 2 is the explicit request below, which also covers a launch
+        // that arrives with the activity already in the task.
+        //
+        // Together they close the window in which Android could build this screen in
+        // a LANDSCAPE configuration before the selected game's manifest is read -
+        // the portrait game that briefly appeared sideways and then turned.
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
         super.onCreate(savedInstanceState)
 
         // Defensive: GameActivity can be cold-started directly (deep link/adb) — settings must exist
@@ -212,11 +220,9 @@ class GameActivity : AppCompatActivity() {
         // the window, so nothing appears at all: the game simply arrives.
 
         val manifestOrientation = currentGame?.orientation ?: "portrait"
-        val isLandscape = manifestOrientation.equals("landscape", ignoreCase = true)
         // Lock portrait games before the activity is created, so a device that
         // was held sideways never shows a landscape first frame during entry.
-        if (isLandscape) setupOrientation(manifestOrientation)
-        else setupOrientation(manifestOrientation)
+        setupOrientation(manifestOrientation)
 
         // Root layout to accommodate banner
         val rootLayout = LinearLayout(this).apply {
@@ -336,9 +342,8 @@ class GameActivity : AppCompatActivity() {
         )
         setContentView(contentHost)
         gameRoot = rootLayout
-        // Both orientations are already locked above; do not rotate again after
-        // the entry animation.
-        gameRoot.post { /* orientation is stable before first frame */ }
+        // The rotation was decided before the first frame (see setupOrientation), so
+        // there is nothing left to turn once the entry animation starts.
 
         // ── The transition ───────────────────────────────────────────────────
         // Games move BY ORIENTATION: a landscape game rises up from the bottom edge
@@ -422,15 +427,23 @@ class GameActivity : AppCompatActivity() {
 
     /**
      * Per-game rotation, done WITHOUT any overlay: the game's manifest decides,
-     * and the activity rotates automatically. configChanges in the manifest keeps
-     * the activity alive across the flip (no relaunch = no hard cut), so the
-     * system's own rotate animation plays while the WebView simply resizes.
+     * and the activity rotates from the portrait configuration it was created in.
+     * `configChanges` in the manifest keeps the activity alive across the flip (no
+     * relaunch = no hard cut), so the system's own rotate animation plays while
+     * the WebView simply resizes.
+     *
+     * A LANDSCAPE game still turns for real - it is created portrait (manifest
+     * lock), then asks the display to turn here, so the platform animates a genuine
+     * rotation instead of the activity starting up already sideways.
+     *
+     * Anything that is not explicitly landscape stays portrait. `unspecified` is
+     * deliberately NOT used: it hands the choice to the sensor, which is exactly
+     * how a portrait game used to arrive sideways on a phone held in landscape.
      */
     private fun setupOrientation(orientation: String) {
         when (orientation.lowercase()) {
-            "portrait" -> requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-            "landscape" -> requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            else -> requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            "landscape" -> requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            else -> requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         }
     }
 
