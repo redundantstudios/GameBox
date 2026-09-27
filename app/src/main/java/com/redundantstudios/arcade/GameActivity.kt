@@ -317,15 +317,15 @@ class GameActivity : AppCompatActivity() {
             loadedSettingsSignature = com.redundantstudios.arcade.util.SettingsManager.signature()
 
             val settingsQuery = com.redundantstudios.arcade.util.SettingsManager.getSettingsQueryString()
-            // Test tools (e.g. Ludo's bot speed test) exist only when the player
-            // has switched on Developer mode in Settings.
-            val devFlag =
-                if (com.redundantstudios.arcade.util.SettingsManager.developerMode) "&dev=1" else ""
+            // Test tools (e.g. Ludo's bot speed test) used to be gated behind a
+            // Developer mode switch in Settings. That switch is GONE for the Play
+            // release - no player-facing way to enable it exists - so the dev=1
+            // flag is never appended and the test tools stay dormant.
             // A player-count preselect is only attached when one was actually
             // chosen; otherwise the game opens its own normal menu.
             val preselect =
                 if (mode != null && players > 0) "&mode=$mode&skill=$skill&players=$players" else ""
-            loadUrl("file:///android_asset/games/$gameId/index.html?$settingsQuery$devFlag$preselect")
+            loadUrl("file:///android_asset/games/$gameId/index.html?$settingsQuery$preselect")
         }
 
         rootLayout.addView(webView)

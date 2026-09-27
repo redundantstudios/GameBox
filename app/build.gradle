@@ -4,27 +4,81 @@ plugins {
 }
 
 android {
+    // INTERNAL code package. This is where the Kotlin/Java sources live, so it
+    // is NOT what Google Play sees. It is deliberately left as ...arcade even
+    // though the Play listing is ...minigames - changing it would mean editing
+    // 27 source files for zero benefit. The Play-facing id is applicationId
+    // below, and that is the ONLY one Google cares about.
     namespace 'com.redundantstudios.arcade'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.redundantstudios.arcade"
+        // THE ID GOOGLE PLAY SEES. This must match the applicationId of the
+        // Play listing exactly, or the upload is rejected. The listing already
+        // exists as com.redundantstudios.minigames, so the build follows it.
+        // It can differ from `namespace` above - that is normal and supported.
+        applicationId "com.redundantstudios.minigames"
         minSdk 24
         targetSdk 34
         versionCode 1
         versionName "1.0"
-
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // Release signing.
+    //
+    // The passwords are NOT in this file and must never be committed. They are
+    // read from keystore.properties, which is gitignored - see the sample at
+    // keystore.properties.sample for the exact keys. The keystore itself is
+    // gitignored too, so keep a backup somewhere safe: losing the key means you
+    // can never update the app on Play again (unless you enrol in Play App
+    // Signing key reset).
+    //
+    // If the file is missing (a fresh clone, or someone who only wants to run
+    // the debug build), signing falls back to environment variables and then to
+    // null. assembleDebug needs none of this, so a contributor can clone and
+    // build the debug APK without ever holding the release secrets.
+    signingConfigs {
+        release {
+            def props = new Properties()
+            def propsFile = rootProject.file('keystore.properties')
+            if (propsFile.exists()) {
+                propsFile.withInputStream { props.load(it) }
+            }
+            def storePwd = props.getProperty('storePassword')
+                ?: System.getenv('KEYSTORE_STORE_PASSWORD')
+            def keyPwd = props.getProperty('keyPassword')
+                ?: System.getenv('KEYSTORE_KEY_PASSWORD')
+            def alias = props.getProperty('keyAlias')
+
+            storeFile file('../release-key.jks')
+            if (storePwd != null) storePassword storePwd
+            if (alias != null) keyAlias alias
+            if (keyPwd != null) keyPassword keyPwd
+        }
     }
 
     buildTypes {
         release {
-            minifyEnabled false
+            // R8 strips unused classes and methods. The rules that keep the
+            // WebView bridge and XML-inflated views alive live in
+            // app/proguard-rules.pro - read it before changing anything here.
+            minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
     buildFeatures {
         buildConfig true
+    }
+    // Single source of truth for the AdMob APPLICATION_ID, injected into
+    // AndroidManifest.xml as ${admobAppId}. It must be the APP id that owns the
+    // unit ids in AdMobManager.kt - the app part has to read
+    // ca-app-pub-9565881819222312 or the SDK rejects those units and no ad loads.
+    // The numeric part after the ~ is published by the AdMob console.
+    defaultConfig {
+        manifestPlaceholders += [admobAppId: "ca-app-pub-9565881819222312~4278086469"]
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -51,4 +105,3 @@ dependencies {
     // Splash Screen
     implementation 'androidx.core:core-splashscreen:1.0.1'
 }
-

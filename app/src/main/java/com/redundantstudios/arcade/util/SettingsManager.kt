@@ -19,7 +19,10 @@ object SettingsManager {
     private const val KEY_HAPTIC_PROFILE = "haptic_profile"
     private const val KEY_AUDIO_PRESET = "audio_preset"
     private const val KEY_APP_THEME = "app_theme"
-    private const val KEY_DEVELOPER_MODE = "developer_mode"
+    // The developer_mode preference key is GONE. The setting, its UI row and the
+    // dev=1 launch flag were all removed for the Play release, so nothing can
+    // re-enable the in-game test tools. A stale value already written to a
+    // player's prefs is simply ignored.
     private const val KEY_REMINDERS_ENABLED = "reminders_enabled"
     private const val KEY_REMINDER_SLOT = "reminder_slot"
     private const val KEY_NEWS_ENABLED = "news_enabled"
@@ -68,14 +71,11 @@ object SettingsManager {
         get() = prefs.getString(KEY_APP_THEME, "Light") ?: "Light"
         set(value) = prefs.edit().putString(KEY_APP_THEME, value).apply()
 
-    /**
-     * Developer mode: when on, games are launched with `dev=1`, which is what
-     * exposes test-only tools inside a game (e.g. Ludo's bot speed test).
-     * Off by default so real players never see them.
-     */
-    var developerMode: Boolean
-        get() = prefs.getBoolean(KEY_DEVELOPER_MODE, false)
-        set(value) = prefs.edit().putBoolean(KEY_DEVELOPER_MODE, value).apply()
+    /* ---- developer mode: REMOVED for the Play release ----
+       It exposed in-game test tools (Ludo's bot speed test) to real players.
+       The whole path is gone: the setting, the persisted flag, and the dev=1
+       launch flag. Nothing in the UI can switch it back on, so the test tools
+       stay dormant in shipped builds. */
 
     // ------------------------------------------------------------------
     // Notifications (100% local — see NOTIFICATIONS.md)

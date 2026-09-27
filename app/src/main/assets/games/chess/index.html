@@ -583,9 +583,13 @@ const CFG = {
      serves real ads via NativeBridge; ids live here as the single source of
      truth for shell mapping + browser simulator. Swap for prod ids at launch. */
   ads: {
-    admobBanner:       "ca-app-pub-3940256099942544/6300978111",
-    admobInterstitial: "ca-app-pub-3940256099942544/1033173712",
-    admobRewarded:     "ca-app-pub-3940256099942544/5354046379",
+    /* LIVE AdMob units for app ca-app-pub-9565881819222312. These were Google's
+       public TEST ids, which serve no real ads. On device the shell's AdMob
+       manager serves the real ad through NativeBridge regardless; these ids are
+       the browser-simulator label and the record of which unit is which. */
+    admobBanner:       "ca-app-pub-9565881819222312/7621425947",
+    admobInterstitial: "ca-app-pub-9565881819222312/1364982660",
+    admobRewarded:     "ca-app-pub-9565881819222312/9051900990",
     rewardEveryN: 5
   },
   colors: {

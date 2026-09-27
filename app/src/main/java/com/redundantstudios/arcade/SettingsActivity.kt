@@ -44,7 +44,6 @@ class SettingsActivity : ThemedActivity() {
         val swSound = findViewById<SwitchCompat>(R.id.swSound)
         val swMusic = findViewById<SwitchCompat>(R.id.swMusic)
         val swVibe = findViewById<SwitchCompat>(R.id.swVibe)
-        val swDev = findViewById<SwitchCompat>(R.id.swDev)
         val swReminders = findViewById<SwitchCompat>(R.id.swReminders)
         val seekVolume = findViewById<SeekBar>(R.id.seekVolume)
         val volValue = findViewById<TextView>(R.id.volValue)
@@ -57,7 +56,6 @@ class SettingsActivity : ThemedActivity() {
         swSound.isChecked = SettingsManager.soundEnabled
         swMusic.isChecked = SettingsManager.musicEnabled
         swVibe.isChecked = SettingsManager.vibrationEnabled
-        swDev.isChecked = SettingsManager.developerMode
         swReminders.isChecked = SettingsManager.remindersEnabled
         seekVolume.progress = SettingsManager.soundVolume
         volValue.text = "${SettingsManager.soundVolume}%"
@@ -76,7 +74,6 @@ class SettingsActivity : ThemedActivity() {
             "Afternoon" -> findViewById<RadioButton>(R.id.rbSlotAfternoon).isChecked = true
             else -> findViewById<RadioButton>(R.id.rbSlotEvening).isChecked = true
         }
-        if (SettingsManager.developerMode) btnTestNotif.visibility = View.VISIBLE
         loading = false
 
         // A theme flip recreates this screen; the old frame dissolves away on
@@ -148,14 +145,6 @@ class SettingsActivity : ThemedActivity() {
             ShellAudio.tapToggleOn(this)
             SettingsManager.appTheme = if (checkedId == R.id.rbThemeDark) "Dark" else "Light"
             applyThemeCrossFade()
-        }
-        // ---- developer mode (silent; it is a test surface) ------------------
-        swDev.setOnCheckedChangeListener { _, checked ->
-            if (loading) return@setOnCheckedChangeListener
-            SettingsManager.developerMode = checked
-            btnTestNotif.visibility = if (checked) View.VISIBLE else View.GONE
-            ShellAudio.tapTiny(this)
-            sync()
         }
 
         // ---- reminders ------------------------------------------------------

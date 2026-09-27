@@ -489,35 +489,11 @@
                     android:layout_marginBottom="12dp"
                     android:background="@color/studio_muted" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            style="@style/RowLabel"
-                            android:text="@string/row_developer_mode" />
-
-                        <TextView
-                            style="@style/RowHint"
-                            android:layout_marginTop="2dp"
-                            android:text="@string/row_developer_mode_hint" />
-                    </LinearLayout>
-
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/swDev"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:thumb="@drawable/switch_thumb"
-                        app:track="@drawable/switch_track" />
-                </LinearLayout>
+                <!-- The Developer mode row was REMOVED for the Play release.
+                     It exposed in-game test tools (Ludo's bot speed test) to
+                     real players, and the preference it wrote is gone too, so
+                     nothing can re-enable it. The divider above stays so the
+                     block still closes cleanly above the footer. -->
             </LinearLayout>
 
             <TextView

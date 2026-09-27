@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-25",
+  "source": "supplied Daadi source code; classic24 puzzle path",
+  "board": {
+    "positions": 24,
+    "mills": 16,
+    "edges": 32,
+    "symmetry": "8 dihedral symmetries"
+  },
+  "candidateGeneration": {
+    "legalPlayoutStatesSampled": 168121,
+    "uniqueCanonicalCandidates": 85974,
+    "candidatePoolByType": {
+      "block": 19350,
+      "make_mill": 31933,
+      "tactics": 24790,
+      "double_threat": 9901
+    },
+    "selected": 1000
+  },
+  "validation": {
+    "approved": 1000,
+    "rejected": 0,
+    "invalidPositions": 0,
+    "incorrectSolutions": 0,
+    "duplicateCanonicalPositions": 0,
+    "ambiguousSelectedPuzzles": 0,
+    "unreachablePositions": 0,
+    "independentValidation": "all 1000 rechecked with a separate move/state/evaluation path",
+    "external_validator_run": "validated=1000 failures=0",
+    "validatorFile": "daadi_puzzle_validator.py"
+  },
+  "difficulty": {
+    "1": 50,
+    "2": 100,
+    "3": 47,
+    "4": 153,
+    "5": 60,
+    "6": 190,
+    "7": 196,
+    "8": 54,
+    "9": 91,
+    "10": 59
+  },
+  "tiers": {
+    "beginner": 150,
+    "easy": 200,
+    "intermediate": 250,
+    "advanced": 250,
+    "expert": 150
+  },
+  "types": {
+    "make_mill": 250,
+    "block": 160,
+    "tactics": 530,
+    "double_threat": 60
+  },
+  "phases": {
+    "movement": 578,
+    "placement": 422
+  },
+  "themes": {
+    "make_mill": 250,
+    "attack": 508,
+    "capture": 147,
+    "endgame": 578,
+    "block_mill": 160,
+    "defense": 492,
+    "forced_move": 220,
+    "tactics": 530,
+    "double_threat": 60
+  },
+  "notes": [
+    "All 1,000 positions are reachable from the implemented classic 24-point game by legal playouts.",
+    "Puzzle runtime code always reconstructs classic24 positions, regardless of the selectable Beginner board.",
+    "The source game's puzzle generator itself is a small runtime pool generator; this database is a separate offline production dataset."
+  ],
+  "implementationIssues": [
+    {
+      "location": "runtime puzzle generator, genPool/pushPuzzle",
+      "currentBehavior": "Candidate keys are raw occupancy plus hand counts; rotations/reflections are not canonicalized.",
+      "impact": "The shipped runtime generator can produce symmetry-equivalent positions.",
+      "puzzleGenerationImpact": "The production database here canonicalizes all selected positions under the board's 8 symmetries and contains no canonical duplicates."
+    },
+    {
+      "location": "runtime puzzle generator, genPool",
+      "currentBehavior": "Pools are generated only from BOARDS.classic and capped at 14 easy, 10 medium, and 8 hard candidates per build.",
+      "impact": "The source runtime generator is not itself a 1,000-puzzle database.",
+      "puzzleGenerationImpact": "The 1,000-puzzle JSON is precomputed offline for integration."
+    }
+  ]
+}

@@ -1,5 +1,129 @@
 # Project Progress
 
+## Balloon Battle — LOCKED, next in queue — 2026-09-27
+- **Next game to lock.** Last Balloon is being taken to party-game status by Badri and will be handed
+  over as a finished file, so Balloon Battle is the game in hand now.
+- Treat the shipped `app/src/main/assets/games/balloon-battle/index.html` as frozen once locked:
+  no drive-by edits, and any new request becomes a numbered pass on top, recorded here.
+
+## Bomb Relay — LOCKED (2026-09-26) / final pass 2026-09-27
+### Final pass (2026-09-27) — verified working on device by the director
+- **Rewarded-ad skip bug, root cause found via logcat (not by reading the code).** The game
+  registered `window.__studioAdCb` but passed the callback name as `'_studioAdCb'` — one leading
+  underscore. The shell evaluates `if(window.$jsFuncName){...}`, found nothing, and **silently
+  dropped every reward**: the ad played, the reward was granted, the game never heard about it.
+  Bomb Relay was the only game in the project with the single-underscore typo; every other game
+  passes `'__studioAdCb'`. Fixed, plus `window._studioAdCb = window.__studioAdCb` as a self-heal
+  alias so a future typo cannot swallow a reward again.
+- **Fuse freeze.** A rewarded ad is fullscreen and outlasts a 26s solo round, so the bomb used to
+  explode behind it and the (now delivered) reward was discarded on `G.phase==='boom'`. `gameTick()`
+  now holds **only the fuse** while `adPending` is set — deliberately not the whole simulation,
+  which was tried first and made a missed callback a permanently dead game. `adPending` is cleared
+  by two independent paths (ad callback + 20s watchdog), so nothing can get stuck.
+- **`btnSkip.disabled` is now cleared unconditionally first** in `updatePowerBtns()`; the old early
+  return could leave SKIP stuck greyed out and unable to fire another ad.
+- **5P.** Manifest `maxPlayers: 4 → 5`. This is truthful (the setup screen has 1P–5P and
+  `launchFromShell` clamps to 5) and it creates the shell's **5 PLAYER** tile, which had no games at
+  all before. Verified on device: `ModeActivity: Showing 1 games (allGames=false, players=5)`.
+  Tile badge is `${maxPlayers}P`, so it now reads **5P**.
+- **Solo HUD:** the "PLAYER 1" name badge is hidden in 1P (`G.n===1`) — one human, so it was noise.
+- **Intro page:** content (bomb, logo, tagline, buttons) wrapped in `.menu-main` with `flex:1` +
+  `justify-content:center` so it is vertically centred; BACK is corner-pinned and the studio credit
+  is pinned to the bottom, so neither takes part in the centring. `#scr-menu` paints the game
+  background full-bleed edge to edge.
+- **1P setup:** the whole NAMES & COLORS block (`#crewBlock`) is hidden, leaving START MATCH as the
+  only action. Seats now read `PLAYER n` in 2P–5P (seat 0 used to say "YOU" / "PLAYER 1 (YOU)").
+- **How To Play:** PREV/NEXT were the only buttons in the game not calling `SFX.click()` — paging was
+  silent. Fixed. HINT button, `POWER.hints`, `FREE_HINTS` and the ad screen's hint copy all removed;
+  SKIP is the only power, labelled plain "SKIP" with a red AD chip pinned to its top-right corner
+  (`.pw-ad`) instead of the old "SKIP + AD" text, which overflowed the button on narrow frames.
+- **Source parity:** `sources/Playable Games/BombRelay.html` carries the same behaviour, adapted to
+  its own (older, divergent) power system. It still has **no manifest block** — it is a pre-integration
+  draft, so a game copied from it must get one added at integration time.
+
+## Bomb Relay — manifest restored, shippability pass (LOCKED) — 2026-09-26
+- **File:** `app/src/main/assets/games/bomb-relay/index.html`
+- **Why it "disappeared":** the file had **no `STUDIO_GAME_MANIFEST` block at all**. `ManifestParser.scanGames()`
+  reads the first 30 lines of every `games/*/index.html`, looks for that marker, and skips the game
+  with `"No manifest marker found"` when it's absent. The game was never visible in the shell — it was
+  not deleted or reverted. `sources/Playable Games/BombRelay.html` never had one either.
+  **Landmine: a new game copied from `sources/` must have the manifest added at integration time, or it
+  silently never appears in the grid.**
+- **Manifest added** (line 1, before `<!DOCTYPE html>`): `id: bomb-relay` / `title: Bomb Relay` /
+  `orientation: portrait` / `minPlayers: 2` / `maxPlayers: 4` / `aiSupport: full` / `online: false` /
+  `tileColor: fuse-red` / `version: 1`.
+- **Audio graph rebuilt with a master gain.** Previously every voice connected straight to
+  `ctx.destination`, so the shell's volume setting had no effect on this game at all. Now a
+  `SFX.setVolume()` retunes one `GainNode`; `Studio.settings.volume` is read at boot and normalises
+  both 0-1 and 0-100 forms, and the value persists to `bombrelay_vol`.
+- **`window.Game` completed** to the locked-game contract: added `setSettings(s)` (the shell pushes
+  sound/haptics/volume on `GameActivity.onResume` — without it, shell-side setting changes never
+  reach a running game) and `onOrientationChange()`.
+  **Landmine: the file header comment describes a `fitFrame()` helper that was never implemented.**
+  The real frame fitter is `FX.resize()`. Calling the documented name throws.
+- **HAPTICS toggle added** to the in-game SETTINGS screen. `Studio.settings.haptics` was read from the
+  shell and honoured, but the game had no control for it, so the value was unreachable in-game.
+  The SOUND FX switch now also reflects `Studio.settings.sound`, not just the local mute flag.
+- **Ads verified in the correct places** (no change needed): banner only on `scr-game`, interstitial
+  only on Game Over -> Rematch, rewarded opt-in on a fail. Confirmed firing on device
+  (`AdRequestBrokerService` + Custom Tabs in logcat).
+- **Evidence:** `node --check` clean on the extracted inline script; manifest parses with all 9 keys;
+  logcat shows `ManifestParser: scan: bomb-relay -> parsed bomb-relay`; grid shows
+  `BOMB RELAY / NEW / 4P`; game count went 9 -> 10. On-device: pass screen -> `CONTINUE` -> live round
+  (`GREEN ONLY / TAP 5 GREEN DOTS`, fuse counting down, dots tappable, timer progressing). Home +
+  relaunch survived with state intact and no `Uncaught` / `FATAL` in logcat.
+
+## Egg Rush — new start page, BACK + settings, first tap audible (LOCKED) — 2026-09-26
+- **File:** `app/src/main/assets/games/egg-rush/index.html` (manifest v2 + a changelog block at the
+  top, Chicken Chaos style). **The shell was not touched** — the bridge already exposes everything
+  this needed (`save` / `load` / `haptic` / `exitGame`) and the shell already turns landscape games.
+- **Start page rebuilt** (the director's ask: the old screen was not readable at a glance). It is now
+  the Chicken Chaos composition drawn with Egg Rush's own art: branding on the left (title, tagline,
+  a nest with three eggs, a one-line how-to pill) and ONE cream board on the right holding
+  MATCH / OPPONENTS / PLAYERS or BOTS / EGGS TO WIN / PLAY. Sliders are gone — every option is a
+  one-tap segmented choice with one line of copy under it that says what the choice does
+  ("First to bank 4 eggs wins. Golden eggs count double." / "Pass and play with 2 hens on one screen.").
+- **BACK** (top left, cream round button, same pair as the gear) exits to the shell through
+  `Studio.exitGame()` → `NativeBridge.exitGame()`. **Gear** (top right) opens a SETTINGS sheet with
+  SOUND and HAPTICS ON/OFF pills; both write `shell:settings` as a **MERGE** (the old partial write
+  in Chicken Chaos dropped `volume` / `music` / `haptic`) and menu choices persist in `egg-rush:pref`.
+- **First-tap sound fixed at the source.** The context is created inside the unlocking gesture, so it
+  is still `suspended` when that same tap's `click` handler runs — the sound was scheduled on a
+  suspended context and thrown away (the "no sound until the second tap" bug). `playSnd` now queues
+  while the context is not `running` and replays from `onstatechange`, with a silent warm-up buffer on
+  unlock. The queue takes **UI sounds only** (`click` / `tick` / `go`), because the attract farm is
+  alive behind this menu and its pickups could otherwise stand in for the unlocking tap.
+- **Shell-owned turn:** the game's own `requestFullscreen()` / `screen.orientation.lock()` call is
+  removed (same reason Chicken Chaos v3 removed it — it fought the shell's rotation). The ROTATE YOUR
+  DEVICE overlay still covers a plain browser.
+- **Lifecycle/contract:** `Game.setSettings(sound / haptics / volume)` added for the shell's resume
+  push, `Game.onOrientationChange` added, and boot reads `shell:settings` so the game opens on the
+  player's real choices. Haptics fire on menu taps (light), PLAY (medium) and the result card
+  (success). The master gain is now `BASE_VOL × shell volume` instead of a fixed 0.5.
+- **Evidence:** `node Tools/_check_js_syntax.js app/src/main/assets/games/egg-rush/index.html` →
+  `ALL SCRIPTS PARSE OK`; `BUILD.bat` → `BUILD OK - shell-debug.apk` (18,068,435 bytes) and the
+  `assets/games/egg-rush/index.html` entry inside the APK hashes identically to the source; headless
+  Chrome renders at 740×360 and 1280×800 → `_egg_start_740x360.png`, `_egg_settings_740x360.png`
+  (start page + settings sheet). A **live solo match was then play-smoke-tested headless at both sizes**
+  through a temporary harness: mode picked, PLAY pressed, match running with the score chip, both player
+  chips, the joystick, DASH, pause and sound buttons and the objective banner all laid out with no
+  overflow or letterboxing. The harness (`_tmp_egg_play.html`, `_tmp_mkplay.js`, `_tmp_play_*.png`) was
+  deleted afterwards, so the build contains no test scaffolding.
+- **Landscape path DEVICE-VERIFIED (first landscape game to ship, 2026-09-26).** Installed with
+  `adb install -r` on an AsteroidsIND A059 (1080×2392 panel) and the shell turned the display:
+  `dumpsys display` reports `mCurrentOrientation=1` with `logicalFrame=Rect(0, 0 - 2392, 1080)`, and
+  the GameActivity window lands at `frame=[126,0][2392,1080]` with `mDisplayRotation=ROTATION_90`.
+  This device has a **left-side punch-hole camera**, so `displayCutout` reports
+  `insets=Rect(126, 0 - 0, 0)` / `sideHint=LEFT` — the window is inset by exactly 126 px
+  (`Requested w=2266`, 2392 − 126) and the start page screenshot shows the cutout strip as expected,
+  with BACK sitting just inside the safe area and nothing drawn under the camera. The app's asset was
+  pulled back off the device and hashes identically to the locked source
+  (`DD1D0D78…4394F`), and `logcat` shows `GameActivity: Launching game egg-rush` plus
+  `NativeBridge: Loaded: egg-rush:pref -> null` (the new pref read path on a first run).
+- **Still to confirm by the director on the device:** BACK landing cleanly on the page the game was
+  opened from, the pills agreeing with the shell's own Settings screen, and the first tap on the
+  start page making a sound. (The two-column start page itself has now been seen at real size.)
+
 ## Portrait game orientation from a landscape device — FIXED, awaiting director's device pass — 2026-09-25
 - **Root cause found.** `GameActivity` declared `android:screenOrientation="unspecified"`, so the
   system chose the launch orientation from the sensor/user-rotation. On a phone held in landscape

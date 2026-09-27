@@ -46,7 +46,10 @@ except Exception:
     pass
 
 SIZE = 512
-ROOT = os.path.dirname(os.path.abspath(__file__))
+# This script lives in Tools/, but app/ and assets/ are siblings of Tools at the
+# repo root. ROOT used to point at Tools/ itself, so running it from the repo
+# root wrote its output into Tools/app/... and reported success.
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASSETS = os.path.join(ROOT, 'app', 'src', 'main', 'assets', 'games')
 OUTDIR = os.path.join(ROOT, 'app', 'src', 'main', 'res', 'drawable-nodpi')
 
@@ -109,6 +112,26 @@ def parse_manifest(path):
     return out
 
 
+# Manifest tileColor values that are names rather than hex. The shell only ever
+# uses tileColor as a fallback background, so it tolerates a name; the tile
+# generator needs an actual colour, and silently produced grey tiles for every
+# game using a name. Keep this list in step with the manifests.
+NAMED_COLOURS = {
+    'sky-blue': '#2D9CDB',
+    'fuse-red': '#E2483F',
+    'cobalt blue': '#2F5FD0',
+    'coral': '#F2724B',
+    'gold': '#F2B441',
+    'grass': '#66BB6A',
+    'mint': '#2FBE6A',
+    'sun-yellow': '#FBC02D',
+    'party-pink': '#F45D9C',
+    'grape': '#8E24AA',
+    'chalk-white': '#F2EFE9',
+    'graphite': '#3A3A44',
+}
+
+
 def hex_rgb(value, default='#888888'):
     v = (value or default).strip().lstrip('#')
     if len(v) == 3:
@@ -116,6 +139,13 @@ def hex_rgb(value, default='#888888'):
     try:
         return tuple(int(v[i:i + 2], 16) for i in (0, 2, 4))
     except ValueError:
+        # A colour NAME ("sky-blue", "fuse-red") is legal in the manifest but is
+        # not hex, so the int() above throws and we used to fall straight to grey
+        # - a perfectly good tile rendered as a dull grey square. Map the names the
+        # manifests actually use before giving up.
+        named = NAMED_COLOURS.get(v.strip().lower().replace('_', '-'))
+        if named:
+            return hex_rgb(named)
         return hex_rgb(default)
 
 

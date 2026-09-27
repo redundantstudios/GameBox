@@ -14,7 +14,10 @@ import shutil
 import subprocess
 import sys
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+# This script lives in Tools/, but app/ is a sibling of Tools at the repo root.
+# ROOT used to point at Tools/ itself, so the default path resolved to
+# Tools/app/... and the script could not find the file it was meant to check.
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SR = 44100
 CH = 2
 

@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0B0E14" id="metaTheme">
+<title>Truth or Dare</title>
+<style>
+:root{
+  --bg:#0B0E14; --panel:#141926; --panel2:#1B2233; --line:#2A3350;
+  --ink:#EAF2FF; --dim:#8A94B8; --faint:#5A6488;
+  --cyan:#22E4FF; --cyan-deep:#0E8FA8;
+  --mag:#FF3E9D;  --mag-deep:#B01E67;
+  --lime:#B6FF3B; --lime-deep:#6FA312;
+  --red:#FF4D5E;  --red-deep:#A81F2D;
+  --gold:#FFB020; --gold-deep:#B57A0A;
+  --orange:#FF8A3D; --orange-deep:#B24E10;
+  --ledOff:#232B44;
+  --glowCyan:rgba(34,228,255,.28);
+  --spotCyan:rgba(34,228,255,.12);
+  --grid:rgba(138,148,184,.055);
+  --scan:rgba(4,7,14,.20);
+  --vig:rgba(0,0,0,.42);
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+body[data-theme="light"]{
+  --bg:#EEF1F6; --panel:#FFFFFF; --panel2:#F5F7FC; --line:#D9DEEA;
+  --ink:#131A2A; --dim:#5A6488; --faint:#9AA3C0;
+  --cyan:#0797B8; --cyan-deep:#055E73;
+  --mag:#E5397F;  --mag-deep:#9C1D55;
+  --lime:#8CD10E; --lime-deep:#55870A;
+  --red:#E8384A;  --red-deep:#A81F2D;
+  --gold:#FFB020; --gold-deep:#B57A0A;
+  --orange:#F97316; --orange-deep:#B24E10;
+  --ledOff:#C9D2E4;
+  --glowCyan:rgba(7,151,184,.18);
+  --spotCyan:rgba(7,151,184,.10);
+  --grid:rgba(19,26,42,.06);
+  --scan:transparent;
+  --vig:transparent;
+  color-scheme:light;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:ui-rounded,-apple-system,"SF Pro Rounded","Segoe UI",Roboto,Arial,sans-serif;
+  background:var(--bg);color:var(--ink);
+  background-image:
+    radial-gradient(620px 400px at 50% -8%,var(--spotCyan),transparent 60%),
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:auto,28px 28px,28px 28px;
+  overscroll-behavior:none;-webkit-user-select:none;user-select:none;overflow:hidden;
+  transition:background-color .25s;
+}
+body::after{content:"";position:fixed;inset:0;z-index:120;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 50% 45%,transparent 58%,var(--vig) 100%),
+    repeating-linear-gradient(0deg,var(--scan) 0 1px,transparent 1px 3px);}
+input{-webkit-user-select:text;user-select:text;caret-color:var(--cyan)}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;touch-action:manipulation}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+:focus-visible{outline:3px dashed var(--cyan);outline-offset:3px}
+
+#app{max-width:480px;margin:0 auto;height:100dvh;display:flex;flex-direction:column}
+#app.shake{animation:shk .45s}
+@keyframes shk{20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+.screen{display:none;flex-direction:column;flex:1;min-height:0}
+.screen.active{display:flex;animation:in .3s ease}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.eyebrow{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
+.chip{font-family:var(--mono);display:inline-flex;align-items:center;gap:6px;background:var(--panel);
+  border:2px solid var(--cyan);border-radius:8px;padding:5px 12px;font-size:11px;font-weight:700;
+  letter-spacing:.16em;color:var(--cyan)}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  border-radius:16px;padding:16px;font-weight:900;font-size:15px;letter-spacing:.1em;text-transform:uppercase;
+  transition:transform .07s,filter .15s}
+.btn:active{transform:translateY(4px) scale(.98);filter:brightness(1.08)}
+.btn.lime{background:var(--lime);color:#122000;box-shadow:0 5px 0 var(--lime-deep)}
+.btn.lime:active{box-shadow:0 1px 0 var(--lime-deep)}
+.btn.cyan{background:var(--cyan);color:#04222A;box-shadow:0 5px 0 var(--cyan-deep)}
+.btn.cyan:active{box-shadow:0 1px 0 var(--cyan-deep)}
+.btn.mag{background:var(--mag);color:#2B0416;box-shadow:0 5px 0 var(--mag-deep)}
+.btn.mag:active{box-shadow:0 1px 0 var(--mag-deep)}
+.btn.gold{background:var(--gold);color:#241512;box-shadow:0 5px 0 var(--gold-deep)}
+.btn.gold:active{box-shadow:0 1px 0 var(--gold-deep)}
+.btn.orange{background:var(--orange);color:#2A1002;box-shadow:0 5px 0 var(--orange-deep)}
+.btn.orange:active{box-shadow:0 1px 0 var(--orange-deep)}
+.btn.red{background:var(--red);color:#2B0408;box-shadow:0 5px 0 var(--red-deep)}
+.btn.red:active{box-shadow:0 1px 0 var(--red-deep)}
+.btn.ghost{background:var(--panel);border:2px solid var(--line);color:var(--dim);box-shadow:0 4px 0 var(--bg)}
+.btn.ghost:active{box-shadow:0 1px 0 var(--bg)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.btn.locked{filter:saturate(.35) brightness(.85)}
+.mini{font-family:var(--mono);display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  font-size:11px;font-weight:700;letter-spacing:.16em;color:var(--dim);padding:8px 10px;text-transform:uppercase}
+.mini .ic{width:14px;height:14px}
+.icon-btn{width:42px;height:42px;display:grid;place-items:center;background:var(--panel);
+  border:2px solid var(--line);border-radius:12px;color:var(--dim);transition:transform .07s}
+.icon-btn:active{transform:scale(.88)}
+
+/* ============ SETUP ============ */
+/* Top bar stays above ALL overlays so gear/help/quit are always reachable */
+.top-row{position:relative;z-index:80;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:16px 16px 0}
+.brand{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.22em;color:var(--faint)}
+.hero{padding:22px 20px 4px}
+.hero h1{font-size:clamp(36px,11vw,46px);font-weight:900;line-height:.98;color:var(--ink)}
+.hero h1 .dz{color:var(--mag);text-shadow:0 5px 0 var(--mag-deep)}
+.lives{display:flex;gap:8px;margin:12px 0 2px}
+.lives i{width:11px;height:11px;background:var(--lc);animation:lv 2.4s steps(2) infinite;animation-delay:var(--d)}
+@keyframes lv{50%{opacity:.25}}
+.sec{padding:12px 16px 0}
+.sec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.p-row{display:flex;align-items:center;gap:10px;background:var(--panel);border:2px solid var(--line);
+  border-radius:14px;padding:9px 12px;margin-bottom:9px;animation:in .25s ease}
+.dot{width:34px;height:34px;flex:none;border-radius:9px;border:2px solid rgba(127,127,127,.35);transition:transform .12s}
+.dot:active{transform:scale(.82)}
+.p-row input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--ink);font-weight:800;font-size:15px}
+.p-row input::placeholder{color:var(--faint)}
+.rm{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:9px;color:var(--red);border:2px solid var(--line)}
+.rm:active{transform:scale(.88)}
+#addBtn{width:100%;padding:13px;border:2px dashed var(--line);border-radius:14px;color:var(--dim);
+  font-weight:900;font-size:12px;letter-spacing:.16em;display:flex;justify-content:center;gap:8px}
+#addBtn[disabled]{opacity:.35;pointer-events:none}
+#spiceBtn .ic{width:17px;height:17px}
+.trow{display:flex;gap:8px}
+.tbtn{flex:1;padding:11px 4px;border:2px solid var(--line);border-radius:12px;font-family:var(--mono);
+  font-weight:700;font-size:11px;letter-spacing:.14em;color:var(--dim);background:var(--panel);text-transform:uppercase}
+.tbtn.active{border-color:var(--gold);color:var(--gold)}
+.start-wrap{margin-top:auto;padding:14px 16px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:6px;align-items:center}
+
+/* ============ GAME ============ */
+#roundChip{margin:0 auto}
+#zone{flex:1;min-height:0;position:relative;cursor:pointer}
+#sectorLines{position:absolute;inset:0;pointer-events:none}
+.sline{--hc:var(--dim);position:absolute;left:50%;top:50%;height:2px;transform-origin:0 50%;
+  background:repeating-linear-gradient(90deg,var(--hc) 0 6px,transparent 6px 13px);
+  opacity:.3;transition:opacity .3s;
+  -webkit-mask:linear-gradient(90deg,transparent,#000 22%,#000 82%,transparent);
+  mask:linear-gradient(90deg,transparent,#000 22%,#000 82%,transparent)}
+.sline.hl{opacity:.95;transition:none}
+.spot{position:absolute;left:50%;top:50%;width:76%;height:44%;transform:translate(-50%,-50%);
+  background:radial-gradient(ellipse,var(--spotCyan),transparent 68%);pointer-events:none}
+.led{position:absolute;width:9px;height:9px;border-radius:2px;transform:translate(-50%,-50%);
+  pointer-events:none;background:var(--ledOff);animation:ledIdle 2.8s steps(2) infinite;animation-delay:var(--d,0s)}
+@keyframes ledIdle{50%{background:var(--lc);box-shadow:0 0 8px var(--lc)}}
+#zone.spinning .led{animation:chase .55s linear infinite;animation-delay:var(--c,0s)}
+@keyframes chase{0%,68%,100%{background:var(--ledOff);box-shadow:none}
+  10%{background:var(--lc);box-shadow:0 0 12px var(--lc),0 0 24px var(--lc)}}
+#zone.landed .led{animation:bflash .5s steps(2) 3}
+@keyframes bflash{50%{background:var(--ledOff);box-shadow:none}}
+
+.chip-p{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:7px;
+  background:var(--panel);border:2px solid var(--c,#888);border-radius:99px;padding:6px 12px 6px 7px;
+  pointer-events:none;max-width:112px;transition:opacity .25s,background .2s,box-shadow .25s;white-space:nowrap}
+.chip-p .d{width:24px;height:24px;flex:none;border-radius:7px;background:var(--c);color:#0B0E14;
+  font-size:10px;font-weight:900;display:grid;place-items:center}
+.chip-p .n{font-size:12px;font-weight:900;overflow:hidden;text-overflow:ellipsis}
+#zone.spinning .chip-p{opacity:.45}
+.chip-p.tick{transform:translate(-50%,-50%) scale(1.14);opacity:1!important}
+.chip-p.chosen{background:var(--c);color:#0B0E14;box-shadow:0 0 0 3px var(--bg),0 0 22px var(--c);
+  animation:chosenP 1.4s ease-in-out infinite}
+.chip-p.chosen .d{background:rgba(0,0,0,.35);color:var(--ink)}
+@keyframes chosenP{50%{box-shadow:0 0 0 3px var(--bg),0 0 34px var(--c)}}
+
+#bottleWrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:54%;
+  aspect-ratio:140/348;will-change:transform}
+#bottleWrap svg{width:100%;height:100%;display:block;
+  filter:drop-shadow(0 0 15px var(--glowCyan)) drop-shadow(0 12px 0 rgba(0,0,0,.18))}
+#bottleInner{width:100%;height:100%;will-change:transform}
+#bottleInner.wob{animation:wob .7s ease-out}
+@keyframes wob{25%{transform:rotate(5deg) scale(1.02)}55%{transform:rotate(-3.5deg)}80%{transform:rotate(1.5deg)}100%{transform:rotate(0)}}
+.bGlass{fill:rgba(127,127,127,.06);stroke:var(--ink);stroke-opacity:.9;stroke-width:5;stroke-linejoin:round}
+.bLabel{fill:var(--panel);stroke:var(--cyan);stroke-width:4}
+.bT1{fill:var(--ink)}
+.bT2{fill:var(--mag)}
+/* tap hint floats over the CENTER of the bottle */
+#tapHint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  pointer-events:none;transition:opacity .2s;display:flex;flex-direction:column;align-items:center;gap:4px;z-index:5}
+#tapHint .t{font-size:15px;font-weight:900;letter-spacing:.28em;color:var(--cyan);
+  text-shadow:0 2px 8px rgba(4,6,12,.75),0 0 18px rgba(4,6,12,.6);
+  animation:pulse 1.5s ease-in-out infinite;white-space:nowrap}
+#tapHint .s{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.22em;color:var(--ink);
+  text-shadow:0 2px 8px rgba(4,6,12,.8);white-space:nowrap}
+body[data-theme="light"] #tapHint .t{text-shadow:0 2px 8px rgba(255,255,255,.85),0 0 16px rgba(255,255,255,.7)}
+body[data-theme="light"] #tapHint .s{text-shadow:0 2px 8px rgba(255,255,255,.9)}
+@keyframes pulse{50%{opacity:.45;transform:translateY(3px)}}
+#tapHint.hide{opacity:0}
+#status{font-family:var(--mono);min-height:20px;text-align:center;font-size:11px;font-weight:700;letter-spacing:.18em;
+  color:var(--dim);text-transform:uppercase;padding:6px 20px calc(14px + env(safe-area-inset-bottom))}
+#status.big{font-size:16px;color:var(--ink);letter-spacing:.24em}
+
+/* ============ OVERLAYS ============ */
+.ovl{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:18px;
+  background:rgba(10,13,22,.55);backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .22s}
+body[data-theme="light"] .ovl{background:rgba(19,26,42,.35)}
+.ovl.show{opacity:1;pointer-events:auto}
+/* stacked sheets sit above normal popups; top bar (z 80) stays clickable under them */
+#ovSettings,#ovQuit,#ovHelp{z-index:85}
+.card{width:min(430px,100%);max-height:88dvh;background:var(--panel);
+  border:2px solid var(--line);border-radius:20px;text-align:center;overflow:hidden;
+  transform:scale(.82) translateY(26px);opacity:0;transition:transform .38s cubic-bezier(.24,1.3,.35,1),opacity .25s;
+  box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.ovl.show .card{transform:none;opacity:1}
+.bar{height:10px;background:repeating-linear-gradient(135deg,
+  var(--cyan) 0 16px,var(--cyan-deep) 16px 32px,var(--mag) 32px 48px,var(--mag-deep) 48px 64px)}
+.card-body{padding:20px}
+.scroll{overflow-y:auto;max-height:76dvh}
+.who{display:flex;flex-direction:column;align-items:center;gap:9px;margin:14px 0 10px}
+.big-ava{width:66px;height:66px;border-radius:16px;background:var(--c,#888);color:#0B0E14;
+  font-size:22px;font-weight:900;display:grid;place-items:center;box-shadow:0 0 0 4px var(--bg),0 0 24px var(--c)}
+.who .nm{font-size:24px;font-weight:900;letter-spacing:.03em;text-transform:uppercase}
+.q{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.2em;color:var(--dim);margin:2px 0 16px;text-transform:uppercase}
+.opts{display:flex;flex-direction:column;gap:12px}
+#promptText{font-size:clamp(18px,5.4vw,22px);font-weight:800;line-height:1.42;margin:16px 2px 16px;
+  animation:pin .35s cubic-bezier(.2,.9,.3,1)}
+@keyframes pin{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+.p-actions{display:flex;flex-direction:column;gap:10px}
+
+.voter{display:flex;flex-direction:column;align-items:center;gap:8px;margin:14px 0 4px}
+.voter .nm{font-size:22px;font-weight:900;text-transform:uppercase}
+.voter .vs{font-size:12px;font-weight:700;color:var(--dim)}
+.tally{display:flex;justify-content:center;align-items:center;gap:7px;margin:14px 0 18px;min-height:26px;flex-wrap:wrap}
+.v-dot{width:13px;height:13px;border-radius:4px;border:2px solid var(--line);transition:all .2s}
+.v-dot.y{background:var(--lime);border-color:var(--lime);box-shadow:0 0 10px var(--lime)}
+.v-dot.n{background:var(--red);border-color:var(--red);box-shadow:0 0 10px var(--red)}
+.v-count{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.1em;margin-left:4px}
+.v-count.y{color:var(--lime)}.v-count.n{color:var(--red)}
+.v-btns{display:flex;gap:12px}
+.v-btns .btn{font-size:16px}
+
+.stamp{font-family:var(--mono);display:inline-block;margin:16px 0 10px;padding:8px 24px;border:5px double currentColor;border-radius:12px;
+  font-size:clamp(30px,9vw,42px);font-weight:900;opacity:0}
+.ovl.show .stamp{animation:slam .5s cubic-bezier(.2,1.3,.35,1) .1s forwards}
+@keyframes slam{0%{transform:rotate(5deg) scale(2.6);opacity:0}60%{transform:rotate(-7deg) scale(.9);opacity:1}100%{transform:rotate(-6deg) scale(1);opacity:1}}
+.stamp.win{color:var(--lime)}
+.stamp.lose{color:var(--red)}
+.r-sub{font-size:13px;font-weight:700;color:var(--dim);margin-bottom:16px}
+
+.aw-row{display:flex;align-items:center;gap:12px;background:var(--panel2);border:2px solid var(--line);
+  border-radius:14px;padding:10px 12px;margin-bottom:9px;text-align:left}
+.aw-sq{width:30px;height:30px;border-radius:8px;flex:none}
+.aw-role{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+.aw-nm{font-weight:900;font-size:16px}
+.aw-nm small{font-family:var(--mono);font-size:10px;color:var(--dim);font-weight:700;margin-left:6px}
+
+.sp-desc{display:block;font-size:10px;font-weight:800;letter-spacing:.12em;opacity:.7;margin-top:2px;text-transform:uppercase}
+
+/* settings + help */
+.s-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 2px;border-bottom:1px dashed var(--line)}
+.s-row:last-of-type{border-bottom:none}
+.s-lbl{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;text-align:left}
+.s-lbl small{display:block;font-size:9px;color:var(--faint);letter-spacing:.1em;margin-top:2px}
+.switch{width:56px;height:30px;flex:none;border:2px solid var(--line);border-radius:99px;background:var(--panel2);position:relative;transition:background .2s,border-color .2s}
+.switch i{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:var(--faint);transition:transform .2s,background .2s}
+.switch[data-on="true"]{border-color:var(--lime)}
+.switch[data-on="true"] i{transform:translateX(26px);background:var(--lime)}
+.seg{display:flex;gap:4px;border:2px solid var(--line);border-radius:10px;padding:3px}
+.seg button{padding:6px 12px;border-radius:7px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
+.seg button.active{background:var(--cyan);color:#04222A}
+
+#ovHelp .card-body,#ovPlans .card-body{text-align:left}
+.pl-h{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--cyan);margin:16px 0 6px;text-transform:uppercase}
+.pl-h:first-child{margin-top:0}
+.pl-p{font-size:12px;color:var(--dim);line-height:1.65;margin-bottom:6px}
+.pl-p b{color:var(--ink)}
+.pl-li{display:flex;justify-content:space-between;gap:12px;font-size:12px;padding:6px 0;border-bottom:1px dashed var(--line);color:var(--dim)}
+.pl-li b{color:var(--ink);font-weight:800}
+.pl-code{font-family:var(--mono);font-size:10px;color:var(--faint);background:var(--panel2);
+  border:1px dashed var(--line);border-radius:8px;padding:10px;margin:8px 0;line-height:1.8;white-space:pre;overflow-x:auto}
+
+#ovAd{z-index:200;background:rgba(4,6,12,.92)}
+.adcard{width:min(340px,88%);text-align:center;background:var(--panel);border:2px dashed var(--gold);
+  border-radius:20px;padding:28px 22px}
+#adKind{font-family:var(--mono);font-size:11px;letter-spacing:.24em;color:var(--gold);text-transform:uppercase}
+#adCnt{font-family:var(--mono);font-size:58px;font-weight:900;color:var(--ink);margin:14px 0 8px}
+.adnote{font-family:var(--mono);font-size:9px;letter-spacing:.16em;color:var(--faint);line-height:1.8}
+
+#toast{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translate(-50%,16px);
+  z-index:90;background:var(--panel2);border:2px solid var(--cyan);border-radius:12px;padding:11px 18px;
+  font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;opacity:0;pointer-events:none;transition:all .25s;
+  text-transform:uppercase;max-width:86%;text-align:center;color:var(--cyan)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.cf{position:fixed;left:0;top:0;width:9px;height:9px;border-radius:2px;z-index:95;pointer-events:none;will-change:transform}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body data-theme="dark">
+
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-q" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 1 1 4.6 2.5c-.9.6-1.8 1.2-1.8 2.5"/><path d="M12 17.5h.01"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c2 3.2 5 4.8 5 8.5a5 5 0 1 1-10 0c0-1.9.8-3.2 1.7-4.3C9.6 8.6 12 6 12 3z"/><path d="M12 21a3 3 0 0 1-3-3c0-1.7 1.5-2.6 3-4.5 1.5 1.9 3 2.8 3 4.5a3 3 0 0 1-3 3z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-tv" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M8 3l4 3 4-3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+</svg>
+
+<div id="app">
+
+  <!-- ============ SETUP ============ -->
+  <section id="scrSetup" class="screen active">
+    <div class="top-row">
+      <span class="brand">ARCADE PARTY</span>
+      <div style="display:flex;gap:8px">
+        <button class="icon-btn" id="helpBtn" aria-label="How to play"><svg class="ic"><use href="#i-q"/></svg></button>
+        <button class="icon-btn gearBtn" aria-label="Settings"><svg class="ic"><use href="#i-gear"/></svg></button>
+      </div>
+    </div>
+    <div class="hero">
+      <h1>TRUTH<br>OR <span class="dz">DARE</span></h1>
+      <div class="lives">
+        <i style="--lc:var(--cyan);--d:0s"></i><i style="--lc:var(--mag);--d:.3s"></i>
+        <i style="--lc:var(--lime);--d:.6s"></i><i style="--lc:var(--gold);--d:.9s"></i>
+        <i style="--lc:var(--cyan);--d:1.2s"></i><i style="--lc:var(--mag);--d:1.5s"></i>
+        <i style="--lc:var(--lime);--d:1.8s"></i>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><span class="eyebrow">Players</span><span class="chip" id="cnt"></span></div>
+      <div id="pList"></div>
+      <button id="addBtn"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg>ADD PLAYER</button>
+    </div>
+    <div class="sec">
+      <div class="sec-head"><span class="eyebrow">Game Length</span></div>
+      <div class="trow">
+        <button class="tbtn" data-target="10">QUICK · 10</button>
+        <button class="tbtn" data-target="20">PARTY · 20</button>
+        <button class="tbtn" data-target="0">ENDLESS</button>
+      </div>
+    </div>
+    <div class="sec">
+      <button class="btn ghost" id="spiceBtn"><svg class="ic"><use href="#i-flame"/></svg><span id="spiceLbl">MODE · MILD</span></button>
+    </div>
+    <div class="start-wrap">
+      <button class="btn lime" id="startBtn" style="font-size:17px;padding:18px">PRESS START</button>
+      <button class="mini" id="plansBtn" style="opacity:.55">MONETIZATION PLANS</button>
+    </div>
+  </section>
+
+  <!-- ============ GAME ============ -->
+  <section id="scrGame" class="screen">
+    <div class="top-row">
+      <button class="icon-btn" id="quitBtn" aria-label="End game"><svg class="ic"><use href="#i-x"/></svg></button>
+      <span class="chip" id="roundChip">LEVEL 1</span>
+      <button class="icon-btn gearBtn" aria-label="Settings"><svg class="ic"><use href="#i-gear"/></svg></button>
+    </div>
+
+    <div id="zone">
+      <div id="sectorLines"></div>
+      <div class="spot"></div>
+      <div id="leds"></div>
+      <div id="bottleWrap"><div id="bottleInner">
+        <svg viewBox="0 -16 140 348" aria-hidden="true">
+          <defs>
+            <linearGradient id="liq" gradientUnits="userSpaceOnUse" x1="0" y1="182" x2="0" y2="340">
+              <stop offset="0" stop-color="#22E4FF"/><stop offset=".45" stop-color="#7A5CFF"/><stop offset="1" stop-color="#FF3E9D"/>
+            </linearGradient>
+            <clipPath id="bClip">
+              <path d="M59 56 V98 C59 112 28 122 28 150 V284 Q28 306 50 306 H90 Q112 306 112 284 V150 C112 122 81 112 81 98 V56 Z"/>
+            </clipPath>
+          </defs>
+          <path d="M70 -12 L83 6 L57 6 Z" fill="#FFB020" stroke="#05070C" stroke-width="4" stroke-linejoin="round"/>
+          <rect x="50" y="8" width="40" height="36" rx="8" fill="#FF3E9D" stroke="#05070C" stroke-width="5"/>
+          <g clip-path="url(#bClip)">
+            <g id="liqG">
+              <rect x="-260" y="182" width="660" height="720" fill="url(#liq)" opacity=".95"/>
+              <ellipse id="liqCrest" cx="70" cy="182" rx="44" ry="7" fill="#DFFBFF" opacity=".55"/>
+              <ellipse id="liqSurf" cx="70" cy="182" rx="52" ry="8" fill="#BFF6FF" opacity=".75"/>
+              <g id="liqBub" opacity=".35">
+                <circle cx="48" cy="236" r="4" fill="#fff"/>
+                <circle cx="90" cy="262" r="3" fill="#fff"/>
+                <circle cx="66" cy="286" r="3.5" fill="#fff"/>
+                <circle cx="82" cy="222" r="2.5" fill="#fff"/>
+              </g>
+            </g>
+          </g>
+          <path class="bGlass" d="M53 52 V98 C53 112 22 122 22 150 V286 Q22 312 48 312 H92 Q118 312 118 286 V150 C118 122 87 112 87 98 V52 Z"/>
+          <rect class="bLabel" x="30" y="198" width="80" height="56" rx="10"/>
+          <text class="bT1" x="70" y="224" text-anchor="middle" font-size="18" font-weight="900" letter-spacing="1.5">TRUTH</text>
+          <text class="bT2" x="70" y="242" text-anchor="middle" font-size="13" font-weight="900" letter-spacing="2">OR DARE</text>
+          <rect x="29" y="118" width="9" height="168" rx="4.5" fill="#fff" opacity=".3"/>
+          <rect x="58" y="60" width="6" height="32" rx="3" fill="#fff" opacity=".35"/>
+        </svg>
+      </div></div>
+      <div id="tapHint"><span class="t" id="tapTxt">TAP TO SPIN</span><span class="s" id="tapSub"></span></div>
+    </div>
+
+    <div id="status">TAP THE BOTTLE</div>
+  </section>
+</div>
+
+<!-- ============ OVERLAYS ============ -->
+<div class="ovl" id="ovSettings"><div class="card"><div class="card-body">
+  <span class="eyebrow">SETTINGS</span>
+  <div style="margin-top:8px">
+    <div class="s-row">
+      <div class="s-lbl">Theme</div>
+      <div class="seg">
+        <button id="thDark">Dark</button>
+        <button id="thLight">Light</button>
+      </div>
+    </div>
+    <div class="s-row">
+      <div class="s-lbl">Sound<small>Ticks, chimes, fanfares</small></div>
+      <button class="switch" id="swSound" data-on="true" aria-label="Toggle sound"><i></i></button>
+    </div>
+    <div class="s-row">
+      <div class="s-lbl">Haptics<small>Vibration on key moments</small></div>
+      <button class="switch" id="swHaptics" data-on="true" aria-label="Toggle haptics"><i></i></button>
+    </div>
+  </div>
+  <button class="btn ghost" id="btnCloseSettings" style="margin-top:16px">CLOSE</button>
+</div></div></div>
+
+<div class="ovl" id="ovHelp"><div class="card"><div class="bar"></div><div class="card-body scroll">
+  <span class="eyebrow">How to play</span>
+
+  <div class="pl-h">The basics</div>
+  <div class="pl-p">Add <b>2 to 10 players</b>, then tap the bottle to spin. The <b>gold tip</b> is the pointer — whoever it rests on is up. Dashed lines show each player's zone so there is never a doubt.</div>
+
+  <div class="pl-h">The round (Mild / Spicy / Fire)</div>
+  <div class="pl-p">1. The chosen player picks <b>TRUTH</b> (answer honestly) or <b>DARE</b> (perform it live).<br>
+  2. Got another prompt instead? Tap <b>GIVE ME ANOTHER</b> — free, unlimited.<br>
+  3. When done, tap <b>DONE · VOTE</b>.<br>
+  4. <b>Every other player votes in turn</b> — GG means worthy, FLOP means not. The verdict lands only after the last ballot.<br>
+  5. Majority GG → next spin. FLOP or a tie → <b>the same player picks truth or dare again</b>.</div>
+
+  <div class="pl-h">Freestyle</div>
+  <div class="pl-p">No prompts, no voting. The bottle only <b>names a player</b> — the group invents the question or the task themselves. The name shows on the table with <b>tap to spin again</b> right on the bottle.</div>
+
+  <div class="pl-h">Modes</div>
+  <div class="pl-li"><span>MILD</span><b>Clean fun for everyone</b></div>
+  <div class="pl-li"><span>FREESTYLE</span><b>You run the game</b></div>
+  <div class="pl-li"><span>SPICY</span><b>Flirty · one ad to unlock</b></div>
+  <div class="pl-li"><span>FIRE</span><b>Bold · one ad to unlock</b></div>
+  <div class="pl-p" style="margin-top:6px">Unlock is permanent and works offline — if the ad fails to load, the mode unlocks anyway.</div>
+
+  <div class="pl-h">Game length</div>
+  <div class="pl-p"><b>QUICK</b> = 10 rounds, <b>PARTY</b> = 20 rounds, <b>ENDLESS</b> = no limit. When the target hits, the show ends with <b>awards</b>: MVP (most GGs), Serial Flopper, Drama Queen (most dares), Facts Only (most truths) — or Most Picked in Freestyle.</div>
+
+  <div class="pl-h">Good to know</div>
+  <div class="pl-p">Theme, sound and haptics live in the <b>gear icon</b> — reachable anytime, even mid-vote. Freestyle never shows cards or votes. Nothing in the core game is ever locked — Spicy and Fire are extra content, nothing more.</div>
+
+  <button class="btn lime" id="btnCloseHelp" style="margin-top:16px">GOT IT</button>
+</div></div></div>
+
+<div class="ovl" id="ovSpice"><div class="card"><div class="card-body">
+  <span class="eyebrow">GAME MODE</span>
+  <div class="opts" style="margin-top:16px">
+    <button class="btn lime" data-spice="mild">MILD<span class="sp-desc" id="descMild">CLEAN FUN FOR EVERYONE</span></button>
+    <button class="btn ghost" data-spice="free">FREESTYLE<span class="sp-desc" id="descFree"></span></button>
+    <button class="btn orange" data-spice="spicy">SPICY<span class="sp-desc" id="descSpicy"></span></button>
+    <button class="btn red" data-spice="fire">FIRE<span class="sp-desc" id="descFire"></span></button>
+  </div>
+</div></div></div>
+
+<div class="ovl" id="ovUnlock"><div class="card"><div class="card-body">
+  <span class="eyebrow">LOCKED MODE</span>
+  <div class="who"><div class="big-ava" id="ulAva" style="--c:var(--orange)"><svg class="ic" style="width:26px;height:26px"><use href="#i-lock"/></svg></div>
+  <div class="nm" id="ulName">SPICY</div></div>
+  <div class="q">ONE AD UNLOCKS IT FOREVER</div>
+  <div class="opts">
+    <button class="btn gold" id="ulAd"><svg class="ic"><use href="#i-tv"/></svg>WATCH AD · UNLOCK FREE</button>
+    <button class="btn ghost" id="ulNo">NOT NOW</button>
+  </div>
+</div></div></div>
+
+<div class="ovl" id="ovChoice"><div class="card"><div class="bar"></div><div class="card-body">
+  <span class="eyebrow" id="cEyebrow">TARGET LOCKED</span>
+  <div class="who"><div class="big-ava" id="cAva">A</div><div class="nm" id="cName">NAME</div></div>
+  <div class="q">TRUTH OR DARE?</div>
+  <div class="opts">
+    <button class="btn cyan" id="btnTruth"><svg class="ic"><use href="#i-q"/></svg>TRUTH</button>
+    <button class="btn mag" id="btnDare"><svg class="ic"><use href="#i-bolt"/></svg>DARE</button>
+  </div>
+</div></div></div>
+
+<div class="ovl" id="ovPrompt"><div class="card"><div class="bar"></div><div class="card-body">
+  <span class="chip" id="pBadge">TRUTH</span>
+  <div id="promptText">Prompt</div>
+  <div class="p-actions">
+    <button class="btn lime" id="btnVoted"><svg class="ic"><use href="#i-check"/></svg>DONE · VOTE</button>
+    <button class="mini" id="btnRedraw"><svg class="ic"><use href="#i-refresh"/></svg>GIVE ME ANOTHER</button>
+  </div>
+</div></div></div>
+
+<div class="ovl" id="ovVote"><div class="card"><div class="bar"></div><div class="card-body">
+  <span class="eyebrow">THE VOTE</span>
+  <div class="voter">
+    <div class="big-ava" id="vAva">A</div>
+    <div class="nm" id="vName">NAME</div>
+    <div class="vs" id="vCtx">Worthy?</div>
+  </div>
+  <div class="tally" id="tally"></div>
+  <div class="v-btns">
+    <button class="btn lime" id="btnYes">GG</button>
+    <button class="btn ghost" id="btnNo" style="color:var(--red);border-color:rgba(232,56,74,.5)">FLOP</button>
+  </div>
+</div></div></div>
+
+<div class="ovl" id="ovResult"><div class="card"><div class="card-body">
+  <div class="stamp" id="rStamp">GG</div>
+  <div class="r-sub" id="rSub">Sub</div>
+  <button class="btn lime" id="btnNext">NEXT</button>
+</div></div></div>
+
+<div class="ovl" id="ovFinish"><div class="card"><div class="bar"></div><div class="card-body">
+  <span class="eyebrow">SHOW COMPLETE</span>
+  <div class="stamp win" id="finStamp" style="font-size:clamp(26px,8vw,36px)">FINISH</div>
+  <div id="awards" style="margin:8px 0 14px"></div>
+  <div class="opts">
+    <button class="btn gold" id="btnAgain">PLAY AGAIN</button>
+    <button class="btn ghost" id="btnNewParty">NEW PARTY</button>
+  </div>
+</div></div></div>
+
+<div class="ovl" id="ovQuit"><div class="card"><div class="card-body">
+  <span class="eyebrow">PAUSED</span>
+  <div class="q" style="margin-top:10px">QUIT?</div>
+  <div class="opts">
+    <button class="btn lime" id="btnStay">RESUME</button>
+    <button class="btn ghost" id="btnLeave" style="color:var(--red)">QUIT</button>
+  </div>
+</div></div></div>
+
+<div class="ovl" id="ovAd"><div class="adcard">
+  <div id="adKind">REWARDED AD</div>
+  <div id="adCnt">3</div>
+  <div class="adnote">SIMULATED AD · SHELL ADS BRIDGE READY<br>REAL ADS RENDER HERE VIA WINDOW.SHELLADS</div>
+</div></div>
+
+<div class="ovl" id="ovPlans"><div class="card"><div class="card-body scroll">
+  <span class="eyebrow">Monetization Roadmap · Internal</span>
+  <div class="pl-h">Philosophy</div>
+  <div class="pl-p">Ads are opt-in and group-beneficial. Money buys convenience, cosmetics, and content — never the core loop. Spin, truth, dare, and voting stay 100% free forever.</div>
+  <div class="pl-h">Three Layers (future)</div>
+  <div class="pl-code">REWARDED ADS  → the faucet (fastest path)
+COINS         → the grindable currency (FUTURE)
+PARTY PASS    → the $2.99 bypass (FUTURE IAP)</div>
+  <div class="pl-h">Coin Economy (FUTURE)</div>
+  <div class="pl-li"><span>GG verdict</span><b>+5</b></div>
+  <div class="pl-li"><span>Finish a game</span><b>+25</b></div>
+  <div class="pl-li"><span>Rewarded ad</span><b>+50</b></div>
+  <div class="pl-li"><span>Prompt reroll</span><b>25</b></div>
+  <div class="pl-li"><span>SPICY / FIRE tiers</span><b>150 / 300</b></div>
+  <div class="pl-li"><span>Bottle skins / avatar packs</span><b>150 / 200</b></div>
+  <div class="pl-h">Rewarded Placements</div>
+  <div class="pl-li"><span>Tier unlock SPICY / FIRE</span><b>LIVE</b></div>
+  <div class="pl-li"><span>Mercy ad on flop</span><b>CUT · PER FEEDBACK</b></div>
+  <div class="pl-li"><span>Deck refills / cosmetics</span><b>NEXT</b></div>
+  <div class="pl-h">Interstitial Policy</div>
+  <div class="pl-p">Exactly two exits: finish-screen action and quit. Max 1 per session. 3-minute minimum gap. Skipped if a rewarded ad played in the last 2 minutes. First-ever game pristine. Never between votes, never before a spin, never during prompts. No ads inside the result flow.</div>
+  <div class="pl-h">Party Pass · $2.99 one-time (FUTURE)</div>
+  <div class="pl-p">Removes interstitials forever. All tiers, cosmetics, and deck packs included. Positioned on the finish screen when the party is happiest — never a popup nag. No in-app toggle; ships with the real IAP.</div>
+  <div class="pl-h">Shell Ads Bridge</div>
+  <div class="pl-code">// Native side implements:
+window.ShellAds = {
+  showInterstitial(),
+  showRewarded(placement, cb(ok)),
+  hasRewarded()   // optional fill check
+};
+// JS side already calls these when present.
+// No bridge or no fill = reward granted anyway.</div>
+  <div class="pl-h">KPIs</div>
+  <div class="pl-li"><span>Rewarded completion rate</span><b>&gt; 70%</b></div>
+  <div class="pl-li"><span>Interstitials per session</span><b>&lt; 1.5</b></div>
+  <div class="pl-li"><span>Party Pass conversion</span><b>1-3%</b></div>
+  <div class="pl-li"><span>Reviews mentioning ads</span><b>~0</b></div>
+  <div class="pl-h">Guardrails</div>
+  <div class="pl-p">Core loop never gated. Reward stated before the ad. Ad fails to load = grant anyway. No banners. No mid-game interstitials. No coin-only paywalls. FIRE always opt-in.</div>
+  <button class="btn ghost" id="btnClosePlans" style="margin-top:14px">CLOSE</button>
+</div></div></div>
+
+<div id="toast"></div>
+
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const mod = (a,n)=>((a%n)+n)%n;
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+
+/* ================= CONTENT · MILD ================= */
+const TRUTHS_MILD = [
+"What is the most embarrassing song saved on your phone? Play it if you dare.",
+"What is the weirdest thing you have ever eaten off the floor?",
+"Who in this room would be the worst roommate, and why?",
+"What is your most useless talent that impresses absolutely nobody?",
+"What is a food opinion you hold that would start a war in this room?",
+"What is the pettiest reason you have ever stopped texting someone back?",
+"What is the last white lie you told? Word for word.",
+"What is the most childish thing you still do when nobody is watching?",
+"What nickname do you secretly hate but pretend is fine?",
+"What is the weirdest thing in your search history right now?",
+"Who was your strangest celebrity crush growing up?",
+"What is the biggest trouble you ever got into at school?",
+"What is a skill you claim to have but completely fake?",
+"What is the weirdest thing you do when you are home alone?",
+"What is the worst gift you have ever received, and what did you actually say?",
+"What is the pettiest thing you have done to win an argument?",
+"What is a show you love that you would never admit in public?",
+"What is the most ridiculous thing that has ever made you cry?",
+"What is the boldest excuse you have used to leave a hangout early?",
+"Who in this room survives a horror movie, and who goes first?",
+"What is one thing everyone here does that secretly annoys you?",
+"What is the weirdest dream you can still remember?",
+"What is the most money you have wasted on something completely useless?",
+"What trend did you follow and now deeply regret?",
+"What is the cringiest message sitting in your drafts, never sent?",
+"What is the weirdest rumor you have heard about yourself?",
+"What lie from your childhood lasted way too long?",
+"What is the weirdest thing you believed as a kid, for way too long?",
+"What was your imaginary friend like, and what happened to them?",
+"What is the funniest wrong assumption people make about you?"];
+const DARES_MILD = [
+"Speak in a movie-trailer voice until your next turn. Every single sentence.",
+"Do your best evil laugh and hold it for ten seconds. The room rates it out of ten.",
+"Dance with zero music for twenty seconds. Full commitment, no smiling.",
+"Sing the chorus of the last song you listened to. Loud and proud.",
+"Let {p} give you a new nickname. It is official for the rest of the game.",
+"Do an impression of {p} until the room guesses who it is.",
+"Answer everything with a question for the next two rounds. Confused?",
+"Act as a robot butler serving invisible snacks to everyone in the room.",
+"Give a motivational speech to an object the room picks. Make it feel something.",
+"Balance an object on your head until the next turn ends. Dropping it means starting over.",
+"Say the alphabet backwards. Every mistake costs one dramatic groan.",
+"Whisper everything you say for the next round like the walls are listening.",
+"Let the group invent a dance move named after you. Perform it with pride.",
+"Invent a superhero whose power is completely useless. Strike the pose and tell the origin story.",
+"Compliment every player, but only in a pirate voice.",
+"Perform a soap opera breakup scene with {p}. Tears are encouraged.",
+"Make everything you say rhyme for the next round.",
+"Rap about what you ate today. Minimum four lines.",
+"Let the room pose you like a mannequin. Hold the pose for twenty seconds.",
+"Narrate {p} getting a snack like a tense sports commentator.",
+"Reenact yourself entering this room today, in dramatic slow motion with sound effects.",
+"Create a secret handshake with {p} and perform it with total commitment.",
+"Pretend the floor is lava and reach {p} without touching it. Narrate the danger.",
+"Act out winning the lottery, then realizing the ticket is gone. Both emotions, back to back.",
+"Announce your own entrance like a wrestling announcer. Full walk, full volume.",
+"Explain your morning routine as if you are a nature documentarian observing a rare animal.",
+"Give tomorrow's weather forecast using only interpretive dance.",
+"Do an air guitar solo so intense the room feels it. Twenty seconds, no stopping."];
+
+/* ================= CONTENT · SPICY ================= */
+const TRUTHS_SPICY = [
+"Who in this room would you swipe right on?",
+"What is the most flirtatious message you have ever sent? Read it out loud.",
+"Tell the room about your worst date. Every painful detail.",
+"Have you ever had a crush on someone in this friend group? Who?",
+"What is the boldest thing you have done to get someone's attention?",
+"Who was the last person you quietly stalked online, and how deep did you go?",
+"What is your most controversial opinion about dating?",
+"If you had to marry someone in this room, who would it be and why?",
+"What is the most embarrassing thing you have ever said to a crush?",
+"What is a lie you once told to impress someone, and did it work?",
+"What is your worst kiss story? No names, but the room gets one guess.",
+"What is your most unfiltered first impression of {p}?",
+"What compliment do you fish for the most?",
+"What was your almost-relationship that never became official?",
+"What is the biggest romantic risk you have ever taken?",
+"Who here would you trust with your darkest secret, and who never?",
+"What is the last thing that genuinely made you jealous?",
+"What is the most shameless thing you have done to get someone to notice you?",
+"What is your guilty pleasure playlist, and how embarrassing is it really?",
+"What is the longest you have ever kept a crush totally secret?",
+"Rate every player's dating profile potential out of ten. Out loud.",
+"What is the greenest flag and the reddest flag you have ever seen in a person?"];
+const DARES_SPICY = [
+"Serenade the player on your right with a love ballad. Full passion, no laughing.",
+"Deliver your best pickup line to {p} with unbroken eye contact.",
+"Slow dance with {p} for fifteen seconds. Total commitment, no music.",
+"Whisper a compliment to {p} that would make a poet jealous.",
+"Do your best model walk toward {p}, stop, and wink. No laughing allowed.",
+"Hold eye contact with {p} until one of you breaks. First to laugh loses.",
+"Declare your love for an everyday object in front of everyone. Make it convincing.",
+"Give {p} a genuine compliment about their personality for thirty straight seconds.",
+"Give an award acceptance speech where you thank {p} above everyone else. Get emotional.",
+"Act out your most awkward moment with a crush. The room guesses what happened.",
+"Let the group pick a song from your playlist. You must perform the chorus dramatically.",
+"Say everything with a wink for the next two rounds. Every sentence.",
+"Whisper your honest first impression of {p} loud enough for the room to hear.",
+"Reveal the last photo you took of yourself and let the room rate it.",
+"Flirt with {p} using only movie quotes until they laugh.",
+"Write a two-line love poem about {p} on the spot and perform it.",
+"Reenact the most dramatic movie kiss scene alone. Full production value.",
+"Let {p} choose your profile picture for the rest of the night. Their pick is final.",
+"Do a dramatic reading of your last text conversation out loud, with feeling.",
+"Narrate {p}'s best qualities like a nature documentary for one minute."];
+
+/* ================= CONTENT · FIRE ================= */
+const TRUTHS_FIRE = [
+"Have you ever kissed someone in this room? Spill everything.",
+"What is the most trouble you have ever gotten into that nobody here knows about?",
+"What is the biggest secret you are keeping from someone in this room right now?",
+"Who was your last hookup crush, and how did it end?",
+"What is the most shameless thing you have ever done after a breakup?",
+"What is the boldest place you have ever snuck off to?",
+"Have you ever two-timed or been two-timed? Tell the story.",
+"What is the most daring message you have sent to the wrong person?",
+"What is one thing you would do tonight if nobody here would remember it tomorrow?",
+"Who in this room do you think is the best kisser, purely on vibes? Explain your theory.",
+"What is the most expensive thing you have done to impress someone?",
+"What is the worst thing you have ever done to get revenge on an ex?",
+"What is your most scandalous story that ends with 'and that is why I never went back'?",
+"If you had to swap dating lives with {p} for a month, how would it go?",
+"What is the biggest risk you have ever taken that completely paid off?",
+"What is the one thing about you that would shock everyone here the most?",
+"What is the most chaotic thing you have ever witnessed at a party and joined in on?",
+"Have you ever pretended to be someone else online? For how long?",
+"What is the hottest take you have that would end a friendship if said sincerely?",
+"What rumor about you turned out to be sort of true?"];
+const DARES_FIRE = [
+"Give {p} a peck on the cheek — only if both of you agree. Commit either way.",
+"Pick someone in the room and whisper something bold in their ear. No repeating it.",
+"Let the group dictate one text message. You must send it to any contact they choose.",
+"Let {p} draw a small tattoo on you with a pen, anywhere they choose.",
+"Trade one wearable item with {p} for the next two rounds.",
+"Send a voice note of yourself singing a love song to a contact the room picks.",
+"Let {p} pose you like a mannequin in your boldest pose. Hold it for thirty seconds.",
+"Reveal the last five photos in your gallery. No skipping.",
+"Do your best impression of {p} on a first date. No mercy.",
+"Write a dramatic confession post about an imaginary crush and read it aloud like poetry.",
+"Choose one player and serenade them on one knee. The room picks the song.",
+"Show the room your most-used text opener and explain it. Defend yourself.",
+"Act out the party story you are most proud of. Costumes and sound effects encouraged.",
+"Let the room restyle your hair using whatever is nearby. Wear it until the next round ends.",
+"Confess a mild crime in the style of a courtroom drama. The room is your jury.",
+"Text your crush a single bold compliment. The room approves the wording.",
+"Perform your best slow-motion hero walk toward the snack table and back. Epic music required.",
+"Declare a dramatic rivalry with {p} for one round. Stay fully in character.",
+"Let the room read your last three searches out loud. No explaining allowed.",
+"Give a toast to the group as if this is the last night anyone will ever see you."];
+
+const SPIN_LINES = ["BOSS FIGHT INCOMING","NO SAVE POINTS","LUCK STAT CHECK","CRITICAL HIT INCOMING","TARGETING SYSTEM ACTIVE","SOMEONE IS ABOUT TO SWEAT"];
+const COLORS = ['#22E4FF','#FF3E9D','#B6FF3B','#FFB020','#7A5CFF','#FF6B4A','#2FE6A8','#FF8AD8','#5EA0FF','#E8FF4A'];
+const LED_COLS = ['#22E4FF','#FF3E9D','#B6FF3B','#FFB020'];
+const LS = 'tod_simple_v7';
+const SPICE_META = {
+  mild:{label:'MILD', desc:'CLEAN FUN FOR EVERYONE'},
+  free:{label:'FREESTYLE', desc:'NO PROMPTS · YOU RUN THE GAME'},
+  spicy:{label:'SPICY', desc:'FLIRTY AND EMBARRASSING'},
+  fire:{label:'FIRE', desc:'BOLD · NO REGRETS'}
+};
+
+/* ================= ADS (Shell bridge) ================= */
+const Ads = {
+  bridge: (typeof window!=='undefined' && window.ShellAds) || null,
+  lastInter:0, lastReward:0,
+  canInter(){
+    if(state.gamesPlayed < 1) return false;
+    const now=Date.now();
+    if(now - this.lastReward < 120000) return false;
+    if(now - this.lastInter  < 180000) return false;
+    return true;
+  },
+  simulate(kind,secs){
+    return new Promise(res=>{
+      $('#adKind').textContent=kind;
+      let n=secs; $('#adCnt').textContent=n;
+      open('ovAd');
+      const iv=setInterval(()=>{
+        n--;
+        if(n<=0){ clearInterval(iv); closeAll(); res(); }
+        else $('#adCnt').textContent=n;
+      },1000);
+    });
+  },
+  interstitial(){
+    if(!this.canInter()) return Promise.resolve(false);
+    this.lastInter=Date.now();
+    if(this.bridge && this.bridge.showInterstitial){
+      try{ this.bridge.showInterstitial(); return Promise.resolve(true); }catch(e){}
+    }
+    return this.simulate('INTERSTITIAL · SIMULATED',3);
+  },
+  rewarded(placement,onReward){
+    const grant=()=>{ this.lastReward=Date.now(); onReward(); };
+    if(this.bridge && this.bridge.showRewarded){
+      try{
+        const has = !this.bridge.hasRewarded || this.bridge.hasRewarded();
+        if(!has){ grant(); return; }
+        this.bridge.showRewarded(placement, ok=>grant());
+        return;
+      }catch(e){}
+    }
+    this.simulate('REWARDED · '+placement.toUpperCase(),3).then(grant);
+  }
+};
+window.ShellAdsBridge = Ads;
+
+/* ================= SOUND ================= */
+let AC=null;
+const ac=()=>{ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){} } if(AC&&AC.state==='suspended')AC.resume(); return AC; };
+function beep(f,{d=.12,type='sine',v=.15,at=0,slide,cut}={}){
+  if(!S.on) return; const c=ac(); if(!c) return;
+  const t=c.currentTime+at, o=c.createOscillator(), g=c.createGain();
+  o.type=type; o.frequency.setValueAtTime(f,t);
+  if(slide) o.frequency.exponentialRampToValueAtTime(slide,t+d);
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(v,t+.012);
+  g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  let node=o;
+  if(cut){ const fl=c.createBiquadFilter(); fl.type='lowpass'; fl.frequency.value=cut; o.connect(fl); node=fl; }
+  node.connect(g); g.connect(c.destination);
+  o.start(t); o.stop(t+d+.05);
+}
+function noise({d=.2,v=.15,at=0,f=1200,q=1,sweep}={}){
+  if(!S.on) return; const c=ac(); if(!c) return;
+  const t=c.currentTime+at, len=Math.max(1,Math.floor(c.sampleRate*d));
+  const b=c.createBuffer(1,len,c.sampleRate), data=b.getChannelData(0);
+  for(let i=0;i<len;i++) data[i]=Math.random()*2-1;
+  const s=c.createBufferSource(); s.buffer=b;
+  const fl=c.createBiquadFilter(); fl.type='bandpass'; fl.Q.value=q; fl.frequency.setValueAtTime(f,t);
+  if(sweep) fl.frequency.exponentialRampToValueAtTime(sweep,t+d);
+  const g=c.createGain();
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(v,t+.015);
+  g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  s.connect(fl); fl.connect(g); g.connect(c.destination);
+  s.start(t); s.stop(t+d+.05);
+}
+const S={
+  on:true,
+  tap(){ beep(520,{d:.05,type:'triangle',v:.08,slide:320}); },
+  tick(){ beep(1200+Math.random()*600,{d:.03,type:'square',v:.04}); },
+  coin(){ beep(988,{d:.08,type:'square',v:.12}); beep(1319,{d:.35,type:'square',v:.12,at:.08}); },
+  whoosh(){ noise({d:.5,v:.12,f:250,q:1.1,sweep:2400}); },
+  land(){ beep(660,{d:.1,v:.18}); beep(990,{d:.2,v:.18,at:.08}); },
+  voteY(){ beep(700,{d:.07,type:'triangle',v:.12}); beep(1050,{d:.1,type:'triangle',v:.12,at:.07}); },
+  voteN(){ beep(240,{d:.12,type:'sawtooth',v:.09,slide:170,cut:900}); },
+  roll(done){ for(let i=0;i<14;i++) noise({d:.035,v:.05+i*.012,at:i*.038,f:400+Math.random()*300,q:.8});
+              if(done) setTimeout(done,580); },
+  win(){ [523,659,784,1046,1319].forEach((f,i)=>beep(f,{d:.11,type:'square',v:.11,at:i*.08,cut:4200}));
+         noise({d:.4,v:.05,at:.25,f:5000,q:.5}); },
+  lose(){ const n=[[233,0,.22],[220,.26,.22],[208,.52,.22],[196,.78,.7]];
+          n.forEach(([f,at,d])=>beep(f,{d,type:'sawtooth',v:.14,at,slide:f*.82,cut:850})); },
+  pop(){ noise({d:.08,v:.2,f:3000,q:.4}); }
+};
+function buzz(p){ if(!state.haptics) return; try{ navigator.vibrate && navigator.vibrate(p); }catch(e){} }
+
+/* ================= STATE ================= */
+const state={
+  setup:[], players:[], round:0, phase:'idle', chosen:null,
+  theme:'dark', spice:'mild', target:20,
+  sound:true, haptics:true,
+  unlocked:{spicy:false,fire:false},
+  gamesPlayed:0, pendingTier:null,
+  angles:[], dists:[],
+  decks:{}, queue:[], yes:0, no:0
+};
+S.on=true;
+let bottleRot=0, raf=null;
+
+/* ================= PERSIST ================= */
+function load(){
+  try{ const d=JSON.parse(localStorage.getItem(LS));
+    if(d){
+      if(Array.isArray(d.names)&&d.names.length>=2)
+        state.setup=d.names.slice(0,10).map((n,i)=>({name:n,color:d.colors[i]||COLORS[i]}));
+      if(typeof d.sound==='boolean'){ state.sound=d.sound; S.on=d.sound; }
+      if(typeof d.haptics==='boolean') state.haptics=d.haptics;
+      if(d.theme==='light'||d.theme==='dark') state.theme=d.theme;
+      if(SPICE_META[d.spice]) state.spice=d.spice;
+      if(d.unlocked) state.unlocked=d.unlocked;
+      if(typeof d.gamesPlayed==='number') state.gamesPlayed=d.gamesPlayed;
+      if([0,10,20].includes(d.target)) state.target=d.target;
+    }
+  }catch(e){}
+  if(state.setup.length<2) state.setup=[{name:'',color:COLORS[0]},{name:'',color:COLORS[1]}];
+}
+function save(){
+  try{ localStorage.setItem(LS,JSON.stringify({
+    names:state.setup.map(p=>p.name),colors:state.setup.map(p=>p.color),
+    sound:state.sound,haptics:state.haptics,theme:state.theme,spice:state.spice,
+    target:state.target,unlocked:state.unlocked,gamesPlayed:state.gamesPlayed})); }catch(e){}
+}
+
+/* ================= THEME + SETTINGS ================= */
+function applyTheme(){
+  document.body.dataset.theme=state.theme;
+  $('#metaTheme').setAttribute('content', state.theme==='light' ? '#EEF1F6' : '#0B0E14');
+  $('#thDark').classList.toggle('active',state.theme==='dark');
+  $('#thLight').classList.toggle('active',state.theme==='light');
+}
+function syncSettings(){
+  applyTheme();
+  $('#swSound').dataset.on=state.sound;
+  $('#swHaptics').dataset.on=state.haptics;
+}
+ $('#thDark').onclick=()=>{ if(state.theme!=='dark'){ state.theme='dark'; applyTheme(); save(); S.tap(); } };
+ $('#thLight').onclick=()=>{ if(state.theme!=='light'){ state.theme='light'; applyTheme(); save(); S.tap(); } };
+ $('#swSound').onclick=()=>{ state.sound=!state.sound; S.on=state.sound; syncSettings(); save(); if(state.sound){ac();S.tap();} };
+ $('#swHaptics').onclick=()=>{ state.haptics=!state.haptics; syncSettings(); save(); S.tap(); buzz(20); };
+
+/* Stacked overlays: settings / quit / help open ON TOP of whatever
+   popup is active (vote, choice, prompt...) and never destroy it. */
+function openOnTop(id){ $('#'+id).classList.add('show'); }
+function closeTop(id){ $('#'+id).classList.remove('show'); }
+document.querySelectorAll('.gearBtn').forEach(b=>b.onclick=()=>{ S.tap(); syncSettings(); openOnTop('ovSettings'); });
+ $('#btnCloseSettings').onclick=()=>{ S.tap(); closeTop('ovSettings'); };
+ $('#helpBtn').onclick=()=>{ S.tap(); openOnTop('ovHelp'); };
+ $('#btnCloseHelp').onclick=()=>{ S.tap(); closeTop('ovHelp'); };
+
+/* ================= SETUP UI ================= */
+function renderSetup(){
+  const list=$('#pList'); list.innerHTML='';
+  state.setup.forEach((p,i)=>{
+    const row=document.createElement('div'); row.className='p-row';
+    const dot=document.createElement('button'); dot.className='dot'; dot.style.background=p.color;
+    dot.setAttribute('aria-label','Change color');
+    dot.onclick=()=>{ S.tap();
+      const used=state.setup.filter((_,j)=>j!==i).map(x=>x.color);
+      let k=COLORS.indexOf(p.color);
+      for(let s=1;s<=COLORS.length;s++){ const c=COLORS[(k+s)%COLORS.length]; if(!used.includes(c)){p.color=c;break;} }
+      dot.style.background=p.color; save(); };
+    const inp=document.createElement('input'); inp.maxLength=12; inp.value=p.name;
+    inp.placeholder='Player '+(i+1); inp.setAttribute('aria-label','Player name');
+    inp.oninput=()=>{ p.name=inp.value; save(); };
+    inp.onblur=()=>{ if(!p.name.trim()){ p.name=''; inp.value=''; save(); } };
+    const rm=document.createElement('button'); rm.className='rm'; rm.setAttribute('aria-label','Remove');
+    rm.innerHTML='<svg class="ic" style="width:15px;height:15px"><use href="#i-x"/></svg>';
+    rm.onclick=()=>{ if(state.setup.length<=2) return; S.tap(); state.setup.splice(i,1); renderSetup(); save(); };
+    row.append(dot,inp,rm); list.appendChild(row);
+  });
+  $('#cnt').textContent=state.setup.length+' / 10';
+  $('#addBtn').disabled=state.setup.length>=10;
+}
+ $('#addBtn').onclick=()=>{ if(state.setup.length>=10) return; S.tap();
+  const used=state.setup.map(p=>p.color);
+  state.setup.push({name:'',color:COLORS.find(c=>!used.includes(c))||COLORS[state.setup.length]});
+  renderSetup(); save(); };
+
+function syncTarget(){
+  document.querySelectorAll('.tbtn').forEach(b=>{
+    b.classList.toggle('active', Number(b.dataset.target)===state.target);
+  });
+}
+document.querySelectorAll('.tbtn').forEach(b=>b.onclick=()=>{
+  state.target=Number(b.dataset.target); S.tap(); syncTarget(); save();
+});
+
+/* ================= MODES + UNLOCKS ================= */
+function tierUnlocked(t){ return t==='mild' || t==='free' || state.unlocked[t]; }
+function syncSpice(){
+  $('#spiceLbl').textContent='MODE · '+SPICE_META[state.spice].label;
+  ['mild','free','spicy','fire'].forEach(t=>{
+    const btn=document.querySelector('[data-spice="'+t+'"]');
+    const desc=document.getElementById('desc'+t.charAt(0).toUpperCase()+t.slice(1));
+    const un=tierUnlocked(t);
+    btn.classList.toggle('locked',!un);
+    desc.textContent = !un ? 'LOCKED · TAP TO UNLOCK'
+      : (t===state.spice ? 'ACTIVE' : SPICE_META[t].desc);
+  });
+}
+ $('#spiceBtn').onclick=()=>{ S.tap(); open('ovSpice'); };
+document.querySelectorAll('#ovSpice [data-spice]').forEach(b=>b.onclick=()=>{
+  const t=b.dataset.spice;
+  if(!tierUnlocked(t)){
+    state.pendingTier=t; S.tap();
+    $('#ulName').textContent=SPICE_META[t].label;
+    open('ovUnlock');
+    return;
+  }
+  state.spice=t; state.decks={};
+  syncSpice(); save(); S.coin(); buzz(12); closeAll();
+  toast(SPICE_META[t].label+' MODE');
+});
+ $('#ulAd').onclick=()=>{
+  const t=state.pendingTier; if(!t) return;
+  S.tap();
+  Ads.rewarded('tier_'+t,()=>{
+    state.unlocked[t]=true; state.spice=t; state.decks={};
+    syncSpice(); save(); closeAll();
+    toast(SPICE_META[t].label+' UNLOCKED FOREVER');
+  });
+};
+ $('#ulNo').onclick=()=>{ S.tap(); closeAll(); };
+
+/* ================= GAME FLOW ================= */
+function initials(n){ const w=(n||'P').trim().split(/\s+/).filter(Boolean); return (w.slice(0,2).map(x=>x[0]).join('')||'P').toUpperCase(); }
+function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),1600); }
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function roundLabel(){
+  $('#roundChip').textContent = state.target ? 'LEVEL '+state.round+'/'+state.target : 'LEVEL '+state.round;
+}
+function setTapHint(txt,sub){ $('#tapTxt').textContent=txt; $('#tapSub').textContent=sub||''; }
+function startGame(){
+  S.coin(); buzz(15);
+  state.round=0; state.chosen=null; state.phase='idle';
+  state.decks={};
+  state.players.forEach(p=>{ p.ggs=0; p.flops=0; p.truths=0; p.dares=0; p.spins=0; });
+  buildLeds(); buildChips();
+  roundLabel();
+  $('#zone').classList.remove('spinning','landed');
+  setStatus('TAP THE BOTTLE'); $('#status').classList.remove('big');
+  setTapHint('TAP TO SPIN');
+  $('#tapHint').classList.remove('hide');
+  show('scrGame');
+  requestAnimationFrame(layoutAll);
+}
+ $('#startBtn').onclick=()=>{
+  const players=state.setup.map((p,i)=>({id:i,name:(p.name.trim()||('Player '+(i+1))),color:p.color}));
+  if(players.length<2){ toast('Need 2 players'); return; }
+  state.players=players;
+  startGame();
+};
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); $('#'+id).classList.add('active'); }
+
+/* --- LED ring --- */
+function buildLeds(){
+  const box=$('#leds'); box.innerHTML='';
+  for(let i=0;i<12;i++){
+    const b=document.createElement('span'); b.className='led';
+    b.style.setProperty('--lc',LED_COLS[i%LED_COLS.length]);
+    b.style.setProperty('--d',(-i*.24)+'s');
+    b.style.setProperty('--c',(i*.05)+'s');
+    box.appendChild(b);
+  }
+}
+function layoutLeds(){
+  const z=$('#zone'); if(!z.clientWidth) return;
+  const w=z.clientWidth,h=z.clientHeight,cx=w/2,cy=h/2;
+  const bh=h*.54, bw=bh*140/348;
+  const rx=Math.max(bw/2+32,84), ry=Math.max(bh/2+16,94);
+  document.querySelectorAll('.led').forEach((b,i)=>{
+    const a=(-90+i*30+15)*Math.PI/180;
+    b.style.left=(cx+Math.cos(a)*rx)+'px';
+    b.style.top=(cy+Math.sin(a)*ry)+'px';
+  });
+}
+
+/* --- player chips --- */
+function buildChips(){
+  document.querySelectorAll('.chip-p').forEach(e=>e.remove());
+  state.players.forEach(p=>{
+    const el=document.createElement('div'); el.className='chip-p'; el.style.setProperty('--c',p.color);
+    el.innerHTML='<span class="d"></span><span class="n"></span>';
+    el.querySelector('.d').textContent=initials(p.name);
+    el.querySelector('.n').textContent=p.name;
+    $('#zone').appendChild(el); p.el=el;
+  });
+}
+function layoutChips(){
+  const z=$('#zone'); if(!z.clientWidth) return;
+  const w=z.clientWidth,h=z.clientHeight,cx=w/2,cy=h/2,n=state.players.length;
+  const rx=Math.max(110,w/2-56), ry=Math.max(110,h/2-44);
+  state.players.forEach((p,i)=>{
+    const a=(-90+i*360/n)*Math.PI/180;
+    p.el.style.left=(cx+Math.cos(a)*rx)+'px';
+    p.el.style.top=(cy+Math.sin(a)*ry)+'px';
+  });
+}
+
+/* ================= MEASURED ANGLES (source of truth) ================= */
+function measureAngles(){
+  const z=$('#zone');
+  if(!z.clientWidth || !state.players.length) return false;
+  const zr=z.getBoundingClientRect();
+  const cx=zr.left+zr.width/2, cy=zr.top+zr.height/2;
+  const A=[],D=[];
+  for(const p of state.players){
+    const r=p.el.getBoundingClientRect();
+    const px=r.left+r.width/2, py=r.top+r.height/2;
+    A.push(mod(Math.atan2(px-cx, cy-py)*180/Math.PI, 360));
+    D.push(Math.hypot(px-cx, py-cy));
+  }
+  state.angles=A; state.dists=D;
+  return true;
+}
+function fallbackAngles(){
+  return state.players.map((_,i)=>i*360/state.players.length);
+}
+
+/* --- sector boundary lines --- */
+function layoutSectors(){
+  const box=$('#sectorLines'); box.innerHTML='';
+  const z=$('#zone'); if(!z.clientWidth||state.angles.length<2) return;
+  const len=Math.max(z.clientWidth,z.clientHeight)*.62;
+  const A=state.angles, n=A.length;
+  for(let i=0;i<n;i++){
+    const half=mod(A[(i+1)%n]-A[i],360)/2;
+    const b=mod(A[i]+half,360);
+    const el=document.createElement('i'); el.className='sline';
+    el.style.width=len+'px';
+    el.style.transform='rotate('+(b-90)+'deg)';
+    box.appendChild(el);
+  }
+}
+function flashSector(i){
+  const lines=$('#sectorLines').children; const n=lines.length;
+  if(!n) return;
+  const c=state.players[i].color;
+  [lines[(i-1+n)%n], lines[i]].forEach(l=>{
+    l.style.setProperty('--hc',c); l.classList.add('hl');
+    setTimeout(()=>l.classList.remove('hl'),1100);
+  });
+}
+function layoutAll(){
+  layoutLeds(); layoutChips();
+  measureAngles(); layoutSectors();
+}
+window.addEventListener('resize',()=>{ if($('#scrGame').classList.contains('active')) layoutAll(); });
+function setStatus(t){ $('#status').textContent=t; }
+
+function playerAtDeg(deg,A){
+  A=A||state.angles;
+  const n=state.players.length;
+  if(!A||A.length!==n) return Math.floor(mod(deg,360)/(360/Math.max(1,n)))%Math.max(1,n);
+  let best=0,bd=1e9;
+  for(let i=0;i<n;i++){
+    const d=Math.abs(mod(A[i]-deg+180,360)-180);
+    if(d<bd){bd=d;best=i;}
+  }
+  return best;
+}
+
+/* ================= LIQUID SIMULATION ================= */
+const Liq={tilt:0,vt:0,h:0,vh:0,t:null,pR:null,pV:0,ag:0};
+let liqG=null,liqSurf=null,liqCrest=null,liqBub=null,swayEl=null;
+
+function startSpin(){
+  if(state.phase!=='idle') return;
+  ac();
+
+  if(!measureAngles()) state.angles=fallbackAngles();
+  layoutSectors();
+
+  state.phase='spinning';
+  state.players.forEach(p=>p.el.classList.remove('chosen'));
+  $('#zone').classList.remove('landed');
+  $('#zone').classList.add('spinning');
+  $('#tapHint').classList.add('hide');
+  $('#status').classList.remove('big');
+  setStatus(SPIN_LINES[Math.floor(Math.random()*SPIN_LINES.length)]);
+  S.whoosh(); buzz(10);
+
+  const A=state.angles, n=state.players.length;
+  let finalDeg=Math.random()*360;
+  for(let tries=0;tries<40;tries++){
+    const cand=Math.random()*360;
+    const bi=playerAtDeg(cand,A);
+    const d=Math.abs(mod(A[bi]-cand+180,360)-180);
+    if(d<9) continue;
+    if(n>1 && state.players[bi]===state.chosen && tries<30) continue;
+    finalDeg=cand; break;
+  }
+
+  const start=bottleRot;
+  const delta=(4.5+Math.random()*2)*360+mod(finalDeg-start,360);
+  const wind=260, main=3000+Math.random()*800, wob=750, total=wind+main+wob;
+  const t0=performance.now();
+  let cur=playerAtDeg(mod(start-36,360),A), lastT=0;
+  const eQ=t=>1-Math.pow(1-t,4), eC=t=>1-Math.pow(1-t,3);
+
+  function frame(now){
+    const e=now-t0;
+    let rot;
+    if(e<wind) rot=start-36*eC(e/wind);
+    else if(e<wind+main){ rot=(start-36)+(delta+36)*eQ((e-wind)/main);
+      const c=playerAtDeg(mod(rot,360),A);
+      if(c!==cur){ cur=c; if(now-lastT>60){lastT=now; pulse(cur); S.tick();} } }
+    else{ const u=(e-wind-main)/wob; rot=start+delta+Math.sin(u*Math.PI*5)*3.2*Math.pow(1-u,2);
+      const c=playerAtDeg(mod(rot,360),A);
+      if(c!==cur){ cur=c; if(now-lastT>70){lastT=now; pulse(cur); S.tick();} } }
+    bottleRot=rot; $('#bottleWrap').style.transform='translate(-50%,-50%) rotate('+rot+'deg)';
+    if(e<total) raf=requestAnimationFrame(frame);
+    else land();
+  }
+  raf=requestAnimationFrame(frame);
+}
+function pulse(i){ const el=state.players[i]&&state.players[i].el; if(!el) return;
+  el.classList.add('tick'); setTimeout(()=>el.classList.remove('tick'),120); }
+
+function land(){
+  state.phase='landed'; raf=null;
+  $('#zone').classList.remove('spinning');
+  $('#zone').classList.add('landed');
+  $('#bottleInner').classList.add('wob');
+  setTimeout(()=>$('#bottleInner').classList.remove('wob'),720);
+
+  measureAngles(); layoutSectors();
+  const capDeg=mod(bottleRot,360);
+  const i=playerAtDeg(capDeg,state.angles);
+
+  state.chosen=state.players[i];
+  state.chosen.spins++;
+  state.chosen.el.classList.add('chosen');
+  flashSector(i);
+  Liq.vh-=60;
+
+  S.land(); buzz([25,40,25]);
+
+  if(state.spice==='free'){
+    state.round++; roundLabel();
+    setStatus(state.chosen.name.toUpperCase());
+    $('#status').classList.add('big');
+    if(state.target && state.round>=state.target){ finishGame(); return; }
+    state.phase='idle';
+    setTapHint('TAP TO SPIN AGAIN', state.chosen.name.toUpperCase()+"'S TURN");
+    $('#tapHint').classList.remove('hide');
+  }else{
+    setStatus(state.chosen.name.toUpperCase()+'!');
+    setTimeout(()=>openChoice(false),750);
+  }
+}
+ $('#zone').addEventListener('click',startSpin);
+document.addEventListener('keydown',e=>{
+  if(e.key===' '&&$('#scrGame').classList.contains('active')&&!document.querySelector('.ovl.show')){ e.preventDefault(); startSpin(); }
+});
+
+function liquidTick(now){
+  requestAnimationFrame(liquidTick);
+  if(!liqG||!swayEl) return;
+  if(!$('#scrGame').classList.contains('active')){ Liq.pR=null; Liq.pV=0; return; }
+  let dt=(now-(Liq.t==null?now:Liq.t))/1000; Liq.t=now;
+  if(dt<=0||dt>0.05) dt=0.016;
+
+  const sway=(state.phase==='idle')?Math.sin(now/700)*1.4:0;
+  swayEl.style.transform='rotate('+sway.toFixed(2)+'deg)';
+
+  const R=bottleRot+sway;
+  if(Liq.pR==null) Liq.pR=R;
+  let vel=(R-Liq.pR)/dt; Liq.pR=R;
+  let dVel=vel-Liq.pV; Liq.pV=vel;
+  if(!isFinite(vel))vel=0;
+  if(!isFinite(dVel))dVel=0;
+  dVel=clamp(dVel,-2500,2500);
+
+  const lagT=clamp(-vel*0.016,-48,48);
+  Liq.vt+=((lagT-Liq.tilt)*7 - 1.8*Liq.vt)*dt - dVel*0.010;
+  Liq.vt=clamp(Liq.vt,-420,420);
+  Liq.tilt=clamp(Liq.tilt+Liq.vt*dt,-55,55);
+
+  Liq.vh+=(-dVel*0.02 - 90*Liq.h - 9*Liq.vh)*dt;
+  Liq.h=clamp(Liq.h+Liq.vh*dt,-12,12);
+
+  Liq.ag+= (clamp(Math.abs(vel)/1500 + Math.abs(Liq.tilt)/70,0,1) - Liq.ag)*3*dt;
+  const ag=Liq.ag;
+
+  const rock=(state.phase==='idle')?Math.sin(now/900)*2.2:0;
+  const total=-(R)+Liq.tilt+rock;
+  liqG.setAttribute('transform','rotate('+total.toFixed(2)+' 70 240)');
+
+  const rush=clamp(Liq.tilt*1.15,-30,30);
+  liqSurf.setAttribute('cy',(182+Liq.h).toFixed(1));
+  liqSurf.setAttribute('cx',(70+rush).toFixed(1));
+  liqSurf.setAttribute('ry',(7+ag*3.5*Math.abs(Math.sin(now*0.02))).toFixed(1));
+  liqCrest.setAttribute('cy',(182+Liq.h-Math.sign(Liq.vt||1)*2).toFixed(1));
+  liqCrest.setAttribute('cx',(70-rush*0.7).toFixed(1));
+  liqCrest.setAttribute('ry',(5+ag*4).toFixed(1));
+  liqBub.setAttribute('transform','translate(0 '+(-ag*(16+8*Math.sin(now*0.013))).toFixed(1)+')');
+  liqBub.setAttribute('opacity',(0.2+0.55*ag).toFixed(2));
+}
+
+/* --- overlays (flow popups close each other; stacked ones do not) --- */
+function open(id){ document.querySelectorAll('.ovl').forEach(o=>o.classList.remove('show')); $('#'+id).classList.add('show'); }
+function closeAll(){ document.querySelectorAll('.ovl').forEach(o=>o.classList.remove('show')); }
+
+function openChoice(isRetry){
+  state.phase='choosing';
+  $('#cEyebrow').textContent=isRetry?'RUN IT BACK':'TARGET LOCKED';
+  const p=state.chosen, av=$('#cAva');
+  av.style.setProperty('--c',p.color); av.textContent=initials(p.name);
+  $('#cName').textContent=p.name;
+  open('ovChoice');
+}
+ $('#btnTruth').onclick=()=>{ S.tap(); openPrompt('truth'); };
+ $('#btnDare').onclick=()=>{ S.tap(); openPrompt('dare'); };
+
+function draw(type){
+  const key=state.spice+'_'+type;
+  let d=state.decks[key];
+  if(!d||!d.length){
+    const pool = type==='truth'
+      ? {mild:TRUTHS_MILD,spicy:TRUTHS_SPICY,fire:TRUTHS_FIRE}[state.spice]
+      : {mild:DARES_MILD,spicy:DARES_SPICY,fire:DARES_FIRE}[state.spice];
+    d=state.decks[key]=shuffle(pool.slice());
+  }
+  let text=d.pop();
+  if(text.includes('{p}')){
+    const o=state.players.filter(p=>p!==state.chosen);
+    if(o.length) text=text.split('{p}').join(o[Math.floor(Math.random()*o.length)].name);
+  }
+  return text;
+}
+function openPrompt(type){
+  state.phase='prompt'; state.type=type;
+  if(type==='truth') state.chosen.truths++; else state.chosen.dares++;
+  const b=$('#pBadge');
+  b.textContent=type==='truth'?'TRUTH':'DARE';
+  b.style.borderColor=type==='truth'?'var(--cyan)':'var(--mag)';
+  b.style.color=type==='truth'?'var(--cyan)':'var(--mag)';
+  const t=$('#promptText'); t.textContent=draw(type);
+  t.style.animation='none'; void t.offsetWidth; t.style.animation='';
+  open('ovPrompt');
+}
+ $('#btnRedraw').onclick=()=>{
+  S.tap();
+  const t=$('#promptText'); t.textContent=draw(state.type);
+  t.style.animation='none'; void t.offsetWidth; t.style.animation='';
+};
+
+/* ================= VOTING =================
+   Every player votes. Verdict computed only after the final ballot. */
+ $('#btnVoted').onclick=()=>{
+  S.tap(); buzz(10);
+  state.phase='voting';
+  const n=state.players.length;
+  const ci=state.players.indexOf(state.chosen);
+  state.queue=[];
+  for(let k=1;k<n;k++) state.queue.push(state.players[(ci+k)%n]);
+  state.yes=0; state.no=0;
+  renderVote();
+  open('ovVote');
+};
+function renderVoter(){
+  const v=state.queue[0];
+  if(!v) return;
+  const av=$('#vAva');
+  av.style.setProperty('--c',v.color); av.textContent=initials(v.name);
+  $('#vName').textContent=v.name+', VERDICT';
+  $('#vCtx').textContent='Was '+state.chosen.name+"'s run worthy?";
+}
+function renderTally(){
+  const t=$('#tally'); t.innerHTML='';
+  for(let i=0;i<state.yes;i++){ const d=document.createElement('span'); d.className='v-dot y'; t.appendChild(d); }
+  for(let i=0;i<state.no;i++){ const d=document.createElement('span'); d.className='v-dot n'; t.appendChild(d); }
+  for(let i=0;i<state.queue.length;i++){ const d=document.createElement('span'); d.className='v-dot'; t.appendChild(d); }
+  const cy=document.createElement('span'); cy.className='v-count y'; cy.textContent=state.yes; t.appendChild(cy);
+  const cn=document.createElement('span'); cn.className='v-count n'; cn.textContent=state.no; t.appendChild(cn);
+}
+function renderVote(){ renderVoter(); renderTally(); }
+
+function castVote(yes){
+  if(state.phase!=='voting') return;
+  state.queue.shift();
+  if(yes){ state.yes++; S.voteY(); buzz(12); } else { state.no++; S.voteN(); buzz([15,30,15]); }
+  if(state.queue.length>0){
+    renderVote();
+  }else{
+    state.phase='reveal';
+    renderTally();
+    const V=state.yes+state.no;
+    const need=Math.floor(V/2)+1;
+    const pass=state.yes>=need;
+    S.roll(()=>{ closeAll(); showResult(pass); });
+  }
+}
+ $('#btnYes').onclick=()=>castVote(true);
+ $('#btnNo').onclick=()=>castVote(false);
+
+/* --- result --- */
+function showResult(pass){
+  state.phase='result';
+  const st=$('#rStamp'), sub=$('#rSub'), btn=$('#btnNext');
+  if(pass){
+    state.chosen.ggs++;
+    st.className='stamp win'; st.textContent='LEGENDARY';
+    sub.textContent='GG, '+state.chosen.name+'. The lobby approves.';
+    btn.textContent='NEXT';
+  }else{
+    state.chosen.flops++;
+    st.className='stamp lose'; st.textContent='GAME OVER';
+    sub.textContent='The lobby is not satisfied. '+state.chosen.name+' runs it back.';
+    btn.textContent='RUN IT BACK';
+  }
+  open('ovResult');
+  if(pass){ S.win(); buzz([30,40,30]);
+    const r=st.getBoundingClientRect();
+    confetti(r.left+r.width/2,r.top+r.height/2);
+  }else{ S.lose(); buzz([60,50,60]);
+    const a=$('#app'); a.classList.add('shake'); setTimeout(()=>a.classList.remove('shake'),480);
+  }
+}
+function advanceRound(){
+  state.round++; roundLabel();
+  if(state.target && state.round>=state.target){ finishGame(); return; }
+  state.chosen.el.classList.remove('chosen');
+  state.chosen=null; state.phase='idle';
+  setStatus('TAP THE BOTTLE'); $('#status').classList.remove('big');
+  setTapHint('TAP TO SPIN');
+  $('#tapHint').classList.remove('hide');
+  closeAll();
+}
+ $('#btnNext').onclick=()=>{
+  S.tap();
+  if(state.phase==='result'&&$('#rStamp').classList.contains('win')){
+    advanceRound();
+  }else{
+    S.coin();
+    setStatus(state.chosen.name.toUpperCase()+' IS ON THE CLOCK');
+    openChoice(true);
+  }
+};
+
+/* ================= FINISH ================= */
+function finishGame(){
+  state.phase='over';
+  state.gamesPlayed++;
+  const P=state.players;
+  const top=(k)=>P.slice().sort((a,b)=>b[k]-a[k])[0];
+  const rows=[]; const used=new Set();
+  function add(role,p,label){
+    if(!p||p[label]<=0||used.has(p.id)) return;
+    used.add(p.id);
+    rows.push({role,name:p.name,color:p.color,stat:p[label]+' '+label.toUpperCase()});
+  }
+  add('MVP',top('ggs'),'ggs');
+  add('SERIAL FLOPPER',top('flops'),'flops');
+  add('DRAMA QUEEN',top('dares'),'dares');
+  add('FACTS ONLY',top('truths'),'truths');
+  if(!rows.length) add('MOST PICKED',top('spins'),'spins');
+  const box=$('#awards'); box.innerHTML='';
+  rows.forEach(r=>{
+    const row=document.createElement('div'); row.className='aw-row';
+    const sq=document.createElement('span'); sq.className='aw-sq'; sq.style.background=r.color;
+    const txt=document.createElement('div');
+    const role=document.createElement('div'); role.className='aw-role'; role.textContent=r.role;
+    const nm=document.createElement('div'); nm.className='aw-nm';
+    nm.textContent=r.name;
+    const sm=document.createElement('small'); sm.textContent=r.stat; nm.appendChild(sm);
+    txt.append(role,nm); row.append(sq,txt); box.appendChild(row);
+  });
+  open('ovFinish');
+  S.win(); buzz([30,40,30,60]);
+  const r=$('#finStamp').getBoundingClientRect();
+  confetti(r.left+r.width/2,r.top+r.height/2);
+}
+ $('#btnAgain').onclick=()=>{ S.tap(); Ads.interstitial().then(()=>{ startGame(); }); };
+ $('#btnNewParty').onclick=()=>{ S.tap(); Ads.interstitial().then(()=>{ cleanupToSetup(); }); };
+function cleanupToSetup(){
+  if(raf){ cancelAnimationFrame(raf); raf=null; }
+  state.phase='idle'; state.chosen=null;
+  document.querySelectorAll('.chip-p').forEach(e=>e.classList.remove('chosen'));
+  $('#zone').classList.remove('spinning','landed');
+  setTapHint('TAP TO SPIN');
+  $('#tapHint').classList.remove('hide');
+  show('scrSetup');
+}
+
+/* --- quit (stacked: RESUME returns to whatever popup was open) --- */
+ $('#quitBtn').onclick=()=>{ S.tap(); openOnTop('ovQuit'); };
+ $('#btnStay').onclick=()=>{ S.tap(); closeTop('ovQuit'); };
+ $('#btnLeave').onclick=()=>{
+  S.tap(); closeAll();
+  state.gamesPlayed++;
+  Ads.interstitial().then(()=>{ cleanupToSetup(); });
+};
+
+/* ================= PLANS PANEL ================= */
+ $('#plansBtn').onclick=()=>{ S.tap(); open('ovPlans'); };
+ $('#btnClosePlans').onclick=()=>{ S.tap(); closeAll(); };
+
+/* --- confetti --- */
+function confetti(x,y){
+  const cols = state.theme==='light'
+    ? ['#0797B8','#E5397F','#8CD10E','#FFB020','#131A2A','#FFFFFF']
+    : ['#22E4FF','#FF3E9D','#B6FF3B','#FFB020','#7A5CFF','#EAF2FF'];
+  for(let i=0;i<34;i++){
+    const el=document.createElement('div'); el.className='cf';
+    el.style.background=cols[Math.floor(Math.random()*cols.length)];
+    document.body.appendChild(el);
+    const dx=(Math.random()-.5)*320, up=90+Math.random()*100;
+    const r1=(Math.random()*2-1)*280, r2=r1+(Math.random()*2-1)*280;
+    const a=el.animate([
+      {transform:'translate('+x+'px,'+y+'px) rotate(0deg)',opacity:1},
+      {transform:'translate('+(x+dx*.7)+'px,'+(y-up)+'px) rotate('+r1+'deg)',opacity:1,offset:.35},
+      {transform:'translate('+(x+dx)+'px,'+(y+160+Math.random()*140)+'px) rotate('+r2+'deg)',opacity:0}
+    ],{duration:950+Math.random()*550,easing:'cubic-bezier(.2,.6,.3,1)'});
+    a.onfinish=()=>el.remove();
+  }
+  S.pop();
+}
+
+/* ================= INIT ================= */
+load();
+applyTheme();
+syncSpice();
+syncTarget();
+renderSetup();
+syncSettings();
+buildLeds();
+liqG=document.getElementById('liqG');
+liqSurf=document.getElementById('liqSurf');
+liqCrest=document.getElementById('liqCrest');
+liqBub=document.getElementById('liqBub');
+swayEl=document.getElementById('bottleInner');
+requestAnimationFrame(liquidTick);
+document.addEventListener('pointerdown',()=>ac(),{passive:true});
+})();
+</script>
+</body>
+</html>

@@ -196,7 +196,17 @@ body{
   -webkit-text-stroke:1.5px var(--ink);text-shadow:0 3px 0 var(--ink);color:var(--amber);transform:rotate(-1.5deg)}
 
 /* ---------- menu ---------- */
-#scr-menu{gap:6px}
+/* Full-bleed background + vertical centring: .menu-main takes flex:1 and
+   centres its own children, so the bomb/logo/tagline/buttons sit dead centre.
+   BACK is absolutely positioned and the credit is pinned to the bottom, so
+   neither takes part in that centring. */
+#scr-menu{
+  gap:6px;
+  background:var(--bg);
+  background-image:radial-gradient(rgba(43,34,51,.06) 2px,transparent 2.6px);
+  background-size:24px 24px;
+}
+.menu-main{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;flex:1 1 auto;min-height:0;gap:6px}
 .logo{display:flex;flex-direction:column;align-items:center;line-height:.95;text-align:center}
 .logo-row{display:flex}
 .lt{display:inline-block;font-size:clamp(46px,13.5cqw,100px);font-weight:900;color:var(--cream);
@@ -206,7 +216,8 @@ body{
 .tagline{font-weight:900;letter-spacing:.28em;font-size:clamp(10px,3cqw,14px);color:#8a7a62;margin:10px 0 20px}
 .menu-btns{display:flex;flex-direction:column;gap:12px;width:min(320px,84cqw)}
 .menu-btns .btn{width:100%}
-.menu-foot{margin-top:18px;font-weight:700;font-size:12px;letter-spacing:.12em;color:#a8946f;text-align:center;max-width:100%;overflow-wrap:anywhere}
+/* margin-top:auto pins the studio credit to the bottom of the intro page. */
+.menu-foot{margin-top:auto;padding-top:16px;font-weight:700;font-size:12px;letter-spacing:.12em;color:#a8946f;text-align:center;max-width:100%;overflow-wrap:anywhere}
 
 /* ---------- setup / settings / how ---------- */
 .setup-box{width:min(560px,100%);max-height:100%;overflow-y:auto;padding:clamp(14px,4cqw,26px);display:flex;flex-direction:column;gap:14px;margin-top:26px}
@@ -249,7 +260,7 @@ body{
 .how-step{
   width:100%;display:none;flex-direction:column;gap:12px;align-items:stretch;
   padding:12px;border:3px solid var(--ink);border-radius:20px;background:var(--cream);
-  box-shadow:0 7px 0 var(--ink);overflow:hidden;animation:howCardIn .28s cubic-bezier(.2,1.4,.4,1);
+  box-shadow:0 7px 0 var(--ink);overflow:hidden;animation:none;
 }
 .how-step.active{display:flex}
 @keyframes howCardIn{
@@ -465,11 +476,24 @@ body{
 @keyframes passPulse{50%{transform:scale(1.035)}}
 
 /* ---------- hint / skip power buttons (SOLO ONLY) ---------- */
+/* ---------- skip power button (SOLO ONLY) ----------
+   SKIP is the only power left. It is always ad-gated, so the button itself
+   carries an AD chip in its top-right corner instead of spelling "+ AD" in
+   the label, which used to shove the word off the button on narrow frames. */
 .pw-row{display:flex;gap:8px;width:100%}
-.pw-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 4px;border:3px solid var(--ink);border-radius:13px;background:var(--cream);box-shadow:0 4px 0 var(--ink);font-family:inherit;font-weight:900;font-size:13px;color:var(--ink);cursor:pointer}
+.pw-btn{position:relative;flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px 4px;border:3px solid var(--ink);border-radius:13px;background:var(--cream);box-shadow:0 4px 0 var(--ink);font-family:inherit;font-weight:900;font-size:13px;color:var(--ink);cursor:pointer}
 .pw-btn svg{width:17px;height:17px;flex:0 0 auto}
 .pw-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
-.pw-btn.ad{background:#FFE9B8}
+.pw-btn:disabled{opacity:.5;cursor:default}
+.pw-ad{
+  position:absolute;top:-10px;right:-7px;
+  display:none;align-items:center;
+  background:var(--red);color:#fff;
+  font-size:10px;font-weight:900;letter-spacing:.1em;line-height:1;
+  padding:3px 7px;border:2px solid var(--ink);border-radius:999px;
+  box-shadow:0 2px 0 var(--ink);pointer-events:none;
+}
+.pw-ad.on{display:inline-flex}
 
 /* ---------- tip toast ---------- */
 #tipToast{position:absolute;left:50%;bottom:22px;transform:translateX(-50%) translateY(160%);z-index:94;background:var(--ink);color:var(--cream);padding:10px 18px;border-radius:14px;font-weight:900;font-size:13px;box-shadow:0 5px 0 rgba(0,0,0,.25);transition:transform .28s cubic-bezier(.2,1.4,.4,1);max-width:88%;text-align:center;pointer-events:none}
@@ -1456,6 +1480,20 @@ body, button, input, textarea, select, #app, #app * {
 }
 </style>
 
+
+<style id="how-cards-only">
+/* HOW TO PLAY: remove the large white outer panel.
+   Keep the cards and the game background. */
+#scr-how > .setup-box{
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+  border-radius:0 !important;
+  padding-left:0 !important;
+  padding-right:0 !important;
+}
+</style>
+
 </head>
 <body>
 <div id="app">
@@ -1497,6 +1535,8 @@ body, button, input, textarea, select, #app, #app * {
 
     <!-- ============ MAIN MENU ============ -->
     <section class="screen active" id="scr-menu">
+      <!-- .menu-main is the centred block: bomb, logo, tagline and buttons. -->
+      <div class="menu-main">
       <div id="menuBomb"></div>
       <h1 class="logo" aria-label="BOMB RELAY">
         <div class="logo-row">
@@ -1519,22 +1559,29 @@ body, button, input, textarea, select, #app, #app * {
         <button class="btn" id="btnHow">HOW TO PLAY</button>
         <button class="btn" id="btnSettings">SETTINGS</button>
       </div>
-      <p class="menu-foot">1&ndash;4 PLAYERS &bull; PASS N PLAY</p>
+      </div><!-- /.menu-main -->
+      <!-- BACK leaves the game entirely (this is the only in-game exit; the
+           in-match home button quits to this same page). -->
+      <button class="btn btn-back" id="btnMenuBack">BACK</button>
+      <div class="menu-foot">Redundant Studios</div>
     </section>
 
     <!-- ============ PLAYER SETUP ============ -->
     <section class="screen" id="scr-setup">
-      <button class="btn btn-back" id="btnSetupBack">&#8592; BACK</button>
+      <button class="btn btn-back" id="btnSetupBack">BACK</button>
       <div class="panel setup-box">
         <h2 class="scr-title" style="align-self:center">YOUR CREW</h2>
         <div>
           <div class="lbl">PLAYERS</div>
           <div class="seg" id="segCount" style="margin-top:6px">
             <button data-n="1">1P</button><button data-n="2">2P</button>
-            <button data-n="3">3P</button><button data-n="4">4P</button>
+            <button data-n="3">3P</button><button data-n="4">4P</button><button data-n="5">5P</button>
           </div>
         </div>
-        <div>
+        <!-- Names/colour picking only makes sense from 2 seats up. In 1P the
+             player has nobody to name, so the whole block is hidden and
+             START MATCH is the only thing left to do. -->
+        <div id="crewBlock">
           <div class="lbl">NAMES &amp; COLORS</div>
           <div id="playerRows" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
         </div>
@@ -1544,7 +1591,7 @@ body, button, input, textarea, select, #app, #app * {
 
     <!-- ============ HOW TO PLAY ============ -->
     <section class="screen" id="scr-how">
-      <button class="btn btn-back" id="btnHowBack">&#8592; BACK</button>
+      <button class="btn btn-back" id="btnHowBack">BACK</button>
       <div class="panel setup-box">
         <h2 class="scr-title" style="align-self:center;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;font-weight:800;letter-spacing:normal;text-shadow:none;-webkit-text-stroke:0">HOW TO PLAY</h2>
 
@@ -1564,7 +1611,7 @@ body, button, input, textarea, select, #app, #app * {
                 <path d="M98 52 L109 61 L98 70" fill="none" stroke="#2B2233" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </div>
-            <div class="how-copy"><p><b>ADD YOUR CREW.</b> Add 1–4 players. Turn seats 2–4 into bots with the robot button and choose player colors.</p></div>
+            <div class="how-copy"><p><b>ADD YOUR CREW.</b> Add 1–5 players. Turn seats 2–5 into bots with the robot button and choose player colors.</p></div>
           </div>
 
           <div class="how-step">
@@ -1585,7 +1632,7 @@ body, button, input, textarea, select, #app, #app * {
                 <rect x="24" y="95" width="84" height="10" rx="5" fill="#FFB020"/>
               </svg>
             </div>
-            <div class="how-copy"><p><b>BEAT THE CHALLENGE.</b> Complete the quick mini-game to unlock the pass. Every challenge has its own objective and hint.</p></div>
+            <div class="how-copy"><p><b>BEAT THE CHALLENGE.</b> Complete the quick mini-game to unlock the pass. Every challenge has its own objective.</p></div>
           </div>
 
           <div class="how-step">
@@ -1602,7 +1649,7 @@ body, button, input, textarea, select, #app, #app * {
                 <text x="108" y="82" text-anchor="middle" font-family="Arial" font-weight="900" font-size="15" fill="#FFF">!</text>
               </svg>
             </div>
-            <div class="how-copy"><p><b>SOLO.</b> In 1P, finish a challenge to reset the timer and start the next round. Use your free hint or skip when you need it.</p></div>
+            <div class="how-copy"><p><b>SOLO.</b> In 1P, finish a challenge to reset the timer and start the next round. Stuck? Watch a short ad to SKIP the task and jump straight to the next one.</p></div>
           </div>
 
           <div class="how-step">
@@ -1673,16 +1720,16 @@ body, button, input, textarea, select, #app, #app * {
 
         </div>
         <div class="how-nav">
-          <button class="btn" id="btnHowPrev" type="button">&#8592; PREV</button>
+          <button class="btn" id="btnHowPrev" type="button">PREV</button>
           <div class="how-dots" id="howDots" aria-label="How to play progress"></div>
-          <button class="btn btn-primary" id="btnHowNext" type="button">NEXT &#8594;</button>
+          <button class="btn btn-primary" id="btnHowNext" type="button">NEXT</button>
         </div>
       </div>
     </section>
 
     <!-- ============ SETTINGS ============ -->
     <section class="screen" id="scr-settings">
-      <button class="btn btn-back" id="btnSetBack">&#8592; BACK</button>
+      <button class="btn btn-back" id="btnSetBack">BACK</button>
       <div class="panel setup-box">
         <h2 class="scr-title" style="align-self:center;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;font-weight:800;letter-spacing:normal;text-shadow:none;-webkit-text-stroke:0">SETTINGS</h2>
         <div class="set-row">
@@ -1756,13 +1803,11 @@ body, button, input, textarea, select, #app, #app * {
           <div class="panel" id="chPanel">
             <div class="ch-head"><span class="chip" id="chChip">CHALLENGE</span><div id="chDesc"></div></div>
             <div class="pw-row" id="pwRow" style="display:none">
-              <button class="pw-btn" id="btnHint">
-                <svg viewBox="0 0 24 24"><path d="M9 21h6M10 17.5h4M12 3a6 6 0 00-4 10.4c.8.8 1 1.7 1 2.6h6c0-.9.2-1.8 1-2.6A6 6 0 0012 3z" fill="none" stroke="#2B2233" stroke-width="2.2" stroke-linejoin="round"/></svg>
-                <span>HINT &times;1</span>
-              </button>
-              <button class="pw-btn ad" id="btnSkip">
+              <!-- SKIP is the only power. HINT was removed. -->
+              <button class="pw-btn" id="btnSkip">
                 <svg viewBox="0 0 24 24"><path d="M4 5l8 7-8 7V5zM13 5l8 7-8 7V5z" fill="#2B2233"/></svg>
                 <span>SKIP</span>
+                <i class="pw-ad" id="btnSkipAdChip">AD</i>
               </button>
             </div>
             <div id="chArea"></div>
@@ -1884,8 +1929,23 @@ const Studio = (() => {
       rewarded(placement,onReward){
         const b=bridge();
         if(b&&b.showRewardedAd){
-          window.__studioAdCb=function(result){if(result==='granted'||result===true||result==='rewarded')onReward();};
-          try{b.showRewardedAd('_studioAdCb');}catch(_){return false;}
+          /* THE NAME MUST BE '__studioAdCb' - two leading underscores, matching
+             the global registered here. It used to be passed as '_studioAdCb'
+             (one underscore), so the shell evaluated `if(window._studioAdCb){}`,
+             found nothing and silently dropped every reward: the player watched
+             the ad and nothing happened.
+
+             All three outcomes must reach the game - only 'granted' grants the
+             reward, but 'closed' and 'unavailable' still have to release the
+             waiting UI. */
+          window.__studioAdCb=function(result){
+            onReward(result==='granted'||result===true||result==='rewarded');
+          };
+          /* Self-heal alias: the shell evaluates whatever name it is given, so a
+             typo would silently drop every reward. Registering both spellings
+             means the callback is found either way. */
+          window._studioAdCb=window.__studioAdCb;
+          try{b.showRewardedAd('__studioAdCb');}catch(_){return false;}
           return true;
         }
         const cg=(window.CrazyGames&&window.CrazyGames.SDK)||null;
@@ -2093,14 +2153,14 @@ const CFG={
   fuse:{soloRoundMs:26000,warning10:10500,warning5:5000,warningPulseMs:1600},
   pass:{botDelayMs:1700,soloAdvanceMs:550,playerAdvanceMs:950,animationMs:2500,catchHoldMs:560},
   bot:{solveMinMs:400,solveBaseMs:1500,solveRandomMs:2600,solveDifficultyMs:650},
-  ads:{bannerGameplayOnly:true,rewardedPlacement:'skip_or_hint',interstitialPlacement:'game_over_rematch'},
+  ads:{bannerGameplayOnly:true,rewardedPlacement:'skip',interstitialPlacement:'game_over_rematch'},
   fx:{dprMax:2,smokeDelays:[180,420,700]},
   shell:{mode:null,skill:null,players:null}
 };
 const launchParams=new URLSearchParams(location.search);
 CFG.shell.mode=launchParams.get('mode');
 CFG.shell.skill=launchParams.get('skill');
-const requestedPlayers=Math.max(1,Math.min(4,parseInt(launchParams.get('players')||'0',10)||0));
+const requestedPlayers=Math.max(1,Math.min(5,parseInt(launchParams.get('players')||'0',10)||0));
 CFG.shell.players=requestedPlayers||null;
 
 const SOLO_ROUND_MS=CFG.fuse.soloRoundMs;
@@ -2114,7 +2174,7 @@ const MESSAGES=['{N} GOT COOKED \uD83D\uDC80','THE BOMB CHOSE {N}.','{N} SHOULD 
   'A MOMENT OF SILENCE FOR {N}\u2019S EYEBROWS.','{N} HELD ON TOO LONG. CLASSIC {N}.',
   'SCIENTISTS CONFIRM: {N} HAD IT COMING.','{N} TRIED THEIR BEST. THEIR BEST WAS NOT ENOUGH.',
   'F IN THE CHAT FOR {N}.','{N} EXPLODED. EVERYONE ELSE FELT NOTHING.'];
-const FREE_HINTS=1;
+/* One free skip per match, then every further skip is a rewarded ad. */
 const FREE_SKIPS=1;
 
 const G={running:false,phase:'idle',players:[],pstate:[],n:1,cur:0,nextP:0,
@@ -2135,11 +2195,12 @@ const app=$('app'),flash=$('flash'),veil=$('veil'),flipWrap=$('flipWrap'),
   quitModal=$('quitModal'),
   timeWarn=$('timeWarn'),timeWarnTxt=$('timeWarnTxt'),
   hudDot=$('hudDot'),hudName=$('hudName'),hudBot=$('hudBot'),hudTurn=$('hudTurn'),
+  pbadge=document.querySelector('#scr-game .pbadge'),
   hudMute=$('hudMute'),icoOn=$('icoOn'),icoOff=$('icoOff'),
   fuseBar=$('fuseBar'),fuseFill=$('fuseFill'),fuseSecs=$('fuseSecs'),
   bombWrap=$('bombWrap'),bombBox=$('bombBox'),bombSecs=$('bombSecs'),
   burstHolder=$('burstHolder'),chChip=$('chChip'),chDesc=$('chDesc'),chArea=$('chArea'),
-  pwRow=$('pwRow'),btnHint=$('btnHint'),btnSkip=$('btnSkip'),
+  pwRow=$('pwRow'),btnSkip=$('btnSkip'),btnSkipAdChip=$('btnSkipAdChip'),
   overName=$('overName'),overMsg=$('overMsg'),overStats=$('overStats'),
   overSafeWrap=$('overSafeWrap'),overSafe=$('overSafe'),loserFace=$('loserFace');
 
@@ -3263,42 +3324,40 @@ function startChallenge(def,d){if(host){host.kill();host=null;}
   updatePowerBtns();
 }
 function updatePowerBtns(){
+  /* Clear the disabled state FIRST and unconditionally - the old early return
+     could leave SKIP stuck greyed out, unable to fire another ad. */
+  btnSkip.disabled=false;
   const showPw=G.n===1&&G.phase==='challenge'&&G.running;
   pwRow.style.display=showPw?'flex':'none';
   if(!showPw)return;
+  /* The AD chip says the price: no free skip banked means the next one is an
+     ad. The label itself stays plain "SKIP". */
   const st=G.pstate[G.cur];
-  btnHint.classList.toggle('ad',st.hints>=FREE_HINTS);
-  btnHint.querySelector('span').textContent=st.hints<FREE_HINTS?'HINT \u00D7'+FREE_HINTS:'HINT + AD';
-  btnSkip.classList.toggle('ad',st.skips>=FREE_SKIPS);
-  btnSkip.querySelector('span').textContent=st.skips<FREE_SKIPS?'SKIP':'SKIP + AD';
+  btnSkipAdChip.classList.toggle('on',st.skips>=FREE_SKIPS);
+  /* Disable only while an ad is genuinely on screen. */
+  btnSkip.disabled=(adPending!==null);
 }
-function applyHint(){
-  const st=G.pstate[G.cur];
-  st.hints++;SFX.ding();
-  tipToast(G.curDef?('HINT: '+G.curDef.tip):'Hint!');
-  if(typeof liveHint==='function'){try{liveHint();}catch(e){}}
-  updatePowerBtns();
-}
-btnHint.addEventListener('pointerdown',()=>{
-  if(G.n!==1||G.phase!=='challenge')return;
-  const st=G.pstate[G.cur];if(!st)return;
-  if(st.hints<FREE_HINTS){applyHint();}
-  else{SFX.click();openAd('hint');}
-});
 btnSkip.addEventListener('pointerdown',()=>{
-  if(G.n!==1||G.phase!=='challenge')return;
+  if(G.n!==1||G.phase!=='challenge'||adPending)return;
   const st=G.pstate[G.cur];if(!st)return;
-  if(st.skips<FREE_SKIPS){st.skips++;SFX.whoosh();finishSkip(false);}
+  if(st.skips<FREE_SKIPS){st.skips++;finishSkip();}
   else{SFX.click();openAd('skip');}
 });
-function finishSkip(fromAd){
+/* Skips the current challenge and moves on. Safe to call at any point in the
+   round (free skip or post-ad): it tears the challenge down, sets 'ready' and
+   hands over to autoAdvance(), the same path a solved challenge takes. */
+function finishSkip(){
+  if(G.phase==='boom'||!G.running)return;
   if(host){host.kill();host=null;}
   liveHint=null;liveAPI=null;
   chArea.innerHTML='';
   chChip.textContent='SKIPPED';
   chDesc.textContent='CHALLENGE SKIPPED!';
   G.phase='ready';
+  if(G.remaining<=0)G.remaining=Math.max(2000,Math.round(G.total*0.35));
   updateFuseUI();
+  updateMood();
+  SFX.whoosh();
   floatWord('SKIPPED!','good');
   autoAdvance();
 }
@@ -3317,15 +3376,47 @@ const ADS=[
   s:'<svg viewBox="0 0 120 90"><path d="M46 12 L74 12 L74 48 Q74 60 86 66 Q96 71 90 80 Q84 88 72 82 Q56 74 50 58 L46 48 Z" fill="#14B3A7" stroke="#2B2233" stroke-width="4"/><path d="M46 12 L74 12 L74 22 L46 22 Z" fill="#FFF7E4" stroke="#2B2233" stroke-width="3"/></svg>'}
 ];
 let adInt=null,adKind='skip';
+/* THE SKIP BUG. A rewarded ad is a fullscreen Activity that outlasts a whole
+   solo round, so the fuse used to run out behind it: the bomb exploded and the
+   reward - which really was granted - was discarded, so the player watched an
+   entire ad and got a game over. gameTick() now holds ONLY the fuse while
+   adPending is set; the rest of the game keeps running.
+
+   adPending is cleared by two independent paths, the ad callback and a
+   watchdog, so the fuse and the SKIP button can never stay stuck. Freezing the
+   whole simulation instead would be a trap: one missed callback and the game
+   is dead forever. */
+let adPending=null,adWatchdog=null;
 function openAd(kind){
   if(!G.running || G.n!==1 || G.phase!=='challenge')return;
-  const reward=()=>{
-    if(kind==='skip')finishSkip(true);
-    else if(typeof applyHint==='function')applyHint();
+  if(adPending)return;
+  adPending=kind;
+  updatePowerBtns();
+  const turnAt=G.turn,challengeAt=G.curDef;
+  let settled=false;
+  const done=(granted)=>{
+    if(settled)return;
+    settled=true;
+    adPending=null;
+    clearTimeout(adWatchdog);adWatchdog=null;
+    updatePowerBtns();
+    if(!granted){tipToast('AD UNAVAILABLE');return;}
+    /* The fuse was held, so this is still the round the player paid to skip.
+       Bail only if they genuinely left the match during the ad. */
+    if(!G.running||G.phase==='boom'||G.phase==='idle')return;
+    if(G.turn!==turnAt||G.curDef!==challengeAt){tipToast('TOO LATE!');return;}
+    if(G.phase!=='challenge'){G.phase='challenge';}
+    if(kind==='skip')finishSkip();
   };
-  try{
-    Studio.ads.rewarded(CFG.ads.rewardedPlacement,reward);
-  }catch(_){}
+  /* Watchdog. 20s is comfortably longer than a rewarded ad, so this is a
+     genuine failsafe rather than the normal release path. */
+  clearTimeout(adWatchdog);
+  adWatchdog=setTimeout(()=>{adWatchdog=null;done(false);},20000);
+  const ok=Studio.ads.rewarded(CFG.ads.rewardedPlacement,done);
+  if(ok===false){
+    /* No bridge and no portal SDK: nothing will ever call back. */
+    done(false);
+  }
 }
 /* ============================================================
    12. PASS HANDOFF — FULL-SCREEN 2.5D CINEMATIC (multiplayer)
@@ -3587,6 +3678,8 @@ function beginRound(){
   }
   hudDot.style.background=p.color;
   hudName.textContent=p.name;
+  /* SOLO: one human, so the "PLAYER 1" badge is pure noise - hide it. */
+  pbadge.style.display=(G.n===1)?'none':'';
   hudBot.style.display=p.bot?'inline-block':'none';
   hudTurn.textContent=G.n===1?('ROUND '+G.turn):('TURN '+G.turn);
   hideTimeWarn();
@@ -3657,6 +3750,13 @@ function updateMood(){
 }
 function gameTick(dt){
   if(G.phase!=='challenge'&&G.phase!=='ready')return;
+  /* THE FUSE FREEZE. A rewarded ad is a fullscreen Activity that outlasts a
+     whole solo round, so the fuse used to drain behind it: the bomb exploded,
+     G.phase became 'boom', and the reward that really WAS granted was thrown
+     away - an entire ad watched, then a game over. Only the fuse is held, not
+     the whole simulation, and openAd() always clears adPending (callback OR
+     watchdog), so this can never leave the game stuck. */
+  if(adPending)return;
   G.remaining-=dt;G.elapsed+=dt;
   if(G.remaining<=0){G.remaining=0;updateFuseUI();explode();return;}
   updateFuseUI();updateMood();
@@ -3734,16 +3834,19 @@ function showGameOver(){
    18. SETUP / MENU / SETTINGS SCREENS
    ============================================================ */
 const SU={n:store.get('su_n',2),
-  names:store.get('su_names',['','','','']),
+  names:store.get('su_names',['','','','','']),
   colors:store.get('su_colors',PALETTE.slice(0,4)),
-  bots:store.get('su_bots',[false,false,false,false])};
+  bots:store.get('su_bots',[false,false,false,false,false])};
 SU.bots[0]=false;
-while(SU.colors.length<4)SU.colors.push(PALETTE[SU.colors.length]);
-while(SU.bots.length<4)SU.bots.push(false);
+while(SU.colors.length<5)SU.colors.push(PALETTE[SU.colors.length%PALETTE.length]);
+while(SU.bots.length<5)SU.bots.push(false);
 
-const segCount=$('segCount'),playerRows=$('playerRows');
+const segCount=$('segCount'),playerRows=$('playerRows'),crewBlock=$('crewBlock');
 function renderSetup(){
   segCount.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.n===SU.n));
+  /* 1P: no name and no colour to pick, so the crew block is hidden outright and
+     START MATCH is the only action on the page. */
+  crewBlock.style.display=SU.n>1?'':'none';
   playerRows.innerHTML='';
   for(let i=0;i<SU.n;i++){
     const row=el('div','prow');
@@ -3751,7 +3854,9 @@ function renderSetup(){
     const chip=el('button','cchip');chip.style.background=SU.colors[i];
     chip.title='Tap to change color';
     const inp=el('input');inp.maxLength=12;
-    inp.placeholder=(i===0?'PLAYER 1 (YOU)':(SU.bots[i]?'BOT':'PLAYER '+(i+1)));
+    /* Every seat reads PLAYER n, including seat 0, which used to say
+       "PLAYER 1 (YOU)". In a shared-device game "YOU" was wrong for 2P-5P. */
+    inp.placeholder=(SU.bots[i]?'BOT':'PLAYER '+(i+1));
     inp.value=SU.names[i]||'';
     inp.addEventListener('input',()=>{SU.names[i]=inp.value;});
     chip.addEventListener('click',()=>{
@@ -3803,6 +3908,13 @@ hudMute.addEventListener('click',()=>{SFX.setMuted(!SFX.muted);syncSettingsUI();
  $('btnPlay').addEventListener('click',()=>{SFX.click();show('scr-setup');});
  $('btnHow').addEventListener('click',()=>{SFX.click();show('scr-how');});
  $('btnSettings').addEventListener('click',()=>{SFX.click();show('scr-settings');});
+ /* BACK on the intro page leaves the game entirely (this is the only in-game
+    exit; the in-match home button quits to this same page). No-op in a plain
+    browser tab — Studio.exitGame only acts when the shell bridge is present. */
+ $('btnMenuBack').addEventListener('click',()=>{
+   SFX.click();
+   try{ Studio.exitGame(); }catch(_){}
+ });
  $('btnSetupBack').addEventListener('click',()=>{SFX.click();show('scr-menu');});
  $('btnHowBack').addEventListener('click',()=>{SFX.click();show('scr-menu');});
  $('btnSetBack').addEventListener('click',()=>{SFX.click();show('scr-menu');});
@@ -3825,6 +3937,9 @@ function frame(t){
   const dt=Math.min(CFG.dtMax,Math.max(0,t-lastT));
   if(lifecyclePaused){lastT=t;requestAnimationFrame(frame);return;}
   lastT=t;
+  /* Nothing is frozen while a rewarded ad is on screen - see openAd(). An
+     earlier version gated the simulation on adPending, which turned a missed
+     ad callback into a permanently stuck game. */
   simStep(dt);
   FX.step(dt);FX.draw();
   sparkAcc+=dt;
@@ -3929,8 +4044,8 @@ try{
       next.disabled = index === cards.length-1;
     }
 
-    prev.addEventListener('click', function(){ showHowCard(index-1); });
-    next.addEventListener('click', function(){ showHowCard(index+1); });
+    prev.addEventListener('click', function(){ if(SFX)SFX.click(); showHowCard(index-1); });
+    next.addEventListener('click', function(){ if(SFX)SFX.click(); showHowCard(index+1); });
 
     showHowCard(0);
   }

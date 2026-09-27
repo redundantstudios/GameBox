@@ -1,4 +1,6 @@
 @echo off
+rem Fast DEBUG loop - builds shell-debug.apk for the connected phone.
+rem For Google Play upload use BUNDLE.bat (release .aab), not this file.
 set JAVA_HOME=C:\Users\srinu\.jdk\jdk-17.0.10+7
 set PATH=%JAVA_HOME%\bin;%PATH%
 cd /d "%~dp0"
@@ -17,3 +19,4 @@ if %APKSIZE% LSS 1000000 (
 )
 echo BUILD OK - shell-debug.apk
 echo Size: %APKSIZE% bytes
+

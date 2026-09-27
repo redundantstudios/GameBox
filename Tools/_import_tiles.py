@@ -18,16 +18,32 @@ import sys
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(ROOT, "sources")
-OUT = os.path.join(ROOT, "app", "src", "main", "res", "drawable-nodpi")
+# This script lives in Tools/, but sources/ and app/ are siblings of Tools at the
+# repo root - so ROOT has to walk up one level or every lookup resolves inside
+# Tools/ and silently reports MISSING for art that is actually there.
+REPO = os.path.dirname(ROOT)
+# The finished tile art lives in "sources/Shell Art" (the folder name has a
+# space in it). sources/ is its parent and also holds a few older copies, so
+# prefer Shell Art and fall back to sources/ per file.
+SRC = os.path.join(REPO, "sources", "Shell Art")
+SRC_FALLBACK = os.path.join(REPO, "sources")
+OUT = os.path.join(REPO, "app", "src", "main", "res", "drawable-nodpi")
 SIZE = 512
 
 # source file name (in sources/) -> resource name (tile_<res>)
+# Kept in step with the games bundled in app/src/main/assets/games. Anything
+# missing here silently falls back to a flat manifest colour, so a new game
+# needs a line added or its tile looks unfinished on the grid.
 TILES = {
     "ludo_tile_img.png": "ludo",
     "chess_tile_img.png": "chess",
     "planet_merge_tile.png": "planetmerge",
     "chicken_chaos_tile.png": "chicken_chaos",
+    "egg_rush_tile.png": "egg_rush",
+    "checkers_tile_img.png": "checkers",
+    "memory_grab_tile_img.png": "memory_grab",
+    "bomb_relay_tile_img.png": "bomb_relay",
+    "balloon_battle_tile_img.png": "balloon_battle",
 }
 
 
@@ -49,8 +65,13 @@ def main(argv):
             continue
         path = os.path.join(SRC, src_name)
         if not os.path.exists(path):
-            print("MISSING source:", src_name)
-            continue
+            # older copies of a few tiles still sit directly in sources/
+            alt = os.path.join(SRC_FALLBACK, src_name)
+            if os.path.exists(alt):
+                path = alt
+            else:
+                print("MISSING source:", src_name)
+                continue
         img = Image.open(path)
         img = img.convert("RGB")
         img = square(img).resize((SIZE, SIZE), Image.LANCZOS)

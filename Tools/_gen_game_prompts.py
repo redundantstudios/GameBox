@@ -437,27 +437,34 @@ GAMES = [
          done='Nothing to do. If reopened: the syntax gate passes, the build installs, and only the director\'s '
               'named items change.',
          open=['Only reopen this game with a specific director-requested change.']),
-    dict(rs='RS-016', id='egg-rush', name='Egg Rush', status='PLAYABLE - the manifest is the blocker',
+    dict(rs='RS-016', id='egg-rush', name='Egg Rush', status='SHIPPED (v2) and LOCKED',
          type='Arena', players='2-4 + bots', tier='Tier 1', orientation='landscape',
-         target='port source: sources/Playable Games/EggRush.html -> app/src/main/assets/games/egg-rush/index.html',
-         manifest='proposed: id egg-rush / landscape / minPlayers 2 / maxPlayers 4 / aiSupport true / online false / tileColor warm egg-yellow / version 1',
+         target='app/src/main/assets/games/egg-rush/index.html',
+         manifest='id egg-rush / landscape / minPlayers 2 / maxPlayers 4 / aiSupport true / online false / tileColor #F2B441 / version 2',
          idea='Collect, rob, raid: hoard eggs, steal them off rivals and get them home. A same-screen landscape '
               'arena where a big lead is also a target on your back.',
          specifics=[
-             'Already built: a landscape arena, hens as players (red/yellow/blue/purple = P1-P4), egg states '
-             '(loose / carried / delivered), golden eggs with a multiplier counter, a race mode with a target '
-             'score, bot count and "eggs to win" settings, a RACE ONLY option, steal/rob between players, dash + '
-             'magnet + shield power-ups, particles, a win panel with winner identity, and PLAY AGAIN.',
-             'Already present: the Studio SDK block and a lifecycle (`pause` / `resume` / `destroy`). MISSING: '
-             'the `STUDIO_GAME_MANIFEST` block - that is the main blocker - plus the syntax gate and a landscape '
-             'device test.',
-             'DESIGN NOTE: rob/steal means a leader can be punished constantly. Tune the "carrying makes you '
-             'slower" mechanic so a big lead is risky but not impossible; that tension is the whole joke.',
-             'Full entry: FuturePlans/GAME_IDEAS.md section 6.14.',
+             'Shipped and locked. The Studio SDK block, the full `window.Game` lifecycle (`pause` / `resume` / '
+             '`setMuted` / `setSettings` / `onOrientationChange` / `destroy`), shell settings sync '
+             '(sound / haptics / volume) and the landscape turn owned by the shell (the game no longer calls '
+             '`requestFullscreen()`) are all in place.',
+             'Ship rules: EGG RACE (first to bank the target, golden eggs count double) or CLASSIC (most eggs when '
+             'the 60 s clock runs out), 2-4 friends on one screen or 1 human against 1-3 bots, eggs-to-win 3-5.',
+             'Start page (v2): two columns - branding on the left (title, tagline, nest art, a one-line how-to '
+             'pill) and one cream board on the right with MATCH, OPPONENTS, PLAYERS or BOTS, EGGS TO WIN and PLAY. '
+             'Every option is a one-tap segmented choice with one line of copy under it that says what the choice '
+             'does; there are no sliders.',
+             'Corner chrome: BACK (top left) returns to the shell through `Studio.exitGame()`, and the gear (top '
+             'right) opens SOUND + HAPTICS pills that merge into `shell:settings` (the shell\'s own keys are never '
+             'clobbered). Menu choices persist in `egg-rush:pref`.',
+             'First tap is audible: a sound asked for while the audio context is still unlocking is queued (UI '
+             'sounds only, so the live attract farm behind the menu cannot steal it) and replayed when the context '
+             'reports "running", with a warm-up silent buffer on unlock.',
+             'Full history: FuturePlans/GAME_IDEAS.md section 6.14 and the manifest changelog inside the file.',
          ],
-         done='Manifest added, syntax gate green, and a full landscape race played on device (including one '
-              'rob-a-leader moment that felt fair).',
-         open=['Confirm the tile colour.', 'Does race mode ship enabled by default?']),
+         done='Nothing to do. If reopened: the syntax gate passes, the build installs, and only the director\'s '
+              'named items change.',
+         open=['Only reopen this game with a specific director-requested change.']),
     dict(rs='RS-017', id='memory-grab', name='Memory Grab', status='PLAYABLE - needs shell (and a file rename)',
          type='Party', players='2+ / vs AI', tier='Tier 1', orientation='portrait',
          target='port source: sources/Playable Games/MemeoryGrab.html -> app/src/main/assets/games/memory-grab/index.html',

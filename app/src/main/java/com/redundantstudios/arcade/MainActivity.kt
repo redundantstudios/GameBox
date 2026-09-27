@@ -82,7 +82,7 @@ class MainActivity : ThemedActivity() {
         modeRecyclerView.layoutManager = GridLayoutManager(this, 2)
 
         allGames = ManifestParser.scanGames(this)
-        modeRecyclerView.adapter = ModeAdapter(deriveModes(allGames) + partyTile()) { mode ->
+        modeRecyclerView.adapter = ModeAdapter(deriveModes(allGames) + partyTile(partyGameCount(allGames))) { mode ->
             if (mode.playerCount == GameMode.PARTY_TILE) {
                 // Party category lives on the same games list, just filtered.
                 ShellTransition.open(this)
@@ -206,7 +206,7 @@ class MainActivity : ThemedActivity() {
 
     /** Keeps the All Games band, the grid and the empty state in sync. */
     private fun bindHome() {
-        val modes = deriveModes(allGames) + partyTile()
+        val modes = deriveModes(allGames) + partyTile(partyGameCount(allGames))
 
         (findViewById<RecyclerView>(R.id.modeRecyclerView).adapter as? ModeAdapter)
             ?.updateModes(modes)
@@ -218,14 +218,30 @@ class MainActivity : ThemedActivity() {
             if (modes.isEmpty()) View.VISIBLE else View.GONE
     }
 
+    /** How many games are actually in the Party category right now. */
+    private fun partyGameCount(games: List<GameManifest>): Int =
+        games.count { it.id in ModeActivity.PARTY_GAME_IDS }
+
     private fun deriveModes(games: List<GameManifest>): List<GameMode> {
-        val counts = games.flatMap { (it.minPlayers..it.maxPlayers).toList() }
+        /* PARTY GAMES ARE EXCLUDED FROM THE N-PLAYER GRID.
+           The grid is built from each game's own minPlayers..maxPlayers range,
+           so one game declaring "3-10" used to conjure a 6 PLAYER, 7 PLAYER,
+           8 PLAYER, 9 PLAYER and 10 PLAYER tile - tiles for player counts no
+           other game supports and that the party games were never meant to be
+           browsed by. Party games live under the PARTY GAMES tile instead, and
+           they are not a player-count category at all.
+
+           Last Balloon's manifest is now an honest 3-5, and this guard makes the
+           rule structural: adding a party game can never repopulate the N-player
+           grid again, whatever its manifest says. */
+        val bucketed = games.filter { it.id !in ModeActivity.PARTY_GAME_IDS }
+        val counts = bucketed.flatMap { (it.minPlayers..it.maxPlayers).toList() }
         val supportedCounts = counts.distinct().sorted()
         // Design--ref palette: all saturated enough to carry white text
         val colors = listOf("#E53935", "#1E88E5", "#43A047", "#F9A825", "#8E24AA")
 
         return supportedCounts.mapIndexed { index, count ->
-            val gameCount = ModeActivity.filterGames(games, count).size
+            val gameCount = ModeActivity.filterGames(bucketed, count).size
             GameMode(
                 playerCount = count,
                 label = "${count} PLAYER",
@@ -237,13 +253,18 @@ class MainActivity : ThemedActivity() {
 
     /**
      * The fixed "Party games" tile: always last on the grid, opening the
-     * party-games category page (Truth or Dare and future party games).
+     * party-games category page (Truth or Dare, Last Balloon and future party
+     * games).
+     *
+     * gameCount is the REAL number of games in the category, so the tile can
+     * say "2 games" instead of a hardcoded "Coming soon" - which was flatly
+     * wrong the moment the category had anything in it.
      */
-    private fun partyTile() = GameMode(
+    private fun partyTile(partyCount: Int) = GameMode(
         playerCount = GameMode.PARTY_TILE,
         label = "PARTY GAMES",
         color = "#E91E63",
-        gameCount = 0
+        gameCount = partyCount
     )
 
     private fun startModeActivity(mode: GameMode) {

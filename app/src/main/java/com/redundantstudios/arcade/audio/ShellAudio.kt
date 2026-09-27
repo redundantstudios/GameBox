@@ -43,7 +43,7 @@ object ShellAudio {
     private var hostCount = 0
 
     /** How loud the ambient loop sits under the UI, relative to the master volume. */
-    private const val BGM_GAIN = 0.32f
+    private const val BGM_GAIN = 0.224f
 
     fun init(context: Context) {
         if (soundPool != null) return

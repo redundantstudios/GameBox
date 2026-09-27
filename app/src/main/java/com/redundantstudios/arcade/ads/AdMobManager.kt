@@ -15,19 +15,24 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
-import com.google.android.gms.ads.rewarded.RewardedAd
-import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 
 class AdMobManager(private val activity: Activity) {
     private val TAG = "AdMobManager"
 
-    // Ad unit IDs (Google's test IDs - swap for the real ones before release)
-    private val rewardedUnitId = "ca-app-pub-3940256099942544/5224354917"
-    private val interstitialUnitId = "ca-app-pub-3940256099942544/1033173712"
-    private val bannerUnitId = "ca-app-pub-3940256099942544/6300978111"
+    // LIVE AdMob unit IDs (app ca-app-pub-9565881819222312).
+    // These were Google's public TEST ids until this change. Shipping a bundle
+    // with test ids serves no real ads and earns nothing, so they are now the
+    // real units for this AdMob application.
+    //
+    // Kept in one place so they can be swapped or reverted in a single edit.
+    private val rewardedUnitId = "ca-app-pub-9565881819222312/9051900990"
+    private val interstitialUnitId = "ca-app-pub-9565881819222312/1364982660"
+    private val bannerUnitId = "ca-app-pub-9565881819222312/7621425947"
 
     // Rewarded
-    private var rewardedAd: RewardedAd? = null
+    private var rewardedAd: RewardedInterstitialAd? = null
     private var isRewardedLoading = false
 
     // A rewarded request can arrive before the ad finished loading (the game
@@ -61,7 +66,19 @@ class AdMobManager(private val activity: Activity) {
     private var interstitialAd: InterstitialAd? = null
     private var isInterstitialLoading = false
     private var lastInterstitialTime = 0L
-    private val sessionStartTime = System.currentTimeMillis()
+
+    /* A request that arrived before the ad was cached. It is held and shown the
+       moment the load completes, so the first ad of a session is not lost to a
+       race between "player tapped" and "SDK finished loading" - that race is
+       exactly why no ad was appearing. */
+    private var queuedInterstitial: (() -> Unit)? = null
+    private val QUEUED_INTERSTITIAL_TIMEOUT_MS = 6000L
+    private val queuedInterstitialTimeout = Runnable {
+        val queued = queuedInterstitial ?: return@Runnable
+        queuedInterstitial = null
+        Log.w(TAG, "Queued interstitial never arrived - releasing the game")
+        queued()
+    }
 
     /** How long a queued rewarded request waits for the ad before giving up. */
     private val pendingTimeoutMs = 7000L
@@ -86,16 +103,22 @@ class AdMobManager(private val activity: Activity) {
         if (destroyed || isRewardedLoading || rewardedAd != null) return
         isRewardedLoading = true
         val adRequest = AdRequest.Builder().build()
-        RewardedAd.load(activity, rewardedUnitId,
-            adRequest, object : RewardedAdLoadCallback() {
+        /* REWARDED INTERSTITIAL - not a plain Rewarded ad.
+           The AdMob unit ca-app-pub-9565881819222312/9051900990 was created as a
+           REWARDED INTERSTITIAL unit. Loading it with RewardedAd.load() is a
+           format mismatch and the SDK rejects it outright: every request came
+           back "Ad unit doesn't match format", so this unit could never serve.
+           RewardedInterstitialAd is the API that matches this unit's type. */
+        RewardedInterstitialAd.load(activity, rewardedUnitId,
+            adRequest, object : RewardedInterstitialAdLoadCallback() {
                 override fun onAdFailedToLoad(adError: LoadAdError) {
-                    Log.e(TAG, "Rewarded ad failed to load: ${adError.message}")
+                    Log.e(TAG, describe("RewardedInterstitial", adError))
                     isRewardedLoading = false
                     rewardedAd = null
                     // Anyone already waiting on a tap must not be left hanging.
                     failPendingReward("load failed: ${adError.code}")
                 }
-                override fun onAdLoaded(ad: RewardedAd) {
+                override fun onAdLoaded(ad: RewardedInterstitialAd) {
                     Log.d(TAG, "Rewarded ad loaded successfully")
                     isRewardedLoading = false
                     rewardedAd = ad
@@ -176,6 +199,20 @@ class AdMobManager(private val activity: Activity) {
         }
     }
 
+    /**
+     * Turns an AdMob load failure into a single readable line.
+     *
+     * "No fill" on its own is nearly useless for diagnosis - the same message
+     * covers a brand-new ad unit with no inventory, a paused unit, a targeting
+     * mismatch, or a consent problem. The numeric error code and the response
+     * id are exactly what AdMob support asks for when investigating, and
+     * neither was being logged, so every distinct failure looked identical.
+     */
+    private fun describe(format: String, error: LoadAdError): String {
+        return "$format failed: code=${error.code} domain=${error.domain} " +
+                "message=${error.message} responseId=${error.responseInfo?.responseId}"
+    }
+
     fun loadInterstitialAd() {
         if (destroyed || isInterstitialLoading || interstitialAd != null) return
         isInterstitialLoading = true
@@ -183,14 +220,29 @@ class AdMobManager(private val activity: Activity) {
         InterstitialAd.load(activity, interstitialUnitId,
             adRequest, object : InterstitialAdLoadCallback() {
                 override fun onAdFailedToLoad(adError: LoadAdError) {
-                    Log.e(TAG, "Interstitial ad failed to load: ${adError.message}")
+                    Log.e(TAG, describe("Interstitial", adError))
                     isInterstitialLoading = false
                     interstitialAd = null
+                    // Release a queued request with a clear log, so a network
+                    // problem is visible instead of looking like a dead button.
+                    queuedInterstitial?.let { queued ->
+                        queuedInterstitial = null
+                        mainHandler.removeCallbacks(queuedInterstitialTimeout)
+                        queued()
+                    }
                 }
                 override fun onAdLoaded(ad: InterstitialAd) {
                     Log.d(TAG, "Interstitial ad loaded successfully")
                     isInterstitialLoading = false
                     interstitialAd = ad
+                    // A request that was waiting for exactly this ad: show it now.
+                    val queued = queuedInterstitial
+                    if (queued != null) {
+                        queuedInterstitial = null
+                        mainHandler.removeCallbacks(queuedInterstitialTimeout)
+                        lastInterstitialTime = System.currentTimeMillis()
+                        showLoadedInterstitial(ad, queued)
+                    }
                 }
             })
     }
@@ -203,28 +255,57 @@ class AdMobManager(private val activity: Activity) {
 
     private fun showInterstitialInternal(onAdClosed: () -> Unit) {
         val now = System.currentTimeMillis()
-        val timeSinceStart = now - sessionStartTime
         val timeSinceLast = now - lastInterstitialTime
 
-        if (timeSinceStart < 60000) {
-            Log.d(TAG, "Interstitial blocked: too early in session")
-            onAdClosed()
-            return
-        }
-        if (timeSinceLast < 120000) {
-            Log.d(TAG, "Interstitial blocked: frequency cap")
+        /* FREQUENCY CAPS.
+           These used to hard-block the FIRST ad of a session outright
+           (timeSinceStart < 60000), which is why no ad ever appeared: the
+           player finished a match, tapped PLAY AGAIN inside a minute, and the
+           request was discarded with a log line nobody reads. Every session's
+           first interstitial is now allowed, and the guard only limits how
+           OFTEN they repeat.
+
+           60s between interstitials is still a sane cap - it is well inside
+           Google's policy guidance - but it must not swallow the first one. */
+        if (timeSinceLast < 60000) {
+            Log.d(TAG, "Interstitial blocked: shown less than 60s ago")
             onAdClosed()
             return
         }
 
         val ad = interstitialAd
         if (ad == null) {
-            Log.w(TAG, "Interstitial ad not loaded yet")
+            /* No ad cached yet. Preloading starts when the game opens, so this
+               normally means the very first request beat the load. Show it as
+               soon as it arrives rather than dropping the request. */
+            Log.w(TAG, "Interstitial not loaded yet - queuing the request")
+            queuedInterstitial = onAdClosed
             loadInterstitialAd()
-            onAdClosed()
+            // Do not call onAdClosed here: the game is waiting on us, and it
+            // advances when the ad actually shows. A 6s cap stops it hanging
+            // forever if the network never delivers one.
+            mainHandler.removeCallbacks(queuedInterstitialTimeout)
+            mainHandler.postDelayed(queuedInterstitialTimeout, QUEUED_INTERSTITIAL_TIMEOUT_MS)
             return
         }
         interstitialAd = null
+        lastInterstitialTime = System.currentTimeMillis()
+        showLoadedInterstitial(ad, onAdClosed)
+    }
+
+    /**
+     * Shows a loaded interstitial and wires the dismiss / fail paths.
+     *
+     * Extracted so the "request arrived after the load finished" and "request
+     * arrived before it finished" paths share ONE implementation. As two copies
+     * they could drift, and one would quietly do nothing - which is how the
+     * first ad of a session went missing.
+     */
+    private fun showLoadedInterstitial(ad: InterstitialAd, onAdClosed: () -> Unit) {
+        if (destroyed) {
+            onAdClosed()
+            return
+        }
         // Register the callback BEFORE show(), otherwise early events are missed.
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdShowedFullScreenContent() {
@@ -239,7 +320,6 @@ class AdMobManager(private val activity: Activity) {
                     com.redundantstudios.arcade.R.anim.ad_fade_in,
                     com.redundantstudios.arcade.R.anim.ad_fade_out
                 )
-                lastInterstitialTime = System.currentTimeMillis()
                 loadInterstitialAd()
                 onAdClosed()
             }
@@ -269,7 +349,7 @@ class AdMobManager(private val activity: Activity) {
                     if (!destroyed) onLoaded?.invoke()
                 }
                 override fun onAdFailedToLoad(adError: LoadAdError) {
-                    Log.e(TAG, "Banner ad failed to load: ${adError.message}")
+                    Log.e(TAG, describe("Banner", adError))
                 }
             }
         }

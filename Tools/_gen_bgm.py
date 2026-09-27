@@ -43,7 +43,7 @@ BAR = 60.0 / BPM * 4   # 2.2222 s per bar; exactly 98000 samples at 44.1 kHz
 XF = 0.15           # chord crossfade length
 SR = 44100
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WAV = os.path.join(ROOT, '_bgm_render.wav')
 OUT = os.path.join(ROOT, 'app', 'src', 'main', 'res', 'raw', 'bgm_shell.ogg')
 

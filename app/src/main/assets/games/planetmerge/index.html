@@ -100,11 +100,22 @@ body{
   padding:6px 14px;border-radius:999px;display:none;box-shadow:0 4px 12px rgba(150,50,50,.25)}
 #boardWrap.erasing #eraseBanner{display:block}
 #chainWrap{margin:0 auto;background:rgba(255,255,255,.5);border:2px solid rgba(255,255,255,.8);
-  border-radius:999px;padding:6px 12px;display:flex;align-items:flex-end;gap:6px;
-  box-shadow:0 4px 12px rgba(90,60,30,.1)}
+  border-radius:999px;padding:5px 9px;display:flex;align-items:flex-end;gap:4px;
+  box-shadow:0 4px 12px rgba(90,60,30,.1);
+  /* The strip now always shows all 10 planets (locked ones greyed), where before
+     it grew from 4 to 10 as you played. On a narrow phone that full row could
+     overflow, so the row is allowed to scroll sideways rather than clip. */
+  max-width:100%;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+#chainWrap::-webkit-scrollbar{display:none}
 #chainWrap canvas{filter:drop-shadow(0 2px 3px rgba(90,60,30,.25))}
-/* Not unlocked yet: not rendered at all, so the strip is pure progress. */
-#chainWrap canvas.pending{display:none}
+/* Not unlocked yet: SHOWN but greyed out.
+   The strip used to hide these entirely (display:none), so the row visibly GREW
+   as the player merged - planets appeared one at a time, which read as new
+   content arriving rather than as a known roadmap. Now the whole evolution chain
+   is on screen from the first second: reached planets are full colour, the rest
+   are desaturated and dimmed. You can see what you are working towards, and the
+   strip no longer reflows mid-run. */
+#chainWrap canvas.pending{opacity:.26;filter:grayscale(1) drop-shadow(0 1px 1px rgba(90,60,30,.12))}
 #chainWrap canvas.pop{animation:chainpop .55s cubic-bezier(.34,1.56,.64,1)}
 @keyframes chainpop{40%{transform:scale(1.55) translateY(-4px)}}
 .overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;padding:16px;

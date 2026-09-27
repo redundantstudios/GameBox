@@ -28,7 +28,7 @@ They are overwritten on every run - edit the script, never the generated files.
 | `connect-four prompt.md` | RS-013 | IDEA |
 | `dots-and-boxes prompt.md` | RS-014 | IDEA |
 | `chicken-chaos prompt.md` | RS-015 | SHIPPED (v4) and LOCKED |
-| `egg-rush prompt.md` | RS-016 | PLAYABLE - the manifest is the blocker |
+| `egg-rush prompt.md` | RS-016 | SHIPPED (v2) and LOCKED |
 | `memory-grab prompt.md` | RS-017 | PLAYABLE - needs shell (and a file rename) |
 | `balloon-battle prompt.md` | RS-018 | PLAYABLE - needs shell |
 | `letter-press prompt.md` | RS-019 | IDEA |

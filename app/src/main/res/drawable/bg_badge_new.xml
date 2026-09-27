@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Compact green NEW flag for a newly added game tile. -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="54dp"
-    android:height="26dp"
-    android:viewportWidth="108"
-    android:viewportHeight="52">
-    <path android:fillColor="#087A58" android:strokeColor="#087F5B" android:strokeWidth="1.5" android:strokeLineJoin="round" android:pathData="M88.00,14.00 L103.00,20.00 L88.00,26.00 Z" />
-    <path android:fillColor="#12B886" android:strokeColor="#087F5B" android:strokeWidth="2.0" android:strokeLineJoin="round" android:pathData="M6.00,12.00 L91.00,12.00 L100.00,19.00 L92.00,26.00 L91.00,40.00 L6.00,40.00 Z" />
-    <path android:fillColor="#42D3A0" android:pathData="M11.00,15.00 L88.00,15.00 L91.00,19.00 L11.00,19.00 Z" />
-    <path android:fillColor="#087A58" android:pathData="M10.00,35.00 L88.00,35.00 L91.00,39.00 L10.00,39.00 Z" />
-</vector>
+<!-- Size follows the NEW TextView; padding is defined in item_game_tile.xml. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="8dp" />
+    <gradient android:angle="270" android:endColor="#0D3D95" android:startColor="#3478D4" />
+    <stroke android:width="1dp" android:color="#0C3278" />
+</shape>

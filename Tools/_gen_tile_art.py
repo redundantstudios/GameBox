@@ -124,6 +124,27 @@ def bomb_relay(d, S, base):
               fill=CREAM)
 
 
+def last_balloon(d, S, base):
+    """Last Balloon is about ONE red balloon you must not pop, so the tile is a
+    single red balloon with a taut string - deliberately not the cream/blue
+    generic balloon, which read as a blank white blob on the tile."""
+    cx, cy, r = S / 2, S * 0.44, S * 0.21
+    body = (226, 62, 58, 255)                       # the game's balloon red
+    # soft drop shadow so it lifts off the blue field
+    d.ellipse((cx - r * 1.02, cy - r * 1.15 + 10, cx + r * 1.02, cy + r * 1.15 + 10),
+              fill=(0, 0, 0, 46))
+    d.ellipse((cx - r, cy - r * 1.15, cx + r, cy + r * 1.15), fill=body)
+    d.polygon([(cx - S * 0.022, cy + r * 1.12), (cx + S * 0.022, cy + r * 1.12),
+               (cx, cy + r * 1.28)], fill=body)                    # knot
+    # taut string, hanging straight down
+    d.line([(cx, cy + r * 1.28), (cx, cy + r * 1.28 + S * 0.13)],
+           fill=dark(base, 0.45, 220), width=int(S * 0.011))
+    # gloss highlight, upper-left. Flat and opaque, matching Bomb Relay's bold
+    # style - a semi-transparent pass over the red turned into a grey ring.
+    d.ellipse((cx - r * 0.60, cy - r * 0.80, cx - r * 0.16, cy - r * 0.26),
+              fill=(255, 255, 255, 255))
+
+
 def balloon(d, S, base, count=1):
     spots = ([(S / 2, S * 0.42, S * 0.24)] if count == 1 else
              [(S * 0.38, S * 0.40, S * 0.185), (S * 0.63, S * 0.47, S * 0.155)])
@@ -345,7 +366,7 @@ COMPOSITIONS = {
     'chess': chess_pawn,
     'checkers-gould': checkers_gould,
     'bomb-relay': bomb_relay,
-    'last-balloon': lambda d, S, b: balloon(d, S, b, count=1),
+    'last-balloon': last_balloon,
     'balloon-battle': lambda d, S, b: balloon(d, S, b, count=2),
     'chicken-chaos': chicken_chaos,
     'egg-rush': egg_rush,

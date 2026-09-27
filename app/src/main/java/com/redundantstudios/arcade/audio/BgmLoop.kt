@@ -42,7 +42,7 @@ internal class BgmLoop(context: Context, private val resId: Int) {
         const val CHUNK_FRAMES = 1024
 
         /** Fade speed: full scale in this many milliseconds. */
-        const val FADE_MS = 700f
+        const val FADE_MS = 2200f
 
         /** Below this the loop counts as silent and the track is parked. */
         const val SILENT = 0.0005f

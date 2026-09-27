@@ -81,7 +81,7 @@ block, the `window.Game` lifecycle (`pause` / `resume` / `destroy`), and a passi
 | RS-013 | **Connect Four** | IDEA | Classic | 2 + bot | 1 | — | drop-and-win, add gravity juice |
 | RS-014 | **Dots & Boxes** | IDEA | Classic | 2–4 + bots | 1 | — | claim boxes, chain-reaction combo |
 | RS-015 | **Chicken Chaos** | **SHIPPED (v3) · LOCKED** | Arena | 2–4 + bots | 1 | `assets/games/chicken-chaos/` | catch = score; most chickens at time-up wins |
-| RS-016 | **Egg Rush** | PLAYABLE | Arena | 2–4 + bots | 1 | `EggRush.html` | collect · rob · raid, landscape, golden eggs |
+| RS-016 | **Egg Rush** | **SHIPPED (v2) · LOCKED** | Arena | 2–4 + bots | 1 | `assets/games/egg-rush/` | collect · rob · raid, landscape, golden eggs |
 | RS-017 | **Memory Grab** | PLAYABLE | Party | 2+ / vs AI | 1 | `MemeoryGrab.html` (filename has a typo) | memory pairs, hot-seat turn flip |
 | RS-018 | **Balloon Battle** | PLAYABLE | Arena | 2–4 | 1 | `balloonFight.html` | grab the pin, pop rivals' balloons |
 | RS-019 | **Letter Press** (typing, 3-5 pads) | IDEA | Party | 1-2 | 1 | - | print-shop theme; pads change + grow per wave |
@@ -585,22 +585,40 @@ Add here first. Tag the source so future-us knows where it came from:
   and a build.
 
 ### 6.14 RS-016 — Egg Rush
-**Status:** PLAYABLE · NEEDS SHELL · **Source:** `EggRush.html` (97.7 KB, "REVISION 5") · **Type:** Arena
+**Status:** **SHIPPED (v2) · LOCKED** — `assets/games/egg-rush/index.html` · **Source:**
+`EggRush.html` in `sources/Playable Games/` is the master reference copy only (never a build input)
 
-- **Hook:** *COLLECT · ROB · RAID* — hoard eggs, steal them off rivals, and get them home.
-- **What's in the file (scanned):** landscape arena, hens as players (red/yellow/blue/purple =
-  P1–P4), egg states (loose / carried / delivered), **golden eggs** that score extra (`G×` counter),
-  a **race mode with a target score**, bot count and "eggs to win" settings, a "RACE ONLY" option,
-  steal/rob interaction between players, dash + magnet + shield-style power-ups, particles, a win
-  panel with winner identity, and `PLAY AGAIN`.
-- **Already present:** Studio SDK block and a lifecycle (`pause` / `resume` / `destroy`).
-- **Missing:** `STUDIO_GAME_MANIFEST` (id/title/orientation/players/tile colour) — that is the main
-  blocker; plus the syntax gate and a landscape device test.
-- **Proposed manifest (user to confirm):** `id egg-rush`, `landscape`, `minPlayers 2`,
-  `maxPlayers 4`, `aiSupport true`, `tileColor` a warm egg-yellow.
-- **Design note:** rob/steal means a leader can be punished constantly — tune the "carrying makes you
-  slower" mechanic so a big lead is risky but not impossible; that tension is what makes it funny.
-- **Next action:** add the manifest, then device-test landscape + the race mode.
+- **Hook:** *COLLECT · ROB · RAID* — hoard eggs, steal them off rivals and get them home; a big lead
+  is also a target on your back.
+- **What the shipped copy carries:** the `STUDIO_GAME_MANIFEST` (v2), the Studio SDK block
+  (`save` / `load` / `haptic` / `exitGame` / ad helpers), the full `window.Game` lifecycle
+  (`pause` / `resume` / `setMuted` / `setSettings` / `onOrientationChange` / `destroy`), shell
+  settings sync (sound / haptics / volume), a gesture-gated audio unlock, and the **landscape turn
+  owned by the shell** — the game no longer calls `requestFullscreen()` / `screen.orientation.lock()`.
+- **v2 pass (2026-09-26) — the start page, the exit and the first tap:**
+  - The start page is a **two-column screen** (the Chicken Chaos composition, in Egg Rush's own art):
+    branding on the left (title, COLLECT · ROB · RAID, a nest with three eggs and a one-line how-to
+    pill) and the match options on the right in one cream board.
+  - **Every option is a one-tap segmented choice with one plain line of copy under it:** MATCH
+    (EGG RACE / CLASSIC), OPPONENTS (FRIENDS / SOLO), PLAYERS 2–4 (or BOTS 1–3), EGGS TO WIN 3–5, then
+    PLAY. The sliders are gone, and the copy answers "what does this choice do" without decoding a
+    slider handle.
+  - **BACK (top left)** exits to the shell through the bridge; **gear (top right)** opens SOUND +
+    HAPTICS ON/OFF pills that write back to `shell:settings` as a **merge**, so volume / music / haptic
+    profile are never clobbered. Menu choices are remembered in `egg-rush:pref`.
+  - **First tap is audible:** the context is created inside the unlocking gesture, so a sound asked for
+    at that moment is queued (UI sounds only, so the live attract farm behind the menu cannot steal it)
+    and replayed when the context reports `running`, plus a warm-up silent buffer on unlock.
+  - Haptics ride the shell setting (menu taps, PLAY, result card) and the shell's master volume is
+    obeyed. Start-page copy shows the real numbers: "First to bank 4 eggs wins."
+  - **Verified:** `ALL SCRIPTS PARSE OK`, `BUILD.bat` green (fresh `shell-debug.apk` whose
+    `assets/games/egg-rush/index.html` hash matches the source), and headless Chrome renders at
+    740×360 and 1280×800 — `_egg_start_740x360.png`, `_egg_settings_740x360.png`.
+- **Still to confirm on device:** BACK landing on the page the game was opened from, the pills
+  matching the shell's own Settings screen, and the first tap on the start page making a sound.
+- **Tier 1, landscape, 2–4 players + bots.** Tile colour `#F2B441`.
+- **Next action:** none — further changes go into the shipped copy, then the `AGENT.md` syntax gate
+  and a build.
 
 ### 6.15 RS-017 — Memory Grab
 **Status:** PLAYABLE · NEEDS SHELL · **Source:** `MemeoryGrab.html` (57.8 KB — note the filename typo) · **Type:** Party
@@ -758,7 +776,7 @@ build platform work as a side quest of a game.
 
 | Gap | Why it matters | Status |
 |---|---|---|
-| **Landscape games** | Chicken Chaos, Egg Rush, Pen Fight and Balloon Battle are all landscape; the app is portrait-locked and no shipped game runs landscape yet. The `orientation` manifest field exists — the path is just unverified. | TO VERIFY |
+| **Landscape games** | Chicken Chaos, Egg Rush, Pen Fight and Balloon Battle are all landscape; the app is portrait-locked. **Egg Rush v2 is the first landscape game to ship** (locked 2026-09-26) and its landscape path is now **device-verified** on a 1080×2392 panel with a **left-side punch-hole camera** (`displayCutout` inset 126 px, window `[126,0][2392,1080]`, `mCurrentOrientation=1`) — the app is inset correctly and draws nothing under the camera. Chicken Chaos, Pen Fight and Balloon Battle are still unverified. | PARTLY VERIFIED |
 | **`category` manifest field** | RS-008 (Party) and the Type column in `§1` have no shell representation. Without it there is no way to show a PARTY band or group games by kind. | NOT IMPLEMENTED |
 | **Pass-n-play conventions** | "Pass the phone to X" + the screen flip are already implemented twice independently (Bomb Relay, Memory Grab). If we build the Party pack, extract them once instead of a third copy. | PATTERN TO EXTRACT |
 | **Same-screen multi-touch arenas** | Chicken Chaos / Egg Rush / Balloon Battle put 2–4 people on one glass. Nothing in the shell has to change, but we have never tested multi-touch inside the WebView. | TO VERIFY |
@@ -835,7 +853,7 @@ The shell is the foundation; a half-wired game on a moving shell gets re-tested 
 
 | # | Item | Why it blocks us | Status |
 |---|---|---|---|
-| 0.1 | **Landscape orientation path verified** | Chicken Chaos, Egg Rush, Pen Fight and Balloon Battle are all landscape, and no shipped game has ever run landscape, so we do not actually know the shell handles it | TO VERIFY |
+| 0.1 | **Landscape orientation path verified** | **Egg Rush v2 is the first landscape game to ship and is now device-verified** (locked 2026-09-26): the shell turned the display (`mCurrentOrientation=1`, logical frame 2392×1080 on a 1080×2392 panel) and the window was inset correctly past a left-side 126 px camera cutout. Chicken Chaos, Pen Fight and Balloon Battle still have not run landscape on a device | PARTLY VERIFIED |
 | 0.2 | Remaining UI polish reported while testing | last open class of items from the UI passes | OPEN |
 | 0.3 | `category` manifest field + a PARTY entry on Home | needed before party games can be grouped (RS-008) | NOT IMPLEMENTED |
 | 0.4 | Pass-n-play conventions extracted once ("pass to X" + screen flip) | currently implemented twice by hand (Bomb Relay, Memory Grab); a third copy is where drift starts | PATTERN TO EXTRACT |
@@ -863,7 +881,7 @@ Ordered by *smallest distance to shipping* — the fastest route to real titles 
 |---|---|---|
 | 1 | **Chicken Chaos** | ✅ **DONE (v3, locked)** — manifest v2, SDK + lifecycle + settings sync, match-end interstitial, shell owns the landscape turn |
 | 2 | **Memory Grab** | add manifest (+ rename the file: `MemeoryGrab.html` → `memory-grab`) |
-| 3 | **Egg Rush** | add manifest, verify landscape + race mode |
+| 3 | **Egg Rush** | ✅ **DONE (v2, locked)** — manifest v2, two-column start page (branding + one options board), BACK + SOUND/HAPTICS settings writing `shell:settings` as a merge, first tap audible via the pre-unlock sound queue, shell owns the landscape turn |
 | 4 | **Balloon Battle** | add manifest + Studio SDK block; resolve the two-balloon naming collision with Last Balloon |
 | 5 | **Bomb Relay** | manifest + lifecycle already there; route real ads through the shell, verify pass-and-flip on a phone |
 | 6 | **Last Balloon** | manifest; verify the audio tells respect the master-sound setting |

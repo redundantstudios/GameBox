@@ -16,7 +16,14 @@ import com.redundantstudios.arcade.util.GameSeenStore
 
 class GameAdapter(
     private val games: List<GameManifest>,
-    private val onGameClick: (GameManifest) -> Unit
+    private val onGameClick: (GameManifest) -> Unit,
+    /**
+     * True on the PARTY GAMES page. Party tiles carry NO "NP" badge: they are
+     * the pass-the-phone crowd, they are deliberately not bucketed by player
+     * count (they have their own tile on Home), and a "10P"/"5P" tag on them
+     * reads as a rule the game does not have. The NEW badge is unaffected.
+     */
+    private val hidePlayerTag: Boolean = false
 ) : RecyclerView.Adapter<GameAdapter.GameViewHolder>() {
 
     class GameViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -35,7 +42,9 @@ class GameAdapter(
         val game = games[position]
         holder.title.text = game.title
         holder.players.text = "${game.maxPlayers}P"
-        holder.tileRoot.cardColor = Color.parseColor(game.tileColor)
+        holder.players.visibility = if (hidePlayerTag) View.GONE else View.VISIBLE
+        holder.tileRoot.cardColor = tileColor(game.tileColor)
+
         holder.newBadge.visibility = if (GameSeenStore.isNew(holder.itemView.context, game.id)) {
             View.VISIBLE
         } else {
@@ -105,5 +114,18 @@ class GameAdapter(
         }
     }
 
+    private fun tileColor(value: String): Int {
+        return when (value.trim().lowercase()) {
+            "fuse-red" -> Color.rgb(217, 75, 75)
+            "sky-blue" -> Color.rgb(142, 205, 232)
+            else -> try {
+                Color.parseColor(value.trim())
+            } catch (_: IllegalArgumentException) {
+                Color.rgb(42, 42, 42)
+            }
+        }
+    }
+
     override fun getItemCount(): Int = games.size
+
 }

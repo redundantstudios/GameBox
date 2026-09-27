@@ -3,6 +3,13 @@
 
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- REQUIRED for AdMob. Every ad request is an HTTPS call; without this
+         permission the SDK cannot fetch a single ad and every interstitial and
+         rewarded request fails silently. It was missing entirely, which is why
+         no ad ever appeared anywhere in the app. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Lets AdMob report ad revenue accurately. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
@@ -12,10 +19,21 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.App.Starting">
 
+        <!-- AdMob APPLICATION_ID (app part only, with the ~ separator).
+             The app part MUST match the unit ids in AdMobManager.kt:
+                ca-app-pub-9565881819222312
+             It was Google's public TEST app id before, so the SDK refused our
+             live units and no ad ever loaded.
 
+             !! VERIFY THE NUMBER AFTER THE ~ !!
+             The app id is published by the AdMob console (AdMob -> App settings
+             -> App ID) and also appears in the AdMob SDK log line at startup.
+             It is held in ADMOB_APP_ID below and injected here so there is only
+             ONE place to change it. If ads still do not load, this suffix is
+             the first thing to check. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="${admobAppId}"/>
 
         <activity
             android:name=".MainActivity"

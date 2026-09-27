@@ -37,7 +37,15 @@ class ModeAdapter(
             holder.icon.visibility = View.VISIBLE
             holder.icon.setImageResource(R.drawable.ic_party)
             holder.label.text = holder.itemView.context.getString(R.string.party_tile_title)
-            holder.gameCount.text = holder.itemView.context.getString(R.string.party_tile_subtitle)
+            /* Real game count when the category has games, so a populated
+               category never reads "Coming soon". */
+            holder.gameCount.text = if (mode.gameCount > 0) {
+                holder.itemView.context.resources.getQuantityString(
+                    R.plurals.game_count, mode.gameCount, mode.gameCount
+                )
+            } else {
+                holder.itemView.context.getString(R.string.party_tile_subtitle)
+            }
         } else {
             holder.icon.visibility = View.GONE
             holder.number.visibility = View.VISIBLE

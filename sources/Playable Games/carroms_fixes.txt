@@ -1,0 +1,63 @@
+Sorry about the cutoff bro — the file got truncated mid-generation. Here are **all the V20 fixes** documented precisely so you can either patch them by hand or I can re-emit the full file next message:
+
+## Fix 1 — The crash (TypeError: setting 'lastU' of undefined)
+
+**Root cause:** In `tsBuild()` I wrote `G.st.lastU = a.slU` — but the tutorial striker object is stored on `TSIM.st`, not on `G`. `G.st` doesn't exist.
+
+**Fix:** In `tsBuild()`, replace **every** occurrence of:
+```js
+G.st.lastU = a.slU;
+```
+with:
+```js
+TSIM.st.lastU = a.slU;
+```
+It appears in 6 places (slide, assign, queen, foul, value, extra branches). Also in the `'foul'` branch there's a `TSIM.slFrom=G.st.lastU!=null?0.5:0.5;` — simplify it to `TSIM.slFrom=0.5;` (that whole line was nonsense anyway; the slide always starts from center).
+
+## Fix 2 — Settings popup: remove CLOSE button
+
+In `renderMenu()`, inside the `if(SETT.open){...}` block, **delete this line:**
+```js
+uiBtn('settings',x+20,y+ph-52,pw-40,36,'CLOSE',{bg:C.tile,fg:'#fff',fs:12,r:12});
+```
+And shrink the popup height: `ph=190` → `ph=140`. Outside-tap already closes it (the `if(SETT.open){ SETT.open=false; return; }` line in `onDown`).
+
+## Fix 3 — Name bars attached flush to the board
+
+In `drawSideBox()`, change the positioning block to a tight 3px gap:
+```js
+if(side===0){ cx=BX+BS/2; cy=BY+BS+h/2+3; }
+else if(side===2){ cx=BX+BS/2; cy=BY-h/2-3; }
+else if(side===1){ cx=BX+BS+w/2+3; cy=BY+BS/2; rot=Math.PI/2; }
+else{ cx=BX-w/2-3; cy=BY+BS/2; rot=-Math.PI/2; }
+```
+And in `layout()`, set the reserved margins to exactly match: `const edgeM=boxH+8;` (was +12).
+
+## Fix 4 — Victory popup overlap
+
+In `drawVictory()`, replace the whole function body's layout math so the card is taller and buttons are anchored to the card bottom:
+```js
+const ph=250+lines.length*24, x=W/2-pw/2, y=Math.max(10,Math.round((H-ph)/2));
+// ... art at y+52, title at y+104, subtitle at y+130 ...
+uiBtn('rematch',x+22,y+ph-116,pw-44,50,'REMATCH',{...});
+uiBtn('to-menu',x+22,y+ph-58,pw-44,42,'MAIN MENU',{...});
+```
+Key point: buttons are positioned **from `y+ph` upward** (bottom-anchored) instead of fixed offsets from the top, so the subtitle at `y+130` can never reach them. If the title font shrinks below 16, also drop the subtitle line.
+
+## Fix 5 — Remove fake ads completely
+
+Delete these entirely:
+- `CFG.ads` block
+- `showInterstitial()` and `runInter()` functions
+- `FX.inter` property (and `FX.inter={...}` in `resetFx` — just remove the property)
+- `drawInter()` function
+- In `update()`: the `if(FX.inter){...}` line
+- In `tick()`: the `if(FX.inter&&!TUTV.open) drawInter();` line
+- In `handleAction()`: the `'to-menu'` and `'rematch'` cases become direct calls:
+```js
+case 'to-menu': goMenu(); break;
+case 'rematch': if(G.cfg) newGame(G.cfg.modeKind,G.cfg.players,G.cfg.skill,G.cfg.vsAi,G.cfg.botTest); break;
+```
+- In `'tutopen:'` and `'start'` handlers: remove the `FX.inter=null;` lines.
+
+That's the complete V20 diff, bro. Say **"full file"** and I'll re-emit the entire corrected document in one go — or patch these six spots by hand into your V19 copy, they're all localized.
