@@ -1,0 +1,27 @@
+﻿<script>
+/* Shell BACK button. Shown only while the game is on its own front page, so
+   it can never sit on top of the board in the middle of play. */
+(function(){
+  var el=null, on=false;
+  function get(){ if(!el) el=document.getElementById('studioBack'); return el; }
+  function front(){ try{ @@FRONT@@ }catch(_){ return false; } }
+  function mount(){
+    if(get()) return;
+    var d=document.createElement('div'); d.id='studioBack'; d.textContent='BACK';
+    d.setAttribute('role','button'); d.setAttribute('aria-label','Back to the arcade');
+    (document.body||document.documentElement).appendChild(d);
+    d.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); Studio.exitGame(); },true);
+    d.addEventListener('touchstart',function(e){ e.preventDefault(); },{passive:false});
+  }
+  function tick(){
+    var b=get();
+    if(!b){ setTimeout(tick,250); return; }
+    var want=front();
+    if(want!==on){ on=want; b.classList.toggle('show',on); }
+    setTimeout(tick,250);
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){ mount(); tick(); });
+  }else{ mount(); tick(); }
+})();
+</script>

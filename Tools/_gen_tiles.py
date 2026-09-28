@@ -316,6 +316,16 @@ def main(argv):
         title = title or gid.replace('-', ' ').title()
         glyph = man.get('tileGlyph') or GLYPHS.get(gid) or ''
         out = os.path.join(OUTDIR, '%s.png' % res_name(gid))
+        # A tile imported as finished art (tile_x.jpg) is better than a generated
+        # emblem, and a second file of the same name is a duplicate-resource build
+        # error, so anything already in drawable-nodpi is left exactly as it is.
+        if '--force' not in argv:
+            keep = [e for e in ('.jpg', '.jpeg', '.webp')
+                    if os.path.exists(out[:-4] + e)]
+            if keep:
+                rows.append((gid, title, colour, glyph or '(%s)' % monogram(title),
+                             'kept ' + keep[0][1:]))
+                continue
         size = render(colour, glyph, out, title)
         rows.append((gid, title, colour, glyph or '(%s)' % monogram(title),
                      '%d KB' % round(size / 1024)))

@@ -1,0 +1,11 @@
+﻿<style>
+/* Shell chrome: BACK out of the game, to the arcade grid. */
+#studioBack{position:fixed;z-index:2147483000;left:10px;top:max(10px,env(safe-area-inset-top));
+width:76px;height:38px;border-radius:19px;display:none;align-items:center;justify-content:center;
+background:rgba(8,10,14,.72);border:1px solid rgba(255,255,255,.3);color:#fff;
+font:800 12px/1 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;letter-spacing:.16em;
+cursor:pointer;-webkit-tap-highlight-color:transparent;
+backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(0,0,0,.35)}
+#studioBack.show{display:flex}
+#studioBack:active{transform:scale(.96)}
+</style>

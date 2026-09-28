@@ -1,0 +1,65 @@
+﻿<script>
+/* ============================================================
+   STUDIO SDK - shell bridge only. Every entry point degrades to
+   a no-op in a plain browser tab, so the game still runs from
+   file:// on its own.
+   ============================================================ */
+var __studioAdSeq=0;
+var Studio=(function(){
+  var bridge=function(){ return window.NativeBridge||null; };
+  var ls={get k(){ try{return window.localStorage;}catch(_){return null;} }};
+  var settings={sound:true,music:true,haptics:true};
+  try{ var raw=bridge()?bridge().load('shell:settings'):(ls.k?ls.k.getItem('shell:settings'):null);
+       if(raw) settings=Object.assign(settings,JSON.parse(raw)); }catch(_){}
+  /* the shell puts the same values in the launch query string */
+  try{ var q=new URLSearchParams(location.search);
+       if(q.has('sound')) settings.sound=q.get('sound')!=='0';
+       if(q.has('vibe')) settings.haptics=q.get('vibe')!=='0';
+  }catch(_){}
+  return {
+    settings:settings,
+    save:function(k,v){ var b=bridge(); if(b){ try{b.save(k,v); return;}catch(_){} }
+            try{ if(ls.k) ls.k.setItem(k,v); }catch(_){} },
+    load:function(k){ var b=bridge(); if(b) return b.load(k);
+            try{ return ls.k?ls.k.getItem(k):null; }catch(_){ return null; } },
+    haptic:function(kind){ if(settings.haptics===false) return; var b=bridge(); if(!b) return;
+      var map={light:15,medium:30,heavy:60,success:45};
+      try{ b.haptic(typeof map[kind]==='number'?map[kind]:0); }catch(_){} },
+    exitGame:function(){ var b=bridge(); if(b&&b.exitGame){ try{ b.exitGame(); }catch(_){} } },
+    /* the game flipped a switch the shell also owns - keep them in step */
+    pushSettings:function(patch){ Object.assign(settings,patch||{});
+      this.save('shell:settings',JSON.stringify({sound:!!settings.sound,music:!!settings.music,haptics:!!settings.haptics})); },
+    ads:{
+      /* Rewarded. The shell fires the callback with NO argument on reward and
+         "closed"/"unavailable" otherwise, so anything that is not an explicit
+         failure counts as a reward. Every request gets its OWN callback name:
+         two requests sharing one global callback let the first ad pay out the
+         second action and lost the earlier request. */
+      rewarded:function(placement,onReward,onFail){
+        var b=bridge();
+        if(!b||!b.showRewardedAd){ if(onFail) onFail('unavailable'); return; }
+        var cb='__studioAdCb'+(++__studioAdSeq);
+        window[cb]=function(result){
+          try{ delete window[cb]; }catch(_){}
+          if(result!=='closed'&&result!=='unavailable'){ if(onReward) onReward(); }
+          else if(onFail) onFail(result);
+        };
+        try{ b.showRewardedAd(cb); }catch(_){ try{ delete window[cb]; }catch(_){} if(onFail) onFail('unavailable'); }
+      },
+      /* Interstitial break. The shell always answers, so nothing can hang. */
+      interstitial:function(onDone){
+        var b=bridge();
+        if(b&&b.showInterstitial){
+          window.__studioInterCb=function(){ if(onDone) onDone(); };
+          try{ b.showInterstitial('__studioInterCb'); return; }catch(_){}
+        }
+        if(onDone) onDone();
+      },
+      /* Banner strip under the game (single / two player boards). */
+      banner:function(show){ var b=bridge(); if(!b) return;
+        try{ show?b.showBanner():b.hideBanner(); }catch(_){} }
+    }
+  };
+})();
+window.Studio=Studio;
+</script>
