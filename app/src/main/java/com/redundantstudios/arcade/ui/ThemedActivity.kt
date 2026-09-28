@@ -37,6 +37,16 @@ object ThemeTransition {
 
     private const val FRESH_MS = 10000L
 
+    /**
+     * Longest edge, in pixels, of the bitmap a theme flip captures.
+     *
+     * The capture exists only to dissolve over the rebuilt screen for 600ms, so
+     * full resolution buys nothing. A 1080x2392 ARGB_8888 bitmap is ~10MB,
+     * allocated and drawn synchronously on the UI thread; 1080 is ~1/4 the
+     * memory for a transition nobody can tell apart from the real thing.
+     */
+    private const val MAX_SNAPSHOT_EDGE = 1080
+
     private val frames = HashMap<String, Frame>()
 
     /** Screenshot [activity] as it looks right now and remember its scroll. */
@@ -66,8 +76,27 @@ object ThemeTransition {
         return try {
             val content = activity.findViewById<ViewGroup>(android.R.id.content)
             if (content == null || content.width == 0 || content.height == 0) return null
-            val bitmap = Bitmap.createBitmap(content.width, content.height, Bitmap.Config.ARGB_8888)
-            content.draw(Canvas(bitmap))
+            val w = content.width
+            val h = content.height
+            /* This bitmap is only ever shown as a short dissolve over the rebuilt
+               screen, so it does not need to be full resolution. At 1080x2392 a
+               full-size ARGB_8888 capture is ~10 MB, allocated and drawn
+               synchronously on the UI thread every time a theme flip happens -
+               which is exactly the kind of allocation that makes an already busy
+               phone stutter. Capping the long edge costs nothing visible and cuts
+               the memory (and the copy) by roughly 4x. */
+            val longEdge = maxOf(w, h)
+            val scale = if (longEdge > MAX_SNAPSHOT_EDGE) MAX_SNAPSHOT_EDGE.toFloat() / longEdge else 1f
+            val bw = (w * scale).toInt().coerceAtLeast(1)
+            val bh = (h * scale).toInt().coerceAtLeast(1)
+            val bitmap = if (scale < 1f) {
+                Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888)
+            } else {
+                Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            }
+            val canvas = Canvas(bitmap)
+            if (scale < 1f) canvas.scale(scale, scale)
+            content.draw(canvas)
             bitmap
         } catch (_: Exception) {
             null
@@ -124,7 +153,15 @@ abstract class ThemedActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (isThemeOutOfSync()) {
+        if (isThemeOutOfSync() && !alreadyRebuiltForCurrentTheme()) {
+            /* Guard against a rebuild loop.
+               If the night configuration and the stored theme ever disagree and
+               `recreate()` does not settle them, this test would pass again on
+               every resume and the screen would rebuild itself for ever - a
+               silent, app-wide performance collapse. One attempt per set of
+               settings is enough: if it did not settle the disagreement, the
+               right outcome is "show what we have", not "rebuild again". */
+            themeRebuiltForCurrentSettings = true
             // A screen that comes back to the foreground with a stale theme
             // (a flip happened while it was stopped) fades itself too: shoot the
             // palette the user is about to leave, then rebuild.
@@ -132,8 +169,28 @@ abstract class ThemedActivity : AppCompatActivity() {
             recreate()
             return
         }
+        themeRebuiltForCurrentSettings = false
         playThemeTransition()
         ShellAudio.hostResumed(this)
+    }
+
+    /** True once this screen has already rebuilt itself for the current theme. */
+    private var themeRebuiltForCurrentSettings = false
+
+    /**
+     * Process-wide half of the rebuild-loop guard.
+     *
+     * The instance flag above is not enough on its own: `recreate()` builds a
+     * BRAND NEW activity, so an instance flag starts false again and the same
+     * mismatch would rebuild for ever. Remembering the theme the rebuild was
+     * attempted for, across every instance, bounds it to one attempt per actual
+     * theme change - which is all a real flip ever needs.
+     */
+    private fun alreadyRebuiltForCurrentTheme(): Boolean {
+        val current = SettingsManager.appTheme + "|" + SettingsManager.signature()
+        if (current == themeRebuiltForTheme) return true
+        themeRebuiltForTheme = current
+        return false
     }
 
     /**
@@ -246,5 +303,57 @@ abstract class ThemedActivity : AppCompatActivity() {
         val content = findViewById<ViewGroup>(android.R.id.content) ?: return
         val root = content.getChildAt(0) ?: return
         root.background = ShellBackgroundDrawable(this)
+        // Every shell screen calls this immediately after setContentView(), so
+        // it is also the right place to give the content its system-bar inset
+        // back. See applyWindowInsets().
+        applyWindowInsets()
+    }
+
+    /**
+     * Keeps shell content clear of the status and navigation bars.
+     *
+     * Targeting SDK 36 turns on enforced edge-to-edge, so the window content now
+     * runs under the system bars. The shell screens were built when the platform
+     * still inset the window for us, so on the new target the Home page's title,
+     * its settings gear and the whole first row of cards ended up underneath the
+     * status bar (reported from the device).
+     *
+     * The GAME screen is deliberately NOT handled here - GameActivity wants the
+     * full display and asks for edge-to-edge itself. Only the shell pages, which
+     * are ordinary content screens, get the inset back as padding.
+     *
+     * The view's own XML padding is preserved: it is captured once when the
+     * listener is installed and added to on every inset pass, so repeated calls
+     * cannot stack the padding up.
+     */
+    protected fun applyWindowInsets() {
+        val content = findViewById<ViewGroup>(android.R.id.content) ?: return
+        val root = content.getChildAt(0) ?: return
+        val baseLeft = root.paddingLeft
+        val baseTop = root.paddingTop
+        val baseRight = root.paddingRight
+        val baseBottom = root.paddingBottom
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars()
+            )
+            view.setPadding(
+                baseLeft + bars.left,
+                baseTop + bars.top,
+                baseRight + bars.right,
+                baseBottom + bars.bottom
+            )
+            insets
+        }
+        androidx.core.view.ViewCompat.requestApplyInsets(root)
+    }
+
+    private companion object {
+        /**
+         * The theme signature the last rebuild-loop-guard attempt was made for.
+         * Process-wide on purpose - see [alreadyRebuiltForCurrentTheme].
+         */
+        @Volatile
+        private var themeRebuiltForTheme: String? = null
     }
 }

@@ -44,6 +44,7 @@ TILES = {
     "memory_grab_tile_img.png": "memory_grab",
     "bomb_relay_tile_img.png": "bomb_relay",
     "balloon_battle_tile_img.png": "balloon_battle",
+    "carrom_tile_img.png": "carroms",
 }
 
 

@@ -4,7 +4,7 @@ rem For Google Play upload use BUNDLE.bat (release .aab), not this file.
 set JAVA_HOME=C:\Users\srinu\.jdk\jdk-17.0.10+7
 set PATH=%JAVA_HOME%\bin;%PATH%
 cd /d "%~dp0"
-call C:\Users\srinu\.gradle-dist\gradle-8.5\gradle-8.5\bin\gradle.bat clean assembleDebug
+call C:\Users\srinu\.gradle-dist\gradle-8.11.1\bin\gradle.bat clean assembleDebug
 if errorlevel 1 (echo BUILD FAILED & exit /b 1)
 rem Give gradle a moment to finalize the APK before copying
 ping -n 3 127.0.0.1 >nul

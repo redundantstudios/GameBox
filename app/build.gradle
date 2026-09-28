@@ -4,22 +4,24 @@ plugins {
 }
 
 android {
-    // INTERNAL code package. This is where the Kotlin/Java sources live, so it
-    // is NOT what Google Play sees. It is deliberately left as ...arcade even
-    // though the Play listing is ...minigames - changing it would mean editing
-    // 27 source files for zero benefit. The Play-facing id is applicationId
-    // below, and that is the ONLY one Google cares about.
+    // Code package AND the Play-facing id, now that the app is listed fresh.
+    // They used to differ (namespace ...arcade, applicationId ...minigames);
+    // the old listing has been deleted, so the new one is created under
+    // com.redundantstudios.arcade and the two no longer need to diverge.
     namespace 'com.redundantstudios.arcade'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
-        // THE ID GOOGLE PLAY SEES. This must match the applicationId of the
-        // Play listing exactly, or the upload is rejected. The listing already
-        // exists as com.redundantstudios.minigames, so the build follows it.
-        // It can differ from `namespace` above - that is normal and supported.
-        applicationId "com.redundantstudios.minigames"
+        // THE ID GOOGLE PLAY SEES. It must match the Play Console listing
+        // EXACTLY, or the upload is rejected. The fresh listing is created
+        // under this id.
+        applicationId "com.redundantstudios.arcade"
         minSdk 24
-        targetSdk 34
+        // Google Play requires a target at API 35+ for new uploads as of
+        // Aug 2025, and this app is now on 36 so the newest behaviour changes
+        // (edge-to-edge, predictive back) are what we actually test on device.
+        targetSdk 36
+        // Fresh Play listing: the first upload is versionCode 1.
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

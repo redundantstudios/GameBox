@@ -59,6 +59,7 @@ class ModeActivity : ThemedActivity() {
          * sorts alphabetically among the unlisted ones.
          */
         val NEWEST_FIRST = listOf(
+            "carroms",
             "last-balloon",
             "balloon-battle",
             "bomb-relay",

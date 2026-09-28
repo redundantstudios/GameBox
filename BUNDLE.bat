@@ -13,7 +13,7 @@ set PATH=%JAVA_HOME%\bin;%PATH%
 cd /d "%~dp0"
 
 echo Building release bundle ^(R8 + resource shrinking - several minutes^)...
-call C:\Users\srinu\.gradle-dist\gradle-8.5\gradle-8.5\bin\gradle.bat bundleRelease
+call C:\Users\srinu\.gradle-dist\gradle-8.11.1\bin\gradle.bat bundleRelease
 if errorlevel 1 (echo BUNDLE BUILD FAILED & exit /b 1)
 
 set BUNDLE=app\build\outputs\bundle\release\app-release.aab

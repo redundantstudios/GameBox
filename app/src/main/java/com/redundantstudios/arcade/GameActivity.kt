@@ -192,6 +192,11 @@ class GameActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
 
+        // The game must cover the WHOLE display. This has to happen BEFORE
+        // setContentView, otherwise the content view is measured against an inset
+        // window and the game sits below the status bar with a dead band above it.
+        GameWindow.goEdgeToEdge(window)
+
         // Defensive: GameActivity can be cold-started directly (deep link/adb) — settings must exist
         com.redundantstudios.arcade.util.SettingsManager.init(this)
         com.redundantstudios.arcade.util.SettingsManager.applyTheme()
@@ -521,10 +526,18 @@ class GameActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         webView.evaluateJavascript("window.Game && Game.pause && Game.pause();", null)
+        /* Stop the WebView itself while this screen is not in front.
+           `Game.pause()` only tells the game's own loop to stop simulating - the
+           page kept calling requestAnimationFrame and repainting a full-screen
+           canvas at 60fps behind the shell, so every game kept burning CPU (and
+           making the shell feel sluggish) for as long as it stayed on the back
+           stack. `onPause()` suspends JS timers and the render loop outright. */
+        webView.onPause()
     }
 
     override fun onResume() {
         super.onResume()
+        webView.onResume()
         adMobManager.loadRewardedAd()
         adMobManager.loadInterstitialAd()
 

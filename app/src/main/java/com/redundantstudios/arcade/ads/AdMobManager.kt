@@ -80,8 +80,21 @@ class AdMobManager(private val activity: Activity) {
         queued()
     }
 
-    /** How long a queued rewarded request waits for the ad before giving up. */
-    private val pendingTimeoutMs = 7000L
+    /* How long a queued rewarded request waits for the ad before giving up.
+
+       This used to be 7s, and that was the cause of "the first balloon works,
+       the rest don't": a rewarded-interstitial fetch that took 8s was declared a
+       FAILURE, the game was told 'unavailable' and awarded nothing, and the ad
+       that landed a second later had nobody waiting for it. The timeout is now
+       only a safety net against a request that never resolves at all. */
+    private val pendingTimeoutMs = 30000L
+
+    /* A failed fetch is retried a few times with a growing gap instead of being
+       written off. "No fill" is often momentary, and without a retry the next
+       tap has nothing cached either - which is exactly the pattern reported. */
+    private var rewardedLoadRetries = 0
+    private val MAX_REWARDED_LOAD_RETRIES = 3
+    private val rewardedRetryRunnable = Runnable { loadRewardedAd() }
 
     /**
      * The banner this manager put on screen. An AdView is a live view holding
@@ -117,10 +130,21 @@ class AdMobManager(private val activity: Activity) {
                     rewardedAd = null
                     // Anyone already waiting on a tap must not be left hanging.
                     failPendingReward("load failed: ${adError.code}")
+                    // Try again shortly. No fill and transient network errors are
+                    // usually momentary; giving up on the first one left the next
+                    // tap with no ad cached either.
+                    if (!destroyed && rewardedLoadRetries < MAX_REWARDED_LOAD_RETRIES) {
+                        rewardedLoadRetries++
+                        val backoff = 1500L * rewardedLoadRetries
+                        Log.d(TAG, "Retrying rewarded load in ${backoff}ms (attempt $rewardedLoadRetries)")
+                        mainHandler.removeCallbacks(rewardedRetryRunnable)
+                        mainHandler.postDelayed(rewardedRetryRunnable, backoff)
+                    }
                 }
                 override fun onAdLoaded(ad: RewardedInterstitialAd) {
                     Log.d(TAG, "Rewarded ad loaded successfully")
                     isRewardedLoading = false
+                    rewardedLoadRetries = 0
                     rewardedAd = ad
                     // A tap arrived while we were fetching: honour it now.
                     val queued = pendingReward

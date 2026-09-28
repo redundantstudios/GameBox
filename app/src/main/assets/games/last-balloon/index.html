@@ -2063,6 +2063,10 @@ function renderShop(){
   });
 }
 var adPlayingStyle=null;
+ /* Monotonic id for per-request rewarded callbacks - see the bridge call below.
+    A unique, self-deleting name per request stops two requests in flight from
+    overwriting each other (the old single global __studioAdCb did exactly that). */
+ var adCbSeq=0;
 /* REWARDED AD: this game legitimately has one. The Balloon Shop sells a 2-hour
    balloon style, so a short rewarded video is the honest price - the player
    WANTS that style and watches an ad to get it. This is exactly the "specific
@@ -2092,13 +2096,24 @@ function triggerShopAd(id){
     renderShop();
   };
   if(bridge&&bridge.showRewardedAd){
-    /* The shell evaluates the callback NAME it is given, so it must match the
-       global registered here exactly: two leading underscores. Passing
-       '_studioAdCb' makes the shell find nothing and silently drop the reward. */
-    window.__studioAdCb=function(result){
+    /* The shell evaluates the callback NAME it is given, so the name registered
+       on window must match it EXACTLY (two leading underscores) - a mismatch
+       makes the shell find nothing and silently drop the reward.
+
+       Each request now gets its OWN unique name instead of sharing the single
+       global __studioAdCb. Sharing it was the cause of "the first balloon
+       unlocks, the rest don't": while balloon A's ad was in flight, tapping
+       balloon B overwrote the global with B's closure, so when A's ad finally
+       reported back it ran B's handler - unlocking B and never A. A unique,
+       self-deleting name per request makes each reward land on the balloon that
+       actually earned it. */
+    var cbName='__studioAdCb'+(++adCbSeq);
+    window[cbName]=function(result){
+      try{ delete window[cbName]; }catch(e){}
       finish(result==='granted'||result===true||result==='rewarded');
     };
-    try{ bridge.showRewardedAd('__studioAdCb'); return; }catch(e){}
+    try{ bridge.showRewardedAd(cbName); return; }catch(e){}
+    try{ delete window[cbName]; }catch(e){}
   }
   /* No bridge (plain browser tab): never grant silently. Just cancel. */
   finish(false);
