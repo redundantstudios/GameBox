@@ -273,6 +273,13 @@ function resize(){
 }
 
 /* ---------- LANDSCAPE enforcement ---------- */
+/* `state` is read by checkOrient(), which runs at load. It was previously
+   declared ~370 lines further down with `let`, so this read landed in the
+   temporal dead zone: a ReferenceError that killed the entire game script
+   before its first frame, leaving the player looking at the static menu over
+   a dead canvas. Anything read during load has to be declared before the load
+   path that reads it. */
+let state='MENU';
 const rotOv=$('rot');
 function checkOrient(){
   const portrait=window.innerHeight>window.innerWidth;
@@ -675,7 +682,8 @@ groundC.width=W; groundC.height=H;
 })();
 
 /* ---------- game state ---------- */
-let state='MENU', attract=true, destroyed=false;
+/* `state` moved up to the LANDSCAPE section: checkOrient() reads it during load. */
+let attract=true, destroyed=false;
 let players=[], eggs=[], powerups=[], baskets=[], flyEggs=[];
 let matchT=CFG.MATCH_TIME, cdT=0, cdStep=4, timeUpT=0;
 let eggT=0, puT=4, goldenT=9, time=0, hitstop=0, rdt=0.016;

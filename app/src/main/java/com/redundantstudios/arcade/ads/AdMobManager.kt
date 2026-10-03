@@ -4,12 +4,11 @@ import android.app.Activity
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdSize
-import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
@@ -27,9 +26,78 @@ class AdMobManager(private val activity: Activity) {
     // real units for this AdMob application.
     //
     // Kept in one place so they can be swapped or reverted in a single edit.
-    private val rewardedUnitId = "ca-app-pub-9565881819222312/9051900990"
-    private val interstitialUnitId = "ca-app-pub-9565881819222312/1364982660"
-    private val bannerUnitId = "ca-app-pub-9565881819222312/7621425947"
+    /* DEV vs LIVE.
+       Debug builds use Google's public TEST units, which always serve sample
+       ads. Live units only serve to authorised devices, so on a dev phone every
+       request came back "code=3 / No fill" and ads looked dead in every game.
+       Release builds use the real units. The app id itself is split the same
+       way in app/build.gradle (manifestPlaceholders). */
+    private val isDebug = com.redundantstudios.arcade.BuildConfig.DEBUG
+
+    /* The rewarded unit is a REWARDED INTERSTITIAL, so the test unit must be
+       Google's rewarded-INTERSTITIAL sample, not the plain rewarded one.
+       ca-app-pub-3940256099942544/5224354917 is the plain rewarded sample and
+       the SDK rejects it for this format (the load came back as a format
+       mismatch, which is why Continue never showed an ad and fell through to
+       its failure path).
+         5224354917 = Rewarded            -> WRONG format here
+         5354046379 = Rewarded interstitial -> correct
+       Release keeps the live rewarded-interstitial unit. */
+    private val rewardedUnitId =
+        if (isDebug) "ca-app-pub-3940256099942544/5354046379"
+        else "ca-app-pub-9565881819222312/9051900990"
+
+    private val interstitialUnitId =
+        if (isDebug) "ca-app-pub-3940256099942544/1033173712"
+        else "ca-app-pub-9565881819222312/1364982660"
+
+    /**
+     * Marks this device as an AdMob TEST device in debug builds.
+     *
+     * WHY THIS EXISTS: every request was coming back
+     *   AdMobManager: Interstitial failed: code=3 ... message=No fill
+     * on a phone that was online and VALIDATED. The app is registered with its
+     * real AdMob app id and these are its real units, but the device is not an
+     * authorised test device, so Google's servers decline to serve anything to
+     * it. That is why ads looked dead in EVERY game at once - the call sites
+     * were all correct, the SDK was simply never allowed to return an ad.
+     *
+     * Registering the device makes Google's own sample ads serve, so the ad path
+     * is genuinely exercised while developing instead of silently no-filling.
+     * Debug builds only: a release build keeps live traffic on the real units.
+     */
+    private fun registerTestDeviceIfDebug() {
+        if (!com.redundantstudios.arcade.BuildConfig.DEBUG) return
+        try {
+            val id = android.provider.Settings.Secure.getString(
+                activity.contentResolver, android.provider.Settings.Secure.ANDROID_ID
+            )
+            if (id.isNullOrBlank()) {
+                Log.w(TAG, "No ANDROID_ID - cannot register this device as a test device")
+                return
+            }
+            MobileAds.setRequestConfiguration(
+                RequestConfiguration.Builder().setTestDeviceIds(listOf(id)).build()
+            )
+            Log.d(TAG, "Registered this device as an AdMob test device (debug build)")
+        } catch (e: Exception) {
+            Log.w(TAG, "Test-device registration failed: " + e.message)
+        }
+    }
+
+    init {
+        /* Runs at construction, i.e. before GameActivity issues its first
+           rewarded/interstitial load. Registering from inside loadRewardedAd()
+           was too late: the first interstitial request went out unregistered
+           and came back "No fill" before the registration had happened. */
+        registerTestDeviceIfDebug()
+    }
+
+    /**
+     * The ad request every load below uses. Kept in one place so the test-device
+     * setting and any future request-level options stay consistent.
+     */
+    private fun request(): AdRequest = AdRequest.Builder().build()
 
     // Rewarded
     private var rewardedAd: RewardedInterstitialAd? = null
@@ -67,6 +135,16 @@ class AdMobManager(private val activity: Activity) {
     private var isInterstitialLoading = false
     private var lastInterstitialTime = 0L
 
+    /**
+     * Minimum gap between two interstitials from the same game screen.
+     *
+     * Only long enough to stop a single tap registering twice. Every trigger
+     * point is a deliberate tap on a game-over button, so a longer window would
+     * only swallow ads the player explicitly asked for (see
+     * showInterstitialInternal).
+     */
+    private val MIN_INTERSTITIAL_GAP_MS = 2500L
+
     /* A request that arrived before the ad was cached. It is held and shown the
        moment the load completes, so the first ad of a session is not lost to a
        race between "player tapped" and "SDK finished loading" - that race is
@@ -97,13 +175,6 @@ class AdMobManager(private val activity: Activity) {
     private val rewardedRetryRunnable = Runnable { loadRewardedAd() }
 
     /**
-     * The banner this manager put on screen. An AdView is a live view holding
-     * its own Activity, so it is kept here to be handed back with the screen
-     * instead of being dropped (see [destroy]).
-     */
-    private var bannerView: AdView? = null
-
-    /**
      * True once the screen that owns this manager is gone. An ad load resolves
      * asynchronously, so a load started just before the game closed can call
      * back afterwards; every entry point checks this so no callback ever
@@ -115,7 +186,7 @@ class AdMobManager(private val activity: Activity) {
     fun loadRewardedAd() {
         if (destroyed || isRewardedLoading || rewardedAd != null) return
         isRewardedLoading = true
-        val adRequest = AdRequest.Builder().build()
+        val adRequest = request()
         /* REWARDED INTERSTITIAL - not a plain Rewarded ad.
            The AdMob unit ca-app-pub-9565881819222312/9051900990 was created as a
            REWARDED INTERSTITIAL unit. Loading it with RewardedAd.load() is a
@@ -237,10 +308,14 @@ class AdMobManager(private val activity: Activity) {
                 "message=${error.message} responseId=${error.responseInfo?.responseId}"
     }
 
+    private val MAX_INTERSTITIAL_LOAD_RETRIES = 3
+    private var interstitialLoadRetries = 0
+    private val interstitialRetryRunnable = Runnable { loadInterstitialAd() }
+
     fun loadInterstitialAd() {
         if (destroyed || isInterstitialLoading || interstitialAd != null) return
         isInterstitialLoading = true
-        val adRequest = AdRequest.Builder().build()
+        val adRequest = request()
         InterstitialAd.load(activity, interstitialUnitId,
             adRequest, object : InterstitialAdLoadCallback() {
                 override fun onAdFailedToLoad(adError: LoadAdError) {
@@ -254,10 +329,23 @@ class AdMobManager(private val activity: Activity) {
                         mainHandler.removeCallbacks(queuedInterstitialTimeout)
                         queued()
                     }
+                    // Retry, like the rewarded load already does. Without this a
+                    // single early "No fill" - which is normal, the first request
+                    // often beats the ad inventory - left the interstitial dead
+                    // for the WHOLE session, so Play Again / Home never showed
+                    // anything even though the same unit works moments later.
+                    if (!destroyed && interstitialLoadRetries < MAX_INTERSTITIAL_LOAD_RETRIES) {
+                        interstitialLoadRetries++
+                        val backoff = 1500L * interstitialLoadRetries
+                        Log.d(TAG, "Retrying interstitial load in ${backoff}ms (attempt $interstitialLoadRetries)")
+                        mainHandler.removeCallbacks(interstitialRetryRunnable)
+                        mainHandler.postDelayed(interstitialRetryRunnable, backoff)
+                    }
                 }
                 override fun onAdLoaded(ad: InterstitialAd) {
                     Log.d(TAG, "Interstitial ad loaded successfully")
                     isInterstitialLoading = false
+                    interstitialLoadRetries = 0
                     interstitialAd = ad
                     // A request that was waiting for exactly this ad: show it now.
                     val queued = queuedInterstitial
@@ -281,18 +369,17 @@ class AdMobManager(private val activity: Activity) {
         val now = System.currentTimeMillis()
         val timeSinceLast = now - lastInterstitialTime
 
-        /* FREQUENCY CAPS.
-           These used to hard-block the FIRST ad of a session outright
-           (timeSinceStart < 60000), which is why no ad ever appeared: the
-           player finished a match, tapped PLAY AGAIN inside a minute, and the
-           request was discarded with a log line nobody reads. Every session's
-           first interstitial is now allowed, and the guard only limits how
-           OFTEN they repeat.
-
-           60s between interstitials is still a sane cap - it is well inside
-           Google's policy guidance - but it must not swallow the first one. */
-        if (timeSinceLast < 60000) {
-            Log.d(TAG, "Interstitial blocked: shown less than 60s ago")
+        /* DOUBLE-TAP GUARD ONLY.
+           The real frequency cap (180s, one per session, never on exit, none on
+           a first session) lives in AdPolicy and is checked by GameActivity
+           BEFORE this method is reached. What is left here is just enough to
+           stop one tap registering twice - a double-tap, or a game with two
+           call sites firing in the same gesture. This used to be the entire
+           policy at 2500ms, which is why a player could be shown an ad every
+           few seconds and why "Play Again" showed one while "Home" seconds
+           later silently did not. */
+        if (timeSinceLast < MIN_INTERSTITIAL_GAP_MS) {
+            Log.d(TAG, "Interstitial suppressed: same-tap guard (${timeSinceLast}ms ago)")
             onAdClosed()
             return
         }
@@ -357,42 +444,15 @@ class AdMobManager(private val activity: Activity) {
         ad.show(activity)
     }
 
-    fun loadBannerAd(container: ViewGroup, onLoaded: (() -> Unit)? = null) {
-        if (destroyed) return
-        val adView = AdView(activity).apply {
-            // AdSize expects width in dp, not raw pixels
-            val density = activity.resources.displayMetrics.density
-            val widthDp = (activity.resources.displayMetrics.widthPixels / density).toInt()
-            setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(activity, widthDp))
-            adUnitId = bannerUnitId
-            adListener = object : AdListener() {
-                override fun onAdLoaded() {
-                    Log.d(TAG, "Banner ad loaded")
-                    // The game screen may already be gone (it left while the
-                    // banner was still loading).
-                    if (!destroyed) onLoaded?.invoke()
-                }
-                override fun onAdFailedToLoad(adError: LoadAdError) {
-                    Log.e(TAG, describe("Banner", adError))
-                }
-            }
-        }
-        container.addView(adView)
-        bannerView = adView
-        adView.loadAd(AdRequest.Builder().build())
-    }
-
     /**
      * Hand-back for everything this manager asked the SDK for.
      *
      * Called once the game screen is gone (see `GameActivity.releaseSurface`).
-     * Without it, every open/close cycle left behind a banner AdView - and with
-     * an AdView, the whole Activity that owns it - plus the rewarded and
-     * interstitial objects the SDK was holding on its behalf. A few cycles of
-     * that is what turned into the shell and the running game stuttering.
+     * Without it, every open/close cycle left the rewarded and interstitial
+     * objects the SDK was holding on the SDK's behalf, and a few cycles of that
+     * is what turned into the shell and the running game stuttering.
      *
-     * Runs on the UI thread (the screen's teardown), which is where
-     * `AdView.destroy()` is required to be called.
+     * Runs on the UI thread (the screen's teardown).
      */
     fun destroy() {
         destroyed = true
@@ -400,10 +460,5 @@ class AdMobManager(private val activity: Activity) {
         pendingReward = null
         rewardedAd = null
         interstitialAd = null
-        bannerView?.let { view ->
-            (view.parent as? ViewGroup)?.removeView(view)
-            view.destroy()
-        }
-        bannerView = null
     }
 }

@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.redundantstudios.arcade.ads.AdMobManager
+import com.redundantstudios.arcade.ads.AdPolicy
 import com.redundantstudios.arcade.bridge.NativeBridge
 import com.redundantstudios.arcade.bridge.NativeBridgeContext
 import com.redundantstudios.arcade.model.GameManifest
@@ -28,16 +29,14 @@ class GameActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var currentGame: GameManifest? = null
     private lateinit var adMobManager: AdMobManager
-    private lateinit var bannerContainer: FrameLayout
-    private var bannerRequestedVisible = false
 
-    /** The view that holds the game (WebView + banner strip). */
+    /** The view that holds the game WebView. */
     private lateinit var gameRoot: LinearLayout
 
     /** Guards the exit: back twice must not run it twice. */
     private var closing = false
 
-    /** The window content: the game canvas (and the banner strip) live in here. */
+    /** The window content: the game canvas lives in here. */
     private lateinit var contentHost: FrameLayout
 
     /**
@@ -103,13 +102,11 @@ class GameActivity : AppCompatActivity() {
         }
         Log.w("GameActivity", "Ad request blocked: device is offline")
         if (explain) {
-            runOnUiThread {
-                com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
-                    .setTitle("Check your internet connection")
-                    .setMessage("Ads need an internet connection. Please check your network and try again.")
-                    .setPositiveButton("Okay", null)
-                    .show()
-            }
+            /* THE universal popup, not a second one. This used to build its own
+               dialog here with different wording, so a player going offline could
+               see two different notices. OfflineNotifier is now the only place
+               in the app that says this. */
+            com.redundantstudios.arcade.bridge.OfflineNotifier.announceOnce(this)
         }
         // "unavailable" (not "closed"): the player never saw an ad, so the game
         // can explain instead of pretending the ad was skipped.
@@ -207,6 +204,11 @@ class GameActivity : AppCompatActivity() {
         adMobManager.loadRewardedAd()
         adMobManager.loadInterstitialAd()
 
+        /* A new game means new per-game ad caps: a fresh 5 rewarded / 1 revive
+           for THIS game, while the app-wide interstitial clock keeps running so
+           bouncing between games cannot out-run the 180s gap. */
+        AdPolicy.onGameOpened(this)
+
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         val gameId = intent.getStringExtra("game_id") ?: return
@@ -229,7 +231,7 @@ class GameActivity : AppCompatActivity() {
         // was held sideways never shows a landscape first frame during entry.
         setupOrientation(manifestOrientation)
 
-        // Root layout to accommodate banner
+        // The game fills this layout completely (no banner strip: see BANNERS ARE OFF).
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = android.view.ViewGroup.LayoutParams(
@@ -238,15 +240,11 @@ class GameActivity : AppCompatActivity() {
             )
         }
 
-        val bannerContainer = FrameLayout(this).apply {
-            layoutParams = android.view.ViewGroup.LayoutParams(
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            setBackgroundColor(android.graphics.Color.parseColor("#F3F4F6"))
-            visibility = android.view.View.GONE
-        }
-        this.bannerContainer = bannerContainer
+        /* BANNERS ARE OFF.
+           The banner strip is gone for now: the ad unit, the strip and the games'
+           own show/hide polling are all disconnected, so the game gets the whole
+           viewport. Re-enabling it later means putting the container, the load
+           call and the bridge handler back - nothing else here depends on it. */
 
         webView = WebView(this).apply {
             /* Visible from the very first frame, with its background set to the
@@ -334,7 +332,6 @@ class GameActivity : AppCompatActivity() {
         }
 
         rootLayout.addView(webView)
-        rootLayout.addView(bannerContainer)
         // The window content is a plain frame: the game canvas, and (for a tile
         // launch) the tile's own artwork above it while the game opens.
         contentHost = FrameLayout(this)
@@ -373,27 +370,39 @@ class GameActivity : AppCompatActivity() {
             android.util.Log.d("VP", "webViewPx=${webView.width}, density=${resources.displayMetrics.density}")
         }
 
-        adMobManager.loadBannerAd(bannerContainer) {
-            runOnUiThread {
-                Log.d("BannerState", "Ad loaded. Applying requested visibility: $bannerRequestedVisible")
-                bannerContainer.visibility = if (bannerRequestedVisible) android.view.View.VISIBLE else android.view.View.GONE
-            }
-        }
+        /* No banner load: see the BANNERS ARE OFF note where the strip used to be. */
 
         // This screen now owns the process-wide bridge (see bridgeOwner).
         bridgeOwner = this
         NativeBridgeContext.exitHandler = {
-            exitGame()
+            /* MUST be marshalled onto the UI thread.
+               Every other handler below does this, and the exit handler was the
+               one that did not - which is why the shell BACK button was dead in
+               EVERY game. NativeBridge is a @JavascriptInterface, so its
+               methods are invoked on a WebView background thread; exitGame()
+               then calls ShellTransition.closeGame() and finish(), neither of
+               which may run off the main thread (finish() from a worker thread
+               does not reliably leave the Activity). The tap looked live but
+               nothing happened. */
+            runOnUiThread { exitGame() }
         }
         NativeBridgeContext.callback = { jsFuncName, result ->
             runOnUiThread {
                 webView.evaluateJavascript("if(window.$jsFuncName) { window.$jsFuncName('$result'); }", null)
             }
         }
-        NativeBridgeContext.adHandler = { callback ->
+        /* The policy decision has ALREADY been made in NativeBridge, which is
+           the single funnel every ad in the app passes through - including the
+           ten older games that call showRewardedAd(callback) directly. These
+           handlers only have to load and show what was approved. */
+        NativeBridgeContext.adHandler = { callback, placement, kind ->
             runAdOrExplainOffline(callback) {
                 adMobManager.showRewardedAd(
                     onRewardEarned = {
+                        AdPolicy.onRewardedEarned(
+                            if (kind.equals("revive", true)) AdPolicy.RewardKind.REVIVE
+                            else AdPolicy.RewardKind.NORMAL
+                        )
                         NativeBridgeContext.callback?.invoke(callback, "granted")
                     },
                     onAdClosed = {
@@ -407,27 +416,27 @@ class GameActivity : AppCompatActivity() {
                 )
             }
         }
-        NativeBridgeContext.interstitialHandler = { callback ->
+        NativeBridgeContext.interstitialHandler = { callback, placement ->
             // Interstitials are bonus breaks: offline, skip silently (no
-            // "no internet" dialog) and let the game carry on.
+            // "no internet" dialog) and let the game carry on. A policy denial
+            // was already released as "skipped" in NativeBridge.
             runAdOrExplainOffline(callback, explain = false) {
                 adMobManager.showInterstitialAd(
                     onAdClosed = {
+                        AdPolicy.onInterstitialShown()
                         NativeBridgeContext.callback?.invoke(callback, "closed")
                     }
                 )
             }
         }
-        NativeBridgeContext.bannerHandler = { show ->
-            runOnUiThread {
-                bannerRequestedVisible = show
-                /* GONE here is correct: pages that intentionally hide the banner
-                   (intro / menu) must get the full height back, with no reserved
-                   grey strip. The game-over drag was fixed at the source instead —
-                   the game no longer hides the banner at game over. */
-                bannerContainer.visibility = if (show) android.view.View.VISIBLE else android.view.View.GONE
-            }
-        }
+        /* A NEW RUN inside the same game screen. Games restart in place on
+           "Play Again", so the Activity is never recreated and onGameOpened()
+           never runs again - without this the shell still believed the first
+           run's revive had been spent and refused the second run's. */
+        NativeBridgeContext.runHandler = { AdPolicy.onRunStarted() }
+        /* A game's showBanner()/hideBanner() still arrive here, but they are now
+           deliberate no-ops (see BANNERS ARE OFF). The call is NOT forwarded to
+           the SDK, so a game cannot bring the strip back on its own. */
     }
 
     /**
@@ -532,6 +541,9 @@ class GameActivity : AppCompatActivity() {
            canvas at 60fps behind the shell, so every game kept burning CPU (and
            making the shell feel sluggish) for as long as it stayed on the back
            stack. `onPause()` suspends JS timers and the render loop outright. */
+        /* Stop the debug countdown with the screen: it is a singleton, so leaving
+           it running would keep a Handler ticking over a dead Activity. */
+        com.redundantstudios.arcade.ads.AdDebugBadge.detach()
         webView.onPause()
     }
 
@@ -540,6 +552,11 @@ class GameActivity : AppCompatActivity() {
         webView.onResume()
         adMobManager.loadRewardedAd()
         adMobManager.loadInterstitialAd()
+        /* Debug builds only (AdDebugBadge returns immediately otherwise). The
+           interstitial countdown is drawn by the SHELL over the game WebView so
+           it covers every game from one implementation, instead of a badge that
+           has to be copied into each game and can drift between them. */
+        com.redundantstudios.arcade.ads.AdDebugBadge.attach(this)
 
         // If the player changed sound/haptics while the game was paused, push the
         // new values straight into the running game.

@@ -15,6 +15,7 @@ aiSupport: full
 online: false
 tileColor: #F2724B
 version: 1
+released: 2026-09-27
 -->
 <style>
 :root{--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px);--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px)}
@@ -267,6 +268,8 @@ let nPlayers=2,soloMode=false,aiSkill=0.55;
 let uiBtns=[],sysPause={x:0,y:0,r:18},sysMute={x:0,y:0,r:18};
 let spawnPts=null;
 let pin=null,pinHolder=null,pinOwnerId=-1,pinHoldT=0,pinSpawnT=2;
+/* Set by the rewarded offer, consumed by the next startMatch. */
+let adBoostPending=false;
 /* ================= SETTINGS (synced with the shell) =================
    Sound and haptics are the PLAYER's choices, so they live in the shell's
    shared 'shell:settings' store - not in a private game key. That way turning
@@ -629,6 +632,16 @@ function startMatch(np,solo){
   resetParticles();
   shake=0;hitStop=0;
   buildZones();
+  /* Consume an ad-earned boost for this bout only, humans only, so it
+     never advantages the AI. */
+  if(adBoostPending){
+    adBoostPending=false;
+    for(const p of players)if(p.human){
+      p.speedT=CFG.SPEED_BOOST_DURATION;
+      p.shieldT=CFG.SHIELD_DURATION;
+    }
+    lastAdReason='Speed boost + shield active!';
+  }
   state='COUNTDOWN';stateT=0;cdNum=4;cdPop=0;paused=false;
 }
 /* ============ ZONES / INPUT ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â LOCKED SEAT-MAPPED SCREEN LAYOUT ============
@@ -2271,6 +2284,16 @@ function drawResult(){
       sy+=24;
     }
   }
+  if(lastAdReason)txt(ctx,lastAdReason,cssW/2,py+ph-118,12,'#7a5a3a','center');
+  /* Above the PLAY AGAIN / MENU row, so it never displaces them. */
+  if(adOfferVisible()){
+    const ow=Math.min(268,pw*0.64),oh=38,oy=py+ph-110;
+    ctx.fillStyle='rgba(0,0,0,0.25)';rr(ctx,cssW/2-ow/2+3,oy+3,ow,oh,12);ctx.fill();
+    ctx.fillStyle=rewardedBusy?'#9aa4ad':'#e8912d';rr(ctx,cssW/2-ow/2,oy,ow,oh,12);ctx.fill();
+    txt(ctx,rewardedBusy?'LOADING AD...':'WATCH AD - SPEED BOOST + SHIELD NEXT MATCH',
+        cssW/2,oy+oh/2+1,rewardedBusy?14:12,'#fff','center');
+    uiBtns.push({x:cssW/2-ow/2,y:oy,w:ow,h:oh,act:()=>offerAdBoost()});
+  }
   const bw=Math.min(180,pw*0.36),bh=44,byy=py+ph-62;
   ctx.fillStyle='rgba(0,0,0,0.25)';rr(ctx,cssW/2-bw-10+3,byy+3,bw,bh,14);ctx.fill();
   ctx.fillStyle='#37913c';rr(ctx,cssW/2-bw-10,byy,bw,bh,14);ctx.fill();
@@ -2434,7 +2457,11 @@ function showInterstitial(onDone){
     window.__studioInterCb=done;
     window._studioInterCb=done;
     try{
-      b.showInterstitial('__studioInterCb');
+      /* Two arguments: showInterstitial(callback, placement) takes two
+         parameters and addJavascriptInterface matches by EXACT arity, so the
+         one-argument form THREW and the catch below turned that into a silent
+         no-op - this game's ad break could never appear. */
+      b.showInterstitial('__studioInterCb','');
       /* Safety net: if the shell never calls back (no ad inventory, a provider
          error), release the UI instead of stranding the player on a dead
          button. */
@@ -2446,6 +2473,62 @@ function showInterstitial(onDone){
   }
   if(onDone)onDone();
 }
+/* Rewarded: the player's tap asks the shell, the shell decides WHEN.
+   `ok` is true only when a reward was actually granted; every other outcome
+   (skipped, offline, cap reached, cooldown) arrives as a reason string, which
+   the game turns into a message rather than swallowing. */
+function showRewarded(done){
+  var b=window.NativeBridge;
+  if(b&&b.showRewardedAd){
+    var fired=false;
+    var finish=function(result){
+      if(fired)return;
+      fired=true;
+      /* Allow-list, not deny-list. Enumerating the refusal tokens by hand
+         means the next one anyone adds pays out as a free reward. */
+      var granted=(result==='granted'||result===''||result===undefined||result===null);
+      done(granted?true:result);
+    };
+    /* A callback name of its own per request: two requests sharing one global
+       callback let the first ad pay out the second action. */
+    var cb='__bbRewCb'+(window.__bbRewSeq=(window.__bbRewSeq||0)+1);
+    window[cb]=finish;
+    try{
+      b.showRewardedAd(cb,'boost','normal');
+      setTimeout(function(){finish('unavailable');},45000);
+      return;
+    }catch(e){}
+  }
+  done('unavailable');
+}
+var rewardedBusy=false;
+var lastAdReason='';
+/* Head start on the NEXT bout: every human player begins with the game's own
+   speed boost and shield. Next match only, so it stays a reward rather than a
+   permanent edge, and humans only, so it never advantages the AI. */
+function offerAdBoost(){
+  if(rewardedBusy)return;
+  rewardedBusy=true;
+  showRewarded(function(ok){
+    rewardedBusy=false;
+    if(ok){adBoostPending=true;playWithAd(nPlayers,soloMode);}
+    else{lastAdReason=adMessage(ok);}
+  });
+}
+/* The shell owns the cap, so the game cannot know for certain how many rewards
+   are left. Showing the offer is harmless either way - a refusal is explained. */
+function adOfferVisible(){ return lastAdReason.indexOf('all your ad rewards')===-1; }
+
+function adMessage(reason){
+  switch(reason){
+    case 'limit_reached': return 'You have used all your ad rewards for now.';
+    case 'cooldown':      return 'Give it a moment, then try again.';
+    case 'offline':
+    case 'unavailable':   return 'Ad unavailable. Check your connection.';
+    default:              return 'Ad unavailable. Try again later.';
+  }
+}
+
 /* Kept for the exit path, so a real BACK (not the page being torn down) gets
    its ad. */
 var interstitialShown=false;

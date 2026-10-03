@@ -60,8 +60,23 @@ android {
         }
     }
 
+    /* DEV vs LIVE ADS.
+       Commit 175d8e5 replaced Google's public TEST app id with the live AdMob
+       app id. That is right for a Play release but it made local development
+       unreliable: a live app only serves real inventory to authorised devices,
+       so every request came back "code=3 / No fill" and the whole ad path
+       looked dead in every game.
+
+       Debug therefore uses Google's public test ids, which always serve sample
+       ads, and release uses the live units - so a debug bundle can never carry
+       live ids and a release bundle can never carry test ids.
+       AdMobManager reads BuildConfig.DEBUG and picks the matching set. */
     buildTypes {
+        debug {
+            manifestPlaceholders += [admobAppId: "ca-app-pub-3940256099942544~3347511713"]
+        }
         release {
+            manifestPlaceholders += [admobAppId: "ca-app-pub-9565881819222312~4278086469"]
             // R8 strips unused classes and methods. The rules that keep the
             // WebView bridge and XML-inflated views alive live in
             // app/proguard-rules.pro - read it before changing anything here.
@@ -82,6 +97,7 @@ android {
     defaultConfig {
         manifestPlaceholders += [admobAppId: "ca-app-pub-9565881819222312~4278086469"]
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8

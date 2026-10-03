@@ -45,19 +45,20 @@ class ModeActivity : ThemedActivity() {
         val PARTY_GAME_IDS = setOf("truthordare", "last-balloon")
 
         /**
-         * Order a game appears WITHIN a player-count group on the N PLAYER
-         * pages, newest first.
+         * DEPRECATED - superseded by the manifests' own `released:` date.
          *
-         * The manifests carry no release date (id/title/min/max/ai/online/
-         * tileColor/version), so "newest" cannot be derived from them and
-         * guessing one is worse than declaring it. This is the catalogue order,
-         * newest addition first - the list literally reads in the order the
-         * games were integrated. Adding a game = adding one line at the top.
+         * This hand-maintained list only ever had room for "one new game at
+         * a time": integrating a second new game meant remembering to edit
+         * this file, and nothing failed if you forgot - the game simply
+         * sorted alphabetically and nobody noticed. It is kept only as a
+         * last-resort tie-break and is no longer the source of ordering.
          *
-         * Anything not listed here falls back to the title, so a newly
-         * integrated game is never silently dropped from a page: it simply
-         * sorts alphabetically among the unlisted ones.
+         * [GameManifest.released] is the real ordering key now.
          */
+        @Deprecated(
+            "Use GameManifest.released - adding a game is a manifest line, " +
+                "not an edit to this list."
+        )
         val NEWEST_FIRST = listOf(
             "midnight-overdrive",
             "pool-8ball",
@@ -65,7 +66,6 @@ class ModeActivity : ThemedActivity() {
             "orrery",
             "ember",
             "colour-rush",
-            "carroms",
             "last-balloon",
             "balloon-battle",
             "bomb-relay",
@@ -121,13 +121,45 @@ class ModeActivity : ThemedActivity() {
          * that stretch to more people, and within each group the newest game
          * first, then A-Z.
          */
+        @Suppress("DEPRECATION")
         fun orderForPage(games: List<GameManifest>, playerCount: Int): List<GameManifest> {
-            val newestFirst = NEWEST_FIRST
+            val legacy = NEWEST_FIRST
             return games.sortedWith(
                 compareBy(
                     { groupFor(it) },
                     { it.minPlayers },
-                    { newestFirst.indexOf(it.id).let { i -> if (i < 0) Int.MAX_VALUE else i } },
+                    // Newest first: ReleaseDate is Comparable and descending
+                    // here, so the newest `released:` lands at the top. A game
+                    // with no date compares as UNKNOWN and sinks below dated
+                    // ones, then the legacy list, then A-Z, so nothing is lost.
+                    { it.released.let { r -> -r.yyyymmdd } },
+                    { legacy.indexOf(it.id).let { i -> if (i < 0) Int.MAX_VALUE else i } },
+                    { it.title.lowercase() }
+                )
+            )
+        }
+
+        /**
+         * Order a flat list (ALL GAMES, PARTY GAMES) newest addition first.
+         *
+         * These pages used the raw scan order from the assets folder, which is
+         * alphabetical by directory and has nothing to do with when a game was
+         * added - so a game integrated last could sit at the bottom of the list
+         * a player had to scroll to find.
+         *
+         * The ordering key is now the game's own `released:` manifest line, so
+         * this scales to any number of new games: integrating a game is one
+         * line in the game file, with no list here to keep in step. Games
+         * sharing a date (several integrated on the same day) fall back to
+         * A-Z, which is deterministic rather than filesystem-dependent.
+         */
+        @Suppress("DEPRECATION")
+        fun orderNewestFirst(games: List<GameManifest>): List<GameManifest> {
+            val legacy = NEWEST_FIRST
+            return games.sortedWith(
+                compareBy(
+                    { it.released.let { r -> -r.yyyymmdd } },
+                    { legacy.indexOf(it.id).let { i -> if (i < 0) Int.MAX_VALUE else i } },
                     { it.title.lowercase() }
                 )
             )
@@ -176,8 +208,11 @@ class ModeActivity : ThemedActivity() {
         Log.d(TAG, "Total games scanned: ${allGames.size}")
 
         val filteredGames = when {
-            allGamesMode -> allGames
-            partyMode -> allGames.filter { it.id in PARTY_GAME_IDS }
+            // ALL GAMES and PARTY GAMES: newest integration first. These pages
+            // used the raw asset-scan order (alphabetical by directory), which
+            // has nothing to do with how recently a game was added.
+            allGamesMode -> orderNewestFirst(allGames)
+            partyMode -> orderNewestFirst(allGames.filter { it.id in PARTY_GAME_IDS })
             // N PLAYER page: exact-fit games first, then the next count up, and
             // so on - each group newest-first then A-Z. See orderForPage.
             else -> orderForPage(filterGames(allGames, playerCount), playerCount)

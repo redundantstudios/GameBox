@@ -10,6 +10,7 @@ aiSupport: none
 online: false
 tileColor: #E8912F
 version: 1
+released: 2026-09-19
 -->
 <html lang="en">
 <head>
@@ -336,12 +337,16 @@ const Studio = (() => {
        global callback NAME; the Kotlin side invokes window.__studioAdCb */
     ads:{ rewarded(placement,onReward){
       const b=bridge(); if(b) {
-        const cbName = `__studioAdCb_${placement}`;
+        /* A callback name per REQUEST, not per placement: keying only on
+           placement meant two requests for the same offer raced on one
+           function, so the first ad paid out the second action. */
+        window.__studioAdSeq=(window.__studioAdSeq||0)+1;
+        const cbName = `__studioAdCb_${placement}_${window.__studioAdSeq}`;
         window[cbName] = function(result){
+          try{ delete window[cbName]; }catch(_){}
           onReward(result);
-          delete window[cbName];
         };
-        b.showRewardedAd(cbName);
+        b.showRewardedAd(cbName,placement||"",null);
         return;
       }
       if(window.CrazyGames?.SDK?.ad) {
@@ -363,7 +368,7 @@ const Studio = (() => {
           if(typeof callback === 'function') callback(result);
           delete window[cbName];
         };
-        b.showInterstitial(cbName);
+        b.showInterstitial(cbName,'');
         return;
       }
       if(window.CrazyGames?.SDK?.ad) {

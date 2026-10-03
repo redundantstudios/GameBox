@@ -9,6 +9,7 @@ aiSupport: full
 online: false
 tileColor: #A97C50
 version: 2
+released: 2026-09-24
 -->
 <!--
 REDUNDANT STUDIOS — GAMEBOX MANIFEST
@@ -625,14 +626,21 @@ const Studio = (() => {
           /* No callback at all means the ad could not be served. Report that
              instead of doing nothing, so the UI can offer a retry. */
           const watchdog = setTimeout(function() { done(false, "timeout"); }, 45000);
-          /* A reward callback that arrives with NO argument means GRANTED.
-             Requiring the string "granted" swallowed every reward on devices
-             that call back bare. */
-          window.__studioAdCb = function(result) {
-            done(result === undefined || result === null || result === "" ||
-                 result === "granted", "closed");
+          /* GRANT ONLY ON THE EXPLICIT "granted" TOKEN.
+             This used to treat a bare (undefined/null/"") callback as granted,
+             on the belief that "a callback with no argument means granted". The
+             shell does not work that way: it always passes one of
+             "granted", "closed", "unavailable", "limit_reached" or "cooldown".
+             So the loose test was a hole - any path that called back without an
+             argument handed out the reward, and the ad cap bought nothing.
+             Only "granted" may pay out. */
+          window.__studioAdSeq = (window.__studioAdSeq || 0) + 1;
+          const cb = '__studioAdCb' + window.__studioAdSeq;
+          window[cb] = function(result) {
+            try { delete window[cb]; } catch(e) {}
+            done(result === "granted", "closed");
           };
-          try { b.showRewardedAd('__studioAdCb'); }
+          try { b.showRewardedAd(cb,placement||"",null); }
           catch(e) { done(false, "error"); }
           return;
         }
@@ -653,7 +661,7 @@ const Studio = (() => {
         const b = bridge();
         if (b && b.showInterstitial) {
           window.__studioInterCb = function() { if (onDone) onDone(); };
-          b.showInterstitial('__studioInterCb');
+          b.showInterstitial('__studioInterCb','');
           return;
         }
         if (onDone) onDone();

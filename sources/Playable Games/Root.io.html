@@ -273,22 +273,30 @@ function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;const t=a[i];a[i]=a[j];a[j]=t}return a}
 
 /* ---------------- constants ---------------- */
-const WORLD=5000,SURFACE=130,SPACING=6,MAX_LEN=5000,MAX_PTS=560,HEAD_SEGS=6;
+const WORLD=5000,SURFACE=130,SPACING=6,MAX_LEN=5000,MAX_PTS=560,HEAD_SEGS=1;
 const BASE_LEN=54,LEN_PER_GROWTH=1.8,ROOT_THICKNESS=12,GROWTH_SMOOTH=2.8;
-const WORLD_EDGE_MARGIN=34,AI_COUNT=18,MAX_PARTICLES=120,MIN_AI_GR=90,AI_STUCK_TIME=.65;
-const AI_THINK_MIN=.34,AI_THINK_MAX=.46,AI_AVOID_INTERVAL=.28,AI_LOOK=340;
+const WORLD_EDGE_MARGIN=0,AI_COUNT=18,MAX_PARTICLES=120,MIN_AI_GR=90,AI_STUCK_TIME=.65;
+const AI_THINK_MIN=.22,AI_THINK_MAX=.30,AI_AVOID_INTERVAL=.13,AI_LOOK=520;
 const AI_INITIAL_MIN=90,AI_INITIAL_MAX=150,AI_BIG_SPAWN_MARGIN=260;
 const RES_T={nutrient:{v:1,r:5,c:'#ffb24d'},water:{v:2,r:7,c:'#58b7ff'},mineral:{v:5,r:8,c:'#b678ff'},golden:{v:15,r:11,c:'#ffd23f'}};
 const RES_N={nutrient:240,water:80,mineral:46,golden:6};
 const BOOST_MULT=1.8,BOOST_DRAIN=10,BOOST_MIN=10,BOOST_DROP=.16;
 const RESONANCE_TIME=5.5;
 const FACE_BLINK_MIN=2.2,FACE_BLINK_MAX=5.4;
+/* PRICING.
+   Root Points are earned per run as  max(6, score/120) + kills*20 , so a
+   typical run pays somewhere around 50-300 RP and a good one a few hundred.
+   At 120/300/650/1200 the whole set fell in a couple of good runs, which made
+   the Root Lab a formality and left nothing to grind for. The costs below are
+   roughly an order of magnitude higher: the first root is a short-term goal,
+   the last is a long one, and the ad route (one hour) is always the cheap
+   option for a player who does not want to grind. */
 const COSMETICS={
   normal:{name:'Normal Root',cost:0,body:'#c89b62',dark:'#7a5326',glow:'#e9c98a',spine:'#e2c088',deco:null,decoC:'#a8c98a'},
-  oak:{name:'Oak Root',cost:120,body:'#9a6b3a',dark:'#5d3d1c',glow:'#c99a5e',spine:'#c49a63',deco:'leaf',decoC:'#7fb85c'},
-  blossom:{name:'Blossom Root',cost:300,body:'#d18aa0',dark:'#8e4f66',glow:'#f2b7c9',spine:'#eab6c6',deco:'blossom',decoC:'#f6aec3'},
-  tropical:{name:'Tropical Root',cost:650,body:'#4fa36a',dark:'#2c6a41',glow:'#8fd6a5',spine:'#8ccf9f',deco:'frond',decoC:'#a8e0b8'},
-  crystal:{name:'Crystal Root',cost:1200,body:'#8fd8e8',dark:'#3f8ba3',glow:'#c9f1fa',spine:'#d6f4fb',deco:'crystal',decoC:'#bdeef7'}
+  oak:{name:'Oak Root',cost:900,body:'#9a6b3a',dark:'#5d3d1c',glow:'#c99a5e',spine:'#c49a63',deco:'leaf',decoC:'#7fb85c'},
+  blossom:{name:'Blossom Root',cost:2500,body:'#d18aa0',dark:'#8e4f66',glow:'#f2b7c9',spine:'#eab6c6',deco:'blossom',decoC:'#f6aec3'},
+  tropical:{name:'Tropical Root',cost:6500,body:'#4fa36a',dark:'#2c6a41',glow:'#8fd6a5',spine:'#8ccf9f',deco:'frond',decoC:'#a8e0b8'},
+  crystal:{name:'Crystal Root',cost:14000,body:'#8fd8e8',dark:'#3f8ba3',glow:'#c9f1fa',spine:'#d6f4fb',deco:'crystal',decoC:'#bdeef7'}
 };
 const PALS=[['#c96f4a','#8a4128','#f0a382'],['#7fa661','#4c6b38','#b4d494'],['#5f9ea0','#386668','#9ccfd1'],['#a06fb8','#654379','#cf9fdc'],['#c9a24a','#8a6a26','#efd08a'],['#c9618a','#833a58','#ef9dbd'],['#6d8b3f','#425a22','#a4c473'],['#5c7ea8','#374f6d','#9cb9d8'],['#b85c3f','#7a3722','#dd9074'],['#8b8b46','#5a5a26','#bcbc76'],['#9c6a8f','#64405a','#c79cb9'],['#4f9c85','#2c6553','#8ccab4'],['#b87a4a','#7d4c26','#dcaa80'],['#5c8f5c','#35593a','#94c394'],['#a85454','#703030','#d18e8e']];
 const NAMES=['OakMaster','GreenKing','RootRider','ForestX','VineLord','DeepRoot','TreeBoss','NatureX','RootHunter','WildVine','AncientRoot','JungleKing','MossBeard','ClayDigger','NightBloom','SilkThread','BoulderRoot','FernWhisper','PebblePath','DeepSprout','IronWillow','ThistleRun','CedarGhost','MudMason'];
@@ -303,31 +311,94 @@ const IS_TOUCH=(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches
 
 /* ---------------- save ---------------- */
 const SAVE_KEY='rootIO.save.v1';
-const DEF={best:0,bestRank:0,rp:0,unlocked:['normal'],sel:'normal',sound:true,shake:true,games:0};
+/* `temp` holds ad-unlocked roots as {key: expiryMs}. They are usable for an
+   hour and then lapse - the cheap route for a player who will not grind, and
+   never a permanent unlock. Buying with RP is the only permanent route.
+   `ver` gates the one-off cleanup described in loadSave(). */
+const DEF={ver:2,best:0,bestRank:0,rp:0,unlocked:['normal'],temp:{},sel:'normal',sound:true,shake:true,games:0};
+const TEMP_UNLOCK_MS=60*60*1000;
+/* Set when a load performed the v1 -> v2 cleanup, so the result is written back
+   and cannot re-run on the next launch. */
+let migrated=false;
 let save;
 function loadSave(){
-  const s=Object.assign({},DEF,{unlocked:['normal']});
+  const s=Object.assign({},DEF,{unlocked:['normal'],temp:{}});
   try{
     const raw=localStorage.getItem(SAVE_KEY);
     if(raw){
       const d=JSON.parse(raw);
       if(d&&typeof d==='object'){
+        /* ONE-TIME CLEANUP (v1 -> v2).
+           Before the rewarded contract was fixed, watching an ad pushed the
+           root into `unlocked` PERMANENTLY - the same list a purchase writes to.
+           Nothing in the old save records which was which, so the two are
+           indistinguishable now and every root reads as "OWNED".
+
+           The cheaper mistake is to clear them: the player keeps their score,
+           rank and Root Points, and simply re-earns the roots. Leaving them
+           would mean the Root Lab claims everything is owned and the 1-hour
+           rental can never be seen or tested. */
+        const ver=Number.isFinite(d.ver)?d.ver:1;
+        if(ver<2){
+          s.unlocked=['normal'];
+          s.temp={};
+          s.sel='normal';
+          migrated=true;
+        }
         if(Number.isFinite(d.best))s.best=Math.max(0,Math.floor(d.best));
         if(Number.isFinite(d.bestRank))s.bestRank=Math.max(0,Math.floor(d.bestRank));
         if(Number.isFinite(d.rp))s.rp=Math.max(0,Math.floor(d.rp));
         if(Array.isArray(d.unlocked))s.unlocked=d.unlocked.filter(x=>typeof x==='string').slice(0,20);
+        if(d.temp&&typeof d.temp==='object'){
+          s.temp={};
+          for(const k in d.temp){
+            if(!COSMETICS[k]||k==='normal')continue;
+            const until=Number(d.temp[k]);
+            // Drop anything that expired while the app was closed.
+            if(Number.isFinite(until)&&until>Date.now())s.temp[k]=until;
+          }
+        }
         if(typeof d.sel==='string')s.sel=d.sel;
         s.sound=d.sound!==false;s.shake=d.shake!==false;
         if(Number.isFinite(d.games))s.games=Math.max(0,Math.floor(d.games));
       }
     }
   }catch(e){}
-  if(!COSMETICS[s.sel]||s.unlocked.indexOf(s.sel)<0)s.sel='normal';
+  /* Validate against `s`, NOT via the isOwned/isUnlocked helpers: those read
+     the module-level `save`, which is still undefined here (it is assigned by
+     the `save=loadSave()` call below). Calling them at this point threw a
+     TypeError that killed the whole game script before its first frame, which
+     is what left the player looking at the menu over a black screen. */
+  if(!COSMETICS[s.sel])s.sel='normal';
+  if(!isOwnedIn(s,s.sel)&&!(s.temp[s.sel]>Date.now()))s.sel='normal';
   if(s.unlocked.indexOf('normal')<0)s.unlocked.push('normal');
   return s;
 }
+/* These take the save object explicitly rather than closing over the module
+   variable, so they are safe to call during load as well as after it. */
+function isOwnedIn(s,key){
+  return s.unlocked.indexOf(key)>=0;
+}
+function isUnlockedIn(s,key){
+  return isOwnedIn(s,key)||tempLeftIn(s,key)>0;
+}
+function tempLeftIn(s,key){
+  const until=s.temp[key];
+  if(!until)return 0;
+  const left=until-Date.now();
+  if(left<=0){delete s.temp[key];return 0;}
+  return left;
+}
+/* Post-load conveniences, for the running game only. */
+function isOwned(key){return isOwnedIn(save,key);}
+function isUnlocked(key){return isUnlockedIn(save,key);}
+function tempLeft(key){return tempLeftIn(save,key);}
 function writeSave(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(e){}}
 save=loadSave();
+/* Persist the cleanup immediately. Without this the v1 rule would re-run on
+   every launch and wipe out the first root the player actually BUYING - a far
+   worse bug than the one being fixed. */
+if(migrated)writeSave();
 
 /* ---------------- audio ---------------- */
 const A={ctx:null,master:null,noise:null,adMuted:false};
@@ -372,51 +443,125 @@ const SFX={
   bounce(){tone(250,180,.08,'triangle',.11)}
 };
 
-/* ---------------- Local placeholder ads ---------------- */
+/* ---------------- Ads: the shell's real AdMob units ----------------
+   The source shipped a self-drawn 1.1s fake "ADVERTISEMENT" overlay. That is
+   worse than having no ad: it also DEADLOCKED the offers that matter, because
+   every caller sets adBusy=true BEFORE calling in and showPlaceholder() bailed
+   out on `if(adBusy||adActive)return;`, so the request was dropped and the
+   callback never fired. The player pressed the button, nothing happened, and
+   the reward was unreachable.
+
+   Now every request goes through the shell bridge, which also owns the caps
+   (1 revive per game, 5 rewarded per game, 60s cooldown, 180s between
+   interstitials). The shell refuses with a REASON rather than silence - the
+   player tapped a button, and silence there just looks broken. */
 const AD={
-  available:true,
-  canRewarded(){return true},
+  canRewarded(){
+    const b=window.NativeBridge;
+    return !!(b&&b.showRewardedAd);
+  },
   setMute(on){
     A.adMuted=!!on;
     if(A.master&&A.ctx){
       A.master.gain.setTargetAtTime((save.sound&&!A.adMuted)?.5:0,A.ctx.currentTime,.015);
     }
   },
-  showPlaceholder(type,done){
-    if(adBusy||adActive)return;
+  /* Watch an ad. `done(true)` only when a reward was actually granted;
+     every refusal arrives as done(reason). */
+  showRewardedAd(done,placement){
+    if(adActive)return;
     adActive=true;
     this.setMute(true);
-    const label=type==='rewarded'?'REWARDED AD':'ADVERTISEMENT';
-    const msg=type==='rewarded'?'Watch to continue':'Ad break';
-    let overlay=document.getElementById('adPlaceholder');
-    if(!overlay){
-      overlay=document.createElement('div');
-      overlay.id='adPlaceholder';
-      overlay.style.cssText='position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.82);font-family:"Trebuchet MS","Segoe UI",Verdana,sans-serif;color:#f3e9d2;pointer-events:auto';
-      overlay.innerHTML='<div style="width:min(420px,86vw);background:#181009;border:1px solid rgba(232,176,75,.35);border-radius:18px;padding:28px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.7)"><div style="font-size:11px;letter-spacing:.24em;color:#c9bda0;margin-bottom:12px">ADVERTISEMENT</div><div id="adPhTitle" style="font-size:25px;font-weight:900;letter-spacing:.08em">REWARDED AD</div><div id="adPhMsg" style="margin-top:8px;color:#c9bda0;font-size:13px">Watch to continue</div><div style="height:5px;background:#332619;border-radius:5px;margin:20px 0 4px;overflow:hidden"><div id="adPhBar" style="height:100%;width:0;background:#8fbf6a;border-radius:5px;transition:width .1s linear"></div></div></div>';
-      document.body.appendChild(overlay);
+    const self=this;
+    const usePlacement=placement||'continue';
+    lastAdReason='';
+    function finish(ok,reason){
+      /* Every refusal is logged. A swallowed error here is how "the ad is
+         broken" and "the app cannot reach the ad bridge at all" both present as
+         the same silent no-op, and that is very expensive to diagnose. */
+      console.log('[ad] settled granted='+ok+' reason='+(reason||'none'));
+      self.setMute(false);
+      adActive=false;
+      if(!ok)lastAdReason=adMessage(reason);
+      if(done)done(ok,reason);
     }
-    overlay.style.display='flex';
-    overlay.querySelector('#adPhTitle').textContent=label;
-    overlay.querySelector('#adPhMsg').textContent=msg;
-    const bar=overlay.querySelector('#adPhBar');
-    bar.style.width='0%';
-    const duration=1100;
-    const started=performance.now();
-    const tick=()=>{
-      const t=Math.min(1,(performance.now()-started)/duration);
-      bar.style.width=(t*100).toFixed(1)+'%';
-      if(t<1){requestAnimationFrame(tick);return}
-      overlay.style.display='none';
-      this.setMute(false);
+    /* What the page can actually see, before anything is attempted. If the
+       bridge or the method is missing, this line says so outright instead of
+       letting a generic "no ad available" stand in for the truth. */
+    console.log('[ad] request placement=rootio bridge='+(typeof window.NativeBridge)
+      +' showRewardedAd='+(typeof (window.NativeBridge||{}).showRewardedAd)
+      +' Studio='+(typeof window.Studio));
+    if(!this.canRewarded()){ finish(false,'unavailable'); return; }
+    Studio.ads.rewarded(
+      usePlacement,
+      function(){ finish(true); },
+      function(reason){ finish(false,reason); }
+    );
+  },
+  /* Interstitial break. The shell always answers, so nothing can hang. */
+  showMidgameAd(done){
+    if(adActive){ if(done)done(false); return; }
+    adActive=true;
+    this.setMute(true);
+    const self=this;
+    Studio.ads.interstitial(function(){
+      self.setMute(false);
       adActive=false;
       if(done)done(true);
-    };
-    requestAnimationFrame(tick);
-  },
-  showMidgameAd(done){this.showPlaceholder('midgame',done)},
-  showRewardedAd(done){this.showPlaceholder('rewarded',done)}
+    });
+  }
 };
+
+/* Why the shell last refused, so the UI can say it in English instead of
+   printing a raw token. The reason strings are part of the bridge contract. */
+let lastAdReason='';
+function adMessage(reason){
+  /* A cooldown now arrives as "cooldown:47" - the shell sends the seconds it has
+     left. "Give it a moment" told the player nothing and read as a broken
+     button; stating the real number ends the tap-retry loop. */
+  var s=String(reason||'');
+  if(s.indexOf('cooldown:')===0){
+    var secs=parseInt(s.slice(9),10);
+    if(secs>0)return 'Next ad ready in '+secs+'s.';
+    return 'Give it a moment, then try again.';
+  }
+  switch(s){
+    case 'limit_reached': return 'You have used all your ad rewards for now.';
+    case 'cooldown':      return 'Give it a moment, then try again.';
+    case 'offline':       return "You're offline. Ads need a connection - the game still works.";
+    case 'unavailable':   return 'No ad available right now. Try again in a moment.';
+    case 'bridge_error':  return 'Ads could not start on this device. Please try again.';
+    default:              return 'Ad unavailable. Try again shortly.';
+  }
+}
+/* Seconds left on a cooldown token, or 0 when this is not a cooldown. */
+function cooldownSeconds(reason){
+  var s=String(reason||'');
+  if(s.indexOf('cooldown:')!==0)return 0;
+  var secs=parseInt(s.slice(9),10);
+  return isNaN(secs)?0:Math.max(0,secs);
+}
+/* Counts a button down to WATCH AD again, so the offer visibly returns by
+   itself instead of the player reloading the screen to find out. */
+function armCooldownButton(button,secs,label){
+  if(!button||secs<=0)return;
+  var left=secs;
+  button.disabled=true;
+  button.textContent='NEXT AD IN '+left+'s';
+  var iv=setInterval(function(){
+    left--;
+    /* buildCos can rebuild the card and detach this button under us; stop
+       rather than keep ticking on a node that is no longer on screen. */
+    if(!button.isConnected){ clearInterval(iv); return; }
+    if(left<=0){
+      clearInterval(iv);
+      button.disabled=false;
+      button.textContent=label||'WATCH AD';
+      return;
+    }
+    button.textContent='NEXT AD IN '+left+'s';
+  },1000);
+}
 
 /* ---------------- canvas ---------------- */
 const canvas=$('game'),ctx=canvas.getContext('2d');
@@ -471,7 +616,7 @@ function makeGrid(cell){
     }
   };
 }
-const resGrid=makeGrid(200),segGrid=makeGrid(180);
+const resGrid=makeGrid(200),segGrid=makeGrid(180),rockGrid=makeGrid(220);
 const qA=[],qB=[],qC=[];
 const segPool=[];let segN=0;
 function rebuildSegGrid(){
@@ -480,12 +625,17 @@ function rebuildSegGrid(){
     const r=roots[ri];
     if(r.dead)continue;
     const p=r.pts,n=p.length;
-    for(let i=0;i<n-1;i+=4){
-      const j=Math.min(i+3,n-1);
-      let s;
-      if(segN<segPool.length)s=segPool[segN++];else{s={};segPool.push(s);segN++}
-      s.r=r;s.ax=p[i].x;s.ay=p[i].y;s.bx=p[j].x;s.by=p[j].y;s.i=i;
-      segGrid.insert(s,(s.ax+s.bx)*.5,(s.ay+s.by)*.5);
+    // Keep one collision segment per pair of consecutive trail points.
+    // The old 4-point batching left gaps, especially around the neck/head.
+    // Keep the final head segment excluded so head-vs-head remains harmless,
+    // while the immediately preceding neck segment is fully collidable.
+    for(let i=0;i<n-1;i++){
+      const j=i+1;
+      let seg;
+      if(segN<segPool.length)seg=segPool[segN++];
+      else{seg={};segPool.push(seg);segN++}
+      seg.r=r;seg.ax=p[i].x;seg.ay=p[i].y;seg.bx=p[j].x;seg.by=p[j].y;seg.i=i;
+      segGrid.insert(seg,(seg.ax+seg.bx)*.5,(seg.ay+seg.by)*.5);
     }
   }
 }
@@ -518,6 +668,11 @@ let STATE='MENU';
 let gameTime=0,dayT=30,nightT=0,runTime=0,difficulty=1;
 let shakeAmt=0,deathT=0,deathCause='',deathRank=0;
 let sessionRetries=0,lastMidgameRetry=0,adBusy=false,adActive=false,runFinalized=false,deathSnapshot=null,adUnlockKey=null;
+/* The shell allows ONE revive per game (AdPolicy caps it) and will refuse the
+   second with a reason. Offering a button that can only ever be refused is
+   worse than not offering it, so once used the button is REMOVED rather than
+   left there to explain itself - a second death is a real loss. */
+let reviveUsed=false;
 let roots=[],player=null,nextId=1;
 let resources=[],resId=1;
 let particles=[],texts=[],respawnQ=[];
@@ -692,6 +847,13 @@ function genWorld(){
     }
     caves.push(cave);
   }
+  // Static rock spatial index used by bot path planning.
+  rockGrid.clear();
+  for(let i=0;i<rocks.length;i++){
+    const rk=rocks[i];
+    rockGrid.insert(rk,rk.x,rk.y);
+  }
+
   // No isolated rocks: the grouped zones are the intentional hazards.
   for(let i=0;i<2;i++){
     const x0=rand(400,WORLD-400),y0=SURFACE+6;
@@ -851,9 +1013,10 @@ function extendTrail(r){
   for(let i=p.length-1;i>0;i--)
     total+=Math.hypot(p[i].x-p[i-1].x,p[i].y-p[i-1].y);
 
-  while(total+SPACING*0.8<r.len && p.length<MAX_PTS){
+  const dynamicSpacing=r.len>3800?8.2:r.len>2800?7.4:r.len>1900?6.6:SPACING;
+  while(total+dynamicSpacing*0.8<r.len && p.length<MAX_PTS){
     const a=Math.atan2(p[0].y-p[1].y,p[0].x-p[1].x);
-    const d=Math.min(SPACING,r.len-total);
+    const d=Math.min(dynamicSpacing,r.len-total);
     p.unshift({x:p[0].x+Math.cos(a)*d,y:p[0].y+Math.sin(a)*d});
     total+=d;
   }
@@ -876,6 +1039,7 @@ function environmentDeath(r,cause){
   return true;
 }
 function rockCollide(r){
+  if(r.cd>0)return false;
   for(let i=0;i<rocks.length;i++){
     const rk=rocks[i],dx=r.x-rk.x,dy=r.y-rk.y;
     if(Math.abs(dx)>rk.cr+42||Math.abs(dy)>rk.cr+42)continue;
@@ -906,6 +1070,29 @@ function aiPreMoveRockGuard(r,dt,sp){
     if(Math.hypot(rk.x-forwardX,rk.y-forwardY)<rk.cr+r.th+24)danger=true;
   }
   if(!danger||!nearest)return;
+
+  // Emergency branch: if the cluster is already very close, immediately
+  // choose the direction with the greatest clearance rather than waiting for
+  // another AI thinking cycle.
+  if(nearestD<nearest.cr+r.th+42){
+    const away=Math.atan2(r.y-nearest.y,r.x-nearest.x);
+    const offsets=[0,.55,-.55,1.0,-1.0];
+    let bestA=away,bestC=-Infinity;
+    for(let oi=0;oi<offsets.length;oi++){
+      const aa=away+offsets[oi];
+      const px=r.x+Math.cos(aa)*90,py=r.y+Math.sin(aa)*90;
+      let c=1e9;
+      for(let j=0;j<rocks.length;j++){
+        const rk=rocks[j];
+        c=Math.min(c,Math.hypot(rk.x-px,rk.y-py)-rk.cr-r.th);
+      }
+      if(c>bestC){bestC=c;bestA=aa;}
+    }
+    r.a=turnToward(r.a,bestA,Math.min(.58,r.turn*dt*3.2));
+    r.tx=r.x+Math.cos(bestA)*850;r.ty=r.y+Math.sin(bestA)*850;
+    r.mode='rockEvade';r.tgt=null;
+    r.faceMood='nervous';
+  }
 
   // Choose the safest turn before entering the formation. This is a
   // predictive guard; the physical rock collision remains lethal.
@@ -940,7 +1127,6 @@ function moveRoot(r,dt){
   r.prevX=r.x;r.prevY=r.y;
   let sp=clamp(170-r.gr*.012,92,170)*edgeFactor(r.x,r.y);
   if(r.boosting)sp*=BOOST_MULT;
-  aiPreMoveRockGuard(r,dt,sp);
   for(let i=0;i<pockets.length;i++)if(Math.hypot(pockets[i].x-r.x,pockets[i].y-r.y)<pockets[i].r)sp*=.72;
   for(let i=0;i<fertiles.length;i++)if(Math.hypot(fertiles[i].x-r.x,fertiles[i].y-r.y)<fertiles[i].r)sp*=1.12;
   r.x+=Math.cos(r.a)*sp*dt;r.y+=Math.sin(r.a)*sp*dt;
@@ -957,16 +1143,20 @@ function moveRoot(r,dt){
   r.lastX=r.x;r.lastY=r.y;
   const top=SURFACE+50;
   // Edges are lethal. Players must turn before reaching them.
-  if(r.x<WORLD_EDGE_MARGIN||r.x>WORLD-WORLD_EDGE_MARGIN||r.y<top+WORLD_EDGE_MARGIN||r.y>WORLD-WORLD_EDGE_MARGIN){
+  if(r.x<0||r.x>WORLD||r.y<top||r.y>WORLD){
     environmentDeath(r,'THE WORLD EDGE');
     return;
   }
   if(rockCollide(r))return;
   const lp=r.pts[r.pts.length-1];
   const dx=r.x-lp.x,dy=r.y-lp.y;
-  if(dx*dx+dy*dy>=SPACING*SPACING){
-    r.pts.push({x:r.x,y:r.y});
-    trimTrail(r);
+  const dynamicSpacing=r.len>3800?8.2:r.len>2800?7.4:r.len>1900?6.6:SPACING;
+  if(dx*dx+dy*dy>=dynamicSpacing*dynamicSpacing){
+    const np=r.pts[r.pts.length-1];
+    if(!np||Math.hypot(r.x-np.x,r.y-np.y)>=dynamicSpacing*.98){
+      r.pts.push({x:r.x,y:r.y});
+      trimTrail(r);
+    }
   }
 }
 function collect(r,s){
@@ -1036,6 +1226,11 @@ function rootPost(r,dt){
   else if(tLen<r.len)r.len=lerp(r.len,tLen,clamp(dt*10,0,1));
 
   if(r.gr>r.maxGr)r.maxGr=r.gr;
+  // Longer roots have more inertia. This prevents high-score runs from
+  // producing unnaturally tight loops while still keeping the root responsive.
+  const inertia=1+Math.min(1.25,Math.sqrt(Math.max(0,r.gr))/34);
+  const baseTurn=clamp(4.8/inertia,2.05,4.8);
+  r.turn=baseTurn*(r.isPlayer?1:.96);
   r.branchT-=dt;
   const maxB=clamp(2+Math.floor(r.gr/95)+(r.resonance>0?1:0),2,9);
   if(r.branchT<=0){
@@ -1180,28 +1375,46 @@ function spawnAI(opt){
    The goal is not to make them invincible; it is to make deaths come from
    real tactical mistakes or risky fights rather than random pathing. */
 function aiPathHazard(r,a,look){
-  // Lightweight forward probe used only for AI steering. Collision detection
-  // itself remains exact; this function is intentionally cheap so 18 bots do
-  // not consume the frame budget while large roots are on screen.
+  // Exact-ish swept forecast used by bots. It checks the complete projected
+  // head path against consecutive enemy-body segments, plus static rocks.
+  // This closes the neck/tunneling gap that made bots appear to blindly crash.
+  const maxLook=Math.max(90,Math.min(620,look));
+  const d=[0,70,145,240,360,maxLook];
   let hazard=0;
-  const d1=Math.min(150,look),d2=Math.min(320,look);
-  const samples=d2>d1?[d1,d2]:[d1];
-  for(let si=0;si<samples.length;si++){
-    const d=samples[si];
-    const x=r.x+Math.cos(a)*d,y=r.y+Math.sin(a)*d;
-    const edgeD=Math.min(x,WORLD-x,y-(SURFACE+50),WORLD-y);
-    if(edgeD<65){hazard+=28;continue}
-    if(edgeD<150)hazard+=7*(1-edgeD/150);
+  let px=r.x,py=r.y;
+  for(let si=1;si<d.length;si++){
+    const dd=d[si];
+    if(dd<=d[si-1])continue;
+    const nx=r.x+Math.cos(a)*dd,ny=r.y+Math.sin(a)*dd;
+    const mx=(px+nx)*.5,my=(py+ny)*.5;
+    const edgeD=Math.min(nx,WORLD-nx,ny-(SURFACE+50),WORLD-ny);
+    if(edgeD<=0)return 100000;
+    if(edgeD<45)hazard+=95;
+    else if(edgeD<110)hazard+=25*(1-edgeD/110);
 
-    const queryR=Math.max(34,r.th*2.2)+18;
-    segGrid.query(x,y,queryR,qC);
+    // Rock clusters are static, so query their dedicated grid.
+    const rockQ=Math.max(35,r.th+28);
+    rockGrid.query(mx,my,Math.hypot(nx-px,ny-py)*.5+rockQ,qC);
     for(let k=0;k<qC.length;k++){
-      const ss=qC[k];
-      if(ss.r===r||ss.r.dead||ss.i>=ss.r.pts.length-HEAD_SEGS)continue;
-      const safe=(r.th+ss.r.th)*.5+18;
-      const ds=segDist(x,y,ss.ax,ss.ay,ss.bx,ss.by);
-      if(ds<safe)hazard+=(9-si*2)*((safe-ds)/safe);
+      const rk=qC[k];
+      const rr=rk.cr+r.th+12;
+      const ds=segDist(nx,ny,rk.x,rk.y,rk.x,rk.y);
+      const minPath=segDist(rk.x,rk.y,px,py,nx,ny);
+      if(ds<=rr||minPath<=rr)return 100000;
     }
+
+    // Enemy bodies: use the current collision grid, which is rebuilt at the
+    // end of the previous simulation step from complete consecutive segments.
+    segGrid.query(mx,my,Math.hypot(nx-px,ny-py)*.5+Math.max(42,r.th*2.2)+18,qB);
+    const safeExtra=si<=2?8:14;
+    for(let k=0;k<qB.length;k++){
+      const ss=qB[k],o=ss.r;
+      if(!o||o===r||o.dead||o.cd>0)continue;
+      if(ss.i>=o.pts.length-HEAD_SEGS)continue;
+      const safe=(r.th+o.th)*.5+safeExtra;
+      if(segSegDist(px,py,nx,ny,ss.ax,ss.ay,ss.bx,ss.by)<=safe)return 100000;
+    }
+    px=nx;py=ny;
   }
   return hazard;
 }
@@ -1285,7 +1498,10 @@ function aiChooseTarget(r){
     if(o===r||o.dead)continue;
     const d=Math.hypot(o.x-r.x,o.y-r.y);
     if(d<120||d>Math.min(1450,P.per*1.45))continue;
-    if(advantage-o.gr<Math.max(28,advantage*.075))continue;
+    if(advantage-o.gr<Math.max(34,advantage*.11))continue;
+    // Never let a bot blindly dive into the player. A player target requires
+    // a clear size advantage and a reasonably close intercept.
+    if(o===player && (advantage < o.gr*1.45 || d>820))continue;
 
     const toward=Math.atan2(o.y-r.y,o.x-r.x);
     const facing=(1+Math.cos(wrapAng(toward-r.a)))*.5;
@@ -1293,7 +1509,7 @@ function aiChooseTarget(r){
     const pred=predictRootPoint(o,lead);
     const intercept=Math.hypot(pred.x-r.x,pred.y-r.y);
     let score=(advantage/Math.max(60,o.gr+1))*1.8 + facing*1.6 + 900/(intercept+120);
-    if(o===player)score*=1.12;
+    if(o===player)score*=((advantage>o.gr*1.28&&d<900)?1.04:.58);
     if(P.type==='Hunter'||P.type==='Aggressive')score*=1.22;
     if(P.type==='Explorer')score*=.72;
     candidates.push({o,pred,score,intercept});
@@ -1341,19 +1557,37 @@ function avoidBodies(r,dt){
   r.avoidT=AI_AVOID_INTERVAL;
 
   const desired=Math.atan2(r.ty-r.y,r.tx-r.x);
-  const offsets=[-.72,0,.72];
-  let bestA=r.a,bestCost=Infinity;
+  // Wide candidate fan: pro bots can choose a clean corridor instead of
+  // merely nudging away from an obstacle at the last moment.
+  const offsets=[-1.45,-1.15,-.85,-.55,-.28,0,.28,.55,.85,1.15,1.45,2.2,-2.2];
+  let bestA=r.a,bestCost=Infinity,bestSafe=false;
   for(let i=0;i<offsets.length;i++){
     const a=r.a+offsets[i];
+    const hazard=aiPathHazard(r,a,Math.max(AI_LOOK,460));
+    if(hazard>=100000)continue;
+    const px=r.x+Math.cos(a)*240,py=r.y+Math.sin(a)*240;
+    const edgeD=Math.min(px,WORLD-px,py-(SURFACE+50),WORLD-py);
+    const edgePenalty=edgeD<80?60:(edgeD<170?(170-edgeD)*.18:0);
     const turnPenalty=Math.abs(wrapAng(a-desired));
-    const hazard=aiPathHazard(r,a,AI_LOOK);
-    const edgePenalty=nearEdge(r.x+Math.cos(a)*220,r.y+Math.sin(a)*220)?5:0;
-    const commitmentPenalty=(r.mode==='hunt'&&i===1)?-.14:0;
-    const cost=turnPenalty*.42+hazard*1.65+edgePenalty+commitmentPenalty;
-    if(cost<bestCost){bestCost=cost;bestA=a;}
+    const stability=Math.abs(wrapAng(a-r.a));
+    let cost=hazard*2.8+turnPenalty*.34+stability*.08+edgePenalty;
+    if(r.mode==='hunt'&&Math.abs(wrapAng(a-desired))<.32)cost-=.55;
+    if(cost<bestCost){bestCost=cost;bestA=a;bestSafe=true;}
   }
-  const turnBoost=r.mode==='evade'||r.mode==='rockEvade'?1.75:r.mode==='hunt'?1.32:1.10;
-  r.a=turnToward(r.a,bestA,clamp(r.turn*dt*turnBoost,0,.58));
+  if(!bestSafe){
+    // No clean route in the chosen fan: reverse away from the nearest threat.
+    let threat=null,td=1e9;
+    for(let i=0;i<roots.length;i++){
+      const o=roots[i];if(o===r||o.dead)continue;
+      const d=Math.hypot(o.x-r.x,o.y-r.y);
+      if(d<td){td=d;threat=o;}
+    }
+    if(threat){
+      bestA=Math.atan2(r.y-threat.y,r.x-threat.x);
+    }else bestA=r.a+Math.PI*.65;
+  }
+  const turnBoost=r.mode==='evade'||r.mode==='rockEvade'?2.0:r.mode==='hunt'?1.38:1.18;
+  r.a=turnToward(r.a,bestA,clamp(r.turn*dt*turnBoost,0,.64));
 }
 
 function aiControl(r,dt){
@@ -1415,10 +1649,16 @@ function aiControl(r,dt){
     const o=r.tgt;
     const d=Math.hypot(o.x-hx,o.y-hy);
     const point=aiTacticalPoint(r,o);
-    r.tx=point.x;r.ty=point.y;r.faceMood='fierce';
+    const attackAngle=Math.atan2(point.y-hy,point.x-hx);
+    const attackHazard=aiPathHazard(r,attackAngle,Math.min(540,d+140));
+    if(attackHazard>=100000){
+      r.tgt=null;r.mode='collect';r.faceMood='focused';
+    }else{
+      r.tx=point.x;r.ty=point.y;r.faceMood='fierce';
+    }
 
     // Boost only when the intercept is plausible; don't waste mass while far away.
-    if(r.boostT<=0 && r.gr>170 && o.gr<r.gr*.92){
+    if(r.tgt===o && r.boostT<=0 && r.gr>170 && o.gr<r.gr*.92){
       const aTo=Math.atan2(point.y-hy,point.x-hx);
       const aligned=Math.abs(wrapAng(aTo-r.a));
       const chaseRange=d>240&&d<900;
@@ -1443,10 +1683,39 @@ function aiControl(r,dt){
     r.a=turnToward(r.a,Math.atan2(r.ty-r.y,r.tx-r.x),clamp(r.turn*dt*1.9,0,.64));
   }
 
+  // Close-range head separation: when approaching another root head, favor
+  // a clean offset instead of driving straight at the head/body boundary.
+  for(let i=0;i<roots.length;i++){
+    const o=roots[i];
+    if(o===r||o.dead||o.cd>0)continue;
+    const dx=o.x-r.x,dy=o.y-r.y,d=Math.hypot(dx,dy);
+    if(d<150 && (o===player || Math.abs(r.gr-o.gr)<r.gr*.35)){
+      const side=r.flankSide||1;
+      const perp=Math.atan2(dy,dx)+side*Math.PI*.5;
+      const blend=.55*(1-d/150);
+      r.a=turnToward(r.a,perp,clamp(r.turn*dt*blend,0,.22));
+    }
+  }
+
   const desired=Math.atan2(r.ty-r.y,r.tx-r.x);
-  const scale=r.mode==='evade'?1.65:(r.mode==='hunt'?1.25:1.08);
-  r.a=turnToward(r.a,desired,clamp(r.turn*dt*scale,0,.58));
+  const scale=r.mode==='evade'?1.55:(r.mode==='hunt'?1.18:1.02);
+  r.a=turnToward(r.a,desired,clamp(r.turn*dt*scale,0,.46));
   avoidBodies(r,dt);
+
+  // Final short-horizon safety check using the chosen heading. If the route is
+  // already occupied, immediately abandon the attack/route and turn to the
+  // safest alternative instead of accepting a guaranteed collision.
+  if(aiPathHazard(r,r.a,260)>=100000){
+    r.tgt=null;r.mode='evade';r.faceMood='nervous';
+    const escape=[r.a+.82,r.a-.82,r.a+1.35,r.a-1.35];
+    let ea=r.a,ec=-Infinity;
+    for(let i=0;i<escape.length;i++){
+      const h=aiPathHazard(r,escape[i],260);
+      if(h<100000){const score=-h-Math.abs(wrapAng(escape[i]-r.a))*.15;if(score>ec){ec=score;ea=escape[i];}}
+    }
+    r.a=turnToward(r.a,ea,clamp(r.turn*dt*2.2,0,.46));
+    r.tx=r.x+Math.cos(ea)*700;r.ty=r.y+Math.sin(ea)*700;
+  }
 
   // Stuck recovery: pro bots change plan instead of repeatedly steering into walls.
   const moved=Math.hypot(r.x-r.lastX,r.y-r.lastY);
@@ -1484,7 +1753,7 @@ function killRoot(v,killer){
   if(v.dead)return;
   v.dead=true;
   dropResources(v);
-  for(let i=0;i<v.pts.length;i+=(v.pts.length>420?12:7)){
+  for(let i=0;i<v.pts.length;i+=(v.pts.length>420?18:v.pts.length>240?10:7)){
     const p=v.pts[i];
     burst(p.x,p.y,2,v.darkC,'frag');
     if(i%10===0)burst(p.x,p.y,1,v.glowC,'spark');
@@ -1504,39 +1773,47 @@ function killRoot(v,killer){
   }
 }
 function collisions(){
-  /* SNAKE.IO-STYLE ROOT COLLISION:
-     - A HEAD hitting another ROOT'S BODY kills the head owner.
-     - A HEAD hitting another HEAD does nothing; heads pass through.
-     - BODY vs BODY does nothing; roots may cross without killing each other.
-     - We use the head's swept path so fast movement cannot skip through a body.
-  */
-
+  /* Snake-style collision with no neck blind spot.
+     - Head hitting an enemy body/neck => the moving head dies.
+     - Head-to-head contact is ignored.
+     - Body-to-body contact is ignored.
+     The whole head movement segment is swept against every consecutive
+     enemy body segment, so fast crossing cannot tunnel through a neck. */
   for(let ri=0;ri<roots.length;ri++){
     const r=roots[ri];
     if(!r||r.dead||r.cd>0)continue;
 
-    const hx0=r.prevX===undefined?r.x:r.prevX;
-    const hy0=r.prevY===undefined?r.y:r.prevY;
-    const hx1=r.x,hy1=r.y;
+    const x0=r.prevX===undefined?r.x:r.prevX;
+    const y0=r.prevY===undefined?r.y:r.prevY;
+    const x1=r.x,y1=r.y;
 
-    // Only the moving HEAD is tested. Never test body-to-body contact.
-    segGrid.query((hx0+hx1)*.5,(hy0+hy1)*.5,100,qA);
+    const travel=Math.hypot(x1-x0,y1-y0);
+    const broad=Math.max(70,travel*0.5+r.th+28);
+    segGrid.query((x0+x1)*.5,(y0+y1)*.5,broad,qA);
 
     for(let k=0;k<qA.length;k++){
       const hit=qA[k];
       const o=hit.r;
       if(!o||o===r||o.dead||o.cd>0)continue;
 
-      // Exclude the other root's head/crown segments.
-      if(hit.i>=o.pts.length-HEAD_SEGS)continue;
+      const n=o.pts.length;
+      if(n<2)continue;
 
       const rr=(r.th+o.th)*.5+5;
-      const d=segSegDist(hx0,hy0,hx1,hy1,hit.ax,hit.ay,hit.bx,hit.by);
-      if(d<=rr){
-        // Only the head owner dies. The root whose body was hit survives.
-        killRoot(r,o);
-        break;
+      const d=segSegDist(x0,y0,x1,y1,hit.ax,hit.ay,hit.bx,hit.by);
+      if(d>rr)continue;
+
+      // The final segment ends at the enemy head. Let genuine head-v-head
+      // contact pass through, but make the neck immediately before it lethal.
+      const isNeck=hit.i===n-2;
+      if(isNeck){
+        const enemyHeadDist=segDist(o.x,o.y,x0,y0,x1,y1);
+        const headRadius=o.th*.92;
+        if(enemyHeadDist<=headRadius)continue;
       }
+
+      killRoot(r,o);
+      break;
     }
   }
 }
@@ -1605,9 +1882,10 @@ function reviveFromAd(){
   player.gr=Math.max(18,d.gr*.72);
   player.len=Math.max(105,d.len*.78);
   player.score=d.score;player.kills=d.kills;player.collected=d.collected;player.maxGr=Math.max(player.gr,d.maxGr);
-  player.pts=d.pts.map(p=>({x:p.x,y:p.y}));
-  if(!player.pts.length)seedTrail(player);
-  player.cd=3.2;player.boosting=false;
+  const safe=findSpawn();
+  player.x=safe.x;player.y=safe.y;player.a=rand(0,TAU);
+  seedTrail(player);
+  player.cd=5.0;player.boosting=false;
   if(roots.indexOf(player)<0)roots.push(player);
   rebuildSegGrid();
   STATE='PLAYING';
@@ -1619,6 +1897,8 @@ function reviveFromAd(){
   toastMsg('ROOT REVIVED — SURVIVE!',1.8);
   deathSnapshot=null;
   adBusy=false;
+  reviveUsed=true;
+  $('btnContinueAd').classList.add('hidden');
   $('btnContinueAd').disabled=false;
   $('btnContinueAd').textContent='Watch Ad to Continue';
 }
@@ -1632,13 +1912,13 @@ function showGameOver(){
   $('goRP').innerHTML='ROOT POINTS&nbsp; <b>+'+fmt(projectedRP)+'</b>';
   $('goBest').classList.toggle('hidden',player.score<=save.best);
   $('goAdStatus').classList.add('hidden');
-  $('btnContinueAd').classList.remove('hidden');
+  /* Only offer the revive while it can still be granted. The shell allows one
+     per game, so after that there is no button to show at all. */
+  $('btnContinueAd').classList.toggle('hidden',reviveUsed);
   $('btnContinueAd').disabled=false;
   $('btnContinueAd').textContent='Watch Ad to Continue';
   $('hud').classList.add('hidden');
   showOnly('gameover');
-  // Midgame placeholder ads are triggered after every fourth retry.
-
 }
 
 /* ---------------- mobile presentation ---------------- */
@@ -1687,9 +1967,15 @@ function goFlash(){
 function startGame(){
   particles.length=0;texts.length=0;
   adBusy=false;adActive=false;runFinalized=false;deathSnapshot=null;
+  reviveUsed=false;lastAdReason='';
+  try{ if(window.NativeBridge&&window.NativeBridge.newRun) window.NativeBridge.newRun(); }catch(e){}
   resources.length=0;resGrid.clear();resId=1;
   roots.length=0;respawnQ.length=0;eliteIdx=0;eliteDone=[false,false];
   seedResources();
+  /* An ad-unlocked root can lapse while it is equipped. Falling back to the
+     default here is the only thing standing between an expired rental and a
+     player spawning as an undefined/incorrectly-coloured root. */
+  if(!isUnlocked(save.sel))save.sel='normal';
   const c=COSMETICS[save.sel],sp=findSpawn();
   player=makeRoot({name:'You',x:sp.x,y:sp.y,a:rand(0,TAU),gr:0,body:c.body,darkC:c.dark,glowC:c.glow,spineC:c.spine,deco:c.deco,decoC:c.decoC});
   player.isPlayer=true;
@@ -1752,7 +2038,7 @@ function updateDay(dt){
 }
 function simulate(dt){
   // segGrid contains the previous frame's current trails while AI plans.
-  // Rebuild once after movement so strict collisions use the actual positions.
+  // Rebuild after movement so strict collisions use the current positions.
   resourceTick(dt);
   for(let i=roots.length-1;i>=0;i--){
     const r=roots[i];
@@ -1774,6 +2060,8 @@ function simulate(dt){
     if(r.dead)continue;
     rootPost(r,dt);
   }
+  // Rebuild exact collision segments from the roots' new positions.
+  // Collision resolution therefore uses the current frame, not stale bodies.
   rebuildSegGrid();
   collisions();
   for(let i=respawnQ.length-1;i>=0;i--){
@@ -1805,7 +2093,7 @@ function update(dt){
     simulate(dt);
     return;
   }
-  if(STATE==='PLAYING'||STATE==='DYING'||STATE==='GAMEOVER'){
+  if(STATE==='PLAYING'||STATE==='DYING'){
     if(STATE==='PLAYING'){
       runTime+=dt;
       difficulty=Math.min(3,1+runTime/90);
@@ -2253,8 +2541,11 @@ function drawRootPath(p,r,i0,i1){
   }
 
   // Dark bark + warm inner wood on the main crown/body.
-  strokeRange(taperStart,n-1,ROOT_THICKNESS+3.2,r.darkC);
-  strokeRange(taperStart,n-1,ROOT_THICKNESS,r.body);
+  // Respect the camera-clipped render window. Drawing to n-1 here
+  // ignored the LOD slice and re-rendered the entire long root, which caused
+  // the spaghetti-looking overlap/glitch and made large roots expensive.
+  strokeRange(taperStart,end,ROOT_THICKNESS+3.2,r.darkC);
+  strokeRange(taperStart,end,ROOT_THICKNESS,r.body);
 
   // Four continuous tapered sections make the tail become a real root tip.
   const bands=[
@@ -2323,158 +2614,79 @@ function drawRoot(r){
   const p=r.pts,n=p.length;
   if(n<2){drawRootFace(r,ROOT_THICKNESS);return;}
 
-  // Long roots are rendered only around the camera. Their complete physics
-  // trail is still kept for gameplay/collision, but drawing 620+ points for
-  // every large bot wastes a large amount of frame time.
-  let rs=0,re=n-1;
-  const MAX_RENDER_PTS=perfLevel>=2?(n>500?150:n>380?190:240):perfLevel===1?(n>500?180:n>380?220:280):(n>500?210:n>380?250:320);
-  if(n>MAX_RENDER_PTS){
-    let best=n-1,bestD=Infinity;
-    const cx=cam.x,cy=cam.y;
-    for(let i=0;i<n;i+=12){
-      const q=p[i],d=(q.x-cx)*(q.x-cx)+(q.y-cy)*(q.y-cy);
-      if(d<bestD){bestD=d;best=i;}
-    }
-    rs=Math.max(0,best-Math.floor(MAX_RENDER_PTS*.55));
-    re=Math.min(n-1,rs+MAX_RENDER_PTS-1);
-    if(re-rs+1<MAX_RENDER_PTS)rs=Math.max(0,re-MAX_RENDER_PTS+1);
-  }
-  if(!inView(p[rs].x,p[rs].y,300)&&!inView(p[re].x,p[re].y,300)&&!inView(r.x,r.y,220))return;
+  // Always render the complete stored trail. MAX_PTS is already bounded,
+  // so there is no camera-slice seam that can make a long root appear to
+  // jump, fold, or disconnect at high score.
+  const stride=n>520?4:n>380?3:2;
+  drawRootPath(p,r,0,n-1);
 
-  drawRootPath(p,r,rs,re);
-
-  // Root knots: only draw knots that fall inside the visible render window.
+  // Sparse knots and side roots keep the organic appearance without
+  // multiplying canvas operations on large bodies.
   ctx.save();
-  const knotStep=n>500?42:n>380?32:n>260?24:15;
-  for(let i=Math.max(12,rs);i<Math.min(n-8,re+1);i+=knotStep){
-    const t=i/(n-1),q=p[i],w=rootWidthAt(i,n),ss=Math.sin(i*3.17+r.id*4.11);
-    if(t>.82||ss<-.55)continue;
+  const knotStep=n>500?46:n>360?34:n>240?25:16;
+  for(let i=12;i<n-8;i+=knotStep){
+    const t=i/(n-1);
+    if(t>.82)break;
+    const q=p[i],w=rootWidthAt(i,n),ss=Math.sin(i*3.17+r.id*4.11);
+    if(ss<-.55)continue;
     const rr=w*(.16+.08*Math.abs(ss));
-    ctx.fillStyle=r.darkC;ctx.beginPath();ctx.arc(q.x,q.y,rr+1.2,0,TAU);ctx.fill();
-    ctx.fillStyle=r.body;ctx.beginPath();ctx.arc(q.x,q.y,rr*.8,0,TAU);ctx.fill();
+    ctx.fillStyle=r.darkC;ctx.beginPath();ctx.arc(q.x,q.y,rr+1.1,0,TAU);ctx.fill();
+    ctx.fillStyle=r.body;ctx.beginPath();ctx.arc(q.x,q.y,rr*.78,0,TAU);ctx.fill();
   }
   ctx.restore();
 
-  // Lateral roots are deliberately sparse on giant roots to keep the frame
-  // smooth without changing the gameplay hitbox.
-  const stride=n>500?40:n>360?30:n>220?21:n>120?14:11;
-  for(let i=Math.max(8,rs);i<Math.min(n-6,re+1);i+=stride){
+  const branchStride=n>500?52:n>360?40:n>240?28:n>140?18:13;
+  for(let i=10;i<n-7;i+=branchStride){
     const t=i/(n-1),q=p[i],q0=p[Math.max(0,i-3)],q2=p[Math.min(n-1,i+2)];
-    const base=Math.atan2(q2.y-q0.y,q2.x-q0.x),seed=r.id*31+i*.73;
+    const base=Math.atan2(q2.y-q0.y,q2.x-q0.x);
+    const seed=r.id*31+i*.73;
     const side=Math.sin(seed*1.7)>0?1:-1;
-    const angle=base+side*(.65+.25*Math.abs(Math.sin(seed)));
-    const len=(8+25*t)*(.72+.48*Math.abs(Math.sin(seed*2.1)));
-    const w=Math.max(.7,rootWidthAt(i,n)*(.13+.05*t));
+    const angle=base+side*(.66+.22*Math.abs(Math.sin(seed)));
+    const len=(8+25*t)*(.74+.42*Math.abs(Math.sin(seed*2.1)));
+    const w=Math.max(.7,rootWidthAt(i,n)*(.13+.045*t));
     drawBranchCurve(r,q,angle,len,w,seed,(r===player||n<180)?1:0);
   }
 
-  for(let i=0;i<r.branches.length;i++){
-    if(n>420&&i>4)break;
-    const b=r.branches[i];
-    if(b.len<5)continue;
-    const idx=clamp(n-1-b.d,4,n-5);
-    if(idx<rs||idx>re)continue;
-    const q=p[idx],q0=p[Math.max(0,idx-3)],q2=p[Math.min(n-1,idx+2)];
-    const angle=Math.atan2(b.ty-b.by,b.tx-b.bx)||Math.atan2(q2.y-q0.y,q2.x-q0.x);
-    drawBranchCurve(r,q,angle,b.len*.92,Math.max(1.1,b.w*.95),r.id*11+i*2.7,n>500?0:2);
-  }
-
-  ctx.save();ctx.lineCap='round';
-  const hairStep=n>500?34:n>380?25:n>260?18:12;
-  for(let i=Math.max(8,rs);i<Math.min(n-6,re+1);i+=hairStep){
-    const q=p[i],q0=p[Math.max(0,i-2)],q2=p[Math.min(n-1,i+1)];
-    const base=Math.atan2(q2.y-q0.y,q2.x-q0.x),w=rootWidthAt(i,n),seed=i*1.39+r.id*2.7;
-    if(Math.sin(seed)<-.1)continue;
-    for(const side of [-1,1]){
-      const a=base+side*(1.15+.18*Math.sin(seed+side)),len=2.5+Math.min(5,w*.22);
-      ctx.strokeStyle=r.body;ctx.globalAlpha=.42;ctx.lineWidth=.55;
-      ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.quadraticCurveTo(q.x+Math.cos(a)*len*.45,q.y+Math.sin(a)*len*.45,q.x+Math.cos(a)*len,q.y+Math.sin(a)*len);ctx.stroke();
+  if(n<520){
+    ctx.save();ctx.lineCap='round';
+    const hairStep=n>360?30:n>240?21:14;
+    for(let i=10;i<n-6;i+=hairStep){
+      const q=p[i],q0=p[Math.max(0,i-2)],q2=p[Math.min(n-1,i+1)];
+      const base=Math.atan2(q2.y-q0.y,q2.x-q0.x),w=rootWidthAt(i,n),seed=i*1.39+r.id*2.7;
+      if(Math.sin(seed)<-.1)continue;
+      for(const side of [-1,1]){
+        const a=base+side*(1.15+.18*Math.sin(seed+side));
+        const len=2.5+Math.min(5,w*.22);
+        ctx.strokeStyle=r.body;ctx.globalAlpha=.42;ctx.lineWidth=.55;
+        ctx.beginPath();ctx.moveTo(q.x,q.y);
+        ctx.quadraticCurveTo(q.x+Math.cos(a)*len*.45,q.y+Math.sin(a)*len*.45,
+                             q.x+Math.cos(a)*len,q.y+Math.sin(a)*len);
+        ctx.stroke();
+      }
     }
+    ctx.globalAlpha=1;ctx.restore();
   }
-  ctx.globalAlpha=1;ctx.restore();
 
   if(inView(r.x,r.y,170)){
     drawRootFace(r,ROOT_THICKNESS);
     if(r===player){
-      ctx.strokeStyle=r.boosting?'rgba(255,210,63,.40)':'rgba(243,233,210,.16)';ctx.lineWidth=1;
+      ctx.strokeStyle=r.boosting?'rgba(255,210,63,.40)':'rgba(243,233,210,.16)';
+      ctx.lineWidth=1;
       ctx.beginPath();ctx.arc(r.x,r.y,ROOT_THICKNESS*1.46+(r.boosting?2.5:0),0,TAU);ctx.stroke();
     }
     if(cam.z>.5&&r!==player&&r.gr>25){
-      ctx.font='700 12px "Trebuchet MS",sans-serif';ctx.textAlign='center';
+      ctx.font='700 12px "Trebuchet MS",sans-serif';
+      ctx.textAlign='center';
       const label=r.name+(r.elite?' ★':'');
       const tw=ctx.measureText(label).width;
-      ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(r.x-tw/2-5,r.y-ROOT_THICKNESS*1.9-16,tw+10,16);
-      ctx.fillStyle=r.elite?'#ffd76b':'rgba(243,233,210,.9)';ctx.fillText(label,r.x,r.y-ROOT_THICKNESS*1.9-4);ctx.textAlign='left';
+      ctx.fillStyle='rgba(0,0,0,.4)';
+      ctx.fillRect(r.x-tw/2-5,r.y-ROOT_THICKNESS*1.9-16,tw+10,16);
+      ctx.fillStyle=r.elite?'#ffd76b':'rgba(243,233,210,.9)';
+      ctx.fillText(label,r.x,r.y-ROOT_THICKNESS*1.9-4);
+      ctx.textAlign='left';
     }
   }
 }
-function drawParticles(){
-  const pStep=perfLevel>=2?3:perfLevel===1?2:1;
-  for(let i=0;i<particles.length;i+=pStep){
-    const p=particles[i];
-    const a=clamp(p.life/p.max,0,1);
-    if(p.t==='fly'){
-      ctx.globalAlpha=a*(.6+.4*Math.sin(gameTime*6+p.ph));
-      const gr=p.size*4;
-      ctx.drawImage(glowSprite(p.col),p.x-gr,p.y-gr,gr*2,gr*2);
-    }else if(p.t==='frag'){
-      ctx.globalAlpha=a;
-      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
-      ctx.fillStyle=p.col;
-      ctx.fillRect(-p.size,-p.size*.5,p.size*2,p.size);
-      ctx.restore();
-    }else{
-      ctx.globalAlpha=a*(p.t==='mote'?.5:.9);
-      ctx.fillStyle=p.col;
-      ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,TAU);ctx.fill();
-    }
-  }
-  ctx.globalAlpha=1;
-  ctx.font='800 15px "Trebuchet MS",sans-serif';
-  ctx.textAlign='center';
-  for(let i=0;i<texts.length;i++){
-    const t=texts[i];
-    const a=clamp(t.life/.95,0,1);
-    ctx.globalAlpha=a;
-    ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.6)';
-    ctx.strokeText(t.txt,t.x,t.y);
-    ctx.fillStyle=t.col;
-    ctx.fillText(t.txt,t.x,t.y);
-  }
-  ctx.globalAlpha=1;
-  ctx.textAlign='left';
-}
-function drawWorld(){
-  ctx.fillStyle='#0d0805';
-  if(vx0<0)ctx.fillRect(vx0,vy0,-vx0,vh);
-  if(vx1>WORLD)ctx.fillRect(WORLD,vy0,vx1-WORLD,vh);
-  if(vy1>WORLD)ctx.fillRect(vx0,WORLD,vw,vy1-WORLD);
-  if(vy0<0)ctx.fillRect(vx0,vy0,vw,-vy0);
-  drawSky(cam.x);
-  drawUnderDecor();
-  ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=14;
-  ctx.strokeRect(-7,SURFACE-7,WORLD+14,WORLD-SURFACE+14);
-  drawSurface();
-  drawResources();
-  for(let i=0;i<roots.length;i++)if(roots[i]!==player)drawRoot(roots[i]);
-  if(player)drawRoot(player);
-  drawParticles();
-}
-function render(){
-  const z=cam.z;
-  vw=W/z;vh=H/z;
-  let cx=cam.x,cy=cam.y;
-  if(shakeAmt>0){cx+=rand(-shakeAmt,shakeAmt);cy+=rand(-shakeAmt,shakeAmt)}
-  vx0=cx-vw/2;vy0=cy-vh/2;vx1=cx+vw/2;vy1=cy+vh/2;
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-  ctx.fillStyle='#0d0805';ctx.fillRect(0,0,W,H);
-  ctx.save();
-  ctx.translate(W/2,H/2);ctx.scale(z,z);ctx.translate(-cx,-cy);
-  drawWorld();
-  ctx.restore();
-  if(nightT>0){ctx.fillStyle='rgba(10,14,30,'+(nightT*.16).toFixed(3)+')';ctx.fillRect(0,0,W,H)}
-}
-
 /* ---------------- HUD / minimap / leaderboard ---------------- */
 function updateHUD(){
   if(!player)return;
@@ -2600,9 +2812,12 @@ function buildCos(){
   for(const key in COSMETICS){
     (function(key){
       const c=COSMETICS[key];
-      const owned=save.unlocked.indexOf(key)>=0;
+      const owned=isOwned(key);
+      const left=tempLeft(key);
+      const live=owned||left>0;
       const card=document.createElement('div');
       card.className='cc'+(save.sel===key?' sel':'');
+      card.dataset.key=key;
       const cv=document.createElement('canvas');
       cv.width=112;cv.height=72;
       drawCosPreview(cv,c);
@@ -2614,13 +2829,24 @@ function buildCos(){
 
       const cost=document.createElement('div');
       cost.className='co'+(owned?' own':'');
-      cost.textContent=owned?(save.sel===key?'EQUIPPED':'OWNED'):(c.cost+' RP');
+      if(owned){
+        cost.textContent=save.sel===key?'EQUIPPED':'OWNED';
+      }else if(left>0){
+        /* THE TIMER. An ad-unlocked root shows exactly what is left of its
+           hour, so the deal is honest and the player can see it running out
+           rather than discovering it later. */
+        cost.textContent='ACTIVE '+fmtTime(Math.ceil(left/1000));
+        cost.style.color='#8fbf6a';
+        cost.dataset.temp='1';
+      }else{
+        cost.textContent=c.cost+' RP';
+      }
       card.appendChild(cost);
 
       const actions=document.createElement('div');
       actions.className='cosActions';
 
-      if(owned){
+      if(live){
         const equip=document.createElement('button');
         equip.className='btn bg cosAd';
         equip.textContent=save.sel===key?'EQUIPPED':'USE';
@@ -2634,6 +2860,7 @@ function buildCos(){
         const adBtn=document.createElement('button');
         adBtn.className='btn bp cosAd';
         adBtn.textContent='WATCH AD';
+        adBtn.title='Unlocks this root for 1 hour';
         adBtn.addEventListener('click',function(e){
           e.stopPropagation();
           ensureAudio();SFX.click();
@@ -2644,14 +2871,16 @@ function buildCos(){
         if(c.cost>0){
           const rpBtn=document.createElement('button');
           rpBtn.className='btn bg cosAd';
-          rpBtn.textContent='USE '+c.cost+' RP';
+          rpBtn.textContent='BUY '+c.cost;
+          rpBtn.title='Permanent unlock';
           rpBtn.disabled=save.rp<c.cost;
           rpBtn.addEventListener('click',function(e){
             e.stopPropagation();
             ensureAudio();SFX.click();
             if(save.rp<c.cost)return;
-            save.rp-=c.cost;save.unlocked.push(key);save.sel=key;writeSave();
-            SFX.milestone();toastMsg(c.name+' unlocked!');buildCos();
+            save.rp-=c.cost;save.unlocked.push(key);delete save.temp[key];
+            save.sel=key;writeSave();
+            SFX.milestone();toastMsg(c.name+' unlocked forever!');buildCos();
           });
           actions.appendChild(rpBtn);
         }
@@ -2661,29 +2890,57 @@ function buildCos(){
     })(key);
   }
 }
+/* Keeps every visible timer counting down while the Root Lab is open. Without
+   this the card would show the hour frozen at whatever it was when the panel
+   was built, and an expired root would still look unlocked. */
+let cosTimer=null;
+function startCosTimer(){
+  if(cosTimer)clearInterval(cosTimer);
+  cosTimer=setInterval(function(){
+    if($('customize').classList.contains('hidden')){clearInterval(cosTimer);cosTimer=null;return;}
+    const nodes=$('cosList').children;
+    let expired=false;
+    for(let i=0;i<nodes.length;i++){
+      const co=nodes[i].querySelector('.co');
+      if(!co||!co.dataset.temp)continue;
+      const left=tempLeft(nodes[i].dataset.key);
+      if(left>0)co.textContent='ACTIVE '+fmtTime(Math.ceil(left/1000));
+      else expired=true;
+    }
+    /* One rebuild flips every lapsed card at once instead of mid-loop. */
+    if(expired)buildCos();
+  },1000);
+}
+/* A rewarded ad buys an HOUR of this root, not the root itself. The old code
+   pushed the key into `unlocked`, which made one 30-second ad worth the same
+   as paying full price and left the Root Lab with nothing to earn. */
 function unlockCosmeticWithAd(key,button){
-  if(adBusy||!COSMETICS[key]||save.unlocked.indexOf(key)>=0)return;
+  if(adBusy||!COSMETICS[key]||isUnlocked(key))return;
   if(!AD.canRewarded()){
     toastMsg('Rewarded ads are unavailable right now.');
     return;
   }
   adUnlockKey=key;adBusy=true;
   if(button){button.disabled=true;button.textContent='LOADING…';}
-  AD.showRewardedAd(function(ok){
+  AD.showRewardedAd(function(ok,reason){
     const target=adUnlockKey;
     adUnlockKey=null;adBusy=false;
-    if(ok&&target&&save.unlocked.indexOf(target)<0){
-      save.unlocked.push(target);
+    if(ok&&target){
+      /* Extend rather than overwrite: watching again while one is running
+         tops it back up to a full hour instead of eating the remainder. */
+      const now=Date.now();
+      const base=Math.max(now,(save.temp[target]||0));
+      save.temp[target]=Math.min(base+TEMP_UNLOCK_MS,now+TEMP_UNLOCK_MS);
       save.sel=target;
       writeSave();
       SFX.milestone();
-      toastMsg(COSMETICS[target].name+' unlocked!');
+      toastMsg(COSMETICS[target].name+' unlocked for 1 hour!');
       buildCos();
     }else{
       if(button){button.disabled=false;button.textContent='WATCH AD';}
-      toastMsg('Ad unavailable. Try again later.');
+      toastMsg(adMessage(reason||lastAdReason));
     }
-  });
+  },'cosmetic');
 }
 function refreshToggles(){
   $('soundTg').classList.toggle('on',save.sound);
@@ -2716,7 +2973,7 @@ function renderHowCard(dir){
   $('btnHowNext').textContent=howPage===HOW_CARDS.length-1?'Done':'Next';
 }
 bind('btnPlay',function(){enterMobileFullscreen().finally(function(){startGame()})});
-bind('btnCustomize',function(){buildCos();showOnly('customize')});
+bind('btnCustomize',function(){buildCos();startCosTimer();showOnly('customize')});
 bind('btnHow',function(){howPage=0;renderHowCard(1);showOnly('howto')});
 bind('btnSettings',function(){refreshToggles();showOnly('settings')});
 bind('btnHowPrev',function(){if(howPage>0){howPage--;renderHowCard(-1)}});
@@ -2729,35 +2986,122 @@ bind('btnPauseMenu',function(){goMenu()});
 bind('btnGoMenu',function(){commitRun();updateMenuStats();goMenu()});
 bind('btnAgain',function(){
   commitRun();
-  sessionRetries++;
+  /* INTERSTITIAL: ASK, DON'T DECIDE.
+     "Play Again" is the one honest break in the loop - the run is banked, the
+     player chose to go again, and they are about to lose sight of the board. So
+     the game asks on every one of them and the shell decides whether to show
+     anything.
+
+     This used to keep its own counter and only ask on every 4th retry. That was
+     a second frequency policy living in the wrong layer: it was arbitrary, it
+     was untestable, and it silently multiplied with the shell's own rules
+     (first session, once per session, 180s gap) so an interstitial became
+     something a player might never see in a whole session. Frequency is now
+     the shell's single source of truth, and a refusal costs the player nothing -
+     this callback is intentionally a no-op, because "the governor said no" is
+     not something to interrupt a player over. */
+  AD.showMidgameAd(function(){});
   startGame();
-  if(sessionRetries>0 && sessionRetries%4===0 && sessionRetries!==lastMidgameRetry){
-    lastMidgameRetry=sessionRetries;
-    setTimeout(function(){if(STATE==='PLAYING'&&!adActive)AD.showMidgameAd();},180);
-  }
 });
 bind('btnContinueAd',function(){
-  if(STATE!=='GAMEOVER'||adBusy)return;
+  if(STATE!=='GAMEOVER'||adBusy||reviveUsed)return;
   if(!deathSnapshot)captureDeathSnapshot();
   const b=$('btnContinueAd');
   b.disabled=true;
   adBusy=true;
   b.textContent='WATCHING AD…';
-  $('goAdStatus').textContent='Rewarded ad placeholder';
+  $('goAdStatus').textContent='Loading ad…';
   $('goAdStatus').classList.remove('hidden');
-  AD.showRewardedAd(function(ok){
+  AD.showRewardedAd(function(ok,reason){
     if(ok){
       reviveFromAd();
     }else{
       adBusy=false;
       b.disabled=false;
       b.textContent='Watch Ad to Continue';
+      /* A refusal is explained (the button stays, the reason is shown) - but if
+         the refusal was the once-per-game revive, the offer is simply gone. */
+      if(reason==='limit_reached'){
+        reviveUsed=true;
+        b.classList.add('hidden');
+        $('goAdStatus').classList.add('hidden');
+      }else{
+        $('goAdStatus').textContent=adMessage(reason);
+      }
     }
-  });
+  },'continue');
 });
  $('pauseBtn').addEventListener('click',function(e){e.stopPropagation();ensureAudio();SFX.click();pauseGame()});
  $('soundTg').addEventListener('click',function(){save.sound=!save.sound;writeSave();refreshToggles();if(save.sound){ensureAudio();SFX.click()}else if(A.master&&A.ctx)A.master.gain.setTargetAtTime(0,A.ctx.currentTime,.015)});
  $('shakeTg').addEventListener('click',function(){save.shake=!save.shake;shakeOn=save.shake;writeSave();refreshToggles();SFX.click()});
+
+function drawParticles(){
+  const pStep=perfLevel>=2?3:perfLevel===1?2:1;
+  for(let i=0;i<particles.length;i+=pStep){
+    const p=particles[i];
+    const a=clamp(p.life/p.max,0,1);
+    if(p.t==='fly'){
+      ctx.globalAlpha=a*(.6+.4*Math.sin(gameTime*6+p.ph));
+      const gr=p.size*4;
+      ctx.drawImage(glowSprite(p.col),p.x-gr,p.y-gr,gr*2,gr*2);
+    }else if(p.t==='frag'){
+      ctx.globalAlpha=a;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      ctx.fillStyle=p.col;
+      ctx.fillRect(-p.size,-p.size*.5,p.size*2,p.size);
+      ctx.restore();
+    }else{
+      ctx.globalAlpha=a*(p.t==='mote'?.5:.9);
+      ctx.fillStyle=p.col;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,TAU);ctx.fill();
+    }
+  }
+  ctx.globalAlpha=1;
+  ctx.font='800 15px "Trebuchet MS",sans-serif';
+  ctx.textAlign='center';
+  for(let i=0;i<texts.length;i++){
+    const t=texts[i];
+    const a=clamp(t.life/.95,0,1);
+    ctx.globalAlpha=a;
+    ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.6)';
+    ctx.strokeText(t.txt,t.x,t.y);
+    ctx.fillStyle=t.col;
+    ctx.fillText(t.txt,t.x,t.y);
+  }
+  ctx.globalAlpha=1;
+  ctx.textAlign='left';
+}
+function drawWorld(){
+  ctx.fillStyle='#0d0805';
+  if(vx0<0)ctx.fillRect(vx0,vy0,-vx0,vh);
+  if(vx1>WORLD)ctx.fillRect(WORLD,vy0,vx1-WORLD,vh);
+  if(vy1>WORLD)ctx.fillRect(vx0,WORLD,vw,vy1-WORLD);
+  if(vy0<0)ctx.fillRect(vx0,vy0,vw,-vy0);
+  drawSky(cam.x);
+  drawUnderDecor();
+  ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=14;
+  ctx.strokeRect(-7,SURFACE-7,WORLD+14,WORLD-SURFACE+14);
+  drawSurface();
+  drawResources();
+  for(let i=0;i<roots.length;i++)if(roots[i]!==player)drawRoot(roots[i]);
+  if(player)drawRoot(player);
+  drawParticles();
+}
+
+function render(){
+  const z=cam.z;
+  vw=W/z;vh=H/z;
+  let cx=cam.x,cy=cam.y;
+  if(shakeAmt>0){cx+=rand(-shakeAmt,shakeAmt);cy+=rand(-shakeAmt,shakeAmt)}
+  vx0=cx-vw/2;vy0=cy-vh/2;vx1=cx+vw/2;vy1=cy+vh/2;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle='#0d0805';ctx.fillRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(W/2,H/2);ctx.scale(z,z);ctx.translate(-cx,-cy);
+  drawWorld();
+  ctx.restore();
+  if(nightT>0){ctx.fillStyle='rgba(10,14,30,'+(nightT*.16).toFixed(3)+')';ctx.fillRect(0,0,W,H)}
+}
 
 /* ---------------- main loop ---------------- */
 let lastT=performance.now();

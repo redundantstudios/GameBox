@@ -9,6 +9,7 @@ aiSupport: true
 online: false
 tileColor: #F2B441
 version: 2
+released: 2026-09-24
 -->
 <!--
 REDUNDANT STUDIOS - GAMEBOX
@@ -586,16 +587,24 @@ const Studio = (() => {
        plain browser tab, where there is no shell to go back to. */
     exitGame(){ const b=bridge(); if(b&&b.exitGame){ try{ b.exitGame(); }catch(e){} } },
     ads:{
-      /* The shell fires the rewarded callback with NO argument on success (and
-         'closed' / 'unavailable' otherwise), so anything that is not an
-         explicit failure counts as a reward - the same landmine Ludo hit. */
+      /* ALLOW-LIST, and one callback per request.
+         The bridge answers with exactly one of: "granted" (reward earned),
+         "closed", "unavailable", or a governor refusal ("limit_reached",
+         "cooldown"). Only "granted" may pay out. The old code counted anything
+         that was not an explicit failure as a reward, so hitting the cap
+         granted the reward anyway. Each request also gets its own callback
+         name, otherwise two overlapping requests race on one global and the
+         first ad pays out the second action. */
       rewarded(placement,onReward){
         const b=bridge();
         if(!b||!b.showRewardedAd) return;
-        window.__studioAdCb=function(result){
-          if(result!=='closed'&&result!=='unavailable'&&onReward) onReward();
+        window.__studioAdSeq=(window.__studioAdSeq||0)+1;
+        const cb='__studioAdCb'+window.__studioAdSeq;
+        window[cb]=function(result){
+          try{ delete window[cb]; }catch(_){}
+          if(result==='granted'&&onReward) onReward();
         };
-        try{ b.showRewardedAd('__studioAdCb'); }catch(e){}
+        try{ b.showRewardedAd(cb,placement||"",null); }catch(e){ try{ delete window[cb]; }catch(e){} }
       },
       /* The shell always answers - 'closed' when the ad played, 'unavailable'
          when it could not (offline / no fill) - so a game can never hang on a
@@ -604,7 +613,7 @@ const Studio = (() => {
         const b=bridge();
         if(b&&b.showInterstitial){
           window.__studioInterCb=function(){ if(onDone) onDone(); };
-          try{ b.showInterstitial('__studioInterCb'); return; }catch(e){}
+          try{ b.showInterstitial('__studioInterCb',''); return; }catch(e){}
         }
         if(onDone) onDone();
       }
@@ -713,6 +722,13 @@ function resize(){
 }
 
 /* ---------- LANDSCAPE enforcement ---------- */
+/* `state` is read by checkOrient(), which runs at load. It was previously
+   declared ~370 lines further down with `let`, so this read landed in the
+   temporal dead zone: a ReferenceError that killed the entire game script
+   before its first frame, leaving the player looking at the static menu over
+   a dead canvas. Anything read during load has to be declared before the load
+   path that reads it. */
+let state='MENU';
 const rotOv=$('rot');
 function checkOrient(){
   const portrait=window.innerHeight>window.innerWidth;
@@ -1181,7 +1197,8 @@ groundC.width=W; groundC.height=H;
 })();
 
 /* ---------- game state ---------- */
-let state='MENU', attract=true, destroyed=false;
+/* `state` moved up to the LANDSCAPE section: checkOrient() reads it during load. */
+let attract=true, destroyed=false;
 let players=[], eggs=[], powerups=[], baskets=[], flyEggs=[];
 let matchT=CFG.MATCH_TIME, cdT=0, cdStep=4, timeUpT=0;
 let eggT=0, puT=4, goldenT=9, time=0, hitstop=0, rdt=0.016;
@@ -1393,7 +1410,12 @@ function endRaceWin(p){
   state='TIMEUP'; timeUpT=1.9;
 }
 function showResult(){
-  state='RESULT'; $('controls').innerHTML=''; ctrls=[];
+  state='RESULT';
+  /* Interstitial at the end of a run, on the results screen - a real break,
+     not mid-play. This is only a REQUEST: AdPolicy in the shell decides, so
+     inside the first-session grace window or before the minimum gap the shell
+     answers "cooldown" and nothing is shown. */
+  try{ Studio.ads.interstitial('egg-rush.result'); }catch(e){} $('controls').innerHTML=''; ctrls=[];
   clearInputs();
   $('sys').classList.add('hidden');
   const st=[...players].sort((a,b)=>b.score-a.score||b.golden-a.golden||b.eggs-a.eggs||a.id-b.id);

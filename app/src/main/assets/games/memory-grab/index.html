@@ -9,6 +9,7 @@ aiSupport: true
 online: false
 tileColor: #8E6FD8
 version: 1
+released: 2026-09-24
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -388,6 +389,10 @@ button{font-family:var(--f);cursor:pointer;border:none;background:none;color:inh
       <div class="sub-label">FINAL SCORE</div>
       <div id="score-list"></div>
       <div id="win-line"></div>
+      <div id="ad-offer">
+        <button id="btn-ad-board" class="btn amber">WATCH AD - BIGGER BOARD</button>
+        <small id="ad-note"></small>
+      </div>
       <div class="btn-row">
         <button id="btn-again" class="btn green">PLAY AGAIN</button>
         <button id="btn-menu2" class="btn slate">MAIN MENU</button>
@@ -447,7 +452,7 @@ window.Studio = window.Studio || {};
         const done=()=>{if(settled)return;settled=true;if(onDone)onDone();};
         const watchdog=setTimeout(done,45000);
         window.__studioInterCb=()=>{clearTimeout(watchdog);done();};
-        try{b.showInterstitial('__studioInterCb');return;}catch(e){clearTimeout(watchdog);}
+        try{b.showInterstitial('__studioInterCb','');return;}catch(e){clearTimeout(watchdog);}
       }
       if(onDone)onDone();
     }
@@ -457,7 +462,32 @@ const Studio = window.Studio;
 if(!Studio.ads){
   Studio.ads={
     banner(visible){const b=window.NativeBridge;if(!b)return;try{if(visible&&b.showBanner)b.showBanner();else if(!visible&&b.hideBanner)b.hideBanner();}catch(e){}},
-    interstitial(onDone){const b=window.NativeBridge;if(b&&b.showInterstitial){window.__studioInterCb=function(){if(onDone)onDone();};try{b.showInterstitial('__studioInterCb');return;}catch(e){}}if(onDone)onDone();}
+    interstitial(onDone){const b=window.NativeBridge;if(b&&b.showInterstitial){window.__studioInterCb=function(){if(onDone)onDone();};try{b.showInterstitial('__studioInterCb','');return;}catch(e){}}if(onDone)onDone();},
+    rewarded(placement,onReward,onFail){
+      const b=window.NativeBridge;
+      if(!b||!b.showRewardedAd){if(onFail)onFail('unavailable');return;}
+      const cb='__mgRewCb'+(window.__mgRewSeq=(window.__mgRewSeq||0)+1);
+      window[cb]=function(result){
+        try{delete window[cb];}catch(_){}
+        /* Grant ONLY on the explicit "granted" token.
+           This also used to treat a bare (empty/undefined/null) callback as a
+           grant. The bridge never calls back that way - it always passes one of
+           granted/closed/unavailable/limit_reached/cooldown - so the loose test
+           was a hole with no legitimate path through it. */
+        if(result==='granted'){if(onReward)onReward();}
+        else if(onFail)onFail(result||'closed');
+      };
+      /* Three arguments: the bridge takes (callback, placement, kind) and
+         addJavascriptInterface matches by EXACT arity - a short call throws. */
+      try{b.showRewardedAd(cb,placement||'','normal');}
+      catch(err){
+        /* Not "unavailable" - that token means "no ad served" and sends the
+           player off to check their internet connection. This is the app
+           failing to make the call at all; the two must stay distinct. */
+        try{console.error('[memory-grab] rewarded bridge call failed: '+((err&&err.message)||err));}catch(_){}
+        if(onFail)onFail('bridge_error');
+      }
+    }
   };
 }
 
@@ -692,6 +722,19 @@ let phase='idle';
 let paused=false,destroyed=false;
 let setupPlayers = Studio.settings.get('setupPlayers',2)||2;
 let setupMode    = Studio.settings.get('setupMode','friends')||'friends';
+/* Largest board the setup screen offers, and the rewarded target. */
+const MAX_CARDS = 24;
+
+function adMessage(reason){
+  switch(reason){
+    case 'limit_reached': return 'You have used all your ad rewards for now.';
+    case 'cooldown':      return 'Give it a moment, then try again.';
+    case 'offline':
+    case 'unavailable':   return 'Ad unavailable. Check your connection.';
+    default:              return 'Ad unavailable. Try again later.';
+  }
+}
+
 let setupCards   = Studio.settings.get('setupCards',16)||16;
 let settingsReturn='home';
 let nPlayers=2,nCards=16,mode='friends',cur=0;
@@ -1073,6 +1116,24 @@ document.querySelectorAll('.mode-btn').forEach(b=>b.addEventListener('click',()=
  $('btn-p-settings').addEventListener('click',()=>{SFX.click();settingsReturn='pause';showScreen('scr-settings');refreshToggles();});
  $('btn-p-menu').addEventListener('click',()=>{SFX.click();toMenu();});
   $('btn-again').addEventListener('click',()=>{SFX.click();Studio.ads.interstitial(()=>startRound());});
+  /* Rewarded offer: jump to the largest board. A round always ends in
+     "MEMORY COMPLETE", so there is no failure to continue from and a
+     continue button would be a lie - a bigger board is a real, wanted reward.
+     It is a NORMAL reward, so the 5-per-game cap applies, not the revive cap. */
+  $('btn-ad-board').addEventListener('click',()=>{
+    SFX.click();
+    const b=$('btn-ad-board');
+    b.disabled=true;b.textContent='LOADING AD...';
+    Studio.ads.rewarded('bigger_board',
+      function(){
+        setupCards=MAX_CARDS;saveSetup();refreshSetup();
+        startRound();
+      },
+      function(reason){
+        b.disabled=false;b.textContent='WATCH AD - BIGGER BOARD';
+        $('ad-note').textContent=adMessage(reason);
+      });
+  });
   $('btn-menu2').addEventListener('click',()=>{SFX.click();Studio.ads.interstitial(()=>toMenu());});
 bindSwitch('sw-sfx',()=>sfxOn,v=>sfxOn=v);
 bindSwitch('sw-music',()=>musicOn,v=>musicOn=v);

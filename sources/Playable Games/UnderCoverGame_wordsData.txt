@@ -1,0 +1,8787 @@
+[
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Kalki 2898 AD",
+    "imposter": "Hanu-Man"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Salaar",
+    "imposter": "Devara"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Pushpa 2: The Rule",
+    "imposter": "Game Changer"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Baahubali: The Beginning",
+    "imposter": "Baahubali 2: The Conclusion"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "RRR",
+    "imposter": "Magadheera"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Pokiri",
+    "imposter": "Athadu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Jalsa",
+    "imposter": "Julayi"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Arjun Reddy",
+    "imposter": "Baby"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Bommarillu",
+    "imposter": "Happy Days"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Jersey",
+    "imposter": "Majili"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "DJ Tillu",
+    "imposter": "Tillu Square"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Ala Vaikunthapurramuloo",
+    "imposter": "Sarileru Neekevvaru"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Attarintiki Daredi",
+    "imposter": "Srimanthudu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Geetha Govindam",
+    "imposter": "Uppena"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Sitaramam",
+    "imposter": "Hi Nanna"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Jaathiratnalu",
+    "imposter": "Samajavaragamana"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Guntur Kaaram",
+    "imposter": "Aravinda Sametha"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Virupaksha",
+    "imposter": "Mangalavaaram"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Chatrapathi",
+    "imposter": "Simhadri"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Indra",
+    "imposter": "Tagore"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Kushi",
+    "imposter": "Thammudu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Eega",
+    "imposter": "Maryada Ramanna"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Pelli Choopulu",
+    "imposter": "Ee Nagaraniki Emaindi"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Waltair Veerayya",
+    "imposter": "Veera Simha Reddy"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Akhanda",
+    "imposter": "Skanda"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Mahanati",
+    "imposter": "Syeraa Narasimha Reddy"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Brochevarevarura",
+    "imposter": "Agent Sai Srinivasa Athreya"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "HIT: The First Case",
+    "imposter": "Goodachari"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Fidaa",
+    "imposter": "Shatamanam Bhavati"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Keedaa Cola",
+    "imposter": "Mathu Vadalara"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Sye",
+    "imposter": "Bheemili Kabaddi Jattu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "iSmart Shankar",
+    "imposter": "Double iSmart"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Darling",
+    "imposter": "Mr. Perfect"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Arya",
+    "imposter": "Arya 2"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Race Gurram",
+    "imposter": "Kick"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Venky",
+    "imposter": "Dhee"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Ready",
+    "imposter": "King"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Gabbar Singh",
+    "imposter": "Mirchi"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Manam",
+    "imposter": "Oopiri"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Bimbisara",
+    "imposter": "Kalyanram Amigos"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Eagle",
+    "imposter": "Saindhav"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Nuvvu Naaku Nachav",
+    "imposter": "Malliswari"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Kshanam",
+    "imposter": "Evaru"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Leader",
+    "imposter": "Prasthanam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Happy",
+    "imposter": "Bunny"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Devadasu",
+    "imposter": "Desamuduru"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Amma Nanna O Tamila Ammayi",
+    "imposter": "Sivamani"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Pokiri",
+    "imposter": "Businessman"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Varsham",
+    "imposter": "Chatrapathi"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Okkadu",
+    "imposter": "Arjun"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Athadu",
+    "imposter": "Khaleja"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Maryada Ramanna",
+    "imposter": "Poola Rangadu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Oye!",
+    "imposter": "Orange"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Devara",
+    "imposter": "Acharya"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Rangasthalam",
+    "imposter": "Dasara"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Saripodhaa Sanivaaram",
+    "imposter": "Ante Sundaraniki"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Sarkaru Vaari Paata",
+    "imposter": "Guntur Kaaram"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Shyam Singha Roy",
+    "imposter": "Dasara"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Yevadu",
+    "imposter": "Dhruva"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Brindavanam",
+    "imposter": "Attarintiki Daredi"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Dhamaka",
+    "imposter": "Nela Ticket"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Vakeel Saab",
+    "imposter": "Bheemla Nayak"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Temper",
+    "imposter": "Pataas"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Janatha Garage",
+    "imposter": "Nannaku Prematho"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Srimanthudu",
+    "imposter": "Bharat Ane Nenu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Spyder",
+    "imposter": "Agnyaathavaasi"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Katamarayudu",
+    "imposter": "Sardar Gabbar Singh"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Nenu Local",
+    "imposter": "Cinema Choopistha Mava"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Shatamanam Bhavati",
+    "imposter": "Prati Roju Pandage"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Bhagavanth Kesari",
+    "imposter": "Veera Simha Reddy"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Bro",
+    "imposter": "Gopala Gopala"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Karthikeya",
+    "imposter": "Karthikeya 2"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Awe!",
+    "imposter": "Manu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "U-Turn",
+    "imposter": "Bhaagamathie"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Anasuya",
+    "imposter": "Amaravathi"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Nenokkadine",
+    "imposter": "Spyder"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Sahoo",
+    "imposter": "Radhe Shyam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Radhe Shyam",
+    "imposter": "Adipurush"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Dear Comrade",
+    "imposter": "Kushi (2023)"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Taxiwala",
+    "imposter": "Ekkadiki Pothavu Chinnavada"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Chalo",
+    "imposter": "Bheeshma"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Bheeshma",
+    "imposter": "Rang De"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Most Eligible Bachelor",
+    "imposter": "Mr. Majnu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Solo Brathuke So Better",
+    "imposter": "Chitralahari"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Major",
+    "imposter": "Karthikeya 2"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Naandhi",
+    "imposter": "Writer Padmabhushan"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Balagam",
+    "imposter": "Intinti Ramayanam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Committee Kurrollu",
+    "imposter": "Aay"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Ye Maaya Chesave",
+    "imposter": "Oka Laila Kosam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Chirutha",
+    "imposter": "Desamuduru"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Mirchi",
+    "imposter": "Badri"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Magadheera",
+    "imposter": "Yamadonga"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Yamadonga",
+    "imposter": "Kantri"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Kantri",
+    "imposter": "Billa"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Billa",
+    "imposter": "Shadow"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Sainikudu",
+    "imposter": "Bobby"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Subash Chandra Bose",
+    "imposter": "Alluri Seetharama Raju"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Baahubali",
+    "imposter": "RRR"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Pushpa",
+    "imposter": "Rangasthalam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Arjun Reddy",
+    "imposter": "RX 100"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Sye",
+    "imposter": "Chatrapathi"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Bommarillu",
+    "imposter": "Nuvvostanante Nenoddantana"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Uppena",
+    "imposter": "Fidaa"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Ala Vaikunthapurramuloo",
+    "imposter": "Sarrainodu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Gabbar Singh",
+    "imposter": "Dookudu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Happy Days",
+    "imposter": "Life is Beautiful"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Geetha Govindam",
+    "imposter": "Chalo"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Mahanati",
+    "imposter": "Sita Ramam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Evaru",
+    "imposter": "Kshanam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Goodachari",
+    "imposter": "Spyder"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Khaleja",
+    "imposter": "1 Nenokkadine"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Mirchi",
+    "imposter": "Srimanthudu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Oosaravelli",
+    "imposter": "Temper"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Aravinda Sametha",
+    "imposter": "Janatha Garage"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Race Gurram",
+    "imposter": "S/O Satyamurthy"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "DJ Tillu",
+    "imposter": "Jathi Ratnalu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Mathu Vadalara",
+    "imposter": "Keedaa Cola"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Ee Nagaraniki Emaindi",
+    "imposter": "Pellichoopulu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Kushi",
+    "imposter": "Tholi Prema"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Indra",
+    "imposter": "Samarasimha Reddy"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Simhadri",
+    "imposter": "Aadi"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Desamuduru",
+    "imposter": "Bunny"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Shankar Dada MBBS",
+    "imposter": "Tagore"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Kanche",
+    "imposter": "Gautamiputra Satakarni"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Nannaku Prematho",
+    "imposter": "Dhruva"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Brindavanam",
+    "imposter": "Mr. Perfect"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Darling",
+    "imposter": "Bujjigadu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Varsham",
+    "imposter": "Pournami"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Vikramarkudu",
+    "imposter": "Yamadonga"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Arundhati",
+    "imposter": "Bhaagamathie"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "C/o Kancharapalem",
+    "imposter": "Balagam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Baby",
+    "imposter": "Color Photo"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Hi Nanna",
+    "imposter": "Ninnu Kori"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Nenu Local",
+    "imposter": "MCA"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Bhale Bhale Magadivoy",
+    "imposter": "F2"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Kick",
+    "imposter": "Race Gurram"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Oohalu Gusagusalade",
+    "imposter": "Ashta Chamma"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Ala Modalaindi",
+    "imposter": "Ishq"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Manam",
+    "imposter": "24"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Gunde Jaari Gallanthayyinde",
+    "imposter": "Oka Laila Kosam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Ye Maaya Chesave",
+    "imposter": "100% Love"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Business Man",
+    "imposter": "Temper"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Seethamma Vakitlo Sirimalle Chettu",
+    "imposter": "Brahmotsavam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Maharshi",
+    "imposter": "Bharat Ane Nenu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Gamyam",
+    "imposter": "Vedam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Kotha Bangaru Lokam",
+    "imposter": "Kalisundam Raa"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Godavari",
+    "imposter": "Anand"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Tholiprema",
+    "imposter": "Suswagatham"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Badri",
+    "imposter": "Tammudu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Akhanda",
+    "imposter": "Legend"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Sarileru Neekevvaru",
+    "imposter": "Aagadu"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Tillu Square",
+    "imposter": "Mad"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Palasa 1978",
+    "imposter": "George Reddy"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Hit: The First Case",
+    "imposter": "Hit: The Second Case"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Rakshasudu",
+    "imposter": "Ratsasan"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Uyyala Jampala",
+    "imposter": "Cinema Bandi"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Nuvvu Nenu",
+    "imposter": "Jayam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Idiot",
+    "imposter": "Amma Nanna O Tamila Ammayi"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Badrinath",
+    "imposter": "Shakti"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Khaidi No. 150",
+    "imposter": "Sye Raa Narasimha Reddy"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Swayamvaram",
+    "imposter": "Nuvve Kavali"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Manmadhudu",
+    "imposter": "Santhosham"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Ninne Pelladatha",
+    "imposter": "Murari"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Okkadu",
+    "imposter": "Varsham"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Aditya 369",
+    "imposter": "Bhairava Dweepam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Awe",
+    "imposter": "Prasanth Varma Cinematic Universe"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Bhaagamathie",
+    "imposter": "Anushka Shetty Movies"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Chirutha",
+    "imposter": "Ram Charan Debut"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Gargi",
+    "imposter": "Virata Parvam"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Gowtam SSC",
+    "imposter": "Student No. 1"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Preminchukundam Raa",
+    "imposter": "Kalisundam Raa"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Gharshana",
+    "imposter": "Kaakha Kaakha"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Nuvvostanante Nenoddantana",
+    "imposter": "Pournami"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Missamma",
+    "imposter": "Gundamma Katha"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Mayabazar",
+    "imposter": "Nartanasala"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Geethanjali",
+    "imposter": "Shiva"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Kshana Kshanam",
+    "imposter": "Govinda Govinda"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Aithe",
+    "imposter": "Anukokunda Oka Roju"
+  },
+  {
+    "category": "TOLLYWOOD",
+    "normal": "Gaami",
+    "imposter": "Kalki 2898 AD"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Prabhas",
+    "imposter": "Allu Arjun"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Mahesh Babu",
+    "imposter": "Pawan Kalyan"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "NTR Jr",
+    "imposter": "Ram Charan"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Chiranjeevi",
+    "imposter": "Balakrishna"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Nagarjuna",
+    "imposter": "Venkatesh"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Nani",
+    "imposter": "Vijay Deverakonda"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Ravi Teja",
+    "imposter": "Gopichand"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Sandeep Reddy Vanga",
+    "imposter": "S S Rajamouli"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Trivikram Srinivas",
+    "imposter": "Sukumar"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "S S Rajamouli",
+    "imposter": "Prashanth Neel"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Anushka Shetty",
+    "imposter": "Nayanthara"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Samantha Ruth Prabhu",
+    "imposter": "Rashmika Mandanna"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Keerthy Suresh",
+    "imposter": "Sai Pallavi"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Sreeleela",
+    "imposter": "Krithi Shetty"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Pooja Hegde",
+    "imposter": "Kiara Advani"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Kajal Aggarwal",
+    "imposter": "Tamannaah Bhatia"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Rana Daggubati",
+    "imposter": "Adivi Sesh"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Satyadev",
+    "imposter": "Suhaas"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Nikhil Siddharth",
+    "imposter": "Vishwak Sen"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Vishwak Sen",
+    "imposter": "Siddhu Jonnalagadda"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Siddhu Jonnalagadda",
+    "imposter": "Priyadarshi"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Priyadarshi",
+    "imposter": "Rahul Ramakrishna"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Ali",
+    "imposter": "Brahmanandam"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Brahmanandam",
+    "imposter": "M S Narayana"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Vennela Kishore",
+    "imposter": "Sapthagiri"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Sunil",
+    "imposter": "Brahmanandam"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Koratala Siva",
+    "imposter": "Boyapati Sreenu"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Sekhar Kammula",
+    "imposter": "Tharun Bhascker"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Maruthi",
+    "imposter": "Anil Ravipudi"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Anil Ravipudi",
+    "imposter": "Srinu Vaitla"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "K Raghavendra Rao",
+    "imposter": "Dasari Narayana Rao"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Dil Raju",
+    "imposter": "Mythri Movie Makers"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Allu Aravind",
+    "imposter": "Suresh Babu"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Murli Sharma",
+    "imposter": "Rao Ramesh"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Rao Ramesh",
+    "imposter": "Prakash Raj"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Prakash Raj",
+    "imposter": "Jagapathi Babu"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Sai Kumar",
+    "imposter": "Samuthirakani"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Sree Vishnu",
+    "imposter": "Satyadev"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Teja Sajja",
+    "imposter": "Raj Tarun"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Manchu Manoj",
+    "imposter": "Manchu Vishnu"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Nandamuri Kalyan Ram",
+    "imposter": "Nandamuri Taraka Ratna"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Suhas",
+    "imposter": "Kiran Abbavaram"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Kiran Abbavaram",
+    "imposter": "Sree Vishnu"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Nabha Natesh",
+    "imposter": "Payal Rajput"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Anupama Parameswaran",
+    "imposter": "Niveda Thomas"
+  },
+  {
+    "category": "TOLLYWOOD CELEBRITIES",
+    "normal": "Meenakshi Chaudhary",
+    "imposter": "Sreeleela"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Amarendra Baahubali",
+    "imposter": "Bhallaladeva"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Pushpa Raj",
+    "imposter": "Bhanwar Singh Shekhawat"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Arjun Reddy",
+    "imposter": "Kabir Singh"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "DJ Tillu",
+    "imposter": "Tillu Square Radhika"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Bhairava (Kalki)",
+    "imposter": "Commander Manas"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Raju (RRR)",
+    "imposter": "Bheem (RRR)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Chari (DJ)",
+    "imposter": "Adhurs Chari"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Adhurs Chari",
+    "imposter": "Adhurs Bhattu"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Bhattu (Adhurs)",
+    "imposter": "Chari (Adhurs)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Kanchana",
+    "imposter": "Chandramukhi"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Suriya Bhai (Businessman)",
+    "imposter": "Pandu (Pokiri)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Chitti Babu (Rangasthalam)",
+    "imposter": "Kumar Babu"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Ramuloo (Gamyam)",
+    "imposter": "Abhiram (Gamyam)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Ganesh (Venky)",
+    "imposter": "Gajala (Venky)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Gajala from Washington DC",
+    "imposter": "Train Master (Venky)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Siddharth (Bommarillu)",
+    "imposter": "Hasini (Bommarillu)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Hasini (Bommarillu)",
+    "imposter": "Sravani (Majili)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Sravani (Majili)",
+    "imposter": "Poorvi (Majili)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Sita (Sita Ramam)",
+    "imposter": "Ram (Sita Ramam)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Aravinda (Aravinda Sametha)",
+    "imposter": "Veera Raghava"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Balu (Jalsa)",
+    "imposter": "Sanjay Sahu"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Sanjay Sahu",
+    "imposter": "Ravindra Narayan (Julayi)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Ravindra Narayan (Julayi)",
+    "imposter": "Bittu (Julayi)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Kattappa",
+    "imposter": "Bijjaladeva"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Sivagami",
+    "imposter": "Devasena"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Devasena",
+    "imposter": "Avantika"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Srimanthudu Harsha",
+    "imposter": "Bharat (Bharat Ane Nenu)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Raja (Happy Days)",
+    "imposter": "Tyson (Happy Days)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Sye Shashank",
+    "imposter": "Sye Prudhvi"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Anji",
+    "imposter": "Devi (Devi)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Subhash Chandra Bose",
+    "imposter": "Tagore"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Tagore",
+    "imposter": "Shankar Dada MBBS"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Shankar Dada",
+    "imposter": "Atmalingam (Shankar Dada)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Agent Sai Srinivasa Athreya",
+    "imposter": "Bobby (Brochevarevarura)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Ranga (Dhee)",
+    "imposter": "Chari (Adhurs)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Malli (Eega)",
+    "imposter": "Sudeep (Eega)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Radhika (Tillu)",
+    "imposter": "Lilly (Tillu Square)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Kittu (Kick)",
+    "imposter": "Kalyan (Kick)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Nandu (Athadu)",
+    "imposter": "Pardhu (Athadu)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Bujjigadu",
+    "imposter": "Chirutha Charan"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Siddhu (Happy Days)",
+    "imposter": "Madhu (Happy Days)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Giri (Venky)",
+    "imposter": "Bokaro (Venky)"
+  },
+  {
+    "category": "TELUGU MOVIE CHARACTERS",
+    "normal": "Abhi (Manmadhudu)",
+    "imposter": "Mahesh (Manmadhudu)"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Pesarattu",
+    "imposter": "Upma"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Gongura Pickle",
+    "imposter": "Avakaya Pickle"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Avakaya Pickle",
+    "imposter": "Thokkuudu Pickle"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Pulihora",
+    "imposter": "Daddojanam"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Mirchi Bajji",
+    "imposter": "Punugulu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Ariselu",
+    "imposter": "Boorelu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Pootharekulu",
+    "imposter": "Kakinada Kaja"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kakinada Kaja",
+    "imposter": "Madugula Halwa"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Garelu",
+    "imposter": "Vada"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Bobbatlu",
+    "imposter": "Kudumulu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Ragi Sangati",
+    "imposter": "Jonna Rotte"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Natu Kodi Pulusu",
+    "imposter": "Talakaya Kura"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Hyderabadi Chicken Biryani",
+    "imposter": "Mutton Kheema Biryani"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Ulavacharu",
+    "imposter": "Pachi Pulusu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Pachi Pulusu",
+    "imposter": "Majjiga Pulusu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Majjiga Pulusu",
+    "imposter": "Pappu Charu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Pappu Charu",
+    "imposter": "Rasam"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Tomato Pappu",
+    "imposter": "Dosakaya Pappu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Gongura Mutton",
+    "imposter": "Boti Curry"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Chepala Pulusu",
+    "imposter": "Peethala Kura"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Bambino Upma",
+    "imposter": "Semiya Payasam"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Idli",
+    "imposter": "Dibba Rottu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Dibba Rottu",
+    "imposter": "Minapa Rottu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Allam Chutney",
+    "imposter": "Kobbari Chutney"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kobbari Chutney",
+    "imposter": "Palli Chutney"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Palli Chutney",
+    "imposter": "Tomato Chutney"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Challa Punugulu",
+    "imposter": "Mysore Bajji"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Mysore Bajji",
+    "imposter": "Aloo Bonda"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Onion Pakoda",
+    "imposter": "Palak Pakoda"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Saggubiyyam Punugulu",
+    "imposter": "Minapa Punugulu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Bellam Gavvalu",
+    "imposter": "Sakinalu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Sakinalu",
+    "imposter": "Sarva Pindi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Sarva Pindi",
+    "imposter": "Sajja Rotte"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Sunnundalu",
+    "imposter": "Malidu Laddoo"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Chitti Gaarelu",
+    "imposter": "Dahi Vada"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Double Ka Meetha",
+    "imposter": "Qubani Ka Meetha"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Qubani Ka Meetha",
+    "imposter": "Kaddu Ka Kheer"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Irani Chai",
+    "imposter": "Osmania Biscuit"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Osmania Biscuit",
+    "imposter": "Tie Biscuit"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Nalla Karam",
+    "imposter": "Karampodi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Chintakaya Tokku",
+    "imposter": "Usirikaya Tokku"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Pandu Mirapakaya Pachadi",
+    "imposter": "Gongura Pachadi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Gongura Pachadi",
+    "imposter": "Kandi Podi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kandi Podi",
+    "imposter": "Senaga Podi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Nethi Beerakaya Tokku Pachadi",
+    "imposter": "Vankaya Bajji Pachadi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Vankaya Bajji Pachadi",
+    "imposter": "Dondakaya Fry"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Dondakaya Fry",
+    "imposter": "Bendakaya Fry"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Chikkudukaya Fry",
+    "imposter": "Goruchikkudu Curry"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kakarakaya Vepudu",
+    "imposter": "Aratikaya Vepudu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Aratikaya Bajji",
+    "imposter": "Aloo Bajji"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Gobi Manchurian",
+    "imposter": "Baby Corn Manchurian"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Egg Bonda",
+    "imposter": "Bread Omlette"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Samosa",
+    "imposter": "Onion Samosa"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Dilpasand",
+    "imposter": "Coconut Bun"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kala Jamun",
+    "imposter": "Gulab Jamun"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Jalebi",
+    "imposter": "Imarti"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kulfi",
+    "imposter": "Matka Kulfi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Badam Milk",
+    "imposter": "Rose Milk"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Sugandhi Drink",
+    "imposter": "Nannari Sharbat"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kobbari Bondam",
+    "imposter": "Sugandhi Drink"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Panasa Thonalu",
+    "imposter": "Madatha Kaja"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Gongura Pickle",
+    "imposter": "Tomato Pickle"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Pulihora",
+    "imposter": "Lemon Rice"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Natukodi Pulusu",
+    "imposter": "Chepala Pulusu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Hyderabadi Biryani",
+    "imposter": "Mandi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Gutti Vankaya",
+    "imposter": "Bendakaya Fry"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Bobbatlu",
+    "imposter": "Pootharekulu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Haleem",
+    "imposter": "Harees"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Ulavacharu",
+    "imposter": "Pappu Charu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Dosa",
+    "imposter": "Idli"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Mysore Bonda",
+    "imposter": "Minapa Garelu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kakinada Kaja",
+    "imposter": "Tapeswaram Kaja"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Poori",
+    "imposter": "Chapathi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Royyala Iguru",
+    "imposter": "Peethala Iguru"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Chicken 65",
+    "imposter": "Chilli Chicken"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Mutton Kheema",
+    "imposter": "Mutton Curry"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Boti Curry",
+    "imposter": "Thalakaya Kura"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Ragi Sankati",
+    "imposter": "Jonna Rotte"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Gongura Mutton",
+    "imposter": "Gongura Chicken"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Bellam Gavvalu",
+    "imposter": "Chegodilu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Murukulu",
+    "imposter": "Janthikalu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Sarvapindi",
+    "imposter": "Sakinalu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Pachadi",
+    "imposter": "Podi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kandi Podi",
+    "imposter": "Karivepaku Podi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Nallakaram",
+    "imposter": "Guntur Karam"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Tomato Pappu",
+    "imposter": "Dosakaya Pappu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Mudda Pappu",
+    "imposter": "Palakura Pappu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Rasam",
+    "imposter": "Sambar"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Majjiga Pulusu",
+    "imposter": "Mukkala Pulusu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kothimeera Pachadi",
+    "imposter": "Pudina Pachadi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Usirikaya Pachadi",
+    "imposter": "Nimmakaya Pachadi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Sorakaya Pulusu",
+    "imposter": "Beerakaya Kura"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Ariselu",
+    "imposter": "Sunnundalu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Rava Laddu",
+    "imposter": "Boondi Laddu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Bandar Laddu",
+    "imposter": "Tirupati Laddu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Payasam",
+    "imposter": "Paramannam"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kajjikayalu",
+    "imposter": "Madugula Halwa"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kalakand",
+    "imposter": "Kova"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Irani Chai",
+    "imposter": "Filter Coffee"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Sugandhi",
+    "imposter": "Nannari"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kulfi",
+    "imposter": "Falooda"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Shawarma",
+    "imposter": "Franky"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Egg Bonda",
+    "imposter": "Aloo Bonda"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Onion Pakodi",
+    "imposter": "Corn Bajji"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Tomato Bajji",
+    "imposter": "Aratikaya Bajji"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Gara",
+    "imposter": "Vada"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Dibba Rotti",
+    "imposter": "Dosa"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Paniyaram",
+    "imposter": "Gunta Ponganalu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "MLA Pesarattu",
+    "imposter": "Onion Dosa"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Rava Dosa",
+    "imposter": "Masala Dosa"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Set Dosa",
+    "imposter": "Sponge Dosa"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Mutton Pulao",
+    "imposter": "Raju Gari Kodi Pulao"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Kodi Vepudu",
+    "imposter": "Mutton Vepudu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Chintakaya Pachadi",
+    "imposter": "Pandu Mirapakaya Pachadi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Malai Khaja",
+    "imposter": "Kaja"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Jeedipappu Pakam",
+    "imposter": "Palli Chikki"
+  },
+  {
+    "category": "ANDHRA/TELANGANA FOOD",
+    "normal": "Bonda",
+    "imposter": "Bajji"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Tirupati",
+    "imposter": "Srikalahasti"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Vijayawada",
+    "imposter": "Guntur"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Vizag",
+    "imposter": "Kakinada"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Hyderabad",
+    "imposter": "Warangal"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Secunderabad",
+    "imposter": "Hyderabad"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Nellore",
+    "imposter": "Ongole"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Kurnool",
+    "imposter": "Anantapur"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Kadapa",
+    "imposter": "Chittoor"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Rajahmundry",
+    "imposter": "Eluru"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Bhimavaram",
+    "imposter": "Amalapuram"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Tenali",
+    "imposter": "Mangalagiri"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Araku Valley",
+    "imposter": "Ananthagiri Hills"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Srisailam",
+    "imposter": "Mahanandi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Yadagirigutta",
+    "imposter": "Vemulawada"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Kondapalli Fort",
+    "imposter": "Udayagiri Fort"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Ramappa Temple",
+    "imposter": "Thousand Pillar Temple"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Bhadrachalam",
+    "imposter": "Parnashala"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Basara",
+    "imposter": "Dharmapuri"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Laknavaram Lake",
+    "imposter": "Pakhal Lake"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Nagarjuna Sagar",
+    "imposter": "Srisailam Dam"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Charminar",
+    "imposter": "Golconda Fort"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Golconda Fort",
+    "imposter": "Warangal Fort"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Birla Mandir",
+    "imposter": "Sanghi Temple"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Chilkur Balaji Temple",
+    "imposter": "Karmanghat Hanuman Temple"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Rishikonda Beach",
+    "imposter": "Yarada Beach"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Yarada Beach",
+    "imposter": "Bheemili Beach"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Ramakrishna Beach",
+    "imposter": "Rushikonda Beach"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Horsley Hills",
+    "imposter": "Lambasingi"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Lambasingi",
+    "imposter": "Maredumilli"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Maredumilli",
+    "imposter": "Araku Valley"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Lepakshi Temple",
+    "imposter": "Tadipatri Temple"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Ahobilam",
+    "imposter": "Yaganti"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Yaganti",
+    "imposter": "Gandikota"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Gandikota",
+    "imposter": "Belum Caves"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Belum Caves",
+    "imposter": "Borra Caves"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Borra Caves",
+    "imposter": "Araku Valley"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Kanaka Durga Temple",
+    "imposter": "Mangalagiri Temple"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Dwaraka Tirumala",
+    "imposter": "Annavaram"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Annavaram",
+    "imposter": "Simhachalam"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Simhachalam",
+    "imposter": "Arasavalli"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Srikurmam",
+    "imposter": "Mukhalingam"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Kotappakonda",
+    "imposter": "Amaravathi Temple"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Narasimha Konda",
+    "imposter": "Jonnavada"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Ramoji Film City",
+    "imposter": "Wonderla Hyderabad"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Salar Jung Museum",
+    "imposter": "Nizam Museum"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Husain Sagar",
+    "imposter": "Durgam Cheruvu"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "Durgam Cheruvu",
+    "imposter": "Osman Sagar"
+  },
+  {
+    "category": "ANDHRA/TELANGANA PLACES",
+    "normal": "KBR Park",
+    "imposter": "Lumbini Park"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Sankranti",
+    "imposter": "Ugadi"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Bathukamma",
+    "imposter": "Bonalu"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Ugadi",
+    "imposter": "Sri Rama Navami"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Bonalu",
+    "imposter": "Sammakka Saralamma Jatara"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "RTC Bus",
+    "imposter": "Share Auto"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Auto Rickshaw",
+    "imposter": "RTC Bus"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Ceiling Fan",
+    "imposter": "Table Fan"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Steel Tumbler",
+    "imposter": "Plastic Cup"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Coconut Oil",
+    "imposter": "Sesame Oil"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Mosquito Coil",
+    "imposter": "Mosquito Net"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Panchalu",
+    "imposter": "Lungi"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Lungi",
+    "imposter": "Kanduva"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Kanduva",
+    "imposter": "Pancha"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Steel Plate",
+    "imposter": "Pattal (Leaf Plate)"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Leaf Plate (Vistaraku)",
+    "imposter": "Steel Plate"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Water Mug",
+    "imposter": "Steel Tumbler"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Kappu (Teacup)",
+    "imposter": "Steel Glass"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Irani Chai",
+    "imposter": "Filter Coffee"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Coffee Filter",
+    "imposter": "Tea Strainer"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Pooja Room",
+    "imposter": "Tulasi Kota"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Muggu (Rangoli)",
+    "imposter": "Chalk Piece"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Chalk Piece",
+    "imposter": "Slate Pencil"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Slate",
+    "imposter": "Notebook"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Gold Haramu",
+    "imposter": "Gold Kasulaperu"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Mangalasutram",
+    "imposter": "Black Beads (Nallapusalu)"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Nallapusalu",
+    "imposter": "Mettelu"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Mettelu",
+    "imposter": "Vaddanam"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Saree",
+    "imposter": "Langa Voni"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Langa Voni",
+    "imposter": "Chudidar"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Dhoti",
+    "imposter": "Kurta Pyjama"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Marbles (Goti)",
+    "imposter": "Bongaram (Spinning Top)"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Kite (Patang)",
+    "imposter": "Thread Reel (Manja)"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Manja (Thread)",
+    "imposter": "Sada Thread"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Hand Fan (Visanakarra)",
+    "imposter": "Table Fan"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Clay Pot (Kunda)",
+    "imposter": "Water Filter"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Water Pot",
+    "imposter": "Copper Bottle"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Broomstick",
+    "imposter": "Mop Stick"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Matchbox",
+    "imposter": "Gas Lighter"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Gas Lighter",
+    "imposter": "Matchbox"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Axe (Goddali)",
+    "imposter": "Sickle (Koduva)"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Sickle (Kodavali)",
+    "imposter": "Crowbar (Gaddapara)"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Pestle (Rokali)",
+    "imposter": "Grinding Stone (Rubburaayi)"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Mortar and Pestle",
+    "imposter": "Mixer Grinder"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Chaddiannam",
+    "imposter": "Perugannam"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Majjiga",
+    "imposter": "Lassi"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Nimmakaya Soda",
+    "imposter": "Goli Soda"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Goli Soda",
+    "imposter": "Sugandhi Soda"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Panasapandu (Jackfruit)",
+    "imposter": "Regupandu (Jujube)"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Kobbari Chippa",
+    "imposter": "Kobbari Bondam"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Ambali",
+    "imposter": "Ragi Malt"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Dasara",
+    "imposter": "Diwali"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Ganesh Chaturthi",
+    "imposter": "Krishnashtami"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Share Auto",
+    "imposter": "Ola Cab"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Two Wheeler",
+    "imposter": "Activa"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Local Train",
+    "imposter": "Metro"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Saree",
+    "imposter": "Half Saree"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Bindi",
+    "imposter": "Sindoor"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Cheepuru",
+    "imposter": "Mop"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Bucket",
+    "imposter": "Mug"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Muggu",
+    "imposter": "Gobbemmalu"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Bhogi",
+    "imposter": "Kanuma"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Sammakka Sarakka Jatara",
+    "imposter": "Medaram Jatara"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Tank Bund",
+    "imposter": "Necklace Road"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Ramoji Film City",
+    "imposter": "Wonderla"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Shilparamam",
+    "imposter": "Lumbini Park"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Telugu Talli Flyover",
+    "imposter": "Cable Bridge"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "JNTU",
+    "imposter": "Osmania University"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "RTC Cross Roads",
+    "imposter": "Ameerpet"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Kirana Shop",
+    "imposter": "Supermarket"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Pan Dabba",
+    "imposter": "Tea Stall"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Ration Shop",
+    "imposter": "MeeSeva"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Current Bill",
+    "imposter": "Water Bill"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Vepa Chettu",
+    "imposter": "Marri Chettu"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Mamidi Aakulu",
+    "imposter": "Arati Aakulu"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Pasupu",
+    "imposter": "Kumkuma"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Agarbathi",
+    "imposter": "Karpooram"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Gas Stove",
+    "imposter": "Cylinder"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Mixer Grinder",
+    "imposter": "Wet Grinder"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Roolu",
+    "imposter": "Rokali"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Kunkudukai",
+    "imposter": "Shampoo"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Katora",
+    "imposter": "Kancham"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Chettu",
+    "imposter": "Mokka"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Veedhi Kukka",
+    "imposter": "Pempudu Kukka"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Gali Pataalu",
+    "imposter": "Manja"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "BSNL",
+    "imposter": "Jio"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Aadhaar Card",
+    "imposter": "PAN Card"
+  },
+  {
+    "category": "TELUGU STATES CULTURE & DAILY LIFE",
+    "normal": "Voter ID",
+    "imposter": "Driving License"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Nanna",
+    "imposter": "Babi"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Nanna",
+    "imposter": "Thandri"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Amma",
+    "imposter": "Thalli"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Thammudu",
+    "imposter": "Annayya"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Akka",
+    "imposter": "Chellelu"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Mavayya",
+    "imposter": "Babai"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Babai",
+    "imposter": "Peddananna"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Pinni",
+    "imposter": "Peddamma"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Bava",
+    "imposter": "Bavamaridi"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Vadina",
+    "imposter": "Maradalu"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Thatha",
+    "imposter": "Nana Thatha"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Ammamma",
+    "imposter": "Nayanamma"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Alludu",
+    "imposter": "Menalludu"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Kodalu",
+    "imposter": "Menakodalu"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Bava",
+    "imposter": "Macha"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Macha",
+    "imposter": "Mama"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Mama",
+    "imposter": "Bava"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Chicha",
+    "imposter": "Macha"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Abbe",
+    "imposter": "Abba"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Ammo",
+    "imposter": "Baboi"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Baboi",
+    "imposter": "Oreye"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Oreye",
+    "imposter": "Osey"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Osey",
+    "imposter": "Abbe"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Pilla",
+    "imposter": "Pilladu"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Mowa",
+    "imposter": "Bro"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Mowa",
+    "imposter": "Chicha"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Gantalu",
+    "imposter": "Nimishalu"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Yama",
+    "imposter": "Bhibhatsam"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Kiraak",
+    "imposter": "Bekaar"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Kiraak",
+    "imposter": "Suththi (Nonsense)"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Suththi",
+    "imposter": "Sodhi"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Sodhi",
+    "imposter": "Suththi"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Kompa",
+    "imposter": "Illu"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Arey",
+    "imposter": "Orey"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Orey",
+    "imposter": "Abbi"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Pora",
+    "imposter": "Pove"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Thikka",
+    "imposter": "Pogaru"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Pogaru",
+    "imposter": "Thimiri"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Gumpu",
+    "imposter": "Mandha"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Doola",
+    "imposter": "Gula"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Bokka",
+    "imposter": "Nastam"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Galata",
+    "imposter": "Gola"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Gola",
+    "imposter": "Allari"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Allari",
+    "imposter": "Galata"
+  },
+  {
+    "category": "TELUGU RELATIONS & SLANG",
+    "normal": "Dhadha",
+    "imposter": "Bhayyam"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "KGF",
+    "imposter": "Salaar"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Vikram",
+    "imposter": "Beast"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Enthiran",
+    "imposter": "2.0"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Premam",
+    "imposter": "Bangalore Days"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Jailer",
+    "imposter": "Vikram"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Leo",
+    "imposter": "Master"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Kaithi",
+    "imposter": "Vikram"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Manjummel Boys",
+    "imposter": "Premalu"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Premalu",
+    "imposter": "Hridayam"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Kantara",
+    "imposter": "KGF"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Lucifer",
+    "imposter": "Empuraan"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Avesham",
+    "imposter": "Romancham"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Leo",
+    "imposter": "Beast"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Sivaji: The Boss",
+    "imposter": "Enthiran"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Chandramukhi",
+    "imposter": "Anniyan"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Anniyan",
+    "imposter": "Sivaji: The Boss"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Ghajini",
+    "imposter": "7aum Arivu"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "7aum Arivu",
+    "imposter": "24"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "24",
+    "imposter": "Indru Netru Naalai"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Maanaadu",
+    "imposter": "24"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Thuppakki",
+    "imposter": "Kaththi"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Kaththi",
+    "imposter": "Mersal"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Mersal",
+    "imposter": "Sarkar"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Bigil",
+    "imposter": "Mersal"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Vada Chennai",
+    "imposter": "Asuran"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Asuran",
+    "imposter": "Karnan"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Karnan",
+    "imposter": "Sarpatta Parambarai"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Super Deluxe",
+    "imposter": "Kumbalangi Nights"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Kumbalangi Nights",
+    "imposter": "Angamaly Diaries"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Angamaly Diaries",
+    "imposter": "Ayyappanum Koshiyum"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Ayyappanum Koshiyum",
+    "imposter": "Bramayugam"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Bramayugam",
+    "imposter": "Manjummel Boys"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Minnal Murali",
+    "imposter": "Hanu-Man"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Charlie",
+    "imposter": "Bangalore Days"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Kirik Party",
+    "imposter": "Kantara"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Charlie 777",
+    "imposter": "Kirik Party"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Mufti",
+    "imposter": "KGF"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Kabali",
+    "imposter": "Kaala"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Kaala",
+    "imposter": "Vada Chennai"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Pithamagan",
+    "imposter": "Sethu"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "I (Movie)",
+    "imposter": "Anniyan"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Thani Oruvan",
+    "imposter": "Velaikkaran"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Vikram Vedha",
+    "imposter": "Kaithi"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Doctor",
+    "imposter": "Beast"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Soodhu Kavvum",
+    "imposter": "Kadhalum Kadandhu Pogum"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Love Today",
+    "imposter": "Comali"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Dada",
+    "imposter": "Hridayam"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Joe",
+    "imposter": "Love Today"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Petta",
+    "imposter": "Darbar"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Darbar",
+    "imposter": "Jailer"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Soorarai Pottru",
+    "imposter": "Jai Bhim"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Jai Bhim",
+    "imposter": "Asuran"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Theri",
+    "imposter": "Mersal"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Singam",
+    "imposter": "Singam 2"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Saamy",
+    "imposter": "Singam"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Vettaiyan",
+    "imposter": "Jailer"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Amaran",
+    "imposter": "Major"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Kantara",
+    "imposter": "KGF Chapter 2"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Master",
+    "imposter": "Varisu"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Jailer",
+    "imposter": "Leo"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Ponniyin Selvan 1",
+    "imposter": "Ponniyin Selvan 2"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Mankatha",
+    "imposter": "Billa"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Karnan",
+    "imposter": "Mariyan"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Drishyam",
+    "imposter": "Drishyam 2"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Kumbalangi Nights",
+    "imposter": "Maheshinte Prathikaaram"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Minnal Murali",
+    "imposter": "Joji"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Ayyappanum Koshiyum",
+    "imposter": "Driving Licence"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Charlie",
+    "imposter": "Kali"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Trance",
+    "imposter": "Ustad Hotel"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Manjummel Boys",
+    "imposter": "Aavesham"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Romancham",
+    "imposter": "Bramayugam"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "The Goat Life",
+    "imposter": "Lucifer"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Bheeshma Parvam",
+    "imposter": "Big B"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Mungaru Male",
+    "imposter": "Gaalipata"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Ugramm",
+    "imposter": "KGF Chapter 1"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "RangiTaranga",
+    "imposter": "Ulidavaru Kandanthe"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Lucia",
+    "imposter": "Garuda Gamana Vrishabha Vahana"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Sapta Sagaradaache Ello",
+    "imposter": "Mufti"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Sivaji",
+    "imposter": "Anniyan"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Ghajini",
+    "imposter": "7G Rainbow Colony"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Nayan",
+    "imposter": "Thalapathi"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Roja",
+    "imposter": "Bombay"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Ok Kanmani",
+    "imposter": "Alaipayuthey"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Vinnaithaandi Varuvaayaa",
+    "imposter": "Minnale"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Boys",
+    "imposter": "Jeans"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Indian",
+    "imposter": "Mudhalvan"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Vettaiyaadu Vilaiyaadu",
+    "imposter": "Yennai Arindhaal"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Dheena",
+    "imposter": "Ramanaa"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Padayappa",
+    "imposter": "Arunachalam"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Chandramukhi",
+    "imposter": "Kanchana"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Ratsasan",
+    "imposter": "Pizza"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Super Deluxe",
+    "imposter": "Aaranya Kaandam"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Jigarthanda",
+    "imposter": "Iraivi"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Viswasam",
+    "imposter": "Vedalam"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Don",
+    "imposter": "Doctor"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Maharaja",
+    "imposter": "Chittha"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Garuda Gamana Vrishabha Vahana",
+    "imposter": "Richard Antony"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Tagaru",
+    "imposter": "Salaga"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Kanthaswamy",
+    "imposter": "Ayan"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Ko",
+    "imposter": "Rangam"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Dasavathaaram",
+    "imposter": "Vishwaroopam"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Hey Ram",
+    "imposter": "Aalavandhan"
+  },
+  {
+    "category": "SOUTH INDIAN CINEMA",
+    "normal": "Thani Oruvan",
+    "imposter": "Bogan"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Rajinikanth",
+    "imposter": "Kamal Haasan"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Thalapathy Vijay",
+    "imposter": "Ajith Kumar"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Suriya",
+    "imposter": "Karthi"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Fahadh Faasil",
+    "imposter": "Dulquer Salmaan"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Yash",
+    "imposter": "Rishab Shetty"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Dhanush",
+    "imposter": "Simbhu"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Vijay Sethupathi",
+    "imposter": "Sivakarthikeyan"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Lokesh Kanagaraj",
+    "imposter": "Nelson Dilipkumar"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Nelson Dilipkumar",
+    "imposter": "Atlee"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Atlee",
+    "imposter": "Lokesh Kanagaraj"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Anirudh Ravichander",
+    "imposter": "G V Prakash"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Nayanthara",
+    "imposter": "Trisha Krishnan"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Trisha Krishnan",
+    "imposter": "Keerthy Suresh"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Sai Pallavi",
+    "imposter": "Nazriya Nazim"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Nazriya Nazim",
+    "imposter": "Kalyani Priyadarshan"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Mammootty",
+    "imposter": "Mohanlal"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Dulquer Salmaan",
+    "imposter": "Prithviraj Sukumaran"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Prithviraj Sukumaran",
+    "imposter": "Fahadh Faasil"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Tovino Thomas",
+    "imposter": "Unni Mukundan"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Shivarajkumar",
+    "imposter": "Sudeep"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Sudeep",
+    "imposter": "Upendra"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Upendra",
+    "imposter": "Puneeth Rajkumar"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Rishab Shetty",
+    "imposter": "Rakshit Shetty"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Rakshit Shetty",
+    "imposter": "Raj B Shetty"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Dhanush",
+    "imposter": "Vijay Sethupathi"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Siddharth",
+    "imposter": "Madhavan"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Madhavan",
+    "imposter": "Arvind Swamy"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Arvind Swamy",
+    "imposter": "Suryah"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "S J Suryah",
+    "imposter": "Vijay Sethupathi"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Rashmika Mandanna",
+    "imposter": "Srinidhi Shetty"
+  },
+  {
+    "category": "SOUTH INDIAN CELEBRITIES",
+    "normal": "Srinidhi Shetty",
+    "imposter": "Rukmini Vasanth"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Dilwale Dulhania Le Jayenge",
+    "imposter": "Kuch Kuch Hota Hai"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "3 Idiots",
+    "imposter": "PK"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Dangal",
+    "imposter": "Sultan"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Sholay",
+    "imposter": "Deewaar"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Kabhi Khushi Kabhie Gham",
+    "imposter": "Kal Ho Naa Ho"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Zindagi Na Milegi Dobara",
+    "imposter": "Yeh Jawaani Hai Deewani"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Gangs of Wasseypur",
+    "imposter": "Satya"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Satya",
+    "imposter": "Company"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Chak De! India",
+    "imposter": "Lagaan"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Lagaan",
+    "imposter": "Swades"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Swades",
+    "imposter": "Chak De! India"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Koi... Mil Gaya",
+    "imposter": "Krrish"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Krrish",
+    "imposter": "Ra.One"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Dhoom",
+    "imposter": "Dhoom 2"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Dhoom 2",
+    "imposter": "Dhoom 3"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Bajrangi Bhaijaan",
+    "imposter": "Sultan"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Kabir Singh",
+    "imposter": "Animal"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Animal",
+    "imposter": "Jawan"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Jawan",
+    "imposter": "Pathaan"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Pathaan",
+    "imposter": "Tiger Zinda Hai"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Tiger Zinda Hai",
+    "imposter": "War"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "War",
+    "imposter": "Fighter"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Uri: The Surgical Strike",
+    "imposter": "Shershaah"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Shershaah",
+    "imposter": "Fighter"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Gully Boy",
+    "imposter": "Rockstar"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Rockstar",
+    "imposter": "Tamasha"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Tamasha",
+    "imposter": "Barfi!"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Barfi!",
+    "imposter": "Ae Dil Hai Mushkil"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Queen",
+    "imposter": "Tanu Weds Manu"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Tanu Weds Manu",
+    "imposter": "Tanu Weds Manu Returns"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Stree",
+    "imposter": "Stree 2"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Stree 2",
+    "imposter": "Munjya"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Munjya",
+    "imposter": "Bhediya"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Bhediya",
+    "imposter": "Roohi"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Andhadhun",
+    "imposter": "Drishyam"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Drishyam",
+    "imposter": "Drishyam 2"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Article 15",
+    "imposter": "Pink"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Pink",
+    "imposter": "Badla"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Super 30",
+    "imposter": "Chhichhore"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Chhichhore",
+    "imposter": "3 Idiots"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Bajirao Mastani",
+    "imposter": "Padmaavat"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Padmaavat",
+    "imposter": "Ram-Leela"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Ram-Leela",
+    "imposter": "Devdas"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Devdas",
+    "imposter": "Hum Dil De Chuke Sanam"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Munna Bhai M.B.B.S.",
+    "imposter": "Lage Raho Munna Bhai"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Welcome",
+    "imposter": "Singh Is Kinng"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Hera Pheri",
+    "imposter": "Phir Hera Pheri"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Phir Hera Pheri",
+    "imposter": "Welcome"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Garam Masala",
+    "imposter": "Bhool Bhulaiyaa"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Bhool Bhulaiyaa",
+    "imposter": "Bhool Bhulaiyaa 2"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Bhool Bhulaiyaa 2",
+    "imposter": "Bhool Bhulaiyaa 3"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Crew",
+    "imposter": "Veere Di Wedding"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Fukrey",
+    "imposter": "Fukrey Returns"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Delhi Belly",
+    "imposter": "Go Goa Gone"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Go Goa Gone",
+    "imposter": "Stree"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Laapataa Ladies",
+    "imposter": "12th Fail"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "12th Fail",
+    "imposter": "Super 30"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Om Shanti Om",
+    "imposter": "Chennai Express"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Chennai Express",
+    "imposter": "Happy New Year"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Karan Arjun",
+    "imposter": "Koyla"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Sholay",
+    "imposter": "Deewar"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Chak De India",
+    "imposter": "Bhaag Milkha Bhaag"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Dil Chahta Hai",
+    "imposter": "Lakshya"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Munna Bhai MBBS",
+    "imposter": "Lage Raho Munna Bhai"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Welcome",
+    "imposter": "Dhamaal"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Golmaal",
+    "imposter": "Housefull"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Kahaani",
+    "imposter": "Pink"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Bajrangi Bhaijaan",
+    "imposter": "Ek Tha Tiger"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "War",
+    "imposter": "Bang Bang"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Krrish",
+    "imposter": "Koi Mil Gaya"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Don",
+    "imposter": "Don 2"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Om Shanti Om",
+    "imposter": "Main Hoon Na"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Zindagi Na Milegi Dobara",
+    "imposter": "Dil Dhadakne Do"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Tamasha",
+    "imposter": "Highway"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Jab We Met",
+    "imposter": "Love Aaj Kal"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Barfi",
+    "imposter": "Jagga Jasoos"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Badrinath Ki Dulhania",
+    "imposter": "Humpty Sharma Ki Dulhania"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "2 States",
+    "imposter": "Half Girlfriend"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Aashiqui 2",
+    "imposter": "Ek Villain"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Sanju",
+    "imposter": "MS Dhoni: The Untold Story"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Jodhaa Akbar",
+    "imposter": "Devdas"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Gangubai Kathiawadi",
+    "imposter": "Raazi"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "URI: The Surgical Strike",
+    "imposter": "Shershaah"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Article 15",
+    "imposter": "Mulk"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Badhaai Ho",
+    "imposter": "Dream Girl"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Andhadhun",
+    "imposter": "Monica O My Darling"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Animal",
+    "imposter": "Rocky Aur Rani Kii Prem Kahaani"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Rocky Aur Rani Kii Prem Kahaani",
+    "imposter": "Tu Jhoothi Main Makkaar"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Brahmastra",
+    "imposter": "Ra.One"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Taare Zameen Par",
+    "imposter": "Secret Superstar"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Rang De Basanti",
+    "imposter": "Lakshya"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Guru",
+    "imposter": "Yuva"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Lagaan",
+    "imposter": "Mangal Pandey"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Swades",
+    "imposter": "Chak De India"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Jab We Met",
+    "imposter": "Tanu Weds Manu Returns"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Piku",
+    "imposter": "Dear Zindagi"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Kapoor & Sons",
+    "imposter": "Neerja"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Hindi Medium",
+    "imposter": "English Vinglish"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Gadar",
+    "imposter": "Border"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Agneepath",
+    "imposter": "Don"
+  },
+  {
+    "category": "BOLLYWOOD",
+    "normal": "Gangs of Wasseypur",
+    "imposter": "Shootout at Lokhandwala"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Shah Rukh Khan",
+    "imposter": "Salman Khan"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Salman Khan",
+    "imposter": "Aamir Khan"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Ranbir Kapoor",
+    "imposter": "Ranveer Singh"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Akshay Kumar",
+    "imposter": "Ajay Devgn"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Amitabh Bachchan",
+    "imposter": "Dharmendra"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Deepika Padukone",
+    "imposter": "Alia Bhatt"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Alia Bhatt",
+    "imposter": "Katrina Kaif"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Katrina Kaif",
+    "imposter": "Kareena Kapoor"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Priyanka Chopra",
+    "imposter": "Anushka Sharma"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Vicky Kaushal",
+    "imposter": "Kartik Aaryan"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Kartik Aaryan",
+    "imposter": "Ayushmann Khurrana"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Ayushmann Khurrana",
+    "imposter": "Rajkummar Rao"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Rajkummar Rao",
+    "imposter": "Pankaj Tripathi"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Pankaj Tripathi",
+    "imposter": "Nawazuddin Siddiqui"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Nawazuddin Siddiqui",
+    "imposter": "Manoj Bajpayee"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Karan Johar",
+    "imposter": "Sanjay Leela Bhansali"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Sanjay Leela Bhansali",
+    "imposter": "Rajkumar Hirani"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Rajkumar Hirani",
+    "imposter": "Anurag Kashyap"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Hrithik Roshan",
+    "imposter": "Tiger Shroff"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Shraddha Kapoor",
+    "imposter": "Kriti Sanon"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Kriti Sanon",
+    "imposter": "Kiara Advani"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Varun Dhawan",
+    "imposter": "Sidharth Malhotra"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Saif Ali Khan",
+    "imposter": "Abhishek Bachchan"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "John Abraham",
+    "imposter": "Vidyut Jammwal"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Tiger Shroff",
+    "imposter": "Vidyut Jammwal"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Sunny Deol",
+    "imposter": "Bobby Deol"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Bobby Deol",
+    "imposter": "Sanjay Dutt"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Sanjay Dutt",
+    "imposter": "Suniel Shetty"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Anil Kapoor",
+    "imposter": "Jackie Shroff"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Tabu",
+    "imposter": "Kajol"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Kajol",
+    "imposter": "Rani Mukerji"
+  },
+  {
+    "category": "BOLLYWOOD CELEBRITIES",
+    "normal": "Sridevi",
+    "imposter": "Madhuri Dixit"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Avengers: Endgame",
+    "imposter": "Justice League"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Titanic",
+    "imposter": "Avatar"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Inception",
+    "imposter": "Interstellar"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Dark Knight",
+    "imposter": "Batman Begins"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Matrix",
+    "imposter": "Inception"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Spider-Man: No Way Home",
+    "imposter": "Doctor Strange in the Multiverse of Madness"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Lion King",
+    "imposter": "Aladdin"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Toy Story",
+    "imposter": "Monsters, Inc."
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Shrek",
+    "imposter": "Madagascar"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Finding Nemo",
+    "imposter": "Shark Tale"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Frozen",
+    "imposter": "Tangled"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Lord of the Rings: The Fellowship of the Ring",
+    "imposter": "The Hobbit: An Unexpected Journey"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Gladiator",
+    "imposter": "Troy"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Braveheart",
+    "imposter": "Gladiator"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Jurassic Park",
+    "imposter": "King Kong"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Avatar: The Way of Water",
+    "imposter": "Aquaman"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Iron Man",
+    "imposter": "Man of Steel"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Captain America: The Winter Soldier",
+    "imposter": "Black Panther"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Thor: Ragnarok",
+    "imposter": "Guardians of the Galaxy"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Deadpool",
+    "imposter": "Logan"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Zack Snyder's Justice League",
+    "imposter": "The Avengers"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Dark Knight Rises",
+    "imposter": "The Batman"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Joker",
+    "imposter": "The Batman"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Dune",
+    "imposter": "Interstellar"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Dune: Part Two",
+    "imposter": "Star Wars: The Force Awakens"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Oppenheimer",
+    "imposter": "Barbie"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Interstellar",
+    "imposter": "Gravity"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Martian",
+    "imposter": "Gravity"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Ready Player One",
+    "imposter": "Free Guy"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Mission: Impossible - Fallout",
+    "imposter": "Skyfall"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "John Wick",
+    "imposter": "The Equalizer"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Fast & Furious 7",
+    "imposter": "The Fate of the Furious"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Top Gun: Maverick",
+    "imposter": "Mission: Impossible - Dead Reckoning"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Mad Max: Fury Road",
+    "imposter": "Dune"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Conjuring",
+    "imposter": "Insidious"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Insidious",
+    "imposter": "Annabelle"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "A Quiet Place",
+    "imposter": "Bird Box"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Get Out",
+    "imposter": "Us"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Knives Out",
+    "imposter": "Glass Onion"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Hangover",
+    "imposter": "We're the Millers"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Now You See Me",
+    "imposter": "Knives Out"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Baby Driver",
+    "imposter": "Drive"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Ford v Ferrari",
+    "imposter": "Rush"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Wolf of Wall Street",
+    "imposter": "The Big Short"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Django Unchained",
+    "imposter": "The Hateful Eight"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Inglourious Basterds",
+    "imposter": "Django Unchained"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Home Alone 2: Lost in New York",
+    "imposter": "Jumanji"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Jumanji: Welcome to the Jungle",
+    "imposter": "Night at the Museum"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Pirates of the Caribbean: The Curse of the Black Pearl",
+    "imposter": "Sherlock Holmes"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Logan",
+    "imposter": "X-Men: Days of Future Past"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Black Widow",
+    "imposter": "Captain Marvel"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Wonder Woman",
+    "imposter": "Aquaman"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Shazam!",
+    "imposter": "Black Adam"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Godzilla vs. Kong",
+    "imposter": "Pacific Rim"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Pacific Rim",
+    "imposter": "Transformers"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Transformers: Dark of the Moon",
+    "imposter": "Real Steel"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Terminator",
+    "imposter": "RoboCop"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Terminator 2: Judgment Day",
+    "imposter": "The Matrix"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Alien",
+    "imposter": "Predator"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Dawn of the Planet of the Apes",
+    "imposter": "Rise of the Planet of the Apes"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Speed",
+    "imposter": "Die Hard"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Die Hard",
+    "imposter": "Lethal Weapon"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Avengers",
+    "imposter": "Justice League"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Spider-Man",
+    "imposter": "Iron Man"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Thor",
+    "imposter": "Captain America"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Harry Potter",
+    "imposter": "Lord of the Rings"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Star Wars",
+    "imposter": "Star Trek"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Jurassic Park",
+    "imposter": "Godzilla"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Matrix",
+    "imposter": "Terminator"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Mission: Impossible",
+    "imposter": "James Bond"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Fast & Furious",
+    "imposter": "Transformers"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Godfather",
+    "imposter": "Goodfellas"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Pulp Fiction",
+    "imposter": "Fight Club"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Forrest Gump",
+    "imposter": "The Shawshank Redemption"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Pirates of the Caribbean",
+    "imposter": "Indiana Jones"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Dune",
+    "imposter": "Blade Runner 2049"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Mad Max: Fury Road",
+    "imposter": "John Wick"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Avengers",
+    "imposter": "Avengers: Endgame"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Black Panther",
+    "imposter": "Doctor Strange"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Guardians of the Galaxy",
+    "imposter": "Suicide Squad"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Deadpool",
+    "imposter": "Wolverine"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Man of Steel",
+    "imposter": "Aquaman"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Toy Story",
+    "imposter": "Shrek"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Finding Nemo",
+    "imposter": "The Lion King"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Despicable Me",
+    "imposter": "Minions"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Up",
+    "imposter": "Inside Out"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Spider-Man: Into the Spider-Verse",
+    "imposter": "The Incredibles"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Kung Fu Panda",
+    "imposter": "How to Train Your Dragon"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "IT",
+    "imposter": "A Quiet Place"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Scream",
+    "imposter": "Halloween"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Exorcist",
+    "imposter": "The Shining"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Avatar: The Way of Water",
+    "imposter": "Avengers: Infinity War"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Top Gun: Maverick",
+    "imposter": "Mission: Impossible - Fallout"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Rocky",
+    "imposter": "Creed"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Rambo",
+    "imposter": "Die Hard"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Lord of the Rings",
+    "imposter": "The Hobbit"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Interstellar",
+    "imposter": "The Martian"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Gravity",
+    "imposter": "Arrival"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Se7en",
+    "imposter": "The Silence of the Lambs"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Wolf of Wall Street",
+    "imposter": "Catch Me If You Can"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Social Network",
+    "imposter": "Steve Jobs"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Tenet",
+    "imposter": "Dunkirk"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Memento",
+    "imposter": "The Prestige"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Django Unchained",
+    "imposter": "Inglourious Basterds"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Kill Bill",
+    "imposter": "Reservoir Dogs"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Terminator",
+    "imposter": "Predator"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Alien",
+    "imposter": "The Thing"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "E.T. the Extra-Terrestrial",
+    "imposter": "Close Encounters of the Third Kind"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Jaws",
+    "imposter": "King Kong"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Hunger Games",
+    "imposter": "The Maze Runner"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Twilight",
+    "imposter": "The Vampire Diaries"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "La La Land",
+    "imposter": "A Star is Born"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "The Grand Budapest Hotel",
+    "imposter": "Parasite"
+  },
+  {
+    "category": "HOLLYWOOD",
+    "normal": "Everything Everywhere All at Once",
+    "imposter": "Spider-Man: No Way Home"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Robert Downey Jr.",
+    "imposter": "Chris Evans"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Tom Cruise",
+    "imposter": "Brad Pitt"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Leonardo DiCaprio",
+    "imposter": "Johnny Depp"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Dwayne Johnson",
+    "imposter": "John Cena"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Cillian Murphy",
+    "imposter": "Robert Downey Jr."
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Taylor Swift",
+    "imposter": "Selena Gomez"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Justin Bieber",
+    "imposter": "Shawn Mendes"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Lionel Messi",
+    "imposter": "Cristiano Ronaldo"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Neymar Jr",
+    "imposter": "Kylian Mbappe"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "LeBron James",
+    "imposter": "Stephen Curry"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Bill Gates",
+    "imposter": "Elon Musk"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Elon Musk",
+    "imposter": "Mark Zuckerberg"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Jeff Bezos",
+    "imposter": "Bill Gates"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Christopher Nolan",
+    "imposter": "James Cameron"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "James Cameron",
+    "imposter": "Steven Spielberg"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Margot Robbie",
+    "imposter": "Emma Stone"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Scarlett Johansson",
+    "imposter": "Elizabeth Olsen"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Zendaya",
+    "imposter": "Sydney Sweeney"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Tom Holland",
+    "imposter": "Timothee Chalamet"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Timothee Chalamet",
+    "imposter": "Austin Butler"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Keanu Reeves",
+    "imposter": "Tom Cruise"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Will Smith",
+    "imposter": "Denzel Washington"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Ryan Reynolds",
+    "imposter": "Hugh Jackman"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Hugh Jackman",
+    "imposter": "Christian Bale"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Christian Bale",
+    "imposter": "Ben Affleck"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Jackie Chan",
+    "imposter": "Bruce Lee"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Angelina Jolie",
+    "imposter": "Charlize Theron"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Selena Gomez",
+    "imposter": "Ariana Grande"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Billie Eilish",
+    "imposter": "Olivia Rodrigo"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Dua Lipa",
+    "imposter": "Taylor Swift"
+  },
+  {
+    "category": "FOREIGN CELEBRITIES",
+    "normal": "Shakira",
+    "imposter": "Jennifer Lopez"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Mirzapur",
+    "imposter": "Sacred Games"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Family Man",
+    "imposter": "Farzi"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Panchayat",
+    "imposter": "Gullak"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Kota Factory",
+    "imposter": "Aspirants"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Sacred Games",
+    "imposter": "Paatal Lok"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Rana Naidu",
+    "imposter": "Mirzapur"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Scam 1992: The Harshad Mehta Story",
+    "imposter": "Scam 2003: The Telgi Story"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Delhi Crime",
+    "imposter": "Paatal Lok"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Made in Heaven",
+    "imposter": "Four More Shots Please!"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Aarya",
+    "imposter": "Saas Bahu Aur Flamingo"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Breathe",
+    "imposter": "Asur"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Asur",
+    "imposter": "The Family Man"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Game of Thrones",
+    "imposter": "House of the Dragon"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Stranger Things",
+    "imposter": "Dark"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Money Heist",
+    "imposter": "Squid Game"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Breaking Bad",
+    "imposter": "Better Call Saul"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Better Call Saul",
+    "imposter": "Ozark"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Ozark",
+    "imposter": "Narcos"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Narcos",
+    "imposter": "Narcos: Mexico"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Boys",
+    "imposter": "Invincible"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Last of Us",
+    "imposter": "Fallout"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Wednesday",
+    "imposter": "Stranger Things"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Squid Game",
+    "imposter": "Alice in Borderland"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Dark",
+    "imposter": "1899"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Crown",
+    "imposter": "Peaky Blinders"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Peaky Blinders",
+    "imposter": "Sherlock"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Sherlock",
+    "imposter": "Lupin"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Black Mirror",
+    "imposter": "Love, Death & Robots"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Lucifer",
+    "imposter": "The Sandman"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Euphoria",
+    "imposter": "Sex Education"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Sex Education",
+    "imposter": "Elite"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "You",
+    "imposter": "Dexter"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Modern Love Hyderabad",
+    "imposter": "Anger Tales"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Save The Tigers",
+    "imposter": "90's - A Middle Class Biopic"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "90's - A Middle Class Biopic",
+    "imposter": "Kumari Srimathi"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Yakshini",
+    "imposter": "Vyooham"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Scam 1992",
+    "imposter": "Rocket Boys"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Dhootha",
+    "imposter": "Save the Tigers"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Loser",
+    "imposter": "Vyavastha"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Kumari Srimathi",
+    "imposter": "9 Hours"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Boys",
+    "imposter": "Gen V"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Office",
+    "imposter": "Friends"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "How I Met Your Mother",
+    "imposter": "The Big Bang Theory"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Brooklyn Nine-Nine",
+    "imposter": "Parks and Recreation"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Wednesday",
+    "imposter": "The Umbrella Academy"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Loki",
+    "imposter": "WandaVision"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Daredevil",
+    "imposter": "The Punisher"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "True Detective",
+    "imposter": "Mindhunter"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Chernobyl",
+    "imposter": "Band of Brothers"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Witcher",
+    "imposter": "The Sandman"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Suzhal",
+    "imposter": "Vadhandhi"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Vilangu",
+    "imposter": "Ayali"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Delhi Crime",
+    "imposter": "Criminal Justice"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Hostages",
+    "imposter": "Special Ops"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Naruto Uzumaki",
+    "imposter": "Sasuke Uchiha"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Monkey D. Luffy",
+    "imposter": "Roronoa Zoro"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Goku",
+    "imposter": "Vegeta"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Light Yagami",
+    "imposter": "L Lawliet"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Tanjiro Kamado",
+    "imposter": "Nezuko Kamado"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Eren Yeager",
+    "imposter": "Levi Ackerman"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Satoru Gojo",
+    "imposter": "Ryomen Sukuna"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Izuku Midoriya",
+    "imposter": "Katsuki Bakugo"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Ichigo Kurosaki",
+    "imposter": "Uryu Ishida"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Saitama",
+    "imposter": "Genos"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Naruto",
+    "imposter": "One Piece"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Death Note",
+    "imposter": "Code Geass"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Attack on Titan",
+    "imposter": "Demon Slayer"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Jujutsu Kaisen",
+    "imposter": "Chainsaw Man"
+  },
+  {
+    "category": "ANIME",
+    "normal": "My Hero Academia",
+    "imposter": "Black Clover"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Dragon Ball Z",
+    "imposter": "Naruto Shippuden"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Hunter x Hunter",
+    "imposter": "Yu Yu Hakusho"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Fullmetal Alchemist: Brotherhood",
+    "imposter": "Attack on Titan"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Demon Slayer",
+    "imposter": "Jujutsu Kaisen"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Solo Leveling",
+    "imposter": "Bleach"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Bleach",
+    "imposter": "One Piece"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Kakashi Hatake",
+    "imposter": "Itachi Uchiha"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Itachi Uchiha",
+    "imposter": "Sasuke Uchiha"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Yuji Itadori",
+    "imposter": "Megumi Fushiguro"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Gojo Satoru",
+    "imposter": "Kakashi Hatake"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Roronoa Zoro",
+    "imposter": "Sanji"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Luffy",
+    "imposter": "Naruto"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Gon Freecss",
+    "imposter": "Killua Zoldyck"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Mikasa Ackerman",
+    "imposter": "Armin Arlert"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Ash Ketchum",
+    "imposter": "Pikachu"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Pikachu",
+    "imposter": "Charizard"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Spirited Away",
+    "imposter": "Your Name"
+  },
+  {
+    "category": "ANIME",
+    "normal": "Your Name",
+    "imposter": "Weathering With You"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Sachin Tendulkar",
+    "imposter": "Rahul Dravid"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Virat Kohli",
+    "imposter": "Rohit Sharma"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "M S Dhoni",
+    "imposter": "Suresh Raina"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Hardik Pandya",
+    "imposter": "Ravindra Jadeja"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Jasprit Bumrah",
+    "imposter": "Mohammed Shami"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Ravichandran Ashwin",
+    "imposter": "Ravindra Jadeja"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Yuvraj Singh",
+    "imposter": "Suresh Raina"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Gautam Gambhir",
+    "imposter": "Virender Sehwag"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Virender Sehwag",
+    "imposter": "Sachin Tendulkar"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "K L Rahul",
+    "imposter": "Shreyas Iyer"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Rishabh Pant",
+    "imposter": "Sanju Samson"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Shubman Gill",
+    "imposter": "Yashasvi Jaiswal"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Yashasvi Jaiswal",
+    "imposter": "Rinku Singh"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Rinku Singh",
+    "imposter": "Shivam Dube"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Suryakumar Yadav",
+    "imposter": "Rinku Singh"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "IPL",
+    "imposter": "WPL"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "World Cup",
+    "imposter": "Champions Trophy"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "T20 World Cup",
+    "imposter": "ODI World Cup"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Test Match",
+    "imposter": "One Day International"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Mumbai Indians",
+    "imposter": "Chennai Super Kings"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Royal Challengers Bengaluru",
+    "imposter": "Kolkata Knight Riders"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Kolkata Knight Riders",
+    "imposter": "Sunrisers Hyderabad"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Sunrisers Hyderabad",
+    "imposter": "Mumbai Indians"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Delhi Capitals",
+    "imposter": "Punjab Kings"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Rajasthan Royals",
+    "imposter": "Gujarat Titans"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Lucknow Super Giants",
+    "imposter": "Gujarat Titans"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Cover Drive",
+    "imposter": "Pull Shot"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Sweep Shot",
+    "imposter": "Reverse Sweep"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Helicopter Shot",
+    "imposter": "Scoop Shot"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Scoop Shot",
+    "imposter": "Switch Hit"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Yorker",
+    "imposter": "Full Toss"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Bouncer",
+    "imposter": "Beamer"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Leg Spinner",
+    "imposter": "Off Spinner"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Googly",
+    "imposter": "Doosra"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Doosra",
+    "imposter": "Carrom Ball"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Outswinger",
+    "imposter": "Inswinger"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Wicketkeeper",
+    "imposter": "First Slip"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Powerplay",
+    "imposter": "Free Hit"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Free Hit",
+    "imposter": "Super Over"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Super Over",
+    "imposter": "Bowl Out"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Leg Before Wicket",
+    "imposter": "Caught Behind"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Run Out",
+    "imposter": "Stumped"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Stumped",
+    "imposter": "Hit Wicket"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Duck",
+    "imposter": "Golden Duck"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Century",
+    "imposter": "Half Century"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Hat-trick",
+    "imposter": "Five-Wicket Haul"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Pat Cummins",
+    "imposter": "Mitchell Starc"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Steve Smith",
+    "imposter": "Marnus Labuschagne"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Kane Williamson",
+    "imposter": "Joe Root"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Babar Azam",
+    "imposter": "Mohammad Rizwan"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Glenn Maxwell",
+    "imposter": "Marcus Stoinis"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Rashid Khan",
+    "imposter": "Mujeeb Ur Rahman"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Four",
+    "imposter": "Six"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "MS Dhoni",
+    "imposter": "Yuvraj Singh"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Sourav Ganguly",
+    "imposter": "VVS Laxman"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Virender Sehwag",
+    "imposter": "Gautam Gambhir"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Hardik Pandya",
+    "imposter": "KL Rahul"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Suryakumar Yadav",
+    "imposter": "Shreyas Iyer"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Kapil Dev",
+    "imposter": "Sunil Gavaskar"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Anil Kumble",
+    "imposter": "Harbhajan Singh"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Zaheer Khan",
+    "imposter": "Ashish Nehra"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Ricky Ponting",
+    "imposter": "Steve Waugh"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Shane Warne",
+    "imposter": "Glenn McGrath"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Brett Lee",
+    "imposter": "Shoaib Akhtar"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Adam Gilchrist",
+    "imposter": "Matthew Hayden"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Brian Lara",
+    "imposter": "Vivian Richards"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Chris Gayle",
+    "imposter": "AB de Villiers"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Jacques Kallis",
+    "imposter": "Shaun Pollock"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Dale Steyn",
+    "imposter": "Morne Morkel"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Wasim Akram",
+    "imposter": "Waqar Younis"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Muttiah Muralitharan",
+    "imposter": "Lasith Malinga"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Kumar Sangakkara",
+    "imposter": "Mahela Jayawardene"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Kane Williamson",
+    "imposter": "Ross Taylor"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Ben Stokes",
+    "imposter": "Joe Root"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Mumbai Indians",
+    "imposter": "Chennai Super Kings"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Royal Challengers Bangalore",
+    "imposter": "Kolkata Knight Riders"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Sunrisers Hyderabad",
+    "imposter": "Rajasthan Royals"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Delhi Capitals",
+    "imposter": "Punjab Kings"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Gujarat Titans",
+    "imposter": "Lucknow Super Giants"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "T20 World Cup",
+    "imposter": "Asia Cup"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "World Test Championship",
+    "imposter": "Border-Gavaskar Trophy"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Ashes",
+    "imposter": "IPL"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Straight Drive",
+    "imposter": "Flick"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Sweep",
+    "imposter": "Reverse Sweep"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Square Cut",
+    "imposter": "Hook Shot"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Yorker",
+    "imposter": "Bouncer"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Inswing",
+    "imposter": "Outswing"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Off Spin",
+    "imposter": "Leg Spin"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "LBW",
+    "imposter": "Caught Behind"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Powerplay",
+    "imposter": "Death Overs"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Free Hit",
+    "imposter": "No Ball"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Hat-trick",
+    "imposter": "Five Wicket Haul"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Wicket Keeper",
+    "imposter": "Slip Fielder"
+  },
+  {
+    "category": "CRICKET",
+    "normal": "Umpire",
+    "imposter": "Third Umpire"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Kabaddi",
+    "imposter": "Kho Kho"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Badminton",
+    "imposter": "Tennis"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Football",
+    "imposter": "Hockey"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Cricket Bat",
+    "imposter": "Tennis Racket"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Table Tennis",
+    "imposter": "Lawn Tennis"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Basketball",
+    "imposter": "Volleyball"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Volleyball",
+    "imposter": "Throwball"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Chess",
+    "imposter": "Checkers"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Carrom",
+    "imposter": "Ludo"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Snooker",
+    "imposter": "Billiards"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Golf",
+    "imposter": "Mini Golf"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Boxing",
+    "imposter": "Wrestling"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Kabaddi",
+    "imposter": "Wrestling"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Javelin Throw",
+    "imposter": "Discus Throw"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Discus Throw",
+    "imposter": "Shot Put"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "High Jump",
+    "imposter": "Long Jump"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Running Race",
+    "imposter": "Hurdles Race"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Relay Race",
+    "imposter": "Marathon"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Swimming",
+    "imposter": "Diving"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Water Polo",
+    "imposter": "Swimming"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Archery",
+    "imposter": "Shooting"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Weightlifting",
+    "imposter": "Powerlifting"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Gymnastics",
+    "imposter": "Aerobics"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Cycling",
+    "imposter": "Skating"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Ice Hockey",
+    "imposter": "Figure Skating"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Formula 1",
+    "imposter": "MotoGP"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Baseball",
+    "imposter": "Softball"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Rugby",
+    "imposter": "American Football"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Shuttlecock",
+    "imposter": "Tennis Ball"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Hockey Stick",
+    "imposter": "Golf Club"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Football Boots",
+    "imposter": "Spikes (Shoes)"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Goalpost",
+    "imposter": "Net (Sports)"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Pitch",
+    "imposter": "Court (Sports)"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Umpire",
+    "imposter": "Referee"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Gold Medal",
+    "imposter": "Silver Medal"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Olympics",
+    "imposter": "Commonwealth Games"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Asian Games",
+    "imposter": "National Games"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Neeraj Chopra",
+    "imposter": "Abhinav Bindra"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "P V Sindhu",
+    "imposter": "Saina Nehwal"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Sunil Chhetri",
+    "imposter": "Bhaichung Bhutia"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Mary Kom",
+    "imposter": "Nikhat Zareen"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Praggnanandhaa",
+    "imposter": "Viswanathan Anand"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Table Tennis",
+    "imposter": "Squash"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Chess",
+    "imposter": "Carrom"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Ludo",
+    "imposter": "Snakes and Ladders"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Athletics",
+    "imposter": "Gymnastics"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Cycling",
+    "imposter": "Marathon"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Golf",
+    "imposter": "Polo"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Mary Kom",
+    "imposter": "Vinesh Phogat"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Viswanathan Anand",
+    "imposter": "Magnus Carlsen"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Lionel Messi",
+    "imposter": "Cristiano Ronaldo"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Roger Federer",
+    "imposter": "Rafael Nadal"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Novak Djokovic",
+    "imposter": "Andy Murray"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Serena Williams",
+    "imposter": "Maria Sharapova"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Usain Bolt",
+    "imposter": "Michael Phelps"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Lebron James",
+    "imposter": "Michael Jordan"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Tiger Woods",
+    "imposter": "Lewis Hamilton"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "FIFA World Cup",
+    "imposter": "UEFA Champions League"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Wimbledon",
+    "imposter": "French Open"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "US Open",
+    "imposter": "Australian Open"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Pro Kabaddi League",
+    "imposter": "Indian Super League"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Referee",
+    "imposter": "Line Judge"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Goalkeeper",
+    "imposter": "Defender"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Striker",
+    "imposter": "Midfielder"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Penalty",
+    "imposter": "Free Kick"
+  },
+  {
+    "category": "SPORTS GENERAL",
+    "normal": "Red Card",
+    "imposter": "Yellow Card"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Butter Chicken",
+    "imposter": "Dal Makhani"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Pani Puri",
+    "imposter": "Bhel Puri"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Biryani",
+    "imposter": "Pulao"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Rasgulla",
+    "imposter": "Gulab Jamun"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Samosa",
+    "imposter": "Kachori"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Chole Bhature",
+    "imposter": "Poori Masala"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Paneer Butter Masala",
+    "imposter": "Kadai Paneer"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Dal Tadka",
+    "imposter": "Dal Fry"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Jeera Rice",
+    "imposter": "Fried Rice"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Naan",
+    "imposter": "Tandoori Roti"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Tandoori Roti",
+    "imposter": "Rumali Roti"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Rumali Roti",
+    "imposter": "Parotta"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Malabar Parotta",
+    "imposter": "Aloo Paratha"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Aloo Paratha",
+    "imposter": "Paneer Paratha"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Pav Bhaji",
+    "imposter": "Vada Pav"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Vada Pav",
+    "imposter": "Misal Pav"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Dahi Puri",
+    "imposter": "Sev Puri"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Papdi Chaat",
+    "imposter": "Aloo Tikki Chaat"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Khaman Dhokla",
+    "imposter": "Khandvi"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Idli",
+    "imposter": "Dosa"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Masala Dosa",
+    "imposter": "Rava Dosa"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Medu Vada",
+    "imposter": "Sambar Vada"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Sambar",
+    "imposter": "Rasam"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Uttapam",
+    "imposter": "Appam"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Malpua",
+    "imposter": "Rabri"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Rabri",
+    "imposter": "Kulfi"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Ras Malai",
+    "imposter": "Rasgulla"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Kaju Katli",
+    "imposter": "Milk Cake"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Motichoor Laddoo",
+    "imposter": "Besan Laddoo"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Mysore Pak",
+    "imposter": "Dharwad Pedha"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Pedha",
+    "imposter": "Barfi"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Gajar Ka Halwa",
+    "imposter": "Moong Dal Halwa"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Lassi",
+    "imposter": "Buttermilk"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Shrikhand",
+    "imposter": "Amrakhand"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Matar Paneer",
+    "imposter": "Alu Matar"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Bhindi Masala",
+    "imposter": "Baingan Bharta"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Palak Paneer",
+    "imposter": "Sarson Ka Saag"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Makki Di Roti",
+    "imposter": "Missi Roti"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Kadhi Pakoda",
+    "imposter": "Rajma Chawal"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Rajma Chawal",
+    "imposter": "Chole Chawal"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Aloo Gobi",
+    "imposter": "Aloo Jeera"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Methi Thepla",
+    "imposter": "Khakhra"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Fafda",
+    "imposter": "Jalebi"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Modak",
+    "imposter": "Puran Poli"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Puran Poli",
+    "imposter": "Karanji"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Sandesh",
+    "imposter": "Mishti Doi"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Soan Papdi",
+    "imposter": "Mysore Pak"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Chikki",
+    "imposter": "Gajak"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Murukku",
+    "imposter": "Chakli"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Kheer",
+    "imposter": "Payasam"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Chicken Tikka",
+    "imposter": "Tandoori Chicken"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Chicken Biryani",
+    "imposter": "Mutton Biryani"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Fish Fry",
+    "imposter": "Prawns Fry"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Chole Bhature",
+    "imposter": "Pav Bhaji"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Masala Dosa",
+    "imposter": "Idli"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Vada Pav",
+    "imposter": "Dabeli"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Aloo Paratha",
+    "imposter": "Gobi Paratha"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Paneer Butter Masala",
+    "imposter": "Palak Paneer"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Chicken Tikka Masala",
+    "imposter": "Tandoori Chicken"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Rogan Josh",
+    "imposter": "Mutton Korma"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Rajma Chawal",
+    "imposter": "Kadhi Pakora"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Dhokla",
+    "imposter": "Khandvi"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Misal Pav",
+    "imposter": "Usal"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Poha",
+    "imposter": "Upma"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Kaju Katli",
+    "imposter": "Barfi"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Rasmalai",
+    "imposter": "Rabdi"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Ladoo",
+    "imposter": "Peda"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Mysore Pak",
+    "imposter": "Soan Papdi"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Halwa",
+    "imposter": "Sheera"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Filter Coffee",
+    "imposter": "Masala Chai"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Lassi",
+    "imposter": "Chaas"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Thali",
+    "imposter": "Meals"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Naan",
+    "imposter": "Roti"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Kulcha",
+    "imposter": "Bhatura"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Malai Kofta",
+    "imposter": "Navratan Korma"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Aloo Gobi",
+    "imposter": "Jeera Aloo"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Fish Curry",
+    "imposter": "Prawn Curry"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Keema Pav",
+    "imposter": "Egg Bhurji"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Kati Roll",
+    "imposter": "Franky"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Momos",
+    "imposter": "Spring Rolls"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Hakka Noodles",
+    "imposter": "Fried Rice"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Manchurian",
+    "imposter": "Chilli Chicken"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Ghevar",
+    "imposter": "Phirni"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Kulfi",
+    "imposter": "Ice Cream"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Papad",
+    "imposter": "Khakhra"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Raita",
+    "imposter": "Curd"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Pickle",
+    "imposter": "Chutney"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Coconut Chutney",
+    "imposter": "Tomato Chutney"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Mint Chutney",
+    "imposter": "Tamarind Chutney"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Sev Puri",
+    "imposter": "Dahi Puri"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Aloo Tikki",
+    "imposter": "Ragda Pattice"
+  },
+  {
+    "category": "INDIAN FOOD GENERAL",
+    "normal": "Chana Masala",
+    "imposter": "Matar Paneer"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Instagram",
+    "imposter": "Snapchat"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "WhatsApp",
+    "imposter": "Telegram"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "iPhone",
+    "imposter": "Samsung Galaxy"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "YouTube",
+    "imposter": "Netflix"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "iPad",
+    "imposter": "Samsung Tab"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "MacBook",
+    "imposter": "Dell XPS"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Windows",
+    "imposter": "macOS"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Android",
+    "imposter": "iOS"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Facebook",
+    "imposter": "Twitter"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Twitter",
+    "imposter": "Threads"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Threads",
+    "imposter": "Bluesky"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "TikTok",
+    "imposter": "Instagram Reels"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "ChatGPT",
+    "imposter": "Google Gemini"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Google Gemini",
+    "imposter": "Claude AI"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "ChatGPT",
+    "imposter": "Copilot"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "PlayStation 5",
+    "imposter": "Xbox Series X"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Nintendo Switch",
+    "imposter": "Steam Deck"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "PUBG Mobile",
+    "imposter": "Free Fire"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Free Fire",
+    "imposter": "Call of Duty Mobile"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Grand Theft Auto V",
+    "imposter": "Red Dead Redemption 2"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Valorant",
+    "imposter": "Counter-Strike 2"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Minecraft",
+    "imposter": "Roblox"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Discord",
+    "imposter": "Slack"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Spotify",
+    "imposter": "YouTube Music"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "YouTube Music",
+    "imposter": "Amazon Music"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Netflix",
+    "imposter": "Amazon Prime Video"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Disney+ Hotstar",
+    "imposter": "JioCinema"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "JioCinema",
+    "imposter": "Zee5"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Airtel",
+    "imposter": "Jio"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Google Pay",
+    "imposter": "PhonePe"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "PhonePe",
+    "imposter": "Paytm"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Paytm",
+    "imposter": "Amazon Pay"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Uber",
+    "imposter": "Ola"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Zomato",
+    "imposter": "Swiggy"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Swiggy",
+    "imposter": "Zepto"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Blinkit",
+    "imposter": "Zepto"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Amazon",
+    "imposter": "Flipkart"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Smartwatch",
+    "imposter": "Fitness Band"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Apple Watch",
+    "imposter": "Galaxy Watch"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "AirPods",
+    "imposter": "Galaxy Buds"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Smart TV",
+    "imposter": "Projector"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Kindle",
+    "imposter": "Tablet"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Hard Disk Drive",
+    "imposter": "Solid State Drive"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Wi-Fi Router",
+    "imposter": "Modem"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "iPhone",
+    "imposter": "Samsung"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Laptop",
+    "imposter": "Desktop"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Tablet",
+    "imposter": "iPad"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Earbuds",
+    "imposter": "Headphones"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Power Bank",
+    "imposter": "Charger"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Bluetooth Speaker",
+    "imposter": "Soundbar"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "PlayStation",
+    "imposter": "Xbox"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Google Chrome",
+    "imposter": "Safari"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Gmail",
+    "imposter": "Outlook"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Google Maps",
+    "imposter": "Apple Maps"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "LinkedIn",
+    "imposter": "Naukri"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Reddit",
+    "imposter": "Quora"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Spotify",
+    "imposter": "Wynk Music"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Myntra",
+    "imposter": "Ajio"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Google Pay",
+    "imposter": "BHIM UPI"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Wi-Fi",
+    "imposter": "Mobile Data"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "5G",
+    "imposter": "4G"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Router",
+    "imposter": "Modem"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Pen Drive",
+    "imposter": "Hard Disk"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "SSD",
+    "imposter": "HDD"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "RAM",
+    "imposter": "ROM"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Processor",
+    "imposter": "Motherboard"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Monitor",
+    "imposter": "Keyboard"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Mouse",
+    "imposter": "Trackpad"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Web Camera",
+    "imposter": "Microphone"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "VR Headset",
+    "imposter": "AR Glasses"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "BGMI",
+    "imposter": "Free Fire"
+  },
+  {
+    "category": "TECHNOLOGY & GADGETS",
+    "normal": "Call of Duty",
+    "imposter": "Valorant"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Devi Sri Prasad",
+    "imposter": "S S Thaman"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "S S Thaman",
+    "imposter": "M M Keeravani"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "M M Keeravani",
+    "imposter": "A R Rahman"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "A R Rahman",
+    "imposter": "Harris Jayaraj"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Anirudh Ravichander",
+    "imposter": "G V Prakash"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Sid Sriram",
+    "imposter": "Anurag Kulkarni"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Anurag Kulkarni",
+    "imposter": "Armaan Malik"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Arijit Singh",
+    "imposter": "Atif Aslam"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Atif Aslam",
+    "imposter": "Jubin Nautiyal"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Jubin Nautiyal",
+    "imposter": "Sonu Nigam"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Shreya Ghoshal",
+    "imposter": "Sunidhi Chauhan"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Sunidhi Chauhan",
+    "imposter": "Neha Kakkar"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Neha Kakkar",
+    "imposter": "Dhvani Bhanushali"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Naatu Naatu",
+    "imposter": "Buttabomma"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Buttabomma",
+    "imposter": "Ramuloo Ramulaa"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Ramuloo Ramulaa",
+    "imposter": "Samajavaragamana"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Samajavaragamana",
+    "imposter": "Srivalli"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Srivalli",
+    "imposter": "Saami Saami"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Naatu Naatu",
+    "imposter": "Dosti (RRR)"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Kala Chashma",
+    "imposter": "Kar Gayi Chull"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Tum Hi Ho",
+    "imposter": "Channa Mereya"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Channa Mereya",
+    "imposter": "Kesariya"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Kesariya",
+    "imposter": "Apna Bana Le"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Diljit Dosanjh",
+    "imposter": "Badshah"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Badshah",
+    "imposter": "Yo Yo Honey Singh"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Yo Yo Honey Singh",
+    "imposter": "Raftaar"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Sidhu Moose Wala",
+    "imposter": "AP Dhillon"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "AP Dhillon",
+    "imposter": "Gurinder Gill"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Shreya Ghoshal",
+    "imposter": "Chinmayi Sripada"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Chinmayi Sripada",
+    "imposter": "Jonita Gandhi"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Karthik (Singer)",
+    "imposter": "Haricharan"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Vijay Yesudas",
+    "imposter": "Unni Krishnan"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Devi Sri Prasad",
+    "imposter": "Thaman S"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Sid Sriram",
+    "imposter": "Anirudh Ravichander"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Mickey J Meyer",
+    "imposter": "Gopi Sundar"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Mani Sharma",
+    "imposter": "Harris Jayaraj"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Ilaiyaraaja",
+    "imposter": "SP Balasubrahmanyam"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "KS Chithra",
+    "imposter": "Shreya Ghoshal"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Sunitha",
+    "imposter": "Geetha Madhuri"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Anurag Kulkarni",
+    "imposter": "Ram Miriyala"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Mangli",
+    "imposter": "Chinmayi Sripaada"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Karthik",
+    "imposter": "Haricharan"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Arijit Singh",
+    "imposter": "Jubin Nautiyal"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Sonu Nigam",
+    "imposter": "Udit Narayan"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Shaan",
+    "imposter": "KK"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Badshah",
+    "imposter": "Honey Singh"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Pritam",
+    "imposter": "Vishal-Shekhar"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Amit Trivedi",
+    "imposter": "Shankar-Ehsaan-Loy"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Samajavaragamana",
+    "imposter": "Inkem Inkem Kaavaale"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Srivalli",
+    "imposter": "Oo Antava"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Ramuloo Ramulaa",
+    "imposter": "Vachinde"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Chammak Challo",
+    "imposter": "Sheila Ki Jawani"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Carnatic Music",
+    "imposter": "Hindustani Music"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Veena",
+    "imposter": "Sitar"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Tabla",
+    "imposter": "Mridangam"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Flute",
+    "imposter": "Harmonium"
+  },
+  {
+    "category": "INDIAN MUSIC",
+    "normal": "Pallavi",
+    "imposter": "Charanam"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Ed Sheeran",
+    "imposter": "Justin Bieber"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Taylor Swift",
+    "imposter": "Ariana Grande"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Billie Eilish",
+    "imposter": "Olivia Rodrigo"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "The Weeknd",
+    "imposter": "Bruno Mars"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Drake",
+    "imposter": "Kendrick Lamar"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Eminem",
+    "imposter": "Snoop Dogg"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Coldplay",
+    "imposter": "Imagine Dragons"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "One Direction",
+    "imposter": "5 Seconds of Summer"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Justin Timberlake",
+    "imposter": "Usher"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Beyonce",
+    "imposter": "Rihanna"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Lady Gaga",
+    "imposter": "Katy Perry"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Adele",
+    "imposter": "Sia"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Dua Lipa",
+    "imposter": "Bebe Rexha"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Post Malone",
+    "imposter": "Travis Scott"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Harry Styles",
+    "imposter": "Zayn Malik"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Shawn Mendes",
+    "imposter": "Charlie Puth"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Maroon 5",
+    "imposter": "OneRepublic"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Linkin Park",
+    "imposter": "Green Day"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Queen",
+    "imposter": "The Beatles"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Michael Jackson",
+    "imposter": "Prince"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Pop Music",
+    "imposter": "R&B"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Hip Hop",
+    "imposter": "Rap"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Rock Music",
+    "imposter": "Heavy Metal"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "EDM",
+    "imposter": "House Music"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Jazz",
+    "imposter": "Blues"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Country Music",
+    "imposter": "Folk Music"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Spotify",
+    "imposter": "Apple Music"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "SoundCloud",
+    "imposter": "Bandcamp"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Grammy Awards",
+    "imposter": "Billboard Music Awards"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Coachella",
+    "imposter": "Tomorrowland"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "DJ Snake",
+    "imposter": "Marshmello"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Alan Walker",
+    "imposter": "Martin Garrix"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "David Guetta",
+    "imposter": "Calvin Harris"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Taylor Swift",
+    "imposter": "Selena Gomez"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Ariana Grande",
+    "imposter": "Dua Lipa"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Eminem",
+    "imposter": "Jay-Z"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Adele",
+    "imposter": "Sam Smith"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "One Direction",
+    "imposter": "BTS"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Blackpink",
+    "imposter": "Twice"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Michael Jackson",
+    "imposter": "Elvis Presley"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Madonna",
+    "imposter": "Whitney Houston"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Pop",
+    "imposter": "R&B"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Rock",
+    "imposter": "Heavy Metal"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "EDM",
+    "imposter": "House"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Country",
+    "imposter": "Folk"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Album",
+    "imposter": "Single"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Concert",
+    "imposter": "Music Festival"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Grammy Award",
+    "imposter": "Billboard Music Award"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Guitar",
+    "imposter": "Piano"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "Drum Kit",
+    "imposter": "Bass Guitar"
+  },
+  {
+    "category": "WESTERN MUSIC",
+    "normal": "DJ",
+    "imposter": "Producer"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Cobra",
+    "imposter": "Krait"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Viper",
+    "imposter": "Cobra"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Peacock",
+    "imposter": "Parrot"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Tiger",
+    "imposter": "Leopard"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Leopard",
+    "imposter": "Cheetah"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Cheetah",
+    "imposter": "Jaguar"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Lion",
+    "imposter": "Tiger"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Elephant",
+    "imposter": "Rhinoceros"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Crow",
+    "imposter": "Myna"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Myna",
+    "imposter": "Koel"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Koel",
+    "imposter": "Bulbul"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Pigeon",
+    "imposter": "Dove"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Eagle",
+    "imposter": "Hawk"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Falcon",
+    "imposter": "Eagle"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Owl",
+    "imposter": "Bat"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Deer",
+    "imposter": "Antelope"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Sambar Deer",
+    "imposter": "Chital (Spotted Deer)"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Wild Boar",
+    "imposter": "Pig"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Sloth Bear",
+    "imposter": "Black Bear"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Gaur (Indian Bison)",
+    "imposter": "Buffalo"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Langur",
+    "imposter": "Macaque (Monkey)"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Squirrel",
+    "imposter": "Chipmunk"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Mango Tree",
+    "imposter": "Neem Tree"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Banyan Tree",
+    "imposter": "Peepal Tree"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Tulsi Plant",
+    "imposter": "Mint Plant"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Rose",
+    "imposter": "Hibiscus"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Lotus",
+    "imposter": "Water Lily"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Jasmine",
+    "imposter": "Mogra"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Marigold",
+    "imposter": "Sunflower"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Cobra",
+    "imposter": "Python"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Crocodile",
+    "imposter": "Alligator"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Turtle",
+    "imposter": "Tortoise"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Frog",
+    "imposter": "Toad"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Rat",
+    "imposter": "Bandicoot"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Lion",
+    "imposter": "Cheetah"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Cow",
+    "imposter": "Buffalo"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Goat",
+    "imposter": "Sheep"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Horse",
+    "imposter": "Donkey"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Camel",
+    "imposter": "Zebra"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Monkey",
+    "imposter": "Chimpanzee"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Dog",
+    "imposter": "Cat"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Rabbit",
+    "imposter": "Rat"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Squirrel",
+    "imposter": "Mongoose"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Sparrow",
+    "imposter": "Woodpecker"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Dolphin",
+    "imposter": "Whale"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Shark",
+    "imposter": "Octopus"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Mosquito",
+    "imposter": "Housefly"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Ant",
+    "imposter": "Termite"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Butterfly",
+    "imposter": "Moth"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Spider",
+    "imposter": "Scorpion"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Mango Tree",
+    "imposter": "Coconut Tree"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "River",
+    "imposter": "Lake"
+  },
+  {
+    "category": "ANIMALS & NATURE",
+    "normal": "Mountain",
+    "imposter": "Hill"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Software Engineer",
+    "imposter": "Data Scientist"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Data Scientist",
+    "imposter": "Data Analyst"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Doctor",
+    "imposter": "Nurse"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Dentist",
+    "imposter": "Orthodontist"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Teacher",
+    "imposter": "Lecturer"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Lecturer",
+    "imposter": "Professor"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Farmer",
+    "imposter": "Fisherman"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Civil Engineer",
+    "imposter": "Architect"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Mechanical Engineer",
+    "imposter": "Electrical Engineer"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Chartered Accountant",
+    "imposter": "Financial Analyst"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Bank Manager",
+    "imposter": "Cashier"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Lawyer",
+    "imposter": "Judge"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Police Officer",
+    "imposter": "Security Guard"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Traffic Police",
+    "imposter": "Home Guard"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Postman",
+    "imposter": "Courier Delivery Boy"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Electrician",
+    "imposter": "Plumber"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Carpenter",
+    "imposter": "Mason"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Tailor",
+    "imposter": "Fashion Designer"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Barber",
+    "imposter": "Hairstylist"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Chef",
+    "imposter": "Cook"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Waiter",
+    "imposter": "Bartender"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Pilot",
+    "imposter": "Flight Attendant"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Loco Pilot (Train Driver)",
+    "imposter": "Bus Driver"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Bus Conductor",
+    "imposter": "Ticket Collector"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Journalist",
+    "imposter": "News Reporter"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Photographer",
+    "imposter": "Videographer"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Graphic Designer",
+    "imposter": "UI/UX Designer"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Content Writer",
+    "imposter": "Copywriter"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Digital Marketer",
+    "imposter": "SEO Analyst"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Real Estate Agent",
+    "imposter": "Broker"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Shopkeeper",
+    "imposter": "Salesman"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Police Officer",
+    "imposter": "Traffic Police"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Politician",
+    "imposter": "IAS Officer"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Chartered Accountant",
+    "imposter": "Bank Manager"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Pilot",
+    "imposter": "Air Hostess"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Train Loco Pilot",
+    "imposter": "Ticket Collector"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Bus Driver",
+    "imposter": "Conductor"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Journalist",
+    "imposter": "News Anchor"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Actor",
+    "imposter": "Director"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Singer",
+    "imposter": "Music Director"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Youtuber",
+    "imposter": "Instagram Influencer"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Chef",
+    "imposter": "Waiter"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Tailor",
+    "imposter": "Weaver"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Carpenter",
+    "imposter": "Plumber"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Electrician",
+    "imposter": "Mechanic"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Security Guard",
+    "imposter": "Watchman"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Postman",
+    "imposter": "Courier Boy"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Swiggy Delivery Boy",
+    "imposter": "Rapido Captain"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Real Estate Agent",
+    "imposter": "Insurance Agent"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "HR Manager",
+    "imposter": "Recruiter"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Graphic Designer",
+    "imposter": "Video Editor"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Pharmacist",
+    "imposter": "Lab Technician"
+  },
+  {
+    "category": "PROFESSIONS",
+    "normal": "Dentist",
+    "imposter": "Physiotherapist"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Delhi",
+    "imposter": "Mumbai"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Bangalore",
+    "imposter": "Hyderabad"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Chennai",
+    "imposter": "Kolkata"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Pune",
+    "imposter": "Ahmedabad"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Jaipur",
+    "imposter": "Udaipur"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Goa",
+    "imposter": "Gokarna"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Ooty",
+    "imposter": "Kodaikanal"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Manali",
+    "imposter": "Shimla"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Darjeeling",
+    "imposter": "Gangtok"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Amritsar",
+    "imposter": "Chandigarh"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Agra",
+    "imposter": "Fatehpur Sikri"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Varanasi",
+    "imposter": "Haridwar"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Rishikesh",
+    "imposter": "Haridwar"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Kedarnath",
+    "imposter": "Badrinath"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Puri",
+    "imposter": "Bhubaneswar"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Kochi",
+    "imposter": "Trivandrum"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Munnar",
+    "imposter": "Wayanad"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Mysore",
+    "imposter": "Hampi"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Hampi",
+    "imposter": "Badami"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Shirdi",
+    "imposter": "Pandharpur"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Rameshwaram",
+    "imposter": "Kanyakumari"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Madurai",
+    "imposter": "Thanjavur"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Coorg",
+    "imposter": "Chikmagalur"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Pondicherry",
+    "imposter": "Mahabalipuram"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Leh",
+    "imposter": "Srinagar"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Srinagar",
+    "imposter": "Gulmarg"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Dehradun",
+    "imposter": "Mussoorie"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Lonavala",
+    "imposter": "Khandala"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Mahabaleshwar",
+    "imposter": "Panchgani"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Nainital",
+    "imposter": "Bhimtal"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Guwahati",
+    "imposter": "Shillong"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Taj Mahal",
+    "imposter": "Qutub Minar"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Red Fort",
+    "imposter": "India Gate"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Gateway of India",
+    "imposter": "Marine Drive"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Golden Temple",
+    "imposter": "Wagah Border"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Ajanta Caves",
+    "imposter": "Ellora Caves"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Sanchi Stupa",
+    "imposter": "Khajuraho Temples"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Vaishno Devi",
+    "imposter": "Amarnath Cave"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Tirupati Temple",
+    "imposter": "Meenakshi Temple"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Sabarimala",
+    "imposter": "Guruvayur Temple"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Konark Sun Temple",
+    "imposter": "Jagannath Temple Puri"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Char Dham",
+    "imposter": "Vaishno Devi"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Rajahmundry",
+    "imposter": "Kakinada"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Guntur",
+    "imposter": "Nellore"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Kurnool",
+    "imposter": "Kadapa"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Anantapur",
+    "imposter": "Chittoor"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Warangal",
+    "imposter": "Karimnagar"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Nizamabad",
+    "imposter": "Khammam"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Amaravati",
+    "imposter": "Secunderabad"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Araku Valley",
+    "imposter": "Lambasingi"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Papikondalu",
+    "imposter": "Maredumilli"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Srisailam",
+    "imposter": "Bhadrachalam"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Simhachalam",
+    "imposter": "Annavaram"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Kanaka Durga Temple",
+    "imposter": "Yadadri"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Chennai",
+    "imposter": "Coimbatore"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Kochi",
+    "imposter": "Thiruvananthapuram"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Delhi",
+    "imposter": "Noida"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Kolkata",
+    "imposter": "Bhubaneswar"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Ahmedabad",
+    "imposter": "Surat"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Srinagar",
+    "imposter": "Leh"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Taj Mahal",
+    "imposter": "Red Fort"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Qutub Minar",
+    "imposter": "India Gate"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Gateway of India",
+    "imposter": "Charminar"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Hampi",
+    "imposter": "Mahabalipuram"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Andaman Islands",
+    "imposter": "Lakshadweep"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Rishikesh",
+    "imposter": "Kedarnath"
+  },
+  {
+    "category": "PLACES IN INDIA",
+    "normal": "Rameswaram",
+    "imposter": "Kanyakumari"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Mirzapur",
+    "imposter": "Sacred Games"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Family Man",
+    "imposter": "Farzi"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Panchayat",
+    "imposter": "Gullak"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Kota Factory",
+    "imposter": "Aspirants"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Sacred Games",
+    "imposter": "Paatal Lok"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Rana Naidu",
+    "imposter": "Mirzapur"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Scam 1992: The Harshad Mehta Story",
+    "imposter": "Scam 2003: The Telgi Story"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Delhi Crime",
+    "imposter": "Paatal Lok"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Made in Heaven",
+    "imposter": "Four More Shots Please!"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Aarya",
+    "imposter": "Saas Bahu Aur Flamingo"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Breathe",
+    "imposter": "Asur"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Asur",
+    "imposter": "The Family Man"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Game of Thrones",
+    "imposter": "House of the Dragon"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Stranger Things",
+    "imposter": "Dark"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Money Heist",
+    "imposter": "Squid Game"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Breaking Bad",
+    "imposter": "Better Call Saul"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Better Call Saul",
+    "imposter": "Ozark"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Ozark",
+    "imposter": "Narcos"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Narcos",
+    "imposter": "Narcos: Mexico"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Boys",
+    "imposter": "Invincible"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Last of Us",
+    "imposter": "Fallout"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Wednesday",
+    "imposter": "Stranger Things"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Squid Game",
+    "imposter": "Alice in Borderland"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Dark",
+    "imposter": "1899"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Crown",
+    "imposter": "Peaky Blinders"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Peaky Blinders",
+    "imposter": "Sherlock"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Sherlock",
+    "imposter": "Lupin"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Black Mirror",
+    "imposter": "Love, Death & Robots"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Lucifer",
+    "imposter": "The Sandman"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Euphoria",
+    "imposter": "Sex Education"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Sex Education",
+    "imposter": "Elite"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "You",
+    "imposter": "Dexter"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Modern Love Hyderabad",
+    "imposter": "Anger Tales"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Save The Tigers",
+    "imposter": "90's - A Middle Class Biopic"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "90's - A Middle Class Biopic",
+    "imposter": "Kumari Srimathi"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Yakshini",
+    "imposter": "Vyooham"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Scam 1992",
+    "imposter": "Rocket Boys"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Dhootha",
+    "imposter": "Save the Tigers"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Loser",
+    "imposter": "Vyavastha"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Kumari Srimathi",
+    "imposter": "9 Hours"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Boys",
+    "imposter": "Gen V"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Office",
+    "imposter": "Friends"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "How I Met Your Mother",
+    "imposter": "The Big Bang Theory"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Brooklyn Nine-Nine",
+    "imposter": "Parks and Recreation"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Wednesday",
+    "imposter": "The Umbrella Academy"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Loki",
+    "imposter": "WandaVision"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Daredevil",
+    "imposter": "The Punisher"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "True Detective",
+    "imposter": "Mindhunter"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Chernobyl",
+    "imposter": "Band of Brothers"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "The Witcher",
+    "imposter": "The Sandman"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Suzhal",
+    "imposter": "Vadhandhi"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Vilangu",
+    "imposter": "Ayali"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Delhi Crime",
+    "imposter": "Criminal Justice"
+  },
+  {
+    "category": "WEB SERIES & OTT",
+    "normal": "Hostages",
+    "imposter": "Special Ops"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Diwali",
+    "imposter": "Holi"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Dussehra",
+    "imposter": "Durga Puja"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Durga Puja",
+    "imposter": "Ganesh Chaturthi"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Ganesh Chaturthi",
+    "imposter": "Krishna Janmashtami"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Janmashtami",
+    "imposter": "Rama Navami"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Raksha Bandhan",
+    "imposter": "Bhai Dooj"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Makar Sankranti",
+    "imposter": "Pongal"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Pongal",
+    "imposter": "Onam"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Onam",
+    "imposter": "Vishu"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Baisakhi",
+    "imposter": "Lohri"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Karwa Chauth",
+    "imposter": "Teej"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Chhath Puja",
+    "imposter": "Durga Puja"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Maha Shivaratri",
+    "imposter": "Karthika Deepam"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Eid ul-Fitr",
+    "imposter": "Eid al-Adha"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Christmas",
+    "imposter": "Good Friday"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Good Friday",
+    "imposter": "Easter"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Guru Nanak Jayanti",
+    "imposter": "Mahavir Jayanti"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Buddha Purnima",
+    "imposter": "Ambedkar Jayanti"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Republic Day",
+    "imposter": "Independence Day"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Children's Day",
+    "imposter": "Teacher's Day"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Ugadi",
+    "imposter": "Sankranti"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Eid",
+    "imposter": "Christmas"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Navratri",
+    "imposter": "Dussehra"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Maha Shivaratri",
+    "imposter": "Krishnashtami"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Ram Navami",
+    "imposter": "Hanuman Jayanti"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Makar Sankranti",
+    "imposter": "Gudi Padwa"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Bakrid",
+    "imposter": "Ramadan"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Guru Nanak Jayanti",
+    "imposter": "Rath Yatra"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Makar Vilakku",
+    "imposter": "Thrissur Pooram"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Kumbh Mela",
+    "imposter": "Pushkaralu"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Vasant Panchami",
+    "imposter": "Saraswati Puja"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Chhath Puja",
+    "imposter": "Bihu"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Karthika Purnima",
+    "imposter": "Guru Purnima"
+  },
+  {
+    "category": "FESTIVALS INDIA",
+    "normal": "Ratha Saptami",
+    "imposter": "Varalakshmi Vratam"
+  }
+]

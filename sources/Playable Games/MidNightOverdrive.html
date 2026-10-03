@@ -2940,7 +2940,7 @@ html,body{
           <div></div>
           <div><b>BRAKE</b><span>Slow down</span></div>
         </div>
-        <div class="rotateHint">ⓘ &nbsp; Rotate your phone horizontally. Tilt left/right to steer.</div>
+        <div class="rotateHint">ⓘ &nbsp; Rotate your phone horizontally. Use LEFT / RIGHT to steer.</div>
       </section>
     </div>
   </div>
@@ -2965,7 +2965,6 @@ html,body{
         <button class="switch on" id="settingsVibration">ON</button>
       </div>
     </div>
-    <button class="fbtn secondary backBtn" id="settingsBack">BACK</button>
   </div>
 </div>
 
@@ -2986,7 +2985,7 @@ html,body{
     <div id="oNew">NEW BEST</div>
     <div class="overButtons">
       <button class="fbtn primary" id="restartBtn">↻ &nbsp; DRIVE AGAIN</button>
-      <button class="fbtn secondary" id="continueBtn"><span class="adIcon" aria-hidden="true">▶</span><span class="adText">WATCH AD TO<br>CONTINUE</span></button>
+      <button class="fbtn secondary adOffer" id="continueBtn"><span class="adText">Continue</span><span class="adChip" aria-hidden="true">AD</span></button>
       <button class="fbtn secondary" id="menuBtn">⌂ &nbsp; MENU</button>
     </div>
     <div id="oRetryHint"><kbd>SPACE</kbd> or <kbd>R</kbd> — restart</div>
@@ -2998,6 +2997,27 @@ html,body{
   <div class="modal pauseModal">
     <h2>PAUSED</h2>
     <button class="fbtn primary" id="resumeBtn">RESUME DRIVE</button>
+    <button class="fbtn secondary" id="pauseMenuBtn">⌂ &nbsp; MAIN MENU</button>
+  <style>
+  /* AD chip sits on the button's top-right corner. The button itself only
+     reads "Continue" - the ad is the price of it, not the label. */
+  #continueBtn{position:relative;padding-right:34px}
+  #continueBtn .adChip{position:absolute;top:5px;right:5px;width:17px;height:17px;
+    border-radius:5px;display:flex;align-items:center;justify-content:center;
+    background:var(--orange,#f6a43a);color:#12121a;
+    font:800 10px/1 system-ui,sans-serif;letter-spacing:.5px}
+  </style>
+  <style>
+  /* HOW TO PLAY occupies the whole page and centres itself in it. */
+  #howPanel{padding:0!important}
+  #howPanel .modal.wide{width:100vw!important;max-width:100vw!important;
+    height:100dvh!important;max-height:100dvh!important;border-radius:0!important;
+    border:0!important;box-shadow:none!important;backdrop-filter:none!important;
+    display:flex!important;flex-direction:column!important;justify-content:center!important;
+    padding:clamp(18px,5vh,56px)!important}
+  #howPanel .howGrid{height:auto!important;align-items:start!important}
+  #howPanel .modal.wide>h2{text-align:center}
+  </style>
   </div>
 </div>
 
@@ -4218,7 +4238,7 @@ function rotY(lx,lz,yaw){
 }
 function updatePlayer(dt){
   const sf=P.speed/MAXS;
-  const tiltSteer=(isTouch && state==='playing' && Number.isFinite(window.mobileTiltSteer)) ? window.mobileTiltSteer : 0; const st=tiltSteer!==0 ? tiltSteer : ((input.left?-1:0)+(input.right?1:0));
+  const st=(input.left?-1:0)+(input.right?1:0);
   P.steer=damp(P.steer,st,8.5,dt);
   const up=input.up||(isTouch&&state==='playing');
   P.throttle=damp(P.throttle,up?1:0,6,dt);
@@ -4384,7 +4404,31 @@ function startGame(){
   AU.goSfx();
   resetRun(true);
 }
+function continueFromAd(){
+  const s=moCrashSnap; moCrashSnap=null; moReviveUsed=true;
+  window.__continueInvulnUntil=performance.now()+1500;
+  $('continueBtn').classList.add('hidden');
+  if(!s){ restartRun(); return; }
+  $('over').classList.add('hidden');
+  $('hud').classList.remove('hidden');
+  state='playing'; AU.goSfx();
+  /* P.cz restored EXACTLY - it is the collision plane, not a position. The
+     road scrolls past a stationary car; nudging P.cz forward moved the
+     collision box away from the drawn car and let traffic pass through. */
+  P.speed=Math.max(10,s.speed); P.x=s.x; P.cx=s.cx; P.cz=s.cz; P.vx=s.vx; P.yaw=s.yaw;
+  P.score=s.score; P.combo=s.combo; P.comboT=s.comboT; P.nearMisses=s.nearMisses;
+  P.driftTotal=s.driftTotal; P.topSpeed=s.topSpeed; dist=s.dist;
+  timeScale=1; slowmoT=0; crashT=0; shakeAmt=0;
+  player.g.rotation.y=0; player.g.position.set(2,0,-PIVOT);
+  for(const c of pool) if(c.active && Math.abs(c.z-P.cz)<26) deactivate(c);
+  sameT=.6; oncT=1.6;
+}
 function restartRun(){
+  moReviveUsed=false; moCrashSnap=null; window.__continueInvulnUntil=0;
+  /* A NEW RUN. The shell caps revives at one per run, but DRIVE AGAIN restarts
+     in page, so the Activity is never recreated and onGameOpened() never fires
+     again - without this the shell still thinks the last revive was spent. */
+  try{ if(window.NativeBridge&&window.NativeBridge.newRun) window.NativeBridge.newRun(); }catch(e){}
   $('over').classList.add('hidden');
   $('hud').classList.remove('hidden');
   state='playing';
@@ -4572,8 +4616,12 @@ function setSfx(){ AU.setSfx(!AU.sfxOn); refreshToggles(); if(AU.sfxOn) AU.uiCli
  $('sfxBtn').addEventListener('click',e=>{ e.stopPropagation(); setSfx(); });
  $('pauseBtn').addEventListener('click',e=>{ e.stopPropagation(); togglePause(); });
  $('resumeBtn').addEventListener('click',e=>{ e.stopPropagation(); togglePause(); });
+ $('pauseMenuBtn').addEventListener('click',e=>{ e.stopPropagation();
+  paused=false; $('pausedOv').classList.add('hidden');
+  toMenu(); });
  $('startBtn').addEventListener('click',e=>{ e.stopPropagation(); startGame(); });
- $('restartBtn').addEventListener('click',e=>{ e.stopPropagation(); restartRun(); });
+ $('restartBtn').addEventListener('click',e=>{ e.stopPropagation();
+  Studio.ads.interstitial(function(){ restartRun(); }); });
  $('menuBtn').addEventListener('click',e=>{ e.stopPropagation(); toMenu(); });
  $('menu').addEventListener('click',e=>{ if(e.target===e.currentTarget) return; });
  $('howPanel').addEventListener('click',e=>e.stopPropagation());
@@ -4582,7 +4630,6 @@ function setSfx(){ AU.setSfx(!AU.sfxOn); refreshToggles(); if(AU.sfxOn) AU.uiCli
  $('howClose').addEventListener('click',e=>{ e.stopPropagation(); AU.uiClick(); $('howPanel').classList.add('hidden'); $('menu').classList.remove('hidden'); });
  $('settingsBtn').addEventListener('click',e=>{ e.stopPropagation(); AU.init(); AU.uiClick(); syncSettingsUI(); $('menu').classList.add('hidden'); $('settingsPanel').classList.remove('hidden'); });
  $('settingsClose').addEventListener('click',e=>{ e.stopPropagation(); AU.uiClick(); $('settingsPanel').classList.add('hidden'); $('menu').classList.remove('hidden'); });
- $('settingsBack').addEventListener('click',e=>{ e.stopPropagation(); AU.uiClick(); $('settingsPanel').classList.add('hidden'); $('menu').classList.remove('hidden'); });
  $('settingsSfx').addEventListener('click',e=>{ e.stopPropagation(); setSfx(); syncSettingsUI(); });
  $('settingsMusic').addEventListener('click',e=>{ e.stopPropagation(); setMus(); syncSettingsUI(); });
  $('settingsVibration').addEventListener('click',e=>{
@@ -4680,9 +4727,6 @@ tick();
   q('settingsClose')?.addEventListener('click',function(e){
     e.stopPropagation(); showOnly(home);
   });
-  q('settingsBack')?.addEventListener('click',function(e){
-    e.stopPropagation(); showOnly(home);
-  });
 })();
 
 </script>
@@ -4757,11 +4801,6 @@ document.addEventListener('fullscreenchange',()=>{
 
 
 <!-- MOBILE TILT STEERING -->
-<div id="tiltHint" aria-hidden="true">
-  <span class="tiltIcon">↔</span>
-  <span>TILT PHONE TO STEER</span>
-</div>
-
 <style>
 #tiltHint{
   position:fixed;

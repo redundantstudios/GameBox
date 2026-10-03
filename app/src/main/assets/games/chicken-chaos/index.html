@@ -10,6 +10,7 @@ aiSupport: true
 online: false
 tileColor: #6BCB4A
 version: 4
+released: 2026-09-21
 -->
 <!--
 REDUNDANT STUDIOS — GAMEBOX MANIFEST
@@ -148,17 +149,24 @@ const Studio = (() => {
       if(b&&b.exitGame){ try{ b.exitGame(); }catch(_){} }
     },
     ads:{
-      /* The shell fires the rewarded callback with NO argument on success (and
-         "closed" / "unavailable" otherwise), so testing for 'granted' swallowed
-         every reward — the same landmine Ludo hit (PROGRESS.md). Anything that
-         is not an explicit failure counts as a reward. */
+      /* ALLOW-LIST, and one callback per request.
+         The bridge answers with exactly one of: "granted" (reward earned),
+         "closed", "unavailable", or a governor refusal ("limit_reached",
+         "cooldown"). Only "granted" may pay out. The old code counted anything
+         that was not an explicit failure as a reward, so hitting the cap
+         granted the reward anyway. Each request also gets its own callback
+         name, otherwise two overlapping requests race on one global and the
+         first ad pays out the second action. */
       rewarded(placement,onReward){
         const b=bridge();
         if(!b||!b.showRewardedAd) return;
-        window.__studioAdCb=function(result){
-          if(result!=='closed'&&result!=='unavailable'&&onReward) onReward();
+        window.__studioAdSeq=(window.__studioAdSeq||0)+1;
+        const cb='__studioAdCb'+window.__studioAdSeq;
+        window[cb]=function(result){
+          try{ delete window[cb]; }catch(_){}
+          if(result==='granted'&&onReward) onReward();
         };
-        try{ b.showRewardedAd('__studioAdCb'); }catch(_){}
+        try{ b.showRewardedAd(cb,placement||"",null); }catch(_){ try{ delete window[cb]; }catch(_){} }
       },
       /* Match-end break. The shell always answers — 'closed' when the ad played,
          'unavailable' when it could not (offline / no fill) — so the game always
@@ -167,7 +175,7 @@ const Studio = (() => {
         const b=bridge();
         if(b&&b.showInterstitial){
           window.__studioInterCb=function(){ if(onDone) onDone(); };
-          try{ b.showInterstitial('__studioInterCb'); return; }catch(_){}
+          try{ b.showInterstitial('__studioInterCb',placement||'break'); return; }catch(_){}
         }
         if(onDone) onDone();
       }

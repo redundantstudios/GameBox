@@ -3,6 +3,7 @@ package com.redundantstudios.arcade.util
 import android.content.Context
 import android.util.Log
 import com.redundantstudios.arcade.model.GameManifest
+import com.redundantstudios.arcade.model.ReleaseDate
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -61,7 +62,17 @@ object ManifestParser {
                                         aiSupport = json.optString("aiSupport", "none"),
                                         online = json.optBoolean("online", false),
                                         tileColor = json.optString("tileColor", "#FFFFFF"),
-                                        version = json.optString("version", "1.0.0")
+                                        version = json.optString("version", "1.0.0"),
+                                        released = ReleaseDate.parse(
+                                            // optString with a null fallback is a type
+                                            // mismatch and hands back the literal
+                                            // string "null" for a missing key, which
+                                            // would then fail the date regex and
+                                            // silently mark the game UNKNOWN. Read the
+                                            // key straight from the object instead.
+                                            json.opt("released") as? String,
+                                            title.lowercase()
+                                        )
                                     )
                                 } else {
                                     skipReason = "missing id or title"
@@ -97,7 +108,10 @@ object ManifestParser {
                                     aiSupport = props["aiSupport"] ?: "none",
                                     online = props["online"]?.toBoolean() ?: false,
                                     tileColor = props["tileColor"] ?: "#FFFFFF",
-                                    version = props["version"] ?: "1.0.0"
+                                    version = props["version"] ?: "1.0.0",
+                                    released = ReleaseDate.parse(
+                                        props["released"], title.lowercase()
+                                    )
                                 )
                             } else {
                                 skipReason = "missing id or title"

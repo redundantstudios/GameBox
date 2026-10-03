@@ -82,6 +82,12 @@ class MainActivity : ThemedActivity() {
         modeRecyclerView.layoutManager = GridLayoutManager(this, 2)
 
         allGames = ManifestParser.scanGames(this)
+
+        // Home is where a new app session begins, so the ad governor starts a
+        // fresh session here. This FIRST visit is also recorded as session #1,
+        // which is what suppresses interstitials for a brand-new user entirely.
+        com.redundantstudios.arcade.ads.AdPolicy.onShellHomeShown(this)
+
         modeRecyclerView.adapter = ModeAdapter(deriveModes(allGames) + partyTile(partyGameCount(allGames))) { mode ->
             if (mode.playerCount == GameMode.PARTY_TILE) {
                 // Party category lives on the same games list, just filtered.

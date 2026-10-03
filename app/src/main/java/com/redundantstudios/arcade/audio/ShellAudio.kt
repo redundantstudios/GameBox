@@ -121,6 +121,25 @@ object ShellAudio {
     // Ambient loop with fades + host counting
     // ------------------------------------------------------------------
 
+    /**
+     * Start decoding the ambient loop NOW, without waiting for a host screen.
+     *
+     * Called from [com.redundantstudios.arcade.ShellApp], which exists before any
+     * activity. The decode is a full PCM expansion of the asset on a background
+     * thread, and it used to start in `onResume()` - after process start, the
+     * launcher and the home screen had all completed - so the app opened to
+     * silence and the music walked in seconds late. Decoding during the splash
+     * window means it is already ready when the first shell screen resumes.
+     *
+     * Deliberately does NOT set a target volume: the loop stays parked and
+     * silent until a host screen actually resumes, so warming it up can never
+     * make music play over a game or in the background.
+     */
+    fun warmUp(context: Context) {
+        init(context)
+        ensureBgm()
+    }
+
     /** A shell screen came to the foreground. Starts (or resumes) with a fade. */
     fun hostResumed(context: Context) {
         init(context)

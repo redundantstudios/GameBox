@@ -1,4 +1,4 @@
-﻿<style>
+<style>
 /* Shell chrome: BACK out of the game, to the arcade grid. */
 #studioBack{position:fixed;z-index:2147483000;left:10px;top:max(10px,env(safe-area-inset-top));
 width:76px;height:38px;border-radius:19px;display:none;align-items:center;justify-content:center;
@@ -8,4 +8,7 @@ cursor:pointer;-webkit-tap-highlight-color:transparent;
 backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(0,0,0,.35)}
 #studioBack.show{display:flex}
 #studioBack:active{transform:scale(.96)}
+/* per-game theme, substituted by the integrator: the button wears the game own
+   surface colour and corner radius instead of one identical grey pill */
+#studioBack{background:var(--sb-bg,rgba(8,10,14,.82));border-color:var(--sb-bd,rgba(255,255,255,.3));color:var(--sb-fg,#fff);border-radius:var(--sb-r,19px);box-shadow:0 4px 14px var(--sb-sh,rgba(0,0,0,.35))}
 </style>

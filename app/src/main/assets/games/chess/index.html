@@ -9,6 +9,7 @@ aiSupport: full
 online: false
 tileColor: #8A5A44
 version: 0.7.1
+released: 2026-09-21
 -->
 <!--
 REDUNDANT STUDIOS — GAMEBOX MANIFEST
@@ -535,10 +536,18 @@ const Studio = (() => {
       rewarded(placement, onReward) {
         const b = bridge();
         if (b && b.showRewardedAd) {
-          window.__studioAdCb = function(result) {
+          /* One callback name per request: a single shared global let two
+             overlapping requests race, so the first ad paid out the second
+             action and the overwritten request never settled. */
+          window.__studioAdSeq = (window.__studioAdSeq || 0) + 1;
+          const cb = '__studioAdCb' + window.__studioAdSeq;
+          window[cb] = function(result) {
+            try { delete window[cb]; } catch(e) {}
+            /* Only the explicit grant pays out; a cap or cooldown refusal
+               ("limit_reached"/"cooldown") must not grant. */
             if (result === 'granted') onReward();
           };
-          b.showRewardedAd('__studioAdCb');
+          b.showRewardedAd(cb,placement||"",null);
           return;
         }
         const cg = (window.CrazyGames && window.CrazyGames.SDK) || null;
@@ -557,7 +566,7 @@ const Studio = (() => {
         const b = bridge();
         if (b && b.showInterstitial) {
           window.__studioInterCb = function() { if (onDone) onDone(); };
-          b.showInterstitial('__studioInterCb');
+          b.showInterstitial('__studioInterCb','');
           return;
         }
         if (onDone) onDone();

@@ -1,97 +1,82 @@
-"""Imports the director's finished tile artwork into the shell.
+"""Imports the real tile artwork from sources/Shell Art into the Android
+resources, replacing the generated emblems for the six newly integrated games.
 
-Tile images are now delivered as finished art (see sources/*.png). This script
-centre-crops each one to a square, resizes it to a fixed 512 px and writes it
-into drawable-nodpi under the name GameAdapter looks up by game id
-(tile_<id with dashes as underscores>).
+The generated emblems are placeholders so a new game never looks broken; where
+finished art exists it is always the better tile. The import is a one-off (it
+needs the source art), and the result is committed like the generated PNGs.
 
-Sources are stored as PNG (lossless master); the app ships JPEG tiles, which
-compress the same art to a fraction of the size with no visible loss - the
-tiles are opaque, so JPEG needs no alpha and keeps the APK small.
-
-    python _import_tiles.py            # every tile in the table
-    python _import_tiles.py ludo chess # only these
+    python _import_tiles.py
 """
 import os
-import sys
+import re
 
 from PIL import Image
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
-# This script lives in Tools/, but sources/ and app/ are siblings of Tools at the
-# repo root - so ROOT has to walk up one level or every lookup resolves inside
-# Tools/ and silently reports MISSING for art that is actually there.
-REPO = os.path.dirname(ROOT)
-# The finished tile art lives in "sources/Shell Art" (the folder name has a
-# space in it). sources/ is its parent and also holds a few older copies, so
-# prefer Shell Art and fall back to sources/ per file.
-SRC = os.path.join(REPO, "sources", "Shell Art")
-SRC_FALLBACK = os.path.join(REPO, "sources")
-OUT = os.path.join(REPO, "app", "src", "main", "res", "drawable-nodpi")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ART = os.path.join(ROOT, 'sources', 'Shell Art')
+OUTDIR = os.path.join(ROOT, 'app', 'src', 'main', 'res', 'drawable-nodpi')
+
 SIZE = 512
 
-# source file name (in sources/) -> resource name (tile_<res>)
-# Kept in step with the games bundled in app/src/main/assets/games. Anything
-# missing here silently falls back to a flat manifest colour, so a new game
-# needs a line added or its tile looks unfinished on the grid.
+
+def res_name(game_id):
+    '''Android resource names allow only a-z, 0-9 and _ - same rule as
+    _gen_tiles.py and GameAdapter, so the file name matches what is looked up.'''
+    return 'tile_' + re.sub(r'[^a-z0-9]+', '_', game_id.strip().lower()).strip('_')
+
+# game id -> source artwork file in sources/Shell Art
 TILES = {
-    "ludo_tile_img.png": "ludo",
-    "chess_tile_img.png": "chess",
-    "planet_merge_tile.png": "planetmerge",
-    "chicken_chaos_tile.png": "chicken_chaos",
-    "egg_rush_tile.png": "egg_rush",
-    "checkers_tile_img.png": "checkers",
-    "memory_grab_tile_img.png": "memory_grab",
-    "bomb_relay_tile_img.png": "bomb_relay",
-    "balloon_battle_tile_img.png": "balloon_battle",
-    "carrom_tile_img.png": "carroms",
+    'colour-rush':        'colour_rush_tile_img.png',
+    'midnight-overdrive': 'MidNight_Overdrive_tile_img.png',
+    'sheepdog-trials':    'sheep_dog_tile_img.png',
+    'pool-8ball':         '8-Ball-Pool_tile_imag',
+    'ember':              'Ember_tile_img.jpeg',
+    'orrery':             'orrery_tile_img.jpeg',
+    'echo':               'echo_tile_img.png',
+    'magnet-pull':        'magnet_pull_tile_img.png',
+    'kiro':               'kiro_tile_img.jpeg',
+    'root-io':            'root.io_tile_img.jpeg',
 }
 
 
-def square(img):
-    """Centre-crop to a square the size of the shorter edge."""
-    w, h = img.size
+def square(im):
+    """Centre-crops to a square, scales to SIZE, and quantises.
+
+    The source art is large detailed illustration; as a straight PNG it landed
+    around 350 KB per tile, which is a lot of APK for a 512px emblem. The tiles
+    are displayed small in a grid, so an adaptive 256-colour palette keeps them
+    visually identical at a fraction of the size.
+    """
+    w, h = im.size
     side = min(w, h)
-    left = (w - side) // 2
-    top = (h - side) // 2
-    return img.crop((left, top, left + side, top + side))
+    im = im.crop(((w - side) // 2, (h - side) // 2,
+                  (w - side) // 2 + side, (h - side) // 2 + side))
+    im = im.convert('RGB').resize((SIZE, SIZE), Image.LANCZOS)
+    return im.quantize(colors=256, method=Image.MEDIANCUT, dither=Image.Dither.NONE)
 
 
-def main(argv):
-    wanted = {a.lower() for a in argv[1:]}
-    total = 0
-    n = 0
-    for src_name, res in TILES.items():
-        if wanted and res not in wanted:
+def main():
+    for gid, art in TILES.items():
+        src = os.path.join(ART, art)
+        if not os.path.exists(src):
+            print('SKIP  %-20s no art: %s' % (gid, art))
             continue
-        path = os.path.join(SRC, src_name)
-        if not os.path.exists(path):
-            # older copies of a few tiles still sit directly in sources/
-            alt = os.path.join(SRC_FALLBACK, src_name)
-            if os.path.exists(alt):
-                path = alt
-            else:
-                print("MISSING source:", src_name)
-                continue
-        img = Image.open(path)
-        img = img.convert("RGB")
-        img = square(img).resize((SIZE, SIZE), Image.LANCZOS)
-        jpg = os.path.join(OUT, "tile_%s.jpg" % res)
-        img.save(jpg, "JPEG", quality=88, optimize=True, progressive=True)
-        size = os.path.getsize(jpg)
-        total += size
-        n += 1
-        print("wrote tile_%s.jpg  %dx%d  %.0f KB" % (res, img.size[0], img.size[1], size / 1024.0))
-    # Remove the older PNG twins so the APK never ships both.
-    for res in TILES.values():
-        old = os.path.join(OUT, "tile_%s.png" % res)
-        if os.path.exists(old):
-            os.remove(old)
-            print("removed tile_%s.png" % res)
-    if n:
-        print("total %.0f KB across %d tiles" % (total / 1024.0, n))
-    return 0
+        # PNG only, and the file name must be a valid Android resource name
+        # (a-z, 0-9, _ only) - GameAdapter applies the same rule when it looks
+        # the tile up, so the two halves stay in lockstep.
+        out = os.path.join(OUTDIR, '%s.png' % res_name(gid))
+        im = Image.open(src)
+        # PNG only: a sibling file of the same base name (tile_x.jpg) next to
+        # tile_x.png is a duplicate-resource build error, so imported art is
+        # written as the .png and any stale sibling is removed.
+        for ext in ('.jpg', '.jpeg', '.webp'):
+            stale = out[:-4] + ext
+            if os.path.exists(stale):
+                os.remove(stale)
+                print('      removed duplicate %s' % os.path.basename(stale))
+        square(im).save(out, 'PNG', optimize=True)
+        print('OK    %-20s %-34s %d KB' % (gid, art, round(os.path.getsize(out) / 1024)))
 
 
-if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+if __name__ == '__main__':
+    main()

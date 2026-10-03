@@ -10,11 +10,12 @@ id: last-balloon
 title: Last Balloon
 orientation: portrait
 minPlayers: 3
-maxPlayers: 5
+maxPlayers: 10
 aiSupport: none
 online: false
 tileColor: sky-blue
 version: 1
+released: 2026-09-27
 -->
 <style>
 /* ============================================================
@@ -1118,6 +1119,10 @@ function stopAirflow(){
 ============================================================ */
 var currentScreen='scr-menu';
 function showScreen(id){
+  /* End-of-round break: leaving the play screen for a result/next screen is
+     the moment an ad belongs. Leaving the game entirely does not go through
+     here, so backing out never triggers one. AdPolicy still gates frequency. */
+  try{ if(currentScreen==='scr-game'&&id!=='scr-game') showInterstitialOnce(); }catch(e){}
   var screens=document.querySelectorAll('.screen');
   for(var i=0;i<screens.length;i++)screens[i].classList.remove('active');
   $(id).classList.add('active');
@@ -2112,7 +2117,7 @@ function triggerShopAd(id){
       try{ delete window[cbName]; }catch(e){}
       finish(result==='granted'||result===true||result==='rewarded');
     };
-    try{ bridge.showRewardedAd(cbName); return; }catch(e){}
+    try{ bridge.showRewardedAd(cbName,placement||"",null); return; }catch(e){}
     try{ delete window[cbName]; }catch(e){}
   }
   /* No bridge (plain browser tab): never grant silently. Just cancel. */
@@ -2508,7 +2513,10 @@ function render(){
     on the button guarantees it. A no-op outside the shell. */
  $('menuBack').addEventListener('click',function(){
    SND.click();
-   try{ showInterstitialOnce(); }catch(e){}
+   /* NO AD ON EXIT. Backing out of the game used to call showInterstitialOnce()
+      here as well as on pagehide/visibilitychange, so the player was shown an ad
+      at the exact moment they decided to stop playing. Leaving is clean now; the
+      rewarded shop unlock and the in-play breaks are untouched. */
    try{
      if(window.NativeBridge&&window.NativeBridge.exitGame)window.NativeBridge.exitGame();
    }catch(e){}
@@ -2582,21 +2590,38 @@ refreshSetupUI();
     request twice for one exit. */
  var interstitialShown=false;
  function showInterstitialOnce(){
-   if(interstitialShown)return;
-   interstitialShown=true;
-   try{
-     if(window.NativeBridge&&window.NativeBridge.showInterstitial)
-       window.NativeBridge.showInterstitial('__shell_after_game');
-   }catch(e){}
- }
- window.addEventListener('pagehide',showInterstitialOnce);
- /* The shell's own back gesture / activity finish has no pagehide on Android
-    WebView, so visibilitychange is the second net. */
- document.addEventListener('visibilitychange',function(){
-   if(document.hidden)showInterstitialOnce();
- });
-  window.Game=window.Game||{};
-  window.Game.setSettings=function(s){};
+    if(interstitialShown)return;
+    interstitialShown=true;
+    try{
+      if(window.NativeBridge&&window.NativeBridge.showInterstitial){
+        /* The callback name has to actually EXIST. It was passed to the
+           bridge but never registered, so the ad fired into the void and
+           interstitialShown stayed true for the rest of the session. */
+        window['__shell_after_game']=function(){ interstitialShown=false; };
+        /* Two arguments: showInterstitial(callback, placement). */
+        window.NativeBridge.showInterstitial('__shell_after_game','');
+      }
+    }catch(e){}
+  }
+  function playerVolume(){
+    try{ return (typeof settings.volume==='number')?settings.volume:0.8; }
+    catch(e){ return 0.8; }
+  }
+  window.Game={
+    pause:function(){ setAudio(false); if(prev.pause)try{prev.pause();}catch(e){} },
+    resume:function(){ setAudio(true); if(prev.resume)try{prev.resume();}catch(e){} },
+    setMuted:function(m){
+      try{ if(A&&A.vol) A.vol.gain.value=m?0:playerVolume(); }catch(e){}
+      if(prev.setMuted)try{prev.setMuted(m);}catch(e){}
+    },
+    setSettings:function(s){
+      try{
+        if(s&&typeof s.sound==='boolean'&&A&&A.vol) A.vol.gain.value=s.sound?playerVolume():0;
+      }catch(e){}
+      if(prev.setSettings)try{prev.setSettings(s);}catch(e){}
+    },
+    destroy:function(){ setAudio(false); if(prev.destroy)try{prev.destroy();}catch(e){} }
+  };
 })();
 </script>
 </body>

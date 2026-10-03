@@ -27,8 +27,9 @@ aiSupport: true
 online: false
 tileColor: #D94B4B
 version: 14
+released: 2026-09-19
 */
-const Studio = (() => { const bridge = () => window.NativeBridge || null; const ls = { get k(){ try{return localStorage;}catch(_){return null;} } }; let settings = { sound: true, haptics: true }; try { const s = (bridge()?bridge().load('shell:settings'):ls.k?.getItem('shell:settings')); if (s) settings = Object.assign(settings, JSON.parse(s)); } catch(_){} return { save:(k,v)=>{ const b=bridge(); if(b) b.save(k,v); else try{ls.k.setItem(k,v);}catch(_){} }, load:(k)=>{ const b=bridge(); if(b) return b.load(k); try{return ls.k?.getItem(k)||null;}catch{return null;} }, haptic:(kind)=>{ if(!settings.haptics) return; const b=bridge(); if(!b) return; const map={light:15,medium:30,heavy:60,success:45}; try{b.haptic(typeof map[kind]==='number'?map[kind]:0);}catch(_){} }, exit:()=>{ const b=bridge(); try{ if(b&&b.exitGame) b.exitGame(); }catch(_){} }, settings, ads:{ rewarded(placement,onResult){ const b=bridge(); if(!b) return; window.__studioAdCb = function(result){ try{ onResult(result||'closed'); }catch(_){} }; b.showRewardedAd('__studioAdCb'); }, showBanner(){ const b=bridge(); try{ if(b) b.showBanner(); }catch(_){} }, hideBanner(){ const b=bridge(); try{ if(b) b.hideBanner(); }catch(_){} } } };})();
+const Studio = (() => { const bridge = () => window.NativeBridge || null; const ls = { get k(){ try{return localStorage;}catch(_){return null;} } }; let settings = { sound: true, haptics: true }; try { const s = (bridge()?bridge().load('shell:settings'):ls.k?.getItem('shell:settings')); if (s) settings = Object.assign(settings, JSON.parse(s)); } catch(_){} return { save:(k,v)=>{ const b=bridge(); if(b) b.save(k,v); else try{ls.k.setItem(k,v);}catch(_){} }, load:(k)=>{ const b=bridge(); if(b) return b.load(k); try{return ls.k?.getItem(k)||null;}catch{return null;} }, haptic:(kind)=>{ if(!settings.haptics) return; const b=bridge(); if(!b) return; const map={light:15,medium:30,heavy:60,success:45}; try{b.haptic(typeof map[kind]==='number'?map[kind]:0);}catch(_){} }, exit:()=>{ const b=bridge(); try{ if(b&&b.exitGame) b.exitGame(); }catch(_){} }, settings, ads:{ rewarded(placement,onResult){ const b=bridge(); if(!b) return; /* one callback name per request: a shared global let two overlapping requests race, so the first ad paid out the second action and the overwritten request never settled. */ window.__studioAdSeq=(window.__studioAdSeq||0)+1; const cb='__studioAdCb'+window.__studioAdSeq; window[cb]=function(result){ try{ delete window[cb]; }catch(_){} try{ onResult(result||'closed'); }catch(_){} }; b.showRewardedAd(cb,placement||"",null); }, showBanner(){ const b=bridge(); try{ if(b) b.showBanner(); }catch(_){} }, hideBanner(){ const b=bridge(); try{ if(b) b.hideBanner(); }catch(_){} } } };})();
 // Banner visibility is driven by syncBanner(): it is shown only while the board
 // is actually being played, never over menus / popups / the victory panel.
 try{ Studio.ads.hideBanner(); }catch(_){}
@@ -257,7 +258,7 @@ function showInterstitial(next){
   const B=window.NativeBridge;
   if(B&&typeof B.showInterstitial==='function'){
     window.__studioInterCb=function(){ if(next) next(); };
-    try{ B.showInterstitial('__studioInterCb'); return; }catch(e){}
+    try{ B.showInterstitial('__studioInterCb',''); return; }catch(e){}
   }
   FX.inter={ t:0, dur:CFG.ads.interDur, next };
 }

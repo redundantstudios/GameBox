@@ -1,5 +1,48 @@
 # Agent Protocol - Redundant Arcade
 
+## STEP 0 — RUN THE DECISION LAYER FIRST (System 1)
+
+Before touching any file on a change request, classify the work:
+
+```
+cd Tools\laya_decision_layer
+python run.py "<the request, in the user's words>"
+```
+
+This is a **fast local model, not an LLM call.** It does not plan and it does not
+write code. It answers the project's own fixed policy questions in one pass and
+returns a lane, a risk grade, and the gates that must pass.
+
+| Decision | What it means | What you do |
+|---|---|---|
+| `PROCEED` | Low risk, no gates | Do the work. Still follow the standing rule below. |
+| `PROCEED_WITH_GATES` | Ordinary work, gates attached | Do the work, and satisfy **every** listed gate before claiming done. |
+| `STOP` | Dangerous | **Do not proceed unattended.** Say so plainly, name the blockers, and ask for the go-ahead. |
+
+Gates are real project commands, not abstract advice. `syntax` is the node parse
+check below. `contract` is CONTRACT.md. `ad_bridge` is the `__studioAdCb` rule.
+`build` is BUILD.bat. `on_device` is "the user tests, not you".
+
+**A `STOP` is not permission to proceed quietly.** It means escalate.
+
+### When the layer is wrong
+
+It is a classifier, and it is wrong sometimes. It is strongest on work with
+distinct keywords (ads, keystore, integrating a new game) and weakest on
+cross-cutting work (a "polish" request that also edits a LOCKED game).
+
+- If it blocks something trivial, say so and proceed — note the miss.
+- If it waves through something dangerous, **stop anyway.** The layer is a
+  backstop, not an authority. Ads, the WebView bridge, the keystore, signing and
+  the store bundle always get a human.
+- Report misses to the user. They are what makes the next wording better.
+
+### Cost
+
+~6 s warm, ~35 s on the first call of a session (it loads the checkpoint).
+Skip it for a one-line question or pure conversation. Run it for anything that
+edits a file.
+
 ## THE STANDING RULE — Feedback → Change → Build → Install → Test
 This rule is permanent and applies to EVERY chat, EVERY task, EVERY turn. It
 overrides any instinct to stop at "the change looks right".

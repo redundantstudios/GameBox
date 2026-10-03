@@ -52,6 +52,11 @@ function applyAll(g, html) {
   }
   /* 2. per-game patches (asserted: a patch that no longer matches is a bug, not
         a no-op, so a silently broken game can never ship) */
+  /* The CrazyGames portal SDK is a network script. The shell is offline, so
+     the request could only ever fail (and the SDK's absence would leave the
+     games' ad buttons dead). sdk.html installs a same-shaped shim that routes
+     those calls to the shell instead. */
+  html = html.replace(/^[ \t]*<script src="https:\/\/sdk\.crazygames\.com[^>]*>\s*<\/script>\r?\n?/gm, '');
   for (const [find, repl] of (g.patches || [])) {
     const n = html.split(find).length - 1;
     if (n !== 1) throw new Error(g.id + ': patch anchor matched ' + n + ' times: ' + JSON.stringify(find.slice(0, 70)));
@@ -60,10 +65,25 @@ function applyAll(g, html) {
   /* 3. shell chrome + SDK straight after <head> */
   const head = /<head[^>]*>/i.exec(html);
   if (!head) throw new Error(g.id + ': no <head>');
-  const inject = ['', manifest(g), read(path.join(SHELL, 'back.css')), read(path.join(SHELL, 'sdk.html'))];
+  const inject = ['', manifest(g)];
+  /* The webfont rules come FIRST: the game's own <link> to Google Fonts was
+     stripped above (the shell is offline), so without these the titles fell
+     back to a system font and lost their typography. */
+  if (g.stripFonts !== false) inject.push('<style id="studioFonts">\n' + read(path.join(SHELL, 'fonts.css')) + '\n</style>');
+  inject.push(read(path.join(SHELL, 'back.css')), read(path.join(SHELL, 'sdk.html')));
   /* optional inlined library (three.js for Midnight Overdrive) */
   if (g.lib) inject.push('<script>\n' + read(path.join(ROOT, g.lib)) + '\n</script>');
-  inject.push(read(path.join(SHELL, 'back.html')).replace('@@FRONT@@', g.front));
+  /* The BACK button wears the game's own palette and label, so it reads as part
+     of the game instead of one identical grey pill in every title. */
+  inject.push('<style id="studioBackTheme">:root{' +
+    '--sb-bg:' + (g.backBg || 'rgba(8,10,14,.82)') + ';' +
+    '--sb-fg:' + (g.backFg || '#fff') + ';' +
+    '--sb-bd:' + (g.backBd || 'rgba(255,255,255,.3)') + ';' +
+    '--sb-r:' + (g.backR || '19px') + ';' +
+    '--sb-sh:' + (g.backSh || 'rgba(0,0,0,.35)') + '}</style>');
+  inject.push(read(path.join(SHELL, 'back.html'))
+    .replace('@@FRONT@@', g.front)
+    .replace('@@LABEL@@', g.backLabel || 'BACK'));
   const head2 = inject.join('\n');
   html = html.slice(0, head.index + head[0].length) + head2 + '\n' + html.slice(head.index + head[0].length);
   /* 4. per-game wiring at the very end, where every one of the game's own

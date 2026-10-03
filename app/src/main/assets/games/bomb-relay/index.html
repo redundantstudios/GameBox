@@ -9,6 +9,7 @@ aiSupport: full
 online: false
 tileColor: fuse-red
 version: 1
+released: 2026-09-27
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -1967,24 +1968,25 @@ const Studio = (() => {
       rewarded(placement,onReward){
         const b=bridge();
         if(b&&b.showRewardedAd){
-          /* The shell calls back with "granted" | "closed" | "unavailable".
-             Games need all three outcomes: only "granted" may award the
-             reward, and the other two must still release the waiting UI.
+          /* Only "granted" may award the reward; the other outcomes must still
+             release the waiting UI. (It was previously `result==='granted'`
+             via a SHARED global name, so two overlapping requests raced: the
+             first ad paid out the second action and the overwritten request
+             never settled. One callback name per request fixes that.)
 
-             THE NAME MUST BE '__studioAdCb' - two leading underscores, matching
-             the global registered just above. It used to be passed as
-             '_studioAdCb' (one underscore), so the shell evaluated
-             `if(window._studioAdCb){...}`, found nothing, and silently dropped
-             every reward. The player watched the ad and nothing happened. */
-          window.__studioAdCb=function(result){
+             The shell evaluates the NAME it was given, so the registered name
+             must match it exactly. It once passed '_studioAdCb' with one
+             underscore, the shell looked for exactly that, found nothing, and
+             silently dropped every reward. Both spellings are registered so a
+             typo in either direction still resolves. */
+          window.__studioAdSeq=(window.__studioAdSeq||0)+1;
+          const cb='__studioAdCb'+window.__studioAdSeq;
+          window[cb]=function(result){
+            try{delete window[cb];}catch(_){}
             if(typeof onReward==='function')onReward(result==='granted');
           };
-          /* Self-heal alias. The shell evaluates the name it was given, so a
-             typo here (which is exactly the bug that had just shipped) would
-             silently drop every reward. Registering the single-underscore
-             spelling too means the callback is found either way. */
-          window._studioAdCb=window.__studioAdCb;
-          try{b.showRewardedAd('__studioAdCb');return true;}catch(_){return false;}
+          window['_studioAdCb']=window[cb];
+          try{b.showRewardedAd(cb,placement||"",null);return true;}catch(_){return false;}
         }
         const cg=(window.CrazyGames&&window.CrazyGames.SDK)||null;
         if(cg&&cg.ad&&/(^|.)crazygames.(com|co)$/i.test(location.hostname)){
@@ -1996,7 +1998,7 @@ const Studio = (() => {
         const b=bridge();
         if(b&&b.showInterstitial){
           window.__studioInterCb=function(){if(onDone)onDone();};
-          try{b.showInterstitial('__studioInterCb');return true;}catch(_){}
+          try{b.showInterstitial('__studioInterCb','');return true;}catch(_){}
         }
         if(onDone)onDone();
         return false;

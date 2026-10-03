@@ -11,6 +11,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.audio.ShellAudio
+import com.redundantstudios.arcade.model.ESTABLISHED_GAME_IDS
 import com.redundantstudios.arcade.model.GameManifest
 import com.redundantstudios.arcade.util.GameSeenStore
 
@@ -45,7 +46,11 @@ class GameAdapter(
         holder.players.visibility = if (hidePlayerTag) View.GONE else View.VISIBLE
         holder.tileRoot.cardColor = tileColor(game.tileColor)
 
-        holder.newBadge.visibility = if (GameSeenStore.isNew(holder.itemView.context, game.id)) {
+        /* Established games never wear the tag (see ESTABLISHED_GAME_IDS);
+           everything else falls to the normal first-seen window. */
+        holder.newBadge.visibility = if (
+            game.id !in ESTABLISHED_GAME_IDS && GameSeenStore.isNew(holder.itemView.context, game.id)
+        ) {
             View.VISIBLE
         } else {
             View.GONE

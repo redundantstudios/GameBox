@@ -68,6 +68,16 @@ internal class BgmLoop(context: Context, private val resId: Int) {
     private var playing = false
 
     /**
+     * True when the loop is parked/silent, i.e. the next start can be cut
+     * straight to full level without a click (feeder thread only).
+     *
+     * Separate from [playing]: the track is also not playing for the moment
+     * between `play()` and the first write, and the AudioTrack buffer itself
+     * needs priming before that first sample is audible.
+     */
+    private var wasFaded = true
+
+    /**
      * Decodes the asset on a background thread, then starts feeding. Safe to
      * call repeatedly; only the first call does work.
      */
@@ -266,6 +276,7 @@ internal class BgmLoop(context: Context, private val resId: Int) {
                     playing = false
                 }
                 gain = 0f
+                wasFaded = true
                 try {
                     Thread.sleep(20)
                 } catch (_: InterruptedException) {
@@ -276,6 +287,24 @@ internal class BgmLoop(context: Context, private val resId: Int) {
             if (!playing) {
                 audioTrack.play()
                 playing = true
+                /* STARTING FROM SILENCE IS THE "DELAY" THE PLAYER HEARS.
+                 * `gain` is 0 until the feeder ramps it up, and the ramp is a
+                 * deliberate 2.2s fade so that pausing/resuming the music never
+                 * clicks. But at COLD START there is no prior level to protect:
+                 * nothing was playing a moment ago, so ramping from zero just
+                 * means the loop takes over 2 seconds to become audible - on
+                 * top of any decode time - and the app looks broken-silent at
+                 * exactly the moment it should be sounding alive.
+                 *
+                 * So the first transition out of the parked state jumps straight
+                 * to the target. Every subsequent change still fades. `wasFaded`
+                 * tracks "we have been parked/silent", which is the only case
+                 * where a cut cannot be heard - the track is not playing, so
+                 * there is no waveform step to click. */
+                if (wasFaded) {
+                    gain = target
+                }
+                wasFaded = false
             }
 
             var i = 0

@@ -1,4 +1,4 @@
-﻿<script>
+<script>
 /* Shell BACK button. Shown only while the game is on its own front page, so
    it can never sit on top of the board in the middle of play. */
 (function(){
@@ -7,11 +7,17 @@
   function front(){ try{ @@FRONT@@ }catch(_){ return false; } }
   function mount(){
     if(get()) return;
-    var d=document.createElement('div'); d.id='studioBack'; d.textContent='BACK';
+    var d=document.createElement('div'); d.id='studioBack';
+    d.textContent='@@LABEL@@';
     d.setAttribute('role','button'); d.setAttribute('aria-label','Back to the arcade');
     (document.body||document.documentElement).appendChild(d);
-    d.addEventListener('click',function(e){ e.preventDefault(); e.stopPropagation(); Studio.exitGame(); },true);
-    d.addEventListener('touchstart',function(e){ e.preventDefault(); },{passive:false});
+    /* touchend, not click: every one of these games sets touch-action:none on
+       <body>, which suppresses the synthesised click on a plain <div>. That is
+       why the BACK button looked live and did nothing. touchend fires for every
+       real tap; the click listener stays as the desktop / AT fallback. */
+    function go(e){ e.preventDefault(); e.stopPropagation(); Studio.exitGame(); }
+    d.addEventListener('touchend',go,{passive:false});
+    d.addEventListener('click',go,true);
   }
   function tick(){
     var b=get();
