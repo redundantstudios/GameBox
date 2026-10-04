@@ -147,6 +147,28 @@ var Studio=(function(){
 })();
 window.Studio=Studio;
 
+/* ---------- mute the score while an ad is on screen ----------
+   Games are expected to be silent during ads. This used to hang off the
+   CrazyGames `S.ad.requestAd` shim, but no game calls that shim - they all
+   call Studio.ads.* directly, so the score kept playing through every ad.
+   Wrapping the two real entry points covers every call site at once. */
+(function(){
+  var rw=Studio.ads.rewarded, it=Studio.ads.interstitial;
+  function duck(on){try{if(window.__audioDuck)window.__audioDuck(on);}catch(_){}}
+  /* Duck on the way in, un-duck once the ad resolves EITHER way, so a skipped
+     ad can never leave the game permanently silent. */
+  Studio.ads.rewarded=function(placement,ok,fail){
+    duck(true);
+    return rw(placement,
+      function(){try{ok&&ok();}finally{duck(false);}},
+      function(m){try{fail&&fail(m);}finally{duck(false);}});
+  };
+  Studio.ads.interstitial=function(ok){
+    duck(true);
+    return it(function(){try{ok&&ok();}finally{duck(false);}});
+  };
+})();
+
 /* ============================================================
    CRAZYGAMES SDK SHIM
    The source games were published on CrazyGames and drive their ads
@@ -206,7 +228,16 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
 })();
 </script>
 
-<style id="studioBackTheme">:root{--sb-bg:rgba(58,20,8,.88);--sb-fg:#ffd9b0;--sb-bd:rgba(255,150,70,.55);--sb-r:10px;--sb-sh:rgba(0,0,0,.35)}</style>
+<style id="studioBackTheme">
+:root{--sb-bg:rgba(30,10,4,.82);--sb-fg:#ffcf96;--sb-bd:rgba(255,180,105,.55);
+--sb-r:999px;--sb-sh:rgba(0,0,0,.35)}
+#studioBack{border-radius:999px;padding:12px 26px 10px 34px;
+  font-weight:600;font-size:13px;letter-spacing:.34em;text-transform:uppercase;
+  border:1px solid rgba(255,180,105,.45);background:rgba(255,160,70,.08);
+  color:#ffcf96;transition:.22s}
+#studioBack:hover,#studioBack:active{border-color:rgba(255,180,105,.75);
+  background:rgba(255,160,70,.16);box-shadow:0 0 20px rgba(255,150,60,.16)}
+</style>
 <script>
 /* Shell BACK button. Shown only while the game is on its own front page, so
    it can never sit on top of the board in the middle of play. */
@@ -308,7 +339,7 @@ h1{font-weight:500;font-size:clamp(70px,16vw,150px);letter-spacing:.16em;padding
 .btn.slim{min-width:160px;padding:10px 22px 8px 28px;font-size:13px}
 .btn .bicon{width:20px;height:16px;flex:0 0 20px;color:var(--amber)}
 .studio{position:absolute;bottom:26px;left:0;right:0;font-size:14px;font-weight:500;
-  letter-spacing:.5em;padding-left:.5em;text-transform:lowercase;color:rgba(236,228,212,.3)}
+  letter-spacing:.5em;padding-left:.5em;color:rgba(236,228,212,.3)}
 .vtag{position:absolute;bottom:8px;left:12px;font-size:12px;font-weight:700;letter-spacing:.24em;
   text-transform:uppercase;color:rgba(255,180,105,.75)}
 
@@ -333,6 +364,10 @@ h1{font-weight:500;font-size:clamp(70px,16vw,150px);letter-spacing:.16em;padding
 .sw input:checked + i{background:rgba(255,170,90,.22);border-color:rgba(255,180,105,.6)}
 .sw input:checked + i:before{left:22px;background:var(--amber);box-shadow:0 0 8px rgba(255,180,105,.7)}
 
+#emNote{min-height:16px;margin:14px 0 0;text-align:center;font-size:12px;
+  font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(255,190,120,.9);opacity:0;transition:opacity .25s}
+#emNote.show{opacity:1}
 /* game over */
 #oScore{font-weight:600;font-size:clamp(72px,15vw,120px);line-height:1;margin:6px 0 10px;color:#f6eeda;
   text-shadow:0 0 36px rgba(255,150,60,.2)}
@@ -386,7 +421,7 @@ console.log('%cEMBER v10 · full-start health, leaf pickups, endless speed','col
       '<button class="btn" data-act="how">how to play</button>'+
       '<button class="btn" data-act="set">settings</button>'+
     '</div>'+
-    '<div class="studio">redundant studios</div>'+
+    '<div class="studio">Redundant Studios</div>'+
    
   '</div>'+
 
@@ -409,6 +444,7 @@ console.log('%cEMBER v10 · full-start health, leaf pickups, endless speed','col
     '<div class="mt">settings</div>'+
     '<div class="srows">'+
       '<div class="srow"><span class="rtx">sound</span><label class="sw"><input type="checkbox" id="swSnd"><i></i></label></div>'+
+      '<div class="srow"><span class="rtx">music</span><label class="sw"><input type="checkbox" id="swMus"><i></i></label></div>'+
       '<div class="srow"><span class="rtx">haptics</span><label class="sw"><input type="checkbox" id="swHap"><i></i></label></div>'+
     '</div>'+
     '<button class="btn slim" data-act="setBack">back</button>'+
@@ -435,6 +471,7 @@ console.log('%cEMBER v10 · full-start health, leaf pickups, endless speed','col
           '<path d="M10.5 6.2v7.6l6.4-3.8-6.4-3.8z" fill="currentColor"/></svg>'+
       '</button>'+
       '<button class="btn" data-act="homeO">home</button>'+
+    '<div id="emNote"></div>'+
     '</div>'+
   '</div>';
   while(d.firstChild)document.body.appendChild(d.firstChild);
@@ -467,7 +504,7 @@ let W=0,H=0,DPR=1,S=1,floorY=0,PX=0;
 const $=id=>document.getElementById(id);
 const hudEl=$('hud'),scoreEl=$('score'),bestEl=$('best'),hpFill=$('hpFill'),hpWrap=$('hpWrap'),
 scrHome=$('scrHome'),scrHow=$('scrHow'),scrSet=$('scrSet'),scrPause=$('scrPause'),scrOver=$('scrOver'),
-oScore=$('oScore'),oBest=$('oBest'),btnCont=$('btnCont'),swSnd=$('swSnd'),swHap=$('swHap');
+oScore=$('oScore'),oBest=$('oBest'),btnCont=$('btnCont'),swSnd=$('swSnd'),swHap=$('swHap'),swMus=$('swMus');
 const SCREENS={home:scrHome,how:scrHow,set:scrSet,pause:scrPause,over:scrOver};
 const ICON={
   gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7.5h8.5M17.5 7.5H20M4 16.5h2.5M11.5 16.5H20"/><circle cx="15" cy="7.5" r="2.2"/><circle cx="9" cy="16.5" r="2.2"/></svg>',
@@ -516,7 +553,7 @@ const Snd=(()=>{
   const SFX=1.0;
   const BPM=72, BEAT=60/BPM, BAR=BEAT*4;
 
-  let ac=null,master=null,noiseBuf=null,thrustG=null,delaySend=null,musF=null;
+  let ac=null,master=null,comp2=null,noiseBuf=null,thrustG=null,delaySend=null,musF=null;
   /* The looping thrust-noise source. Held outside the graph-build try so the
      failure path can stop it - an unstopped looping source keeps running into a
      closed context on every retry. */
@@ -530,6 +567,9 @@ const Snd=(()=>{
   function markGesture(){gestureSeen=true;}
   let muted=store.get('ember_snd')==='0';
   let phase=0,musicTimer=null,nextBar=0,barIdx=0;
+  let musicOn=store.get('ember_music')!=='0';
+  let adDuck=false;
+  let musG=null;
   /* Why the last build attempt failed, for the settings diagnostic. The graph
      build used to be one big try/catch that nulled `ac` on ANY error, so a
      single unsupported node (or a transient WebView hiccup) silently retried
@@ -593,10 +633,17 @@ const Snd=(()=>{
     master=step('master',()=>{
       const g=ac.createGain();g.gain.value=muted?0:0.9;return g;});
     if(!master){teardown();return;}
+    /* A second, shared output stage that both buses reach. It is built
+       BEFORE anything connects to it: a node referenced inside a step()
+       callback before it exists is `undefined`, and connecting to that
+       throws - which silently killed every sound in the game. */
+    comp2=ac.createDynamicsCompressor();
+      comp2.threshold.value=-20;comp2.knee.value=18;comp2.ratio.value=4;
+      comp2.connect(ac.destination);
     step('out',()=>{
       const comp=ac.createDynamicsCompressor();
       comp.threshold.value=-20;comp.knee.value=18;comp.ratio.value=4;
-      master.connect(comp);comp.connect(ac.destination);
+      master.connect(comp);comp.connect(comp2);
     });
     step('delay',()=>{
       delaySend=ac.createDelay(0.7);delaySend.delayTime.value=0.375;
@@ -620,8 +667,17 @@ const Snd=(()=>{
       tb.connect(tf);tf.connect(thrustG);thrustG.connect(master);tb.start();
     });
     step('musf',()=>{
-      musF=ac.createBiquadFilter();musF.type='lowpass';musF.frequency.value=1500;musF.connect(master);
+      musF=ac.createBiquadFilter();musF.type='lowpass';musF.frequency.value=1500;
+    /* Separate bus so the settings screen can silence the music without
+       touching effects. */
+    /* Music runs on its OWN bus that does NOT pass through the effects
+       master. It used to connect to `master`, so switching sound off muted
+       the music too - the two controls were not actually separate. */
+    musG=ac.createGain();musG.gain.value=musicOn?1:0;
+    musF.connect(musG);musG.connect(comp2);
     });
+    /* Start from the top of a bar so the score begins immediately rather
+       than waiting on a stale position left by a previous session. */
     nextBar=at()+0.15;barIdx=0;
     if(!musicTimer)musicTimer=setInterval(musicTick,200);
     if(!ac.onstatechange)ac.onstatechange=()=>{if(ac&&ac.state==='suspended'){try{ac.resume();}catch(_){}}};
@@ -635,7 +691,7 @@ const Snd=(()=>{
   function teardown(){
     try{if(musicTimer){clearInterval(musicTimer);musicTimer=null;}}catch(_){}
     try{if(tb)tb.stop();}catch(_){}
-    tb=null;master=null;delaySend=null;noiseBuf=null;thrustG=null;musF=null;
+    tb=null;master=null;comp2=null;delaySend=null;noiseBuf=null;thrustG=null;musF=null;musG=null;
   }
   /* A background retry, because `init()` is otherwise only reached from input
      events: if the first gesture's construction lost a race (WebView still
@@ -780,6 +836,8 @@ const Snd=(()=>{
          gesture already happened), just apply the gain. */
       if(!ac||!master)return;
       if(ac.state!=='running'){try{ac.resume();}catch(_){}}
+      /* Effects only. The music bus is deliberately NOT touched here - the
+         sound and music switches are independent. */
       try{master.gain.setTargetAtTime(m?0:0.9,ac.currentTime,0.04);}catch(_){}},
     click(p){if(!wake())return;const t=at();p=p||1;
       const o=ac.createOscillator();o.type='sine';
@@ -824,6 +882,13 @@ const Snd=(()=>{
         thrustG.gain.setTargetAtTime(0,t,0.06);
       }
     },
+    get musicOn(){return musicOn;},
+    /* Ad ducking: silence the score only. Never touches the effects master,
+       so the player's own sound preference is untouched by an ad. */
+    setAdDuck(v){adDuck=!!v;
+      if(ac&&musG)try{musG.gain.setTargetAtTime((musicOn&&!adDuck)?1:0,ac.currentTime,0.06);}catch(_){}},
+    setMusic(v){musicOn=!!v;store.set('ember_music',musicOn?'1':'0');
+      if(ac&&musG)try{musG.gain.setTargetAtTime((musicOn&&!adDuck)?1:0,ac.currentTime,0.08);}catch(_){}},
     setPhase(i){phase=i;if(!wake()||!musF)return;
       musF.frequency.setTargetAtTime(1500-i*230,ac.currentTime,2.5);},
     collect(c){if(!wake())return;
@@ -1155,7 +1220,7 @@ function healPlayer(h){
 }
 function damage(a){
   if(P.inv>0||P.dead)return;
-  G.light-=a;P.inv=0.85;G.shake=Math.min(15,5+a*0.22);G.flash=0.55;G.hitStop=0.045;
+  G.light-=a;P.inv=0.45;G.shake=Math.min(15,5+a*0.22);G.flash=0.55;G.hitStop=0.045;
   G.chain=0;G.mult=1;G.chainT=0;
   Snd.hit();hap(35);burstWarm(G.camX+PX,P.y,7);
   if(G.light<=0){G.light=0;die();}
@@ -1212,12 +1277,19 @@ function resetWorld(){
   input.hold=false;Snd.setThrust(false);Snd.setPhase(0);
 }
 function startRun(){
+  /* Tell the shell a NEW RUN began. It caps rewarded revives at one per run
+     and only hears about new runs from here, because Ember restarts in page
+     and the Activity is never recreated. Without this the shell still thought
+     run 1's revive was spent, refused Continue, and the refusal handler was
+     silent - a dead button. */
+  try{if(window.NativeBridge&&window.NativeBridge.newRun)window.NativeBridge.newRun();}catch(e){}
+  G.contUsed=false;
   resetWorld();
   G.state='play';G.m0=G.camX;
   G.light=100;                     // health starts FULL
   G.phase=0;G.chain=0;G.mult=1;G.chainT=0;G.multPop=0;G.bestChain=0;
   G.embersGot=0;G.emberScore=0;G.scoreShown=0;G.contUsed=false;G.beatT=0;
-  P.inv=1.2;
+  P.inv=1.0;
   scoreEl.textContent='0';bestEl.textContent=G.best;
   hideScreens();
   hudEl.classList.remove('off');
@@ -1258,6 +1330,15 @@ function continueRun(){
   Snd.rekindle();hap(20);
   hideScreens();
   hudEl.classList.remove('off');
+}
+/* Explains WHY an ad did not happen. A refused ad with no feedback is
+   indistinguishable from a broken button. */
+let emNoteT=null;
+function emNote(msg){
+  var el=document.getElementById('emNote');if(!el)return;
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(emNoteT);
+  emNoteT=setTimeout(function(){el.classList.remove('show');},3200);
 }
 function openSettings(from){
   setReturn=from;
@@ -1344,7 +1425,6 @@ function updatePlay(dt){
   if(P.y>floorY-10*S){P.y=floorY-10*S;
     if(P.vy>260*S)damage(9);
     P.vy=-430*S;}
-  P.inv=Math.max(0,P.inv-dt);
   /* NO passive drain — health only drops from obstacle hits */
   if(G.light<=22){G.beatT-=dt;if(G.beatT<=0){G.beatT=0.85;Snd.beat();}}
   if(G.light<=0){die();}
@@ -1631,6 +1711,24 @@ function render(){
     ctx.fillRect(0,0,W,H);}
 }
 
+/* The shell injects #studioBack, so it gets none of the game's own button
+   wiring and was completely silent on tap. Give it the same click. */
+document.addEventListener('pointerdown',function(e){
+  var b=e.target&&e.target.closest&&e.target.closest('#studioBack');
+  if(!b)return;
+  Snd.init();Snd.click();
+},{capture:true});
+
+/* ================= first gesture arms the audio engine ================= */
+/* `markGesture()` existed and was exported but NOTHING ever called it, so
+   `gestureSeen` stayed false and init() returned at `if(!gestureSeen)return;`
+   before ever building an AudioContext - the game was completely silent. The
+   comment claimed "capture-phase listeners below" called it; there were none.
+   Capture phase on window so the first touch anywhere counts (canvas or button). */
+['pointerdown','touchstart','keydown'].forEach(function(ev){
+  window.addEventListener(ev,function(){Snd.markGesture();Snd.init();},{capture:true,passive:true});
+});
+
 /* ================= flight input: canvas only ================= */
 cv.addEventListener('pointerdown',e=>{
   e.preventDefault();
@@ -1682,8 +1780,19 @@ const ACTIONS={
   restart:()=>{Studio.ads.interstitial(function(){startRun();});},
   homeP:goHome,
   new:()=>{Studio.ads.interstitial(function(){startRun();});},
-  cont:()=>{ if(G.contUsed) return; Studio.ads.rewarded('continue', continueRun, ()=>{ Snd.click(); }); },
-  homeO:goHome,
+  cont:()=>{
+    if(G.contUsed)return;
+    Studio.ads.rewarded('continue',continueRun,function(reason){
+      Snd.click();
+      var m=String(reason||'');
+      if(m.indexOf('cooldown:')===0)m='Next ad ready in '+parseInt(m.slice(9),10)+'s.';
+      else if(m==='limit_reached')m='You have already used your revive this flight.';
+      else if(m==='offline')m='An internet connection is needed to show this ad.';
+      else if(!m||m==='closed'||m==='unavailable')m='Ad unavailable. Try again shortly.';
+      emNote(m);
+    });
+  },
+  homeO:()=>{Studio.ads.interstitial(function(){goHome();});},
   gear:()=>{if(G.state==='play'||G.state==='pause')openSettings('pause');},
   pause:()=>{
     if(G.state==='play')pauseGame();
@@ -1720,6 +1829,11 @@ let last=performance.now();
 function frame(now){
   requestAnimationFrame(frame);
   const dt=Math.min(0.033,(now-last)/1000);last=now;
+  /* i-frames count down here, BEFORE the hit-stop early return. They used to
+     tick inside updatePlay(), which this line skips - so every hit froze its
+     own invulnerability timer for the duration of the hit-stop, swallowing
+     the next collision instead of only the current one. */
+  if(P.inv>0)P.inv=Math.max(0,P.inv-dt);
   if(G.hitStop>0){G.hitStop-=dt;render();return;}
   if(G.state==='play')updatePlay(dt);
   else if(G.state==='dying')updateDying(dt);
@@ -1735,6 +1849,8 @@ G.state='home';
  $('btnPause').innerHTML=ICON.pause;
 swSnd.checked=!Snd.muted;
 swHap.checked=hapOn;
+if(swMus)swMus.checked=Snd.musicOn;
+swMus.addEventListener('change',()=>{Snd.init();Snd.setMusic(swMus.checked);Snd.click();});
 swSnd.addEventListener('change',()=>{Snd.init();Snd.setMuted(!swSnd.checked);
   if(!Snd.muted)Snd.toggle();});
 swHap.addEventListener('change',()=>{hapOn=swHap.checked;
@@ -1751,6 +1867,10 @@ requestAnimationFrame(frame);
     try{
       if(typeof s.sound==='boolean'){ Snd.setMuted(!s.sound); }
       if(typeof s.haptics==='boolean'){ hapOn=s.haptics; }
+      /* Drive the real music bus, not just the checkbox - the shell owns this
+         setting too, and a slider that only moves a tick is a dead control. */
+      if(typeof s.music==='boolean'){ Snd.setMusic(s.music); }
+      var mu=document.getElementById('swMus'); if(mu) mu.checked=(typeof s.music==='boolean'?s.music:Snd.musicOn);
       var a=document.getElementById('swSnd'); if(a) a.checked=!Snd.muted;
       var b=document.getElementById('swHap'); if(b) b.checked=hapOn;
     }catch(e){}
@@ -1762,6 +1882,10 @@ requestAnimationFrame(frame);
     var flying=(typeof curScreen==='undefined'||curScreen===null)&&!!(typeof G!=='undefined'&&G&&G.state==='play');
     if(flying!==want){ want=flying; Studio.ads.banner(flying); }
   },400);
+/* Studio's ad wrapper ducks the score through this hook. `Snd` is a
+   top-level const in the game script and is not reachable from the Studio
+   shim, so it is published here explicitly. */
+window.__audioDuck=function(on){try{Snd.setAdDuck(!!on);}catch(_){}};
   window.Game={
     pause:function(){ if(prev.pause) try{ prev.pause(); }catch(e){} },
     resume:function(){ if(prev.resume) try{ prev.resume(); }catch(e){} applySettings(Studio.settings); },

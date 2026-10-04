@@ -147,6 +147,33 @@ var Studio=(function(){
 })();
 window.Studio=Studio;
 
+/* ---------- mute the score while an ad is on screen ----------
+   Games are expected to be silent during ads. This used to hang off the
+   CrazyGames `S.ad.requestAd` shim, but no game calls that shim - they all
+   call Studio.ads.* directly, so the score kept playing through every ad.
+   Wrapping the two real entry points covers every call site at once. */
+(function(){
+  var rw=Studio.ads.rewarded, it=Studio.ads.interstitial;
+  function duck(on){
+    try{if(window.__audioDuck)window.__audioDuck(on);}catch(_){}
+    /* The scheduler skips notes while ducked, so after a long ad the next
+       chord could be a full cycle away. Nudge one in immediately. */
+    if(!on)try{if(window.__audioResume)window.__audioResume();}catch(_){}
+  }
+  /* Duck on the way in, un-duck once the ad resolves EITHER way, so a skipped
+     ad can never leave the game permanently silent. */
+  Studio.ads.rewarded=function(placement,ok,fail){
+    duck(true);
+    return rw(placement,
+      function(){try{ok&&ok();}finally{duck(false);}},
+      function(m){try{fail&&fail(m);}finally{duck(false);}});
+  };
+  Studio.ads.interstitial=function(ok){
+    duck(true);
+    return it(function(){try{ok&&ok();}finally{duck(false);}});
+  };
+})();
+
 /* ============================================================
    CRAZYGAMES SDK SHIM
    The source games were published on CrazyGames and drive their ads
@@ -182,15 +209,18 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
     function failed(msg){
       try{ if(h.adError) h.adError('error',{reason:msg}); }catch(_){}
     }
+    /* Never leave the score playing under an ad. A held chord droning across a
+       full-screen advert is exactly what "the music plays during the ad" is. */
+    var duck=function(on){try{if(Snd&&Snd.setAdDuck)Snd.setAdDuck(on);}catch(_){}};
     if(type==='rewarded'){
       Studio.ads.rewarded('continue',
-        function(){started();finished();},
-        function(){started();failed('closed');}
+        function(){duck(true);started();finished();},
+        function(){duck(true);started();duck(false);failed('closed');}
       );
     }else{
       /* Midgame/interstitial: the shell always answers, so the player is
          never left sitting on a result screen. */
-      Studio.ads.interstitial(function(){started();finished();});
+      Studio.ads.interstitial(function(){duck(true);started();finished();});
     }
   };
   /* Lets the shell push a sound change back into the game the way the
@@ -353,6 +383,16 @@ h2{font-weight:700;font-size:clamp(26px,5vw,36px);letter-spacing:.12em;margin:8p
 .btn.primary:hover{background:#f2e7ca}
 .btn.reward{border-color:var(--gold);color:var(--gold);box-shadow:0 0 0 3px rgba(58,45,29,.9),0 0 0 4.5px var(--gold)}
 .btn.reward:hover{background:var(--gold);color:#241a0d}
+/* The button reads "Continue"; the ad is a badge in its TOP-LEFT corner, in the
+   game's gold on deep ink so it matches the rest of the panel. */
+/* The label reads "Continue" and the ad badge follows it, the way a price
+   follows a label - not floating in a corner of its own. */
+.btn.adOffer{gap:9px}
+.btn.adOffer .adChip{display:inline-flex;align-items:center;justify-content:center;
+  min-width:19px;height:15px;padding:0 5px;border-radius:4px;margin-left:2px;
+  background:var(--gold);color:#241a0d;
+  font:700 9px/1 'Cormorant Garamond',Georgia,serif;letter-spacing:.02em;
+  pointer-events:none;z-index:2}
 .btnrow{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 .btnrow.col{flex-direction:column;align-items:stretch}
 .btnrow.col .btn{width:100%}
@@ -431,7 +471,7 @@ h2{font-weight:700;font-size:clamp(26px,5vw,36px);letter-spacing:.12em;margin:8p
 .toggle:disabled{opacity:.35;cursor:default}
 
 /* ---------- Game over (minimal) ---------- */
-.go-title{
+#adNote{margin:10px auto 2px;max-width:88%;text-align:center;
   font-weight:700;font-size:clamp(34px,8vw,48px);
   letter-spacing:.2em;padding-left:.2em;margin:6px 0 0;
 }
@@ -693,12 +733,13 @@ h2{font-weight:700;font-size:clamp(26px,5vw,36px);letter-spacing:.12em;margin:8p
   <div id="over" class="layer hidden">
     <div class="panel">
       <div id="seal" class="hidden">NEW<br>RECORD</div>
+    <div id="adNote" class="hidden"></div>
       <h2 class="go-title">GAME OVER</h2>
       <div class="over-score" id="ovScore">0</div>
       <div class="btnrow col">
-        <button type="button" id="btnWatch" class="btn reward">
-          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" aria-hidden="true"><path d="M8 5.2v13.6L19 12z"/></svg>
-          Watch to Continue
+        <button type="button" id="btnWatch" class="btn reward adOffer">
+          <span class="adText">Continue</span>
+          <span class="adChip" aria-hidden="true">AD</span>
         </button>
         <button type="button" id="btnRetry" class="btn primary">Voyage again</button>
         <button type="button" id="btnMenu" class="btn">Menu</button>
@@ -725,6 +766,7 @@ const goldA=a=>'rgba(212,175,55,'+a+')';
 const stage=$('stage'),canvas=$('game'),ctx=canvas.getContext('2d');
 let W=0,H=0,DPR=1,scale=1,chartTop=0,viewW=0,vign=null,topGrad=null,botGrad=null;
 function resize(){
+  chartStrip=null;   /* viewW changed: the cached strip no longer spans it */
   DPR=Math.min(window.devicePixelRatio||1,2);
   W=stage.clientWidth;H=stage.clientHeight;
   canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);
@@ -766,7 +808,10 @@ let noisePat=null;
 
 /* ================= Audio (all synthesized) ================= */
 const Snd=(()=>{
-  let ac=null,master=null,musicBus=null,sfxBus=null,ambOn=false;
+  let ac=null,master=null,musicBus=null,sfxBus=null,ambOn=false,adDuck=false;
+/* The score scheduler, hoisted so it can be fired on demand (resuming after
+   an ad) rather than only by its own interval. */
+let chordFn=null,step=0;;
   let muted=store.get('orrery_mute')==='1';
   let musicOn=store.get('orrery_music')!=='0';
   let sfxOn=store.get('orrery_sfx')!=='0';
@@ -790,14 +835,59 @@ const Snd=(()=>{
     for(let i=0;i<len;i++)ch[i]=Math.random()*2-1;
     const src=ac.createBufferSource();src.buffer=buf;const f=ac.createBiquadFilter();f.type=type;f.frequency.value=fc;
     src.connect(f);f.connect(env(vol,t0,dur));src.start(t0);}
+  /* The hum was built on 57Hz/57.7Hz/114Hz at an overall gain of 0.05. A phone
+     speaker cannot reproduce 57Hz at all, so the loop was running and
+     completely inaudible on the device - "no music" - while working fine on
+     desktop audio. It is built from voices a small speaker can actually
+     produce (A2/A3/E4/A4) at a level you can hear, still quiet enough to sit
+     under the sound effects. */
   function ambient(){if(ambOn||!ac)return;ambOn=true;
-    const g=ac.createGain();g.gain.value=0.05;g.connect(musicBus);
-    [[57,0.5],[57.7,0.28],[114.4,0.14]].forEach(([fr,v])=>{const o=ac.createOscillator();o.type='sine';o.frequency.value=fr;const gg=ac.createGain();gg.gain.value=v;o.connect(gg);gg.connect(g);o.start();});
-    const len=ac.sampleRate*2,buf=ac.createBuffer(1,len,ac.sampleRate),ch=buf.getChannelData(0);
-    for(let i=0;i<len;i++)ch[i]=Math.random()*2-1;
-    const src=ac.createBufferSource();src.buffer=buf;src.loop=true;
-    const f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=220;
-    const ng=ac.createGain();ng.gain.value=0.16;src.connect(f);f.connect(ng);ng.connect(g);src.start();}
+  if(adDuck&&master)master.gain.value=0;
+    /* Per-voice gains below are FRACTIONS of this. The loudest note leaves here
+       at 0.40 * this * 0.9 (master), so this is the master volume of the whole
+       score. 0.13 -> 0.15 peak, then 0.42 -> 0.30 peak: both too quiet to hear
+       on a phone. 0.85 puts the top voice near 0.31 - clearly present, still
+       sitting under the gameplay sounds. */
+    const g=ac.createGain();g.gain.value=1.0;g.connect(musicBus);
+    /* Amadd9 / Fmaj9 / Cmaj7 / Gsus2 - high, open, nothing below A3. */
+    const PROG=[[220.00,261.63,329.63,392.00],
+               [174.61,220.00,261.63,349.23],
+               [261.63,329.63,392.00,493.88],
+               [196.00,246.94,293.66,392.00]];
+    const VOICES=[0.30,0.22,0.15,0.09];
+    /* Nothing sustains between chords. A permanent voice is a drone, and a
+       drone is an idling engine. Each chord swells, fades and is discarded,
+       leaving silence before the next - that gap is what makes it music. */
+    step=0;
+    chordFn=function(){
+      if(!ac||muted||!musicOn||adDuck)return;
+      const notes=PROG[step];step=(step+1)%PROG.length;
+      const t0=ac.currentTime+0.05,rise=1.8,hold=1.6,fall=4.2;
+      const dur=rise+hold+fall;
+      VOICES.forEach(function(v,i){
+        const o=ac.createOscillator();o.type='sine';o.frequency.value=notes[i];
+        const eg=ac.createGain();
+        eg.gain.setValueAtTime(0.0001,t0);
+        eg.gain.linearRampToValueAtTime(v,t0+rise);
+        eg.gain.linearRampToValueAtTime(v*0.75,t0+rise+hold);
+        eg.gain.linearRampToValueAtTime(0.0001,t0+dur);
+        o.connect(eg);eg.connect(g);
+        o.start(t0);o.stop(t0+dur+0.1);
+      });
+    };
+    /* ~9.5s cycle, of which only ~7.5s is audible: near half the time is
+       silence. That is deliberate. */
+    setInterval(function(){if(chordFn)chordFn();},9500);
+    setTimeout(function(){if(chordFn)chordFn();},400);
+    /* Occasional distant fifth, very sparse and slow. The previous version
+       struck a note every 1.5s on a 0.04s attack - a steady pulse on top of a
+       swelling pad, which read as an engine rather than as calm. This one
+       breathes: a note every ~9s, 2.5s of swell, long decay. */
+
+    /* No noise bed. A filtered noise loop under a sustained pad is most of
+       what made this read as an engine; the chart supplies plenty of visual
+       texture, so the score does not need to manufacture any. */
+  }
   const steps=[0,2,4,7,9,12,14,16,19,21];
   return{
     init(){ensure();ambient();},
@@ -805,13 +895,25 @@ const Snd=(()=>{
     get musicOn(){return musicOn;},
     get sfxOn(){return sfxOn;},
     get hapticsOn(){return hapticsOn;},
-    toggle(){muted=!muted;store.set('orrery_mute',muted?'1':'0');if(master)master.gain.value=muted?0:0.9;return muted;},
+    toggle(){muted=!muted;store.set('orrery_mute',muted?'1':'0');if(master)master.gain.value=(muted||adDuck)?0:0.9;return muted;},
+    /* Used by the ad wrapper so the score never plays under an advert. */
+    /* Fire a chord right now, so the score resumes the instant an ad closes
+       instead of waiting out the remainder of a 9.5s cycle. */
+    chordNow(){if(chordFn)chordFn();},
+    setAdDuck(v){
+      adDuck=!!v;
+      if(!ac)return;
+      const t=ac.currentTime;
+      if(master)master.gain.setTargetAtTime((muted||adDuck)?0:0.9,t,0.05);
+    },
     setMusic(v){musicOn=v;store.set('orrery_music',v?'1':'0');if(ac&&musicBus)musicBus.gain.setTargetAtTime(v?1:0,ac.currentTime,0.04);},
     setSfx(v){sfxOn=v;store.set('orrery_sfx',v?'1':'0');if(ac&&sfxBus)sfxBus.gain.setTargetAtTime(v?1:0,ac.currentTime,0.02);},
     setHaptics(v){hapticsOn=v;store.set('orrery_haptics',v?'1':'0');},
     haptic(p){if(hapticsOn&&navigator.vibrate){try{navigator.vibrate(p)}catch(e){}}},
-    click(){tone(660,{type:'triangle',dur:0.06,vol:0.06});},
-    tutStep(){tone(494,{type:'triangle',dur:0.14,vol:0.08});tone(740,{delay:0.06,dur:0.18,vol:0.05});},
+    /* Was vol 0.06 - an order of magnitude below the gameplay sounds, so button
+       taps were effectively silent on the device. */
+click(){tone(660,{type:'triangle',dur:0.08,vol:0.42});tone(990,{delay:0.03,dur:0.06,vol:0.16});},
+    tutStep(){tone(494,{type:'triangle',dur:0.14,vol:0.3});tone(740,{delay:0.06,dur:0.18,vol:0.05});},
     eclipseWake(){tone(72,{dur:1.6,vol:0.26,glide:58});noise({dur:1.0,vol:0.14,fc:180});},
     release(){noise({dur:0.16,vol:0.1,fc:1400});tone(190,{dur:0.22,vol:0.07,glide:82});},
     capture(c){const f=294*Math.pow(2,steps[Math.min(c-1,9)]/12);tone(f,{type:'triangle',dur:0.5,vol:0.16});tone(f*2,{dur:0.22,vol:0.05});noise({dur:0.05,vol:0.05,fc:3000,type:'highpass'});},
@@ -1003,10 +1105,19 @@ function initRun(){
   lastReleaseT=gameT;
   voyageX.length=0;voyageY.length=0;voyLo=0;voyLastX=comet.x;voyLastY=comet.y;marks.length=0;
   state='play';paused=false;freeze=0;deadT=0;overShown=false;
+  crashPlanet=null;
+  launchedFrom=null;
+  reviveUsed=false;
   ensurePlanets();updateHUD();
 }
 function setupMenu(){initRun();state='menu';eclipseX=-99999;}
 function startRun(){
+  /* Tell the shell a NEW RUN began. Revives are capped at one per run and it
+     only learns about a new run from here - "Voyage again" restarts in page, so
+     the Activity is never recreated. Without this the shell still believed
+     run 1's revive was spent, refused with CAP_REACHED, and the failure
+     callback below did nothing at all - a dead button with no message. */
+  try{ if(window.NativeBridge&&window.NativeBridge.newRun) window.NativeBridge.newRun(); }catch(e){}
   initRun();
   hide(menuLayer);hide(pauseLayer);hide(overLayer);hide(tutLayer);hide(setLayer);show(hudEl);
   if(!Tut.done)Tut.begin();else hide(tutBannerEl);
@@ -1017,10 +1128,16 @@ function toMenu(){
   hide(pauseLayer);hide(overLayer);hide(tutLayer);hide(setLayer);hide(hudEl);hide(tutBannerEl);show(menuLayer);
 }
 function setPaused(v){if(state!=='play')return;paused=v;pauseLayer.classList.toggle('hidden',!v);}
+let crashPlanet=null;
+let launchedFrom=null;
+let reviveUsed=false;
 function die(cause){
   if(state!=='play')return;
   Tut.active&&Tut.onDeath();
   state='dead';deadT=0;overShown=false;deathCause=cause;
+  /* Remember WHERE the comet was when it died, so a rewarded continue can put
+     it back on the planet it was actually holding. */
+  crashPlanet=(comet.mode==='fly'?launchedFrom:comet.planet)||launchedFrom||comet.planet||null;
   freeze=0.12;shake(cause==='margins'?20:15);
   Snd.death(cause);
   Snd.haptic(cause==='margins'?[25,45,70]:cause==='star'?90:[40,30,60]);
@@ -1041,17 +1158,38 @@ function die(cause){
   if(stains.length>24)stains.shift();
   if(score>bestStored){bestStored=score;store.set('orrery_best',bestStored);newBest=true;}else newBest=false;
 }
+/* Where a refusal is explained. A refused ad with no feedback is
+   indistinguishable from a broken button. */
+let adMsgT=null;
+function setPausedMsg(msg){
+  var el=$('adNote');if(!el)return;el.textContent=msg;el.classList.remove('hidden');
+  clearTimeout(adMsgT);
+  adMsgT=setTimeout(function(){el.classList.add('hidden');},3200);
+}
+/* The shell injects #studioBack, so it gets none of the game's own button
+   wiring and was completely silent on tap. Give it the same click. */
+document.addEventListener('pointerdown',function(e){
+  var b=e.target&&e.target.closest&&e.target.closest('#studioBack');
+  if(!b)return;
+  Snd.init();Snd.click();
+},{capture:true});
 function showOver(){
   overShown=true;
   $('ovScore').textContent=fmt(score);
   const seal=$('seal');seal.classList.toggle('hidden',!newBest);
   if(newBest){seal.classList.remove('show');void seal.offsetWidth;seal.classList.add('show');}
+  /* The offer is gone once spent, so it cannot be tapped a second time. */
+  $('btnWatch').classList.toggle('hidden',reviveUsed);
   show(overLayer);hide(hudEl);Snd.over();
 }
 
 /* ================= Gameplay (mechanics unchanged) ================= */
 function release(){
   if(comet.mode!=='orbit')return;
+  /* Remember the planet this launch came FROM, so a revive can put the player
+     back on the one they last left rather than wherever the comet happened to
+     be when it died. */
+  launchedFrom=comet.planet||null;
   const p=comet.planet;
   comet.dx=-Math.sin(comet.angle)*comet.dir;
   comet.dy=Math.cos(comet.angle)*comet.dir;
@@ -1789,35 +1927,56 @@ function drawParallaxLayer(L){
 function clearEnvCaches(){ENV.far.map.clear();ENV.mid.map.clear();ENV.chart.map.clear();}
 
 /* ---- per-frame chart extras ---- */
-function drawGraticule(){
-  ctx.strokeStyle='rgba(230,216,182,0.10)';ctx.lineWidth=1.2;ctx.beginPath();
+/* Static chart furniture depends only on camX, but it used to be rebuilt
+   every frame, label text and all, even while sitting on the menu. That was
+   the frame-time spike. It is baked into an offscreen strip here and blitted,
+   rebuilt only when the camera leaves the strip. */
+let chartStrip=null,chartStripX=0;
+function buildChartStrip(){
+  const W0=Math.floor(camX)-40,W1=W0+viewW+80;
+  const c=document.createElement('canvas');
+  c.width=Math.max(1,Math.ceil(W1-W0));c.height=1008;
+  const g=c.getContext('2d');
+  g.translate(-W0,0);
+  drawGraticule(g);drawRhumbLines(g);drawMilkyWay(g);
+  chartStrip=c;chartStripX=W0;
+}
+function blitChartStatic(){
+  if(!chartStrip||camX<chartStripX+40||camX+viewW>chartStripX+chartStrip.width-40)
+    buildChartStrip();
+  ctx.drawImage(chartStrip,chartStripX,0);
+}
+function drawGraticule(c){
+  c=c||ctx;
+  c.strokeStyle='rgba(230,216,182,0.10)';c.lineWidth=1.2;c.beginPath();
   const gx0=Math.ceil((camX-10)/250)*250;
-  for(let x=gx0;x<camX+viewW+10;x+=250){ctx.moveTo(x,14);ctx.lineTo(x,986);}
-  ctx.stroke();
-  ctx.strokeStyle='rgba(230,216,182,0.05)';ctx.beginPath();
-  for(let y=125;y<1000;y+=125){if(y%250===0)continue;ctx.moveTo(camX-6,y);ctx.lineTo(camX+viewW+6,y);}
-  ctx.stroke();
-  ctx.strokeStyle='rgba(230,216,182,0.08)';ctx.beginPath();
-  for(const y of[250,500,750]){ctx.moveTo(camX-6,y);ctx.lineTo(camX+viewW+6,y);}
-  ctx.stroke();
-  ctx.font='italic 21px "Cormorant Garamond", serif';ctx.fillStyle='rgba(230,216,182,0.32)';ctx.textAlign='left';
+  for(let x=gx0;x<camX+viewW+10;x+=250){c.moveTo(x,14);c.lineTo(x,986);}
+  c.stroke();
+  c.strokeStyle='rgba(230,216,182,0.05)';c.beginPath();
+  for(let y=125;y<1000;y+=125){if(y%250===0)continue;c.moveTo(camX-6,y);c.lineTo(camX+viewW+6,y);}
+  c.stroke();
+  c.strokeStyle='rgba(230,216,182,0.08)';c.beginPath();
+  for(const y of[250,500,750]){c.moveTo(camX-6,y);c.lineTo(camX+viewW+6,y);}
+  c.stroke();
+  c.font='italic 21px "Cormorant Garamond", serif';c.fillStyle='rgba(230,216,182,0.32)';c.textAlign='left';
   for(let x=gx0;x<camX+viewW+10;x+=250){
-    ctx.fillText((x/10)+'\u00B0',x+7,36);
-    ctx.fillText((x/10)+'\u00B0',x+7,972);
+    c.fillText((x/10)+'\u00B0',x+7,36);
+    c.fillText((x/10)+'\u00B0',x+7,972);
   }
-  ctx.strokeStyle='rgba(230,216,182,0.15)';ctx.lineWidth=1;ctx.beginPath();
+  c.strokeStyle='rgba(230,216,182,0.15)';c.lineWidth=1;c.beginPath();
   for(const y of[250,500,750])
     for(let x=gx0;x<camX+viewW+10;x+=250){
-      ctx.moveTo(x-5,y);ctx.lineTo(x+5,y);ctx.moveTo(x,y-5);ctx.lineTo(x,y+5);
+      c.moveTo(x-5,y);c.lineTo(x+5,y);c.moveTo(x,y-5);c.lineTo(x,y+5);
     }
-  ctx.stroke();
-  ctx.fillStyle='rgba(230,216,182,0.18)';ctx.font='italic 16px "Cormorant Garamond", serif';
+  c.stroke();
+  c.fillStyle='rgba(230,216,182,0.18)';c.font='italic 16px "Cormorant Garamond", serif';
   const hx0=Math.ceil((camX-10)/500)*500;
   for(const y of[250,500,750])
     for(let x=hx0;x<camX+viewW+10;x+=500)
-      ctx.fillText((y/25)+'\u00B0',x+8,y-7);
+      c.fillText((y/25)+'\u00B0',x+8,y-7);
 }
-function drawRhumbLines(){
+function drawRhumbLines(c){
+  c=c||ctx;
   const RG=5000;
   const r0=Math.floor((camX-800)/RG),r1=Math.floor((camX+viewW+800)/RG);
   for(let rg=r0;rg<=r1;rg++){
@@ -1826,19 +1985,20 @@ function drawRhumbLines(){
     const cx=rg*RG+400+rr()*(RG-800),cy=120+rr()*760;
     if(cx<camX-700||cx>camX+viewW+700)continue;
     const R=430+rr()*260;
-    ctx.strokeStyle='rgba(230,216,182,0.06)';ctx.lineWidth=1;
-    ctx.beginPath();
+    c.strokeStyle='rgba(230,216,182,0.06)';c.lineWidth=1;
+    c.beginPath();
     for(let k=0;k<16;k++){const a=k*TAU/16;
-      ctx.moveTo(cx+Math.cos(a)*36,cy+Math.sin(a)*36);
-      ctx.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);}
-    ctx.stroke();
-    ctx.setLineDash([3,5]);ctx.strokeStyle='rgba(230,216,182,0.12)';
-    ctx.beginPath();ctx.arc(cx,cy,36,0,TAU);ctx.stroke();ctx.setLineDash([]);
+      c.moveTo(cx+Math.cos(a)*36,cy+Math.sin(a)*36);
+      c.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);}
+    c.stroke();
+    c.setLineDash([3,5]);c.strokeStyle='rgba(230,216,182,0.12)';
+    c.beginPath();c.arc(cx,cy,36,0,TAU);c.stroke();c.setLineDash([]);
   }
 }
 const milkyBandY=x=>300+150*Math.sin(x*0.00035)+80*Math.sin(x*0.0011+1.3);
 const milkyDens=x=>0.5+0.5*Math.sin(x*0.0008+2.0);
-function drawMilkyWay(){
+function drawMilkyWay(c){
+  c=c||ctx;
   const rg0=Math.floor((camX-40)/700),rg1=Math.floor((camX+viewW+40)/700);
   for(let rg=rg0;rg<=rg1;rg++){
     const rr=mulberry32((rg*2246822519)>>>0);
@@ -1849,15 +2009,15 @@ function drawMilkyWay(){
       const g2=(rr()+rr()+rr()-1.5)/1.5;
       const y=milkyBandY(x)+g2*85;
       if(y<20||y>980)continue;
-      ctx.fillStyle='rgba(235,215,175,'+(0.05+rr()*0.08).toFixed(3)+')';
-      ctx.beginPath();ctx.arc(x,y,0.6+rr()*1.1,0,TAU);ctx.fill();
+      c.fillStyle='rgba(235,215,175,'+(0.05+rr()*0.08).toFixed(3)+')';
+      c.beginPath();c.arc(x,y,0.6+rr()*1.1,0,TAU);c.fill();
     }
     if(((rg%7)+7)%7===3){
       const lx=rg*700+350;
       if(lx>camX-100&&lx<camX+viewW+100){
-        ctx.font='italic 17px "Cormorant Garamond", serif';
-        ctx.fillStyle='rgba(230,216,182,0.3)';ctx.textAlign='center';
-        ctx.fillText('Via Lactea',lx,milkyBandY(lx)-78);ctx.textAlign='left';
+        c.font='italic 17px "Cormorant Garamond", serif';
+        c.fillStyle='rgba(230,216,182,0.3)';c.textAlign='center';
+        c.fillText('Via Lactea',lx,milkyBandY(lx)-78);c.textAlign='left';
       }
     }
   }
@@ -1874,13 +2034,22 @@ function drawVoyage(){
     let pen=false;
     for(let i=voyLo;i<n;i++){
       const x=voyageX[i];
-      if(x<x0||x>x1){pen=false;continue;}
+      /* Points are recorded in time order and the chart only scrolls rightward,
+         so x increases monotonically: once a point passes the right edge every
+         later point is off-screen too. This used to `continue` past them, so the
+         loop was O(total voyage) - tens of thousands of bounds checks per frame
+         - and got worse the longer the run went. Breaking makes the per-frame
+         cost proportional to what is actually on screen. */
+      if(x>x1)break;
+      if(x<x0){pen=false;continue;}
       if(pen)ctx.lineTo(x,voyageY[i]);else{ctx.moveTo(x,voyageY[i]);pen=true;}
     }
     ctx.stroke();
   }
   for(const m of marks){
-    if(m.x<x0||m.x>x1)continue;
+    /* Same reasoning as the voyage line above. */
+    if(m.x>x1)break;
+    if(m.x<x0)continue;
     const col=m.gold?'rgba(212,175,55,0.6)':'rgba(230,216,182,0.55)';
     ctx.strokeStyle=col;ctx.lineWidth=1.2;
     ctx.beginPath();ctx.arc(m.x,m.y,9,0,TAU);ctx.stroke();
@@ -2171,9 +2340,7 @@ function render(){
   ctx.scale(scale,scale);
   ctx.translate(-camX,0);
   ctx.beginPath();ctx.rect(camX-4,-4,viewW+8,1008);ctx.clip();
-  drawGraticule();
-  drawRhumbLines();
-  drawMilkyWay();
+  blitChartStatic();
   pumpLayer(ENV.chart);blitLayer(ENV.chart);
   drawVoyage();
   drawStains();
@@ -2288,9 +2455,9 @@ window.addEventListener('keydown',e=>{
  $('btnBegin').addEventListener('click',e=>{e.currentTarget.blur();Snd.init();Snd.click();startRun();});
  $('btnHow').addEventListener('click',e=>{e.currentTarget.blur();Snd.init();Snd.click();openTutorial();});
  $('btnSettings').addEventListener('click',e=>{e.currentTarget.blur();Snd.init();Snd.click();openSettings();});
- $('btnRetry').addEventListener('click',e=>{e.currentTarget.blur();Snd.click();startRun();});
- $('btnMenu').addEventListener('click',e=>{e.currentTarget.blur();Snd.click();toMenu();});
- $('btnResume').addEventListener('click',e=>{e.currentTarget.blur();Snd.click();setPaused(false);});
+ $('btnRetry').addEventListener('click',e=>{e.currentTarget.blur();Snd.init();Snd.click();Studio.ads.interstitial(function(){startRun();});});
+ $('btnMenu').addEventListener('click',e=>{e.currentTarget.blur();Snd.init();Snd.click();Studio.ads.interstitial(function(){toMenu();});});
+ $('btnResume').addEventListener('click',e=>{e.currentTarget.blur();Snd.init();Snd.click();setPaused(false);});
  $('btnRestart').addEventListener('click',e=>{e.currentTarget.blur();Snd.click();Studio.ads.interstitial(function(){startRun();});});
  $('btnMenu2').addEventListener('click',e=>{e.currentTarget.blur();Snd.click();toMenu();});
  $('btnPause').addEventListener('click',e=>{e.currentTarget.blur();Snd.click();setPaused(!paused);});
@@ -2299,16 +2466,46 @@ window.addEventListener('keydown',e=>{
 /* --- "Watch to Continue" — placeholder for rewarded-ad integration --- */
  $('btnWatch').addEventListener('click',e=>{
   e.currentTarget.blur();Snd.init();Snd.click();
-  Studio.ads.rewarded('continue',reviveRun,()=>{ Snd.click(); });
+  if(reviveUsed)return;
+  Studio.ads.rewarded('continue',reviveRun,function(reason){
+    Snd.click();
+    var m=String(reason||'');
+    if(m.indexOf('cooldown:')===0)m='Next ad ready in '+parseInt(m.slice(9),10)+'s.';
+    else if(m==='limit_reached')m='You have already used your revive this voyage.';
+    else if(m==='offline')m='An internet connection is needed to show this ad.';
+    else if(!m||m==='closed'||m==='unavailable')m='Ad unavailable. Try again shortly.';
+    setPausedMsg(m);
+  });
 });
 function reviveRun(){
-  /* Rewarded continue: the shell has confirmed the ad, so hand the run back. */
+  reviveUsed=true;
+  /* Rewarded continue: the shell has confirmed the ad, so hand the run back.
+     It resumes on the planet the comet was HOLDING when it died. This used
+     to be planets[planets.length-1] - simply the most recently generated
+     planet - so paying for a revive dropped you onto a world you had never
+     reached and threw the run away. */
+  /* The planet we want is the one the comet last launched from. If the run
+     went far enough, prune() may already have shifted that planet out of the
+     live array - orbiting a detached object would park the comet at empty
+     coordinates with nothing drawn there, so fall back to a live planet. */
+  const want=crashPlanet||comet.planet||home;
+  const resume=planets.indexOf(want)===-1?(planets[planets.length-1]||home):want;
   hide(overLayer);show(hudEl);
-  state='play';paused=false;freeze=0.2;deadT=0;overShown=false;
-  P.dead=false;P.vy=0;P.inv=2.2;P.y=clamp(P.y||H*0.45,70,930);
-  comet.mode='orbit';comet.planet=planets[planets.length-1]||comet.planet;
-  comet.radius=Math.max(comet.planet?comet.planet.r*1.4:160,140);
-  comet.angle=Math.atan2(P.y-comet.planet.y,P.x-comet.planet.x);comet.dir=1;
+  state='play';paused=false;freeze=0.4;deadT=0;overShown=false;
+  /* There is no player object called `P` in this game - the comet is the
+     player, and the only `P` in this file is a local inside a comet-drawing
+     helper. Referencing it here threw a ReferenceError that cancelled every
+     statement below, so the revive never actually moved the comet. */
+  comet.mode='orbit';comet.planet=resume;comet.justLeft=null;comet.boostF=0;
+  comet.radius=Math.max(resume.r*1.5,150);
+  /* Park on the LEFT of the planet, away from the eclipse which always lies
+     ahead to the right. The angle used to be derived from wherever the player
+     happened to die, which left the comet on the death side of the planet -
+     so it was killed again a second later and the revive looked worthless. */
+  comet.angle=Math.PI;comet.dir=1;
+  comet.x=resume.x+Math.cos(comet.angle)*comet.radius;
+  comet.y=resume.y+Math.sin(comet.angle)*comet.radius;
+  comet.speed=300;
   eclipseX=comet.x-ECLIPSE_START_GAP;
   addPopup(comet.x,comet.y-60,'the voyage resumes','gold');
   spawnGold(comet.x,comet.y,14);shake(4);
@@ -2356,6 +2553,11 @@ requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
     var show=(state==='play'&&!paused);
     if(show!==want){ want=show; Studio.ads.banner(show); }
   },400);
+/* Studio's ad wrapper ducks the score through this hook. `Snd` is a
+   top-level const in the game script and is not reachable from the Studio
+   shim, so it is published here explicitly. */
+window.__audioDuck=function(on){try{Snd.setAdDuck(!!on);}catch(_){}};
+window.__audioResume=function(){try{Snd.chordNow();}catch(_){}};
   window.Game={
     pause:function(){ if(prev.pause) try{ prev.pause(); }catch(e){} },
     resume:function(){ if(prev.resume) try{ prev.resume(); }catch(e){} applySettings(Studio.settings); },
