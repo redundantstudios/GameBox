@@ -95,10 +95,18 @@ class NativeBridge(private val context: Context) {
             }
             /* The remaining milliseconds are handed over so the game can say "ready in
                47s" and re-arm the offer itself, instead of the vague "give it a
-               moment" that a bare token forced on every game. */
+               moment" that a bare token forced on every game. Which clock is read
+               depends on the KIND: a revive and a level unlock have different
+               gaps, and reporting the wrong one would tell the player the offer
+               is ready long before it actually is. */
+            val remainingMs = when (rewardKind) {
+                AdPolicy.RewardKind.UNLOCK -> AdPolicy.unlockCooldownRemainingMs()
+                AdPolicy.RewardKind.REVIVE -> AdPolicy.rewardedCooldownRemainingMs()
+                else -> 0L
+            }
             NativeBridgeContext.callback?.invoke(
                 callback,
-                AdPolicy.token(verdict, AdPolicy.rewardedCooldownRemainingMs())
+                AdPolicy.token(verdict, remainingMs)
             )
             return
         }
@@ -142,18 +150,28 @@ class NativeBridge(private val context: Context) {
      */
     private fun rewardKindFor(placement: String?, kind: String?): AdPolicy.RewardKind {
         if (kind != null) {
-            return if (kind.equals("revive", ignoreCase = true)) {
-                AdPolicy.RewardKind.REVIVE
-            } else {
-                AdPolicy.RewardKind.NORMAL
+            return when {
+                kind.equals("revive", ignoreCase = true) -> AdPolicy.RewardKind.REVIVE
+                /* "unlock" is explicit so a game can say what it wants without
+                   relying on the placement string matching a guessy word list. */
+                kind.equals("unlock", ignoreCase = true) -> AdPolicy.RewardKind.UNLOCK
+                else -> AdPolicy.RewardKind.NORMAL
             }
         }
         val p = placement?.lowercase().orEmpty()
         val isRevive = REVIVE_PLACEMENT_WORDS.any { p.contains(it) }
-        return if (isRevive) AdPolicy.RewardKind.REVIVE else AdPolicy.RewardKind.NORMAL
+        /* Checked BEFORE the revive list: a placement like "level-unlock-3"
+           describes progression, not a continue-after-death. */
+        val isUnlock = UNLOCK_PLACEMENT_WORDS.any { p.contains(it) }
+        return when {
+            isUnlock -> AdPolicy.RewardKind.UNLOCK
+            isRevive -> AdPolicy.RewardKind.REVIVE
+            else -> AdPolicy.RewardKind.NORMAL
+        }
     }
 
     private val REVIVE_PLACEMENT_WORDS = listOf("continue", "revive", "extra_life", "extralife", "rescue")
+    private val UNLOCK_PLACEMENT_WORDS = listOf("unlock")
 
     @JavascriptInterface
     fun showBanner() {

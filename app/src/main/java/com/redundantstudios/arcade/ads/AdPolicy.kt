@@ -94,6 +94,22 @@ object AdPolicy {
     const val REWARDED_COOLDOWN_MS = 60_000L
 
     /**
+     * Minimum gap between two LEVEL/PROGRESSION UNLOCKS.
+     *
+     * Cosmetics and in-game rewards are deliberately uncapped, but an unlock is
+     * different in kind: it lets a player skip past progression. Sheepdog Trials
+     * offers "watch an ad to unlock this trial", and with rewards otherwise
+     * uncapped a player could tap through the whole level list in a minute and
+     * never actually play it. This puts a floor under that specifically, without
+     * re-capping anything else.
+     *
+     * Still a GAP, not a cap - the offer never disappears, it just becomes ready
+     * again. Two minutes keeps it feeling optional while stopping a whole
+     * ladder being unlocked in one sitting.
+     */
+    const val UNLOCK_GAP_MS = 120_000L
+
+    /**
      * A session older than this is treated as a new one, so a phone left
      * face-up overnight does not inherit yesterday's caps.
      */
@@ -140,7 +156,17 @@ object AdPolicy {
          * [REVIVE_CAP_PER_GAME], because an uncapped revive removes the
          * failure state from the game entirely.
          */
-        REVIVE
+        REVIVE,
+
+        /**
+         * Unlocking a level / progression step for an ad.
+         *
+         * A third kind because it needs its own rule. Cosmetics and in-game
+         * rewards are uncapped, which is right - the player chose to watch. An
+         * UNLOCK is different: it lets them move past content rather than
+         * earn it, so it carries a [UNLOCK_GAP_MS] floor of its own.
+         */
+        UNLOCK
     }
 
     /** Why an ad was or was not allowed. */
@@ -173,6 +199,12 @@ object AdPolicy {
      */
     fun rewardedCooldownRemainingMs(): Long {
         val left = REWARDED_COOLDOWN_MS - (now() - lastRewardedAt)
+        return if (left > 0L) left else 0L
+    }
+
+    /** Milliseconds left on the level-unlock gap, for the game's countdown. */
+    fun unlockCooldownRemainingMs(): Long {
+        val left = UNLOCK_GAP_MS - (now() - lastUnlockAt)
         return if (left > 0L) left else 0L
     }
 
@@ -249,6 +281,8 @@ object AdPolicy {
     private var rewardedThisGame = 0
     private var revivesThisGame = 0
     private var lastRewardedAt = 0L
+    /** Last LEVEL/PROGRESSION unlock, for the [UNLOCK_GAP_MS] floor. */
+    private var lastUnlockAt = 0L
     /**
      * The last interstitial is APP-WIDE, so it is persisted: a player who plays
      * game A, leaves, opens game B and taps Play Again must still be inside the
@@ -447,6 +481,17 @@ object AdPolicy {
                 log( "Revive suppressed: ${left / 1000}s of the ${REWARDED_COOLDOWN_MS / 1000}s cooldown left")
                 Verdict.COOLDOWN
             }
+            /* A LEVEL UNLOCK carries its own, much longer floor. Rewards are
+               otherwise uncapped, which is correct for a cosmetic, but an unlock
+               moves the player PAST content rather than rewarding them for it.
+               This is a gap, not a cap: the offer stays on screen and simply
+               becomes ready again, and the seconds are sent back to the game so
+               it can say when. */
+            kind == RewardKind.UNLOCK && now - lastUnlockAt < UNLOCK_GAP_MS -> {
+                val left = UNLOCK_GAP_MS - (now - lastUnlockAt)
+                log( "Unlock suppressed: ${left / 1000}s of the ${UNLOCK_GAP_MS / 1000}s unlock gap left")
+                Verdict.COOLDOWN
+            }
             else -> Verdict.ALLOWED
         }
     }
@@ -456,6 +501,7 @@ object AdPolicy {
         rewardedThisGame++
         lastRewardedAt = now()
         if (kind == RewardKind.REVIVE) revivesThisGame++
+        if (kind == RewardKind.UNLOCK) lastUnlockAt = now()
         /* "rewarded=N" with no "/5" on purpose: there is no cap on normal rewards
            any more, so printing a total out of a limit that is not enforced is
            misleading in the very log used to answer "why did that ad not pay?". */
@@ -489,6 +535,7 @@ object AdPolicy {
         sessionStartedAt = 0L
         rewardedThisGame = 0
         revivesThisGame = 0
+        lastUnlockAt = 0L
         lastRewardedAt = 0L
         lastInterstitialAt = 0L
         if (with != null) store = with

@@ -478,7 +478,10 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
     #ovHow .how-nav .btn{width:145px;padding:8px 10px 7px;font-size:14px}
   }
 
-  #plaques{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(6px,1.2vw,12px);margin:clamp(7px,1.5vh,16px) 0 5px}
+  /* The top margin exists for the RENTAL BADGE, which straddles the top border
+     of its card. .panel clips overflow, so with only 7px the badge lost its top.
+     16px+ clears it. */
+#plaques{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(6px,1.2vw,12px);margin:clamp(18px,2.6vh,28px) 0 5px}
   .plaque{position:relative;width:clamp(64px,8vw,86px);height:clamp(72px,13vh,100px);border-radius:12px;background:#8A5A33;border:3px solid #4E3218;
           box-shadow:0 5px 0 rgba(40,24,8,.5), inset 0 2px 0 rgba(255,255,255,.14);cursor:pointer;
           display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
@@ -568,19 +571,19 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
            border:2.5px solid rgba(247,237,216,.5)}
   .mj-knob{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;
            background:#F2E7C8;border:3px solid var(--pc,#3B3128);box-shadow:0 3px 8px rgba(0,0,0,.35);pointer-events:none}
-  .pbark{position:absolute;z-index:22;width:42px;height:42px;border-radius:50%;border:3px solid #2A2015;
-         background:var(--pc,#E8862E);color:#fff;font-family:'Titan One';font-size:9px;letter-spacing:1.2px;
-         box-shadow:0 5px 0 rgba(40,24,8,.5), inset 0 2px 0 rgba(255,255,255,.28);
-         cursor:pointer;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  .pbark{position:absolute;z-index:22;width:60px;height:60px;border-radius:50%;border:3px solid #2A2015;
+         background:var(--pc,#E8862E);color:#fff;font-family:'Titan One';font-size:11px;letter-spacing:1.2px;
+         box-shadow:0 6px 0 rgba(40,24,8,.5), inset 0 2px 0 rgba(255,255,255,.28);
+         cursor:pointer;display:none;flex-direction:column;align-items:center;justify-content:center;gap:2px;
          overflow:visible}
   .pbark:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(40,24,8,.5)}
-  .pb-ico{width:15px;height:15px}
+  .pb-ico{width:21px;height:21px}
   .pb-ico circle{fill:#FFF6E6}
-  .pb-ico path{fill:none;stroke:#FFF6E6;stroke-width:2.2;stroke-linecap:round}
-  .pb-label{font-family:'Titan One';font-size:7px;color:#FFF6E6;letter-spacing:1.5px;
+  .pb-ico path{fill:none;stroke:#FFF6E6;stroke-width:2.6;stroke-linecap:round}
+  .pb-label{font-family:'Titan One';font-size:9.5px;color:#FFF6E6;letter-spacing:1.5px;
             text-shadow:0 1px 0 rgba(40,24,8,.5)}
-  .pb-cd{position:absolute;bottom:5px;min-width:20px;text-align:center;
-         font:700 8px Fredoka;color:#FFE9C4;text-shadow:0 1px 2px rgba(0,0,0,.55);opacity:0}
+  .pb-cd{position:absolute;bottom:8px;min-width:24px;text-align:center;
+         font:700 10px Fredoka;color:#FFE9C4;text-shadow:0 1px 2px rgba(0,0,0,.55);opacity:0}
   .pbark.cd .pb-ico,.pbark.cd .pb-label{opacity:.45}
   .pbark.cd .pb-cd{opacity:1}
   .pb-ring{position:absolute;inset:-3px;width:calc(100% + 6px);height:calc(100% + 6px);
@@ -593,7 +596,7 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
   #bTitle{font-family:'Titan One';font-size:clamp(34px,6.5vw,58px);color:#FFF7E0;letter-spacing:3px;
           text-shadow:0 4px 0 #3B3128, 0 10px 22px rgba(0,0,0,.4)}
   #bSub{font:600 clamp(15px,2.4vw,20px) Fredoka;color:#F2E7C8;text-shadow:0 2px 0 rgba(35,28,10,.65);margin-top:2px}
-  #toast{position:absolute;left:50%;bottom:118px;z-index:40;transform:translateX(-50%) translateY(12px);
+  #toast{position:absolute;left:50%;bottom:118px;z-index:120;transform:translateX(-50%) translateY(12px);
          opacity:0;transition:.25s;padding:10px 20px;font:600 12.5px/1.4 Fredoka;pointer-events:none;
          max-width:94vw;white-space:normal;text-align:center}
   #toast.show{opacity:1;transform:translateX(-50%)}
@@ -612,6 +615,34 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
   #ovMode .mode-btn{width:86%;margin:10px auto 0;padding:12px 14px;min-height:58px;}
   #ovMode #btnModeBack{width:70%;margin-top:14px;}
 
+  /* ---------------- LOCKED TRIAL POPUP ---------------- */
+  /* Narrower than the other panels, and the body text is styled explicitly: it was
+     inheriting the page background and reading as mud against it. */
+  #ovUnlock .panel{width:min(56vw,320px);padding:16px 16px 14px}
+  #ovUnlock h2{margin-bottom:10px;font-size:20px}
+  #ovUnlock #unlockBody{margin:0 0 14px;padding:10px 12px;border-radius:12px;
+    background:rgba(59,49,40,.10);border:1px solid rgba(59,49,40,.20);
+    font:700 12px/1.5 'Fredoka',sans-serif;letter-spacing:.2px;color:#3B3128;text-align:center}
+  #ovUnlock .btn{width:80%;margin:9px auto 0;min-height:42px}
+  /* Rental badge: a real pill at the TOP of the card, in the game's own
+     font, dark ink on a bright fill so it is actually readable against the
+     brown plaque. It sat at the bottom in a near-invisible brown. */
+  /* Sits ON the card's top border, centred, and straddles it (negative top) so
+     it cannot collide with the level number underneath. Time only - no "OPEN"
+     label - and tabular figures so the digits do not jitter as they tick. */
+  .pl-rented{position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+    padding:2px 9px;border-radius:999px;background:#B9E36B;color:#22331A;
+    border:2px solid #4E3218;
+    font:700 10px/1.25 'Fredoka',sans-serif;font-variant-numeric:tabular-nums;
+    letter-spacing:.03em;white-space:nowrap;
+    box-shadow:0 2px 0 rgba(0,0,0,.3);pointer-events:none;z-index:4}
+  /* AD chip: only on the single card an ad can open, so it reads as an
+     offer rather than as decoration on every locked level. */
+  .pl-adchip{position:absolute;top:4px;right:4px;width:21px;height:21px;
+    border-radius:6px;background:#F6A43A;color:#12121A;
+    display:flex;align-items:center;justify-content:center;
+    font:800 8.5px/1 'Fredoka',sans-serif;letter-spacing:.02em;
+    box-shadow:0 2px 0 rgba(0,0,0,.3);pointer-events:none;z-index:3}
   #ovPause .panel{width:min(70vw,380px);min-height:390px;padding:24px 18px 22px;display:flex;flex-direction:column;justify-content:center;}
   #ovPause .panel h2{margin-bottom:10px;}
   #ovPause .btn{width:80%;margin:14px auto 0;min-height:48px;}
@@ -622,7 +653,7 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
 
   /* Level select gets a wider, clean two-row card grid so BACK can never overlap. */
   #ovSelect .panel{width:min(90vw,700px)!important;padding:18px 18px 16px;max-height:calc(100dvh - 16px);}
-  #plaques{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px 9px;margin:10px auto 16px;max-height:none;overflow:visible;width:100%;}
+  #plaques{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px 9px;margin:22px auto 16px;max-height:none;overflow:visible;width:100%;}
   .plaque{width:100%;height:clamp(62px,11vh,78px);}
   #ovSelect #btnBackMenu{width:58%;margin:0 auto;min-height:44px;}
 
@@ -662,7 +693,7 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
     #lvProgress{margin:3px auto 6px;}
     #lvProgText{font-size:10px;margin-bottom:3px;}
     #lvProgBar{height:8px;}
-    #plaques{grid-template-columns:repeat(7,minmax(0,1fr));gap:7px 8px;margin:7px auto 12px;}
+    #plaques{grid-template-columns:repeat(7,minmax(0,1fr));gap:7px 8px;margin:18px auto 12px;}
     .plaque{height:clamp(58px,10vh,72px);border-radius:10px;box-shadow:0 3px 0 rgba(40,24,8,.5),inset 0 2px 0 rgba(255,255,255,.14);}
     .pl-num{font-size:clamp(20px,3.7vh,26px);}
     .pl-stars svg{width:11px;height:11px;}
@@ -695,7 +726,7 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
     #ovPause .panel{min-height:320px;padding:14px 14px;}
     #ovMode .mode-btn{min-height:45px;margin-top:7px;}
     #ovPause .btn{width:76%;min-height:39px;margin-top:11px;}
-    #plaques{gap:5px 7px;margin:5px auto 8px;}
+    #plaques{gap:5px 7px;margin:15px auto 8px;}
     .plaque{height:54px;}
     #ovSelect #btnBackMenu{min-height:36px;}
   }
@@ -980,6 +1011,15 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
     <button class="btn red" id="btnPauseHome">HOME</button>
   </div></div>
 
+  <!-- LOCKED TRIAL: explain the deal, then let the player choose. The ad is
+       never fired by tapping the plaque - only by pressing WATCH AD here. -->
+  <div id="ovUnlock" class="overlay hidden"><div class="panel">
+    <h2>TRIAL LOCKED</h2>
+    <p id="unlockBody"></p>
+    <button class="btn" id="btnUnlockWatch">WATCH AD</button>
+    <button class="btn ghost" id="btnUnlockCancel">CANCEL</button>
+  </div></div>
+
   <div id="ovWin" class="overlay hidden"><div class="panel">
     <h2 id="winTitle">TRIAL COMPLETE!</h2>
     <div class="stars-row" id="starsRow">
@@ -1071,7 +1111,10 @@ const hudCount = $('hudCount'), hudCounter = $('hudCounter'), scoreBoxes = $('sc
 const barkBtn = $('barkBtn'), barkRing = $('barkRing');
 const bannerEl = $('banner'), bTitle = $('bTitle'), bSub = $('bSub'), toastEl = $('toast');
 const ovMenu = $('ovMenu'), ovSelect = $('ovSelect'), ovHow = $('ovHow'), ovPause = $('ovPause'), ovWin = $('ovWin'),
-      ovSettings = $('ovSettings'), ovMode = $('ovMode'), ovCount = $('ovCount');
+      ovSettings = $('ovSettings'), ovMode = $('ovMode'), ovCount = $('ovCount'),
+      /* The locked-trial popup. Declared with the rest because show() hides
+         every overlay through this list - without it here, show() threw. */
+      ovUnlock = $('ovUnlock');
 const winTitle = $('winTitle'), winTime = $('winTime'), winBest = $('winBest'), winNote = $('winNote');
 const winStars = [...document.querySelectorAll('.wstar')], starsRow = $('starsRow');
 const plaquesEl = $('plaques'), btnNext = $('btnNext');
@@ -1447,6 +1490,44 @@ function getCfg(i) {
   };
 }
 
+/* ============================================================
+   FRIENDS MODE MAPS ARE GENERATED, NOT AUTHORED
+   ============================================================
+   The 2/3/4-player mode used to call startLevel(0) every single time, so
+   every party game was the identical "First Light" field: 4 sheep, no rocks,
+   no trees, no pond, no rams - just more dogs added to one quiet map. That
+   made the mode dull within two rounds.
+
+   Each round now builds its own map, scaled to how many players are on it,
+   and friendsRound advances per round so the SEED changes too - the obstacle
+   PLACEMENT differs, not just the counts. Solo keeps its 12 designed trials
+   plus the NEXT generator, which is untouched.
+
+   The bands are read from `sheep` first and everything else from it, so a
+   4-player field is not the 2-player map with more hedges dropped in. */
+let friendsRound = 0;
+/** The generated map's name, so the banner can describe THIS round's field
+    rather than the authored level it replaced. Empty in solo mode. */
+let roundName = '';
+const FRIENDS_BANDS = {
+  2: { lo: 5,  hi: 9,  rocks: 1, trees: 2, rams: 1, pond: .45, wind: .2  },
+  3: { lo: 8,  hi: 13, rocks: 2, trees: 4, rams: 2, pond: .6,  wind: .4  },
+  4: { lo: 12, hi: 18, rocks: 3, trees: 6, rams: 3, pond: .7,  wind: .6  },
+};
+function friendsCfg(rng) {
+  const b = FRIENDS_BANDS[mcount] || FRIENDS_BANDS[2];
+  const ri = (r) => r[0] + Math.floor(rng() * (r[1] - r[0] + 1));
+  return {
+    name: ADJ[(rng() * ADJ.length) | 0] + ' ' + NOUN[(rng() * NOUN.length) | 0],
+    sheep: ri([b.lo, b.hi]),
+    rocks: ri([0, b.rocks]),
+    trees: ri([0, b.trees]),
+    rams: ri([0, b.rams]),
+    pond: rng() < b.pond ? 1 : 0,
+    wind: rng() < b.wind ? .3 + rng() * .5 : 0,
+  };
+}
+
 // ---------- world state ----------
 const W = { w: 1280, h: 800 };
 const view = { s: 1, ox: 0, oy: 0 };
@@ -1604,7 +1685,14 @@ function makeSheep(x, y, ram, rng) {
 
 function buildLevel(i, attract = false) {
   cur = i;
-  const cfg = getCfg(i), rng = mulberry32(i * 1337 + 7 + (attract ? 99 : 0));
+  /* Friends rounds are generated, and the SEED moves per round, so two
+     rounds in a row are not the same map - not merely different counts,
+     different obstacle PLACEMENT. Solo and the menu backdrop stay on the
+     fixed/authored levels. */
+  const seed = (mode !== 'solo' && !attract) ? 9176 * (++friendsRound) + 13 : i * 1337 + 7 + (attract ? 99 : 0);
+  const rng = mulberry32(seed);
+  const cfg = (mode !== 'solo' && !attract) ? friendsCfg(rng) : getCfg(i);
+  roundName = cfg.name;
   sheep = []; rocks = []; trees = []; pond = []; particles = []; rings = []; waves = []; floats = [];
   extras = []; reeds = []; ripples = []; rippleT = 1.5;
   count = 0; combo = 0; lastPenny = 0;
@@ -2592,7 +2680,13 @@ async function enterGameFullscreen() {
 document.addEventListener('fullscreenchange', () => { fullscreenRequested = !!document.fullscreenElement; setTimeout(resize, 80); });
 
 // ---------- UI / state machine ----------
-function show(el) { [ovMenu, ovSelect, ovHow, ovPause, ovWin, ovSettings, ovMode, ovCount].forEach(o => o.classList.add('hidden')); if (el) el.classList.remove('hidden'); }
+/* ovUnlock MUST be in this list. It is not one of the eight screens the state
+   machine knew about, and because show() is the single thing that hides
+   overlays, leaving it out meant that once the locked-trial popup appeared it
+   could never be dismissed again - not by Cancel, not by starting a level, not
+   by anything. That is what left the game sitting under the popup's dark tint
+   with no sheep on screen. */
+function show(el) { [ovMenu, ovSelect, ovHow, ovPause, ovWin, ovSettings, ovMode, ovCount, ovUnlock].forEach(o => o.classList.add('hidden')); if (el) el.classList.remove('hidden'); }
 function setState(s) {
   const was = state;
   state = s;
@@ -2646,13 +2740,18 @@ function updateScoreBoxes(popIdx = -1) {
   });
 }
 function banner(i) {
-  const cfg = getCfg(i);
-  bTitle.textContent = 'LEVEL ' + (i + 1);
+  /* In friends mode the map is GENERATED, so it has to be described from the
+     one that was actually built. Reading getCfg(i) here would show the
+     authored level name and sheep count while the player is standing in a
+     completely different field. */
+  const cfg = (mode === 'solo') ? getCfg(i) : { name: roundName, sheep: sheep.length };
+  bTitle.textContent = (mode === 'solo' ? 'LEVEL ' + (i + 1) : roundName.toUpperCase());
   bSub.textContent = (mode === 'solo' ? cfg.name : cfg.name + ' · ' + dogs.length + '-PLAYER')
     + ' — herd ' + cfg.sheep + ' sheep';
   bannerEl.classList.remove('show'); void bannerEl.offsetWidth; bannerEl.classList.add('show');
 }
 function startLevel(i) {
+  stopLockTicker();
   buildLevel(i); setState('play'); show(null); banner(i); refreshTouchUI();
   $('btnPauseLevels').style.display = mode === 'solo' ? 'block' : 'none';
   $('btnWinLevels').style.display = mode === 'solo' ? 'block' : 'none';
@@ -2662,6 +2761,7 @@ function startLevel(i) {
   }
 }
 function toMenu() {
+  stopLockTicker();
   mode = 'solo';
   buildLevel((Math.random() * LEVELS.length) | 0, true);
   setState('menu'); show(ovMenu); refreshTouchUI(); updateMenuProg();
@@ -2679,7 +2779,8 @@ function pauseGame() { if (state !== 'play') return; Sfx.stopRun(); setState('pa
 function resumeGame() { if (state !== 'pause') return; setState('play'); show(null); }
 function showToast(msg) {
   toastEl.textContent = msg; toastEl.classList.add('show');
-  clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), 2400);
+  console.log('[toast] ' + msg);
+  clearTimeout(toastT); toastT = setTimeout(() => toastEl.classList.remove('show'), 3200);
 }
 function firstIncomplete() {
   for (let i = 0; i < LEVELS.length; i++) if (!getStars(i)) return i;
@@ -2700,7 +2801,16 @@ function buildPlaques() {
   $('lvProgFill').style.width = Math.min(100, progressDone / progressTotal * 100) + '%';
 
   for (let i = 0; i < DISPLAY_LEVELS; i++) {
-    const locked = i > 0 && !getStars(i - 1);
+  // Levels stay SEQUENTIAL. An ad may only open the ONE trial that comes next,
+  // never an arbitrary later one: a player must not be able to jump past the
+  // ladder to the Champion trial and skip the whole game. `nextLockedIndex()`
+  // is that single next trial, and every other locked plaque keeps saying
+  // "win the previous trial to unlock!".
+  const locked = i > 0 && !getStars(i - 1) && !isAdUnlocked(i);
+  /* Only while it is a RENTAL - three stars is permanent and says nothing. */
+  const adLeft = (!locked && getStars(i) < 3) ? lockLeftText(i) : '';
+  /* The single next trial is the only one an ad can open. */
+  const adOpen = locked && i === nextLockedIndex();
     const doneBadge = getStars(i) > 0
       ? '<span class="pl-done"><svg viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11"/></svg></span>' : '';
     const b = document.createElement('button');
@@ -2711,14 +2821,131 @@ function buildPlaques() {
     b.innerHTML = '<span class="pl-num">' + (i + 1) + '</span><span class="pl-stars">' + starsHtml + '</span>' +
       '<span class="pl-best">' + (getBest(i) ? getBest(i).toFixed(1) + 's' : '—') + '</span>' +
       doneBadge +
+      /* Rental time sits at the top of the card. */
+      (adLeft ? '<span class="pl-rented" data-k="' + i + '">' + adLeft + '</span>' : '') +
+      /* AD chip on the ONE card an ad can open - the next locked trial. */
+      (adOpen ? '<span class="pl-adchip">AD</span>' : '') +
       (locked ? '<span class="pl-lock"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 018 0v2.5" fill="none" stroke="#F7EDD8" stroke-width="2.4"/></svg></span>' : '');
     b.addEventListener('click', () => {
       Sfx.click();
-      if (locked) { showToast('Win the previous trial to unlock!'); return; }
+      /* Tapping a locked trial must NOT fire an ad on its own. It opens a
+         popup that explains the deal, and the ad only runs if the player
+         presses WATCH AD. Only the SINGLE next trial can be bought, so the
+         ladder still cannot be jumped to the Champion trial. */
+      if (locked) {
+        if (i === nextLockedIndex()) askUnlockByAd(i);
+        else showToast('Win the previous trial to unlock!');
+        return;
+      }
       startLevel(i);
     });
     plaquesEl.appendChild(b);
   }
+  startLockTicker();
+}
+
+/* ---------- rewarded: unlock the NEXT trial only ---------- */
+/* An ad does not buy the trial outright. It opens it for THIRTY MINUTES - long
+   enough to go and actually attempt it - and earning THREE STARS makes that
+   unlock permanent. So watching an ad only ever gets someone INTO content;
+   finishing it is what keeps it.
+   The rental is short on purpose: an unlock you can sit on for hours would
+   quietly become permanent anyway, which is exactly what 3 stars is for.
+
+   Persisted through the game's OWN save object (not a separate store) so it
+   rides the same localStorage path as stars, and kept separate from stars so
+   a rented trial never reads as "completed". */
+const AD_UNLOCK_MS = 30 * 60 * 1000;
+function isAdUnlocked(i) {
+  /* Three stars is the permanent win condition - the rental is a courtesy. */
+  if (getStars(i) >= 3) return true;
+  const exp = save.ex.adUnlocked && save.ex.adUnlocked[i];
+  return !!exp && exp > Date.now();
+}
+function grantAdUnlock(i) {
+  if (!save.ex.adUnlocked) save.ex.adUnlocked = {};
+  save.ex.adUnlocked[i] = Date.now() + AD_UNLOCK_MS;
+  persist();
+}
+function lockLeftText(i) {
+  const exp = (save.ex.adUnlocked && save.ex.adUnlocked[i]) || 0;
+  const left = exp - Date.now();
+  if (left <= 0) return '';
+  const m = Math.ceil(left / 60000);
+  if (m >= 60) return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+  return m + 'm';
+}
+
+/* LIVE TIMER. The badge used to be painted once when the grid was built, so
+   it counted down to a stale number and only corrected itself if the player
+   left and came back. This ticks it in place every second while the Levels
+   screen is open, and self-stops when no rental is showing. */
+let lockTicker = null;
+function startLockTicker() {
+  clearInterval(lockTicker);
+  lockTicker = setInterval(function () {
+    const nodes = document.querySelectorAll('.pl-rented');
+    if (!nodes.length) { clearInterval(lockTicker); lockTicker = null; return; }
+    let expired = false;
+    nodes.forEach(function (n) {
+      const k = Number(n.dataset.k);
+      const left = lockLeftText(k);
+      if (left) n.textContent = left; else expired = true;
+    });
+    /* A rental that ran out mid-session takes its badge with it. */
+    if (expired) buildPlaques();
+  }, 1000);
+}
+function stopLockTicker() { clearInterval(lockTicker); lockTicker = null; }
+
+/* The ONE trial an ad may open: the lowest still-locked level. */
+function nextLockedIndex() {
+  for (let n = 1; n < 24; n++) {
+    if (!getStars(n - 1) && !isAdUnlocked(n)) return n;
+  }
+  return -1;
+}
+
+function unlockMessage(reason) {
+  const s = String(reason || '');
+  if (s.indexOf('cooldown:') === 0) return 'Next trial unlock ready in ' + parseInt(s.slice(9), 10) + 's.';
+  switch (s) {
+    case 'offline':      return 'An internet connection is needed to show this ad.';
+    case 'unavailable':  return 'No ad available right now. Try again shortly.';
+    case 'bridge_error': return 'Ads could not start on this device.';
+    default:             return 'Ad unavailable. Try again shortly.';
+  }
+}
+
+/* Opens the confirm popup. Nothing is watched and nothing is granted until
+   the player presses WATCH AD - a single tap on a locked plaque must never
+   cost them an ad they did not agree to. */
+let pendingUnlock = -1;
+function askUnlockByAd(i) {
+  pendingUnlock = i;
+  $('unlockBody').textContent = 'Trial ' + (i + 1) + ' is locked. Watch an ad to try it for 30 minutes. Get 3 stars and it unlocks permanently.';
+  show($('ovUnlock'));
+}
+function closeUnlockPopup() { pendingUnlock = -1; show($('ovSelect')); startLockTicker(); }
+
+/* The ad itself. ONLY the WATCH AD button reaches this - tapping a locked
+   plaque just opens the popup above. The placement contains "unlock", so the
+   shell applies the 120s unlock gap instead of treating it as an ordinary
+   uncapped reward. */
+function runUnlockAd(i) {
+  Studio.ads.rewarded('level-unlock-' + i, function () {
+    grantAdUnlock(i);
+    buildPlaques();
+    updateMenuProg();
+    /* Stay on the LEVELS page rather than dropping straight into the trial: the
+       player asked to unlock it, not to play it now, and the card below now
+       shows the time left so the unlock is visible where they made it. */
+    show($('ovSelect'));
+    startLockTicker();
+    showToast('REWARD GRANTED \u00b7 TRIAL ' + (i + 1) + ' OPEN FOR 30 MINUTES');
+  }, function (reason) {
+    showToast(unlockMessage(reason));
+  });
 }
 
 function showWin() {
@@ -2984,44 +3211,32 @@ function refreshTouchUI() {
   if (multi && gameplayTouch) layoutTouch();
 }
 function layoutTouch() {
-  const WJ = 108, WB = 42, EDGE = 16, GAP = 22;
+  const WJ = 108, WB = 60, EDGE = 16, GAP = 22;
   dogs.forEach((d, i) => {
     const je = mjoyEls[i], be = pbarkEls[i];
     je.style.left = je.style.right = je.style.top = je.style.bottom = 'auto';
     be.style.left = be.style.right = be.style.top = be.style.bottom = 'auto';
 
-    if (dogs.length === 2) {
-      // P1: joystick bottom-left, BARK top-left
-      // P2: joystick top-right, BARK bottom-right
-      if (i === 0) {
-        je.style.left = EDGE + 'px'; je.style.bottom = EDGE + 'px';
-        be.style.left = (EDGE + (WJ - WB) / 2) + 'px'; be.style.top = EDGE + 'px';
-      } else {
-        je.style.right = EDGE + 'px'; je.style.top = EDGE + 'px';
-        be.style.right = (EDGE + (WJ - WB) / 2) + 'px'; be.style.bottom = EDGE + 'px';
-      }
-    } else {
-      // P1 bottom-left + BARK above
-      // P2 top-left + BARK below
-      // P3 bottom-right + BARK above
-      // P4 top-right + BARK below
-      const left = i === 0 || i === 1;
-      const top = i === 1 || i === 3;
-      const x = EDGE + 'px';
-      const bx = (EDGE + (WJ - WB) / 2) + 'px';
-      if (left) { je.style.left = x; be.style.left = bx; }
-      else { je.style.right = x; be.style.right = bx; }
-      if (top) {
-        je.style.top = EDGE + 'px';
-        be.style.top = (EDGE + WJ + GAP) + 'px';
-      } else {
-        je.style.bottom = EDGE + 'px';
-        be.style.bottom = (EDGE + WJ + GAP) + 'px';
-      }
-    }
+    /* Which corner this player's joystick sits in.
+         2 players : P1 bottom-left,  P2 top-right
+         3-4 players: P1 bottom-left, P2 top-left, P3 bottom-right, P4 top-right
+       Each player keeps their own corner so four thumbs never collide. */
+    const left = dogs.length === 2 ? (i === 0) : (i === 0 || i === 1);
+    const top = dogs.length === 2 ? (i === 1) : (i === 1 || i === 3);
+
+    if (left) je.style.left = EDGE + 'px'; else je.style.right = EDGE + 'px';
+    if (top) je.style.top = EDGE + 'px'; else je.style.bottom = EDGE + 'px';
+
+    /* BARK sits HORIZONTALLY BESIDE its own joystick on the same row - to the
+       right of the stick for a left-hand player, to the left for a right-hand
+       one, and centred against it vertically. It was previously stacked above
+       and below, which put it either directly on top of the joystick or in a
+       vertical line down the side of the screen. This keeps each player's two
+       controls together as one horizontal pair. */
+    if (left) be.style.left = (EDGE + WJ + GAP) + 'px'; else be.style.right = (EDGE + WJ + GAP) + 'px';
+    if (top) be.style.top = (EDGE + (WJ - WB) / 2) + 'px'; else be.style.bottom = (EDGE + (WJ - WB) / 2) + 'px';
   });
 }
-
 // ---------- buttons ----------
 barkBtn.addEventListener('pointerdown', e => { e.preventDefault(); doBark(dogs[0]); });
  $('btnPause').addEventListener('click', () => { Sfx.click(); pauseGame(); });
@@ -3035,11 +3250,19 @@ barkBtn.addEventListener('pointerdown', e => { e.preventDefault(); doBark(dogs[0
  $('btnHowBack').addEventListener('click', () => { Sfx.click(); closeHow(); });
  $('btnBackMenu').addEventListener('click', () => { Sfx.click(); selectBack(); });
  $('btnResume').addEventListener('click', () => { Sfx.click(); resumeGame(); });
- $('btnRestart').addEventListener('click', () => { Sfx.click(); startLevel(cur); });
- $('btnPauseLevels').addEventListener('click', () => { Sfx.click(); openSelect('pause'); });
+  /* The shell asks whether an ad is due; if not, the trial just restarts. */
+  $('btnRestart').addEventListener('click', () => {
+    Sfx.click();
+    CrazyBridge.requestMidgameAd(function () { startLevel(cur); });
+  });
+ $('btnPauseLevels').addEventListener('click', () => { Sfx.click(); CrazyBridge.requestMidgameAd(function () { openSelect('pause'); }); });
  $('btnPauseSet').addEventListener('click', () => { Sfx.click(); openSettings('pause'); });
- $('btnPauseHome').addEventListener('click', () => { Sfx.click(); toMenu(); });
- $('btnReplay').addEventListener('click', () => { Sfx.click(); startLevel(cur); });
+  $('btnPauseHome').addEventListener('click', () => { Sfx.click(); CrazyBridge.requestMidgameAd(function () { toMenu(); }); });
+  /* Replay is a natural break like NEXT TRIAL, so it carries an ad too. */
+  $('btnReplay').addEventListener('click', () => {
+    Sfx.click();
+    CrazyBridge.requestMidgameAd(function () { startLevel(cur); });
+  });
  $('btnNext').addEventListener('click', () => {
    Sfx.click();
    const next = cur + 1;
@@ -3047,6 +3270,14 @@ barkBtn.addEventListener('pointerdown', e => { e.preventDefault(); doBark(dogs[0
       so NEXT TRIAL never advanced a level. The interstitial is the natural
       break after a completed trial, then the next trial actually starts. */
    Studio.ads.interstitial(function () { startLevel(next); });
+ });
+ $('btnUnlockCancel').addEventListener('click', () => { Sfx.click(); closeUnlockPopup(); });
+ $('btnUnlockWatch').addEventListener('click', () => {
+   Sfx.click();
+   const i = pendingUnlock;
+   if (i < 0) return;
+   show($('ovSelect'));
+   runUnlockAd(i);
  });
  $('btnWinLevels').addEventListener('click', () => { Sfx.click(); openSelect('win'); });
  $('btnGear').addEventListener('click', () => { Sfx.click(); openSettings('menu'); });
