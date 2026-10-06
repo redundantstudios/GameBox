@@ -221,12 +221,20 @@ h2.scrTitle{font-size:clamp(20px,6.4vw,25px);text-align:center;margin:2px 0;text
 .setupHead::after{content:'';grid-column:3}
 .stepper{display:flex;align-items:center;justify-content:center;gap:clamp(12px,4.5vw,16px)}
 .stepper button{
+  /* Flex centring, which this rule never had. Without it the button is
+     inline-block: a text glyph lands near the middle only by accident of the
+     line box, and a block-level SVG starts at the TOP of the content box. That
+     is why the drawn minus sat high in its button while the "+" beside it
+     looked fine. .btn already declares this; the stepper is a separate rule. */
+  display:inline-flex;align-items:center;justify-content:center;
   width:clamp(42px,13vw,52px);height:clamp(42px,7.4dvh,52px);font-size:clamp(20px,6.6vw,26px);font-weight:900;color:var(--ink);background:var(--yellow);
   border:clamp(2px,.8vw,3px) solid var(--yellowD);border-radius:clamp(12px,4vw,16px);
   box-shadow:0 5px 0 var(--yellowD);transition:transform .07s, box-shadow .07s;
+  line-height:1;padding:0;
 }
 .stepper button:active{transform:translateY(4px);box-shadow:0 1px 0 var(--yellowD)}
-.stepper button svg{display:block;width:clamp(18px,5.4vw,22px);height:clamp(18px,5.4vw,22px)}
+/* The minus is a flex item now, so this only has to size it. */
+.stepper button svg{display:block;flex:none;width:clamp(18px,5.4vw,22px);height:clamp(18px,5.4vw,22px)}
 .stepper b{font-size:clamp(24px,7.6vw,30px);min-width:clamp(40px,13vw,52px);text-align:center;text-shadow:none;}
 .rowLabel{font-size:clamp(10px,3.2vw,12px);font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--dimb);margin-bottom:clamp(5px,1.4dvh,7px)}
 .slot{display:flex;flex-direction:column;gap:clamp(8px,1.6dvh,10px)}
@@ -738,7 +746,7 @@ input[type=range]::-moz-range-thumb{
              display stack that does not reliably carry it, so on some devices it
              came out as a missing-glyph box. An SVG cannot go missing, and it
              matches the weight of the "+" beside it. -->
-        <button id="countMinus" aria-label="Fewer players"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="4" y="10.5" width="16" height="3.4" rx="1.7" fill="currentColor"/></svg></button>
+        <button id="countMinus" aria-label="Fewer players"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10.3" width="16" height="3.4" rx="1.7" fill="currentColor"/></svg></button>
         <b id="countVal">2</b>
         <button id="countPlus" aria-label="More players">+</button>
       </div>
