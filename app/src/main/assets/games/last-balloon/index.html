@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>LAST BALLOON â€” a backyard party game</title>
+<title>LAST BALLOON — a backyard party game</title>
 <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="%2379C7F2"/><ellipse cx="16" cy="13" rx="9" ry="11" fill="%23E53935" stroke="%234E342E" stroke-width="1.6"/><ellipse cx="12.5" cy="8.5" rx="2.6" ry="1.4" fill="white" opacity=".9" transform="rotate(-30 12.5 8.5)"/><path d="M12 24h8l-4 5z" fill="%23B71C1C"/></svg>'>
 <!-- STUDIO_GAME_MANIFEST
 id: last-balloon
@@ -19,7 +19,7 @@ released: 2026-09-27
 -->
 <style>
 /* ============================================================
-   LAST BALLOON â€” sunny backyard Â· portrait only.
+   LAST BALLOON — sunny backyard · portrait only.
    No auto-rotation: the layout is fixed portrait. If the
    phone is held sideways, the gentle hint pill reminds the
    All sizes scale to viewport width,
@@ -59,7 +59,7 @@ body{
 button{font-family:var(--fontD);color:inherit;cursor:pointer;border:none;background:none}
 input,select{font-family:inherit;color:var(--ink)}
 h1,h2,h3{text-transform:uppercase;font-family:var(--fontD)}
-.titleWrap,.tagline,.heroLbl,.menuFoot,.howTitle,.rowLabel,#passHint,.tbName,.tbSub,.overBig,.overName,.overKicker,#soloNote,.setRow label,.stepper b,.howNum{font-family:var(--fontD)}
+.titleWrap,.tagline,.heroLbl,.menuFoot,.howTitle,.rowLabel,.tbName,.tbSub,.overBig,.overName,.overKicker,#soloNote,.setRow label,.stepper b,.howNum{font-family:var(--fontD)}
 
 /* ---------- backyard scenery behind everything ---------- */
 #skyDeco{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
@@ -206,8 +206,19 @@ h2.scrTitle{font-size:clamp(20px,6.4vw,25px);text-align:center;margin:2px 0;text
 @media (max-height:560px){.menuFoot{display:none}.tagline{display:none}}
 
 /* ---------- setup ---------- */
-.setupHead{display:flex;align-items:center;gap:clamp(8px,3vw,12px);width:100%;max-width:460px}
-.setupHead h2{flex:1}
+/* The heading is placed in the middle column of a three-column grid with two
+   EQUAL side columns, so it centres on the full width of the panel instead of
+   on whatever space the back button leaves over. It used to be a flex:1
+   sibling after the button (so it sat half a button-width right of centre) and
+   then an absolutely-positioned button, which fights .iconBtn's own transform
+   on :active. Equal columns need no positioning at all. */
+.setupHead{
+  display:grid;grid-template-columns:clamp(38px,11.5vw,44px) minmax(0,1fr) clamp(38px,11.5vw,44px);
+  align-items:center;width:100%;max-width:460px;min-height:clamp(38px,11.5vw,44px);
+}
+.setupHead h2{grid-column:2;text-align:center}
+.setupHead>.iconBtn{grid-column:1;justify-self:start}
+.setupHead::after{content:'';grid-column:3}
 .stepper{display:flex;align-items:center;justify-content:center;gap:clamp(12px,4.5vw,16px)}
 .stepper button{
   width:clamp(42px,13vw,52px);height:clamp(42px,7.4dvh,52px);font-size:clamp(20px,6.6vw,26px);font-weight:900;color:var(--ink);background:var(--yellow);
@@ -215,11 +226,15 @@ h2.scrTitle{font-size:clamp(20px,6.4vw,25px);text-align:center;margin:2px 0;text
   box-shadow:0 5px 0 var(--yellowD);transition:transform .07s, box-shadow .07s;
 }
 .stepper button:active{transform:translateY(4px);box-shadow:0 1px 0 var(--yellowD)}
+.stepper button svg{display:block;width:clamp(18px,5.4vw,22px);height:clamp(18px,5.4vw,22px)}
 .stepper b{font-size:clamp(24px,7.6vw,30px);min-width:clamp(40px,13vw,52px);text-align:center;text-shadow:none;}
 .rowLabel{font-size:clamp(10px,3.2vw,12px);font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--dimb);margin-bottom:clamp(5px,1.4dvh,7px)}
 .slot{display:flex;flex-direction:column;gap:clamp(8px,1.6dvh,10px)}
-.slotHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.slotTag{font-weight:900;font-size:clamp(12px,3.8vw,14px);background:var(--woodD);color:var(--cream);padding:3px clamp(9px,3vw,12px);border-radius:10px;letter-spacing:.05em}
+/* The P1/P2/... chip and the TAP badge on the avatar are gone. They were tags
+   sitting on top of the player's own icon and name field, which made each row
+   look like a labelled widget rather than a player. The number is still there
+   in the input's placeholder, and the avatar's own first letter carries the
+   identity. */
 .segMini{display:flex;border:clamp(2px,.8vw,3px) solid var(--woodD);border-radius:clamp(9px,3vw,12px);overflow:hidden;background:var(--paper)}
 .segMini button{padding:clamp(5px,1.5dvh,7px) clamp(10px,3.6vw,14px);font-weight:900;font-size:clamp(10.5px,3.2vw,12px);letter-spacing:.04em;border-right:clamp(2px,.8vw,3px) solid var(--woodD);color:var(--dimb);transition:background .15s}
 .segMini button:last-child{border-right:none}
@@ -240,13 +255,13 @@ h2.scrTitle{font-size:clamp(20px,6.4vw,25px);text-align:center;margin:2px 0;text
 .nameIn:focus{box-shadow:0 0 0 3px rgba(251,192,45,.55)}
 .swRow{display:none}
 .avWrap{cursor:pointer;touch-action:manipulation;flex:none;position:relative}
-.avWrap::after{content:'TAP';position:absolute;right:-5px;bottom:-5px;background:var(--woodD);color:var(--cream);font-size:7px;font-weight:900;letter-spacing:.08em;padding:2px 4px;border-radius:6px;pointer-events:none}
-.avWrap:focus-visible{outline:3px solid var(--yellow);outline-offset:4px;border-radius:50%}
+/* The 'TAP' chip that sat on the corner of every avatar is gone. */
+.avWrap:focus-visible{outline:3px solid var(--yellow);outline-offset:4px;border-radius:14px}
 .sw{width:clamp(26px,8.5vw,34px);height:clamp(26px,8.5vw,34px);border-radius:50%;border:clamp(2px,.7vw,3px) solid #fff;box-shadow:0 0 0 2px var(--woodD), 0 3px 6px rgba(62,42,24,.25);transition:transform .1s}
 .sw.sel{transform:scale(1.22)}
 
-/* ---------- HOW TO PLAY â€” simple card carousel (no animations) ---------- */
-/* ---------- HOW TO PLAY â€” mobile-friendly centered cards ---------- */
+/* ---------- HOW TO PLAY — simple card carousel (no animations) ---------- */
+/* ---------- HOW TO PLAY — mobile-friendly centered cards ---------- */
 #scr-how .col{
   flex:1 1 auto;
   min-height:0;
@@ -343,7 +358,7 @@ h2.scrTitle{font-size:clamp(20px,6.4vw,25px);text-align:center;margin:2px 0;text
 /* travel = track width - both pads - knob - both borders, so the knob's outer
    edge lands exactly on the inner edge of the far rim */
 .tog.on::after{transform:translateX(calc(var(--tw) - var(--knob) - var(--pad)*2 - var(--bw)*2))}
-/* volume slider â€” the visible bar is a SEPARATE element inset by half a knob on
+/* volume slider — the visible bar is a SEPARATE element inset by half a knob on
    each side. The input's own track has no such inset, so its knob used to stop
    a half-knob short of the right rim and never reached the last position. */
 .volWrap{
@@ -389,7 +404,7 @@ input[type=range]::-moz-range-thumb{
 
 /* ---------- GAME ---------- */
 #scr-game{padding:0;overflow:hidden}
-/* portrait-only game wrapper â€” no screen flipping */
+/* portrait-only game wrapper — no screen flipping */
 #rotWrap{height:100vh;height:100dvh;width:100%;max-width:480px;margin:0 auto;min-width:0}
 #rotLayer{height:100%;}
 #gameInner{
@@ -405,26 +420,10 @@ input[type=range]::-moz-range-thumb{
   40%{transform:translate(-7px,4px)}55%{transform:translate(6px,-4px) rotate(-.6deg)}
   70%{transform:translate(-4px,3px)}85%{transform:translate(3px,-2px)}100%{transform:none}
 }
-#hud{display:flex;align-items:flex-start;gap:clamp(5px,1.6vw,8px);min-height:clamp(54px,13vw,66px)}
-#badges{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:minmax(25px,auto);gap:clamp(4px,1.2vw,6px);flex:1;min-width:0}
-.badge{
-  display:flex;align-items:center;gap:3px;background:var(--paper);border:clamp(2px,.6vw,3px) solid var(--wood);
-  border-radius:999px;padding:2px 5px 2px 3px;font-weight:900;font-size:clamp(8px,2.35vw,10.5px);letter-spacing:.01em;
-  color:var(--woodD);opacity:.55;transition:all .2s;min-width:0;width:100%;box-sizing:border-box;
-}
-.badge .bAv{display:inline-flex;width:clamp(18px,5.6vw,24px);height:clamp(18px,5.6vw,24px);flex:none}
-.badge .bAv *{width:clamp(18px,5.6vw,24px) !important;height:clamp(18px,5.6vw,24px) !important}
-.badge .bAv .av{font-size:clamp(9px,2.8vw,11px);border-width:2px}
-.badge .bName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.badge.onTurn{opacity:1;transform:scale(1.07);color:#fff;
-  border-color:var(--woodD);
-  box-shadow:0 3px 0 var(--woodD), inset 0 0 0 999px rgba(0,0,0,.18);
-  animation:badgePulse 1s ease-in-out infinite}
-@keyframes badgePulse{50%{transform:scale(1.13)}}
-.badge.dead{opacity:.85;filter:saturate(.35)}
-.badge.dead::after{content:"âœ•";font-weight:900;margin-left:2px;color:var(--red)}
+/* The badge strip and the TURN n chip are gone; the home button stays, so the
+   HUD is now a single right-aligned control. */
+#hud{display:flex;align-items:flex-start;justify-content:flex-end;gap:clamp(5px,1.6vw,8px);min-height:clamp(44px,11.5vw,52px)}
 #hudRight{display:flex;align-items:center;gap:clamp(4px,1.4vw,6px);flex:none}
-#turnNum{font-weight:900;font-size:clamp(10.5px,3.3vw,12.5px);letter-spacing:.04em;background:var(--woodD);color:var(--cream);padding:clamp(4px,1.2dvh,6px) clamp(9px,3.2vw,12px);border-radius:999px;white-space:nowrap}
 
 #stage{
   position:relative;flex:1 1 0;min-height:110px;border:clamp(2px,.8vw,3px) solid var(--wood);border-radius:clamp(18px,5.5vw,24px);
@@ -459,6 +458,26 @@ input[type=range]::-moz-range-thumb{
 #turnBanner.show{animation:tbIn 1.15s ease forwards}
 @keyframes tbIn{0%{opacity:0;transform:scale(.5)}15%{opacity:1;transform:scale(1.08)}25%{transform:scale(1)}75%{opacity:1}100%{opacity:0;transform:scale(1.05) translateY(-12px)}}
 
+/* Whose turn it is, pinned to the bottom of the balloon's stage. It sits below
+   the balloon and above the grass line, centred, with its own padding so it
+   reads as a label and not as part of the scenery. */
+#turnTag{
+  position:absolute;left:50%;bottom:clamp(7px,2.2dvh,14px);transform:translateX(-50%);
+  z-index:7;pointer-events:none;max-width:88%;
+  display:flex;align-items:center;justify-content:center;
+  padding:clamp(4px,1.1dvh,7px) clamp(11px,4vw,18px);
+  border-radius:999px;
+  background:rgba(62,42,24,.74);border:clamp(2px,.7vw,3px) solid rgba(255,252,244,.55);
+  box-shadow:0 3px 0 rgba(78,52,46,.35);
+}
+#turnTag span{
+  font-weight:900;font-size:clamp(11px,3.5vw,15px);letter-spacing:.07em;line-height:1.15;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:var(--tc,#fff);text-shadow:0 1px 2px rgba(0,0,0,.45);
+}
+#turnTag.bump{animation:turnTagIn .45s ease}
+@keyframes turnTagIn{0%{transform:translateX(-50%) scale(.7);opacity:0}45%{transform:translateX(-50%) scale(1.06);opacity:1}100%{transform:translateX(-50%) scale(1);opacity:1}}
+
 #panel{
   background:rgba(255,252,244,.92);border:clamp(2px,.8vw,3px) solid var(--wood);border-radius:clamp(16px,5vw,20px);
   box-shadow:0 5px 0 rgba(78,52,46,.22), 0 10px 16px rgba(62,42,24,.1);
@@ -471,7 +490,7 @@ input[type=range]::-moz-range-thumb{
 #meter{display:flex;flex-direction:column;gap:3px}
 .mLabels{display:flex;font-size:clamp(8px,2.6vw,10px);font-weight:900;letter-spacing:.12em;color:var(--dimb)}
 .mLabels span{text-align:center}
-/* ZONES: safe 55% Â· risk 30% Â· danger 15% */
+/* ZONES: safe 55% · risk 30% · danger 15% */
 .mLabels .l1{flex-basis:55%}.mLabels .l2{flex-basis:30%}.mLabels .l3{flex-basis:15%}
 #meter.fake .mLabels .l1{flex-basis:40%}
 #meter.fake .mLabels .l2{flex-basis:30%}
@@ -548,9 +567,9 @@ input[type=range]::-moz-range-thumb{
 .chip svg{width:clamp(18px,5.6vw,22px);height:clamp(18px,5.6vw,22px)}
 .btnRow{display:flex;gap:clamp(7px,2.6vw,10px);flex-wrap:wrap;justify-content:center;width:100%}
 .btnRow .btn{flex:1;min-width:clamp(96px,29vw,118px);padding:clamp(10px,2.4dvh,13px) 8px;font-size:clamp(12.5px,3.9vw,14.5px)}
-#passHint{font-size:clamp(11px,3.5vw,13px);font-weight:700;color:var(--dimb)}
 
-/* ---------- GAME OVER â€” compact, always fits ---------- */
+
+/* ---------- GAME OVER — compact, always fits ---------- */
 #overOverlay{padding:clamp(8px,2.6vw,12px)}
 #overOverlay .overCard{
   padding:clamp(13px,2.8dvh,16px) clamp(11px,3.8vw,14px) clamp(12px,2.6dvh,14px);
@@ -662,7 +681,7 @@ input[type=range]::-moz-range-thumb{
       </g>
       <g transform="translate(202,128)"><line x1="0" y1="0" x2="0" y2="-11" stroke="#33691E" stroke-width="2.2"/><circle cx="-4" cy="-14" r="3.6" fill="#F8BBD0"/><circle cx="4" cy="-14" r="3.6" fill="#F8BBD0"/><circle cx="0" cy="-18" r="3.6" fill="#F8BBD0"/><circle cx="0" cy="-14" r="2.8" fill="#FDD835"/></g>
       <g transform="translate(36,129)"><line x1="0" y1="0" x2="0" y2="-9" stroke="#33691E" stroke-width="2.2"/><circle cx="-3.4" cy="-12" r="3" fill="#fff"/><circle cx="3.4" cy="-12" r="3" fill="#fff"/><circle cx="0" cy="-15.5" r="3" fill="#fff"/><circle cx="0" cy="-12" r="2.4" fill="#FBC02D"/></g>
-      <!-- the star of the show â€” glossy cartoon style -->
+      <!-- the star of the show — glossy cartoon style -->
       <g class="hb">
         <path d="M96 88 q10 12 2 22 q-7 9 2 16" stroke="#6D4C41" stroke-width="2.2" fill="none" stroke-linecap="round"/>
         <path d="M82 86 h16 l-8 8 z" fill="#B71C1C" stroke="#4E342E" stroke-width="2.5" stroke-linejoin="round"/>
@@ -713,9 +732,13 @@ input[type=range]::-moz-range-thumb{
       <h2 class="scrTitle">SETUP</h2>
     </div>
     <div class="panel">
-      <div class="rowLabel">Players Â· 3 to 10</div>
-      <div class="stepper">
-        <button id="countMinus" aria-label="Fewer players">âˆ’</button>
+      <div class="rowLabel">Players · 2 to 10</div>
+<div class="stepper">
+        <!-- Drawn, not typed. The minus used to be the U+2212 character in a
+             display stack that does not reliably carry it, so on some devices it
+             came out as a missing-glyph box. An SVG cannot go missing, and it
+             matches the weight of the "+" beside it. -->
+        <button id="countMinus" aria-label="Fewer players"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="4" y="10.5" width="16" height="3.4" rx="1.7" fill="currentColor"/></svg></button>
         <b id="countVal">2</b>
         <button id="countPlus" aria-label="More players">+</button>
       </div>
@@ -741,7 +764,7 @@ input[type=range]::-moz-range-thumb{
           <div class="panel">
             <div class="howHead"><div class="howNum" style="background:var(--red)">1</div><div class="howTitle">Take turns adding air</div></div>
             <div class="howBody">
-              <p>Press and HOLD the INFLATE button. The longer you hold, the bigger the pump. RELEASE to stop â€” that ends your turn. A quick tap still counts as a small pump.</p>
+              <p>Press and HOLD the INFLATE button. The longer you hold, the bigger the pump. RELEASE to stop — that ends your turn. A quick tap still counts as a small pump.</p>
               <div class="howImg">
                 <svg viewBox="0 0 180 64">
                   <rect x="30" y="36" width="120" height="22" rx="11" fill="#E53935" stroke="#8E1B16" stroke-width="3"/>
@@ -764,7 +787,7 @@ input[type=range]::-moz-range-thumb{
           <div class="panel">
             <div class="howHead"><div class="howNum" style="background:var(--yellow);color:var(--ink);">2</div><div class="howTitle">Watch the pressure meter</div></div>
             <div class="howBody">
-              <p>Green is safe. Yellow is a gamble. Red isâ€¦ well. Nobody knows exactly where the balloon gives up â€” it's different every game.</p>
+              <p>Green is safe. Yellow is a gamble. Red is… well. Nobody knows exactly where the balloon gives up — it's different every game.</p>
               <div class="howImg">
                 <svg viewBox="0 0 180 64">
                   <defs><clipPath id="hm2"><rect x="15" y="22" width="150" height="20" rx="10"/></clipPath></defs>
@@ -804,7 +827,7 @@ input[type=range]::-moz-range-thumb{
                   <circle cx="64" cy="25" r="2" fill="#3E2723"/><circle cx="78" cy="25" r="2" fill="#3E2723"/>
                   <path d="M62 38 q4 -3 8 0 q4 3 8 0" stroke="#4E342E" stroke-width="2.5" fill="none" stroke-linecap="round"/>
                   <path d="M97 20 c4 5 6 8 6 11 a6 6 0 0 1 -12 0 c0 -3 2 -6 6 -11z" fill="#29B6F6" stroke="#0288D1" stroke-width="1.5"/>
-                  <text x="112" y="30" font-size="12" font-weight="900" fill="#8A7563" font-family="Arial Black, Arial, sans-serif">creakâ€¦</text>
+                  <text x="112" y="30" font-size="12" font-weight="900" fill="#8A7563" font-family="Arial Black, Arial, sans-serif">creak…</text>
                 </svg>
               </div>
             </div>
@@ -816,7 +839,7 @@ input[type=range]::-moz-range-thumb{
           <div class="panel">
             <div class="howHead"><div class="howNum" style="background:#8E24AA">4</div><div class="howTitle">Whoever pops it, loses</div></div>
             <div class="howBody">
-              <p>Everyone else wins. No rush â€” take all the time you need for your one big hold. Greed is funny â€” right up until it isn't.</p>
+              <p>Everyone else wins. No rush — take all the time you need for your one big hold. Greed is funny — right up until it isn't.</p>
               <div class="howImg">
                 <svg viewBox="0 0 180 64">
                   <g stroke="#E53935" stroke-width="3" stroke-linecap="round">
@@ -896,10 +919,8 @@ input[type=range]::-moz-range-thumb{
     <div id="rotLayer">
       <div id="gameInner">
         <div id="shakeWrap">
-          <div id="hud">
-            <div id="badges"></div>
+<div id="hud">
             <div id="hudRight">
-              <span id="turnNum">TURN 1</span>
               <button class="iconBtn" id="quitBtn" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></button>
             </div>
           </div>
@@ -908,27 +929,22 @@ input[type=range]::-moz-range-thumb{
             <canvas id="cv"></canvas>
             <div id="warning"></div>
             <div id="turnBanner"><div class="tbSub" id="tbSub">TURN 1</div><div class="tbName" id="tbName">PLAYER 1</div></div>
-
-            <div class="overlay hidden" id="passOverlay">
-              <div class="overCard">
-                <div class="overKicker">Pass the device to</div>
-                <div class="overName" id="passName"></div>
-                <div id="passHint"></div>
-                <button class="btn primary big" id="passBtn">CONTINUE</button>
-              </div>
-            </div>
+            <!-- Whose turn it is. This replaces both the row of player badges
+                 that used to sit across the top and the "pass the device to X"
+                 dialog: one line, in the place the player is already looking. -->
+            <div id="turnTag"><span id="turnTagName">PLAYER 1'S TURN</span></div>
 
             <div class="overlay hidden" id="overOverlay"><div class="overCard" id="overBody"></div></div>
           </div>
 
           <div id="panel">
-            <div id="statusLine">GET READYâ€¦</div>
+            <div id="statusLine">GET READY…</div>
             <div id="meter">
               <div class="mLabels"><span class="l1">SAFE</span><span class="l2">RISK</span><span class="l3">DANGER</span></div>
               <div class="mTrack"><i class="z z1"></i><i class="z z2"></i><i class="z z3"></i><div id="mFill"></div><div id="mTick"></div></div>
               <div class="mBottom"><span id="mPct">0%</span><span id="mSize">SIZE: TINY</span></div>
             </div>
-            <button id="inflateBtn"><span>INFLATE</span><small id="infSub">HOLD â€¢ RELEASE TO STOP</small></button>
+            <button id="inflateBtn"><span>INFLATE</span><small id="infSub">HOLD • RELEASE TO STOP</small></button>
           </div>
         </div>
       </div>
@@ -977,7 +993,7 @@ if(!settings.balloonStyle)settings.balloonStyle='classic';
 function saveSettings(){try{localStorage.setItem('lb_settings',JSON.stringify(settings));}catch(e){}}
 
 /* ============================================================
-   AUDIO â€” everything synthesized with Web Audio
+   AUDIO — everything synthesized with Web Audio
 ============================================================ */
 var A={ctx:null,master:null,noiseBuf:null,air:null};
 A.init=function(){
@@ -1144,7 +1160,7 @@ $('modalNo').addEventListener('click',function(){
 });
 
 /* ============================================================
-   BOT PERSONALITIES â€” one balanced skill level for everyone;
+   BOT PERSONALITIES — one balanced skill level for everyone;
    only the personality changes how they talk and feel.
 ============================================================ */
 var PERSONAS={
@@ -1221,22 +1237,25 @@ function releaseComment(a){
 }
 
 /* ============================================================
-   SETUP SCREEN â€” OLD UI / 3â€“10 LOCAL HUMAN PLAYERS
-============================================================ */
+   SETUP SCREEN — OLD UI / 2–10 LOCAL HUMAN PLAYERS
+   ============================================================ */
+var MIN_PLAYERS=2,MAX_PLAYERS=10;
 var setup={count:4,slots:[]};
 for(var si=0;si<10;si++){
   setup.slots.push({name:'',human:true,color:COLORS[si%COLORS.length]});
 }
 function renderSlots(){
   var wrap=$('slotsWrap');wrap.innerHTML='';
-  var n=Math.max(3,Math.min(10,setup.count));
+  /* Minimum is TWO: two friends passing one phone is the whole point of a
+     pass-and-play party game, and a floor of three locked out the most common
+     way anyone actually plays it. */
+  var n=Math.max(MIN_PLAYERS,Math.min(MAX_PLAYERS,setup.count));
   setup.count=n;
   for(var i=0;i<n;i++){
     var s=setup.slots[i];
     var div=document.createElement('div');
     div.className='slot panel';
-    var html='<div class="slotHead"><span class="slotTag">P'+(i+1)+'</span></div>'+
-      '<div class="nameRow"><div class="avWrap" data-av="'+i+'" role="button" tabindex="0" aria-label="Change player '+(i+1)+' color" title="Tap to change color"></div>'+
+var html='<div class="nameRow"><div class="avWrap" data-av="'+i+'" role="button" tabindex="0" aria-label="Change player '+(i+1)+' color"></div>'+
       '<input class="nameIn" data-i="'+i+'" maxlength="12" placeholder="PLAYER '+(i+1)+'" value="'+s.name.replace(/"/g,'&quot;')+'"></div>';
     div.innerHTML=html;
     wrap.appendChild(div);
@@ -1296,10 +1315,10 @@ function refreshSetupUI(){
   renderSlots();
 }
 $('countMinus').addEventListener('click',function(){
-  SND.click();setup.count=Math.max(3,setup.count-1);refreshSetupUI();
+  SND.click();setup.count=Math.max(MIN_PLAYERS,setup.count-1);refreshSetupUI();
 });
 $('countPlus').addEventListener('click',function(){
-  SND.click();setup.count=Math.min(10,setup.count+1);refreshSetupUI();
+  SND.click();setup.count=Math.min(MAX_PLAYERS,setup.count+1);refreshSetupUI();
 });
 $('setupBack').addEventListener('click',function(){SND.click();showScreen('scr-menu');});
 $('startBtn').addEventListener('click',function(){
@@ -1355,58 +1374,41 @@ function startGame(players){
   G.pressure=0;G.popPoint=newPopPoint();G.phase='idle';G.popped=false;
   G.lastHumanActor=null;G.holding=false;G.botActive=false;G.leakT=0;
   G.warnTier=0;G.oscA=0;G.holdEase=0;G.pollenT=0;G.windT=0;
-  var hSeat=0;
-  players.forEach(function(p){if(p.human){p.orient=(hSeat%2===1);hSeat++;}});
-  particles=[];texts=[];BAL.popped=false;BAL.color=players[0].color;
-  $('overOverlay').classList.add('hidden');$('passOverlay').classList.add('hidden');
+  particles=[];texts=[];BAL.popped=false;
+  /* The balloon picks ONE colour when the match begins and keeps it until the
+     balloon is gone. It used to be recoloured from whoever held the turn in
+     startTurn(), so the balloon changed colour several times mid-match and the
+     shop's promise that a style never alters the colour was meaningless. A
+     rematch is a new match, so it draws again. */
+  BAL.color=COLORS[(Math.random()*COLORS.length)|0];
+  $('overOverlay').classList.add('hidden');
   $('meter').classList.remove('fake','hot');$('stage').classList.remove('danger');
   hideWarning();
   showScreen('scr-game');fitCanvas();
-  buildBadges();
   beginTurn();
 }
-function buildBadges(){
-  var html='';
-  G.players.forEach(function(p){
-    html+='<div class="badge" data-i="'+p.idx+'"><span class="bAv">'+avatarHTML(p,24)+'</span><span class="bName">'+p.name+'</span></div>';
-  });
-  $('badges').innerHTML=html;
-  updateBadges();
-}
-function updateBadges(deadIdx){
-  document.querySelectorAll('.badge').forEach(function(b){
-    var i=+b.getAttribute('data-i');
-    b.classList.toggle('onTurn',i===G.cur&&!G.popped);
-    b.classList.toggle('dead',deadIdx===i);
-  });
+/* The single turn indicator. Replaces the badge strip across the top and the
+   pass-the-device dialog. */
+function setTurnTag(p){
+  var tag=$('turnTag'),name=$('turnTagName');
+  if(!tag||!name)return;
+  name.textContent=p.name+"'S TURN";
+  tag.style.setProperty('--tc',p.color);
+  tag.classList.remove('bump');void tag.offsetWidth;tag.classList.add('bump');
 }
 function beginTurn(){
   if(G.phase==='over')return;
   G.turnCount++;
   var p=curPlayer();
-  updateBadges();
-  $('turnNum').textContent='TURN '+G.turnCount;
-  var needsPass=p.human&&countHumans()>1&&G.lastHumanActor!==null&&G.lastHumanActor!==p.idx;
-  if(needsPass){G.phase='pass';showPass(p);}
-  else startTurn();
-}
-function showPass(p){
-  $('passName').innerHTML=avatarHTML(p,44)+'<span style="color:'+p.color+'">'+p.name+'</span>';
-  var prev=G.players[G.lastHumanActor];
-  $('passHint').textContent=(prev&&prev.idx!==p.idx)?('No peeking, '+prev.name+'.'):'Your pump, your problem.';
-  $('passOverlay').classList.remove('hidden');
-}
- $('passBtn').addEventListener('click',function(){
-  A.unlock();SND.click();
-  $('passOverlay').classList.add('hidden');
+  setTurnTag(p);
   startTurn();
-});
+}
 function startTurn(){
   var p=curPlayer();
   G.phase='ready';G.addedThisTurn=0;G.rateMul=1;G.fakeWarning=false;
   G.wobbleBoost=false;G.warnTier=0;G.botActive=false;G.leakT=0;
   $('meter').classList.remove('fake','hot');$('stage').classList.remove('danger');
-  BAL.color=p.color;
+  /* BAL.color is deliberately NOT set here - see startGame(). */
   $('tbSub').textContent='TURN '+G.turnCount;
   $('tbName').textContent=p.name+"'S TURN";
   var tb=$('turnBanner');tb.style.setProperty('--pc',p.color);
@@ -1510,7 +1512,7 @@ function checkWarnings(){
 }
 
 /* ============================================================
-   BOTS â€” one balanced skill level for everyone.
+   BOTS — one balanced skill level for everyone.
    Small sips, live nerve check while pumping, occasional
    mistakes, watchdogs so a turn can never run away.
 ============================================================ */
@@ -1604,8 +1606,7 @@ function doPop(){
   sw.classList.remove('shake');void sw.offsetWidth;sw.classList.add('shake');
   SND.pop();buzz([80,40,120]);
   showWarning('POP!!','pop');
-  var loser=curPlayer();
-  updateBadges(loser.idx);
+var loser=curPlayer();
   status(loser.name+' POPPED IT!');
   afterGame(1750,function(){showGameOver(loser);});
 }
@@ -1640,13 +1641,44 @@ function showGameOver(loser){
       '<button class="btn primary" id="btnRematch">REMATCH</button>'+
       '<button class="btn" id="btnMenu">HOME</button>'+
     '</div>';
-  $('overOverlay').classList.remove('hidden');
-  $('btnRematch').addEventListener('click',function(){SND.click();$('overOverlay').classList.add('hidden');startGame(G.players);});
-  $('btnMenu').addEventListener('click',function(){SND.click();quitToMenu();});
+$('overOverlay').classList.remove('hidden');
+  $('btnRematch').addEventListener('click',function(){
+    SND.click();
+    $('overOverlay').classList.add('hidden');
+    withInterstitial('lastballoon.gameover.rematch',function(){startGame(G.players);});
+  });
+  $('btnMenu').addEventListener('click',function(){
+    SND.click();
+    $('overOverlay').classList.add('hidden');
+    withInterstitial('lastballoon.gameover.menu',quitToMenu);
+  });
+}
+/* Interstitial on a break the player chose. showInterstitial takes
+   (callbackName, placement) - TWO arguments, and addJavascriptInterface matches
+   by EXACT arity, so the name must be registered on window or the shell fires
+   into the void and the button appears dead. */
+var breakAdBusy=false;
+function withInterstitial(placement,then){
+  if(breakAdBusy){then();return;}
+  var b=window.NativeBridge;
+  if(!b||!b.showInterstitial){then();return;}
+  breakAdBusy=true;
+  var cb='__shell_after_game';
+  window[cb]=function(){
+    try{ delete window[cb]; }catch(e){}
+    breakAdBusy=false;
+    then();
+  };
+  try{ b.showInterstitial(cb,placement); }
+  catch(e){
+    try{ delete window[cb]; }catch(_){}
+    breakAdBusy=false;
+    then();
+  }
 }
 function quitToMenu(){
   G.token++;G.phase='over';stopAirflow();
-  $('overOverlay').classList.add('hidden');$('passOverlay').classList.add('hidden');
+  $('overOverlay').classList.add('hidden');
   showScreen('scr-menu');
 }
  $('quitBtn').addEventListener('click',function(){
@@ -1662,7 +1694,7 @@ function quitToMenu(){
 });
 
 /* ============================================================
-   HOW TO PLAY â€” simple card carousel (instant swap, no animation)
+   HOW TO PLAY — simple card carousel (instant swap, no animation)
 ============================================================ */
 var howIdx=0;
 var howCards=null;
@@ -2044,6 +2076,7 @@ function renderShop(){
   if(settings.balloonStyle!=='classic'&&!styleUnlocked(settings.balloonStyle)){
     settings.balloonStyle='classic';saveSettings();
   }
+  var cool=shopAdCooldownLeft();
   wrap.innerHTML='';
   BALLOON_STYLES.forEach(function(st){
     var unlocked=styleUnlocked(st.id),selected=settings.balloonStyle===st.id;
@@ -2051,12 +2084,17 @@ function renderShop(){
     var card=document.createElement('div');
     card.className='shopCard '+(selected?'selected ':'')+(!unlocked?'locked':'');
     var timerHTML=unlocked&&st.id!=='classic'?'<div class="shopTimer">'+formatShopTimer(remaining)+'</div>':'';
-    var adHTML=adPlayingStyle===st.id?'<div class="shopAdInline">AD PLACEHOLDER â€¢ PLAYING</div>':'';
+    var adHTML=adPlayingStyle===st.id?'<div class="shopAdInline">AD PLAYING…</div>':'';
     var status=selected?'EQUIPPED':(unlocked?(st.id==='classic'?'AVAILABLE':'AVAILABLE FOR 2 HOURS'):'WATCH AN AD');
-    var buttonText=adPlayingStyle===st.id?'AD PLAYINGâ€¦':(selected?'EQUIPPED':(unlocked?'USE':'WATCH AD'));
+    var label,disabled=false;
+    if(adPlayingStyle===st.id){label='AD PLAYING…';disabled=true;}
+    else if(selected){label='EQUIPPED';disabled=true;}
+    else if(unlocked){label='USE';}
+    else if(cool>0){label='READY IN '+Math.ceil(cool/1000)+'s';disabled=true;}
+    else{label='WATCH AD';}
     card.innerHTML='<div class="shopPreview">'+shopBalloonSVG(st.id,COLORS[0])+timerHTML+adHTML+'</div>'+
       '<div class="shopName">'+st.name+'</div><div class="shopStatus">'+status+'</div>'+
-      '<button class="btn '+(selected?'':'primary')+'" data-style="'+st.id+'" '+(adPlayingStyle===st.id?'disabled':'')+'>'+buttonText+'</button>';
+      '<button class="btn '+(selected?'':'primary')+'" data-style="'+st.id+'"'+(disabled?' disabled':'')+'>'+label+'</button>';
     wrap.appendChild(card);
   });
   wrap.querySelectorAll('button[data-style]').forEach(function(btn){
@@ -2077,27 +2115,44 @@ var adPlayingStyle=null;
    WANTS that style and watches an ad to get it. This is exactly the "specific
    games which have rewards or continue option" case.
 
-   The old code was a fake 1.5-second setTimeout that granted the item with no
-   ad at all (see the AD PLACEHOLDER comment it replaced). It now calls the
-   shell's rewarded bridge, which invokes __studioAdCb('granted' | 'closed' |
-   'unavailable') back into the page.
+The old code was a fake 1.5-second setTimeout that granted the item with no
+   ad at all. It now calls the shell's rewarded bridge, which invokes the
+   per-request callback with 'granted' | 'closed' | 'unavailable'.
 
    Only 'granted' unlocks. 'closed' and 'unavailable' release the spinner and
    leave the style locked - the player never loses progress either way. The
    unlock lasts SHOP_UNLOCK_MS = 2 hours. */
 var SHOP_UNLOCK_MS=2*60*60*1000;
+/* A seconds cap between cosmetic rewarded ads, enforced and displayed BY THIS
+   GAME. AdPolicy deliberately leaves NORMAL (cosmetic) rewards uncapped
+   app-wide - the reasoning there is that a player who chooses to watch an ad
+   for a skin is not being abused - so there is no shell-side cooldown to lean
+   on. The stamp lives in this game's own settings so the wait survives leaving
+   the shop and coming back, and the button counts it down in place rather than
+   leaving a dead control on screen. */
+var SHOP_AD_COOLDOWN_MS=30*1000;
+function shopAdCooldownLeft(){
+  var until=Number(settings.shopAdReadyAt||0)-Date.now();
+  return until>0?until:0;
+}
 function triggerShopAd(id){
   if(adPlayingStyle)return;
+  var left=shopAdCooldownLeft();
+  if(left>0){renderShop();return;}
   adPlayingStyle=id;renderShop();
   var bridge=window.NativeBridge;
   var finish=function(granted){
     if(adPlayingStyle!==id)return;
     adPlayingStyle=null;
+    /* The clock starts whether or not the ad was earned. A player who backs out
+       has still spent the attempt, and an uncapped retry is exactly the
+       mash-tap loop the cap exists to stop. */
+    settings.shopAdReadyAt=Date.now()+SHOP_AD_COOLDOWN_MS;
     if(granted){
       settings.shopExpiry[id]=Date.now()+SHOP_UNLOCK_MS;
       settings.balloonStyle=id;
-      saveSettings();
     }
+    saveSettings();
     renderShop();
   };
   if(bridge&&bridge.showRewardedAd){
@@ -2105,19 +2160,29 @@ function triggerShopAd(id){
        on window must match it EXACTLY (two leading underscores) - a mismatch
        makes the shell find nothing and silently drop the reward.
 
-       Each request now gets its OWN unique name instead of sharing the single
+       Each request gets its OWN unique name instead of sharing the single
        global __studioAdCb. Sharing it was the cause of "the first balloon
        unlocks, the rest don't": while balloon A's ad was in flight, tapping
        balloon B overwrote the global with B's closure, so when A's ad finally
        reported back it ran B's handler - unlocking B and never A. A unique,
        self-deleting name per request makes each reward land on the balloon that
-       actually earned it. */
+       actually earned it.
+
+       THREE arguments, always: showRewardedAd(callback, placement, kind) takes
+       three parameters and addJavascriptInterface matches by EXACT arity.
+       `placement` used to be read here without ever being declared, so the
+       lookup threw a ReferenceError, the catch below swallowed it, and every
+       WATCH AD ended in finish(false) - the ad could never pay out and there
+       was no way to tell why. */
+    var placement='lastballoon.shop.style-'+id;
     var cbName='__studioAdCb'+(++adCbSeq);
     window[cbName]=function(result){
       try{ delete window[cbName]; }catch(e){}
       finish(result==='granted'||result===true||result==='rewarded');
     };
-    try{ bridge.showRewardedAd(cbName,placement||"",null); return; }catch(e){}
+    try{ bridge.showRewardedAd(cbName,placement,null); return; }catch(e){
+      try{ console.error('[LastBalloon] rewarded bridge call failed: '+((e&&e.message)||e)); }catch(_){}
+    }
     try{ delete window[cbName]; }catch(e){}
   }
   /* No bridge (plain browser tab): never grant silently. Just cancel. */
