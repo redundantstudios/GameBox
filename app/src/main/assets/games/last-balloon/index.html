@@ -2084,7 +2084,6 @@ function renderShop(){
   if(settings.balloonStyle!=='classic'&&!styleUnlocked(settings.balloonStyle)){
     settings.balloonStyle='classic';saveSettings();
   }
-  var cool=shopAdCooldownLeft();
   wrap.innerHTML='';
   BALLOON_STYLES.forEach(function(st){
     var unlocked=styleUnlocked(st.id),selected=settings.balloonStyle===st.id;
@@ -2098,7 +2097,6 @@ function renderShop(){
     if(adPlayingStyle===st.id){label='AD PLAYING…';disabled=true;}
     else if(selected){label='EQUIPPED';disabled=true;}
     else if(unlocked){label='USE';}
-    else if(cool>0){label='READY IN '+Math.ceil(cool/1000)+'s';disabled=true;}
     else{label='WATCH AD';}
     card.innerHTML='<div class="shopPreview">'+shopBalloonSVG(st.id,COLORS[0])+timerHTML+adHTML+'</div>'+
       '<div class="shopName">'+st.name+'</div><div class="shopStatus">'+status+'</div>'+
@@ -2131,36 +2129,30 @@ The old code was a fake 1.5-second setTimeout that granted the item with no
    leave the style locked - the player never loses progress either way. The
    unlock lasts SHOP_UNLOCK_MS = 2 hours. */
 var SHOP_UNLOCK_MS=2*60*60*1000;
-/* A seconds cap between cosmetic rewarded ads, enforced and displayed BY THIS
-   GAME. AdPolicy deliberately leaves NORMAL (cosmetic) rewards uncapped
-   app-wide - the reasoning there is that a player who chooses to watch an ad
-   for a skin is not being abused - so there is no shell-side cooldown to lean
-   on. The stamp lives in this game's own settings so the wait survives leaving
-   the shop and coming back, and the button counts it down in place rather than
-   leaving a dead control on screen. */
-var SHOP_AD_COOLDOWN_MS=30*1000;
-function shopAdCooldownLeft(){
-  var until=Number(settings.shopAdReadyAt||0)-Date.now();
-  return until>0?until:0;
-}
+/* NO LOCAL CAP, DELIBERATELY.
+   AdPolicy.checkRewarded gates exactly two kinds: REVIVE (one per run, plus a
+   60s cooldown) and UNLOCK (a 120s gap). Everything else falls through to
+   ALLOWED - no cap, no cooldown - on the stated reasoning that a player who
+   chooses to watch an ad for a cosmetic is not being abused by being offered a
+   second one. This placement contains neither "unlock" nor a revive word, so
+   it is a NORMAL reward and the shell leaves it completely free.
+
+   A 30-second cap used to live here in the game. It was the only cap anywhere
+   on this path, it was invisible to AdPolicy, and it contradicted the rule the
+   rest of the app runs on, so it is gone. The busy guard below is not a cap: it
+   only stops a second request while one is already open. */
 function triggerShopAd(id){
   if(adPlayingStyle)return;
-  var left=shopAdCooldownLeft();
-  if(left>0){renderShop();return;}
   adPlayingStyle=id;renderShop();
   var bridge=window.NativeBridge;
   var finish=function(granted){
     if(adPlayingStyle!==id)return;
     adPlayingStyle=null;
-    /* The clock starts whether or not the ad was earned. A player who backs out
-       has still spent the attempt, and an uncapped retry is exactly the
-       mash-tap loop the cap exists to stop. */
-    settings.shopAdReadyAt=Date.now()+SHOP_AD_COOLDOWN_MS;
     if(granted){
       settings.shopExpiry[id]=Date.now()+SHOP_UNLOCK_MS;
       settings.balloonStyle=id;
+      saveSettings();
     }
-    saveSettings();
     renderShop();
   };
   if(bridge&&bridge.showRewardedAd){
