@@ -12,6 +12,7 @@ aiSupport: none
 online: false
 tileColor: #3de0c7
 version: 1
+released: 2026-10-03
 -->
 <style id="studioFonts">
 /* ============================================================
@@ -460,7 +461,6 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
       <button class="btn" id="btn-set"><span>SETTINGS</span></button>
     </div>
     <div class="best-line">BEST — <b id="best-menu">0</b></div>
-    <div class="menu-hint">SPACE · CLICK · TAP — SWITCH PULL</div>
   </div></div>
 </div>
 
@@ -471,7 +471,7 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
     <div class="p-title t-mint">HOW TO PLAY</div>
     <div class="how-lines">
       <div class="how-line"><i>01</i><p>YOU ARE PULLED TOWARD THE <b>ACTIVE MAGNETIC RAIL</b>.</p></div>
-      <div class="how-line"><i>02</i><p><b>CLICK / TAP / SPACE</b> TO GLIDE TO THE OTHER RAIL.</p></div>
+      <div class="how-line"><i>02</i><p><b>TAP THE SCREEN</b> TO GLIDE TO THE OTHER RAIL.</p></div>
       <div class="how-line"><i>03</i><p>LASERS, RAMS AND THEIR <b>ENERGY BEAMS</b> ARE INSTANT DEATH.</p></div>
       <div class="how-line"><i>04</i><p>IT KEEPS ACCELERATING. SURVIVE.</p></div>
     </div>
@@ -487,9 +487,8 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
     <div class="p-kick">CONFIG</div>
     <div class="p-title t-mint">SETTINGS</div>
     <div class="set-row"><span>SOUND</span><button class="btn small" id="btn-sound"><span>ON</span></button></div>
+    <div class="set-row"><span>HAPTICS</span><button class="btn small" id="btn-haptics"><span>ON</span></button></div>
     <div class="set-row"><span>SCREEN SHAKE</span><button class="btn small" id="btn-shake"><span>ON</span></button></div>
-    <div class="set-row"><span>BEST SCORE</span><button class="btn small b-red" id="btn-reset"><span>RESET</span></button></div>
-    <div class="hint">M — MUTE &nbsp;·&nbsp; P / ESC — PAUSE</div>
     <div class="btn-col"><button class="btn" id="btn-set-back"><span>BACK</span></button></div>
   </div></div>
 </div>
@@ -674,6 +673,39 @@ function makeLayer(w,h){const c=document.createElement('canvas');c.width=Math.ma
 let actx=null,master=null,humOsc=null,humGain=null,noiseBuf=null;
 let muted=lsGet('magnet.muted','0')==='1';
 let shakeOn=lsGet('magnet.shake','1')==='1';
+
+/* ---- HAPTICS ----
+   The game had no vibration at all: the shell's haptics setting was carried in
+   Studio.settings and then never read, so the switch on the shell had no
+   effect here at all. Patterns are deliberately short and few - this is a
+   game about one tap repeated hundreds of times, so a buzz per tap turns into
+   a buzz that is on constantly. Only the moments that carry information get
+   one: latching on, switching rails by hand, and dying. */
+const HAPTIC={
+  SWITCH:10,
+  LATCH:[0,6],
+  DEATH:[28,40,28],
+  CONTINUE:[10,30,10,30,22],
+  ZONE:[0,10]
+};
+let hapticsOn=lsGet('magnet.haptics','1')!=='0';
+let hapticLast=0;
+function haptic(pattern,minGap){
+  if(!hapticsOn)return;
+  if(!navigator.vibrate)return;
+  const now=performance.now();
+  if(minGap&&now-hapticLast<minGap)return;
+  hapticLast=now;
+  try{navigator.vibrate(pattern);}catch(e){}
+}
+function setHaptics(on){
+  hapticsOn=!!on;
+  lsSet('magnet.haptics',hapticsOn?'1':'0');
+  /* The shell owns the master haptics switch, so keep it in step both ways. */
+  try{Studio.pushSettings({haptics:hapticsOn});}catch(e){}
+  if(!hapticsOn){try{navigator.vibrate(0);}catch(e){}}
+  setBtnTxt('btn-haptics',hapticsOn?'ON':'OFF');
+}
 
 function initAudio(){
   if(actx)return;
@@ -927,7 +959,7 @@ function updateZone(rdt){
     zFrom=zTo; zTo=target; zMix=0;
     artA=ensureZoneArt(zFrom);
     artB=ensureZoneArt(zTo);
-    if(state==='play')SFX.zone();
+    if(state==='play'){SFX.zone();haptic(HAPTIC.ZONE);}
   }
   if(zMix<1){
     zMix=Math.min(1,zMix+rdt/ZONE_FADE);
@@ -1335,7 +1367,10 @@ function doSwitch(silent){
   ring(p.x,p.y,rgba(C,1),320*vf,.4);
   burst(p.x,p.y,10,C,220*vf);
   updatePolChip();
-  if(!silent){shake(2.2*sf);SFX.switch(p.pol==='top');}
+  /* Only a hand-made switch buzzes. The demo/autopilot calls this with
+     silent=true dozens of times a second and that would be a continuous
+     vibration for the whole demo. */
+  if(!silent){shake(2.2*sf);SFX.switch(p.pol==='top');haptic(HAPTIC.SWITCH,90);}
 }
 function latchFx(){
   const p=player,C=polRGB(p.pol);
@@ -1345,6 +1380,7 @@ function latchFx(){
     pSpawn({x:p.x+rnd(-6,6),y:p.y,vx:rnd(-70,70),vy:dir*rnd(20,60),
       life:.25,size:1.6*vf,color:C,drag:3});
   SFX.latch();
+  haptic(HAPTIC.LATCH,70);
 }
 function drawPlayer(){
   const p=player;if(!p.alive)return;
@@ -1724,8 +1760,9 @@ async function initCrazyGames(){
       }
     }
     /* If the player is already on Game Over when SDK init completes, expose the
-       rewarded button without changing any of the original game UI. */
-    if(state==='over')$('btn-watch-ad').style.display='block';
+       rewarded button without changing any of the original game UI - unless the
+       revive has already been spent on this run. */
+    if(state==='over')refreshWatchAdBtn();
   }catch(err){console.warn('[CrazyGames] SDK init failed',err);}
 }
 function gameplayStart(){
@@ -1734,29 +1771,15 @@ function gameplayStart(){
 function gameplayStop(){
   if(crazyReady)try{window.CrazyGames.SDK.game.gameplayStop();}catch(e){}
 }
-function requestMidgameAd(){
-  if(!crazyReady||adInProgress)return false;
-  adInProgress=true;
-  gameplayStop();
-  try{
-    window.CrazyGames.SDK.ad.requestAd('midgame',{
-      adStarted:()=>{adInProgress=true;setCrazyMute(true);},
-      adFinished:()=>{adInProgress=false;setCrazyMute(!!window.CrazyGames.SDK.game.settings.muteAudio);},
-      adError:(error,errorData)=>{console.warn('[CrazyGames] midgame ad error',error,errorData);adInProgress=false;setCrazyMute(!!window.CrazyGames.SDK.game.settings.muteAudio);}
-    });
-    return true;
-  }catch(e){
-    console.warn('[CrazyGames] midgame ad request failed',e);
-    adInProgress=false;
-    setCrazyMute(!!(window.CrazyGames.SDK.game.settings&&window.CrazyGames.SDK.game.settings.muteAudio));
-    return false;
-  }
-}
+/* The midgame interstitial is gone: it fired on its own every third run at the
+   game-over break, with no button involved, which is not one of the agreed
+   placements. The only interstitials left are the ones the player asked for -
+   game-over RETRY and game-over MENU - and both go through
+   Studio.ads.interstitial(fn, placement). */
 function requestRewardedAd(){
   if(!crazyReady||adInProgress||rewardedUsed)return;
   rewardedUsed=true;
-  const btn=$('btn-watch-ad');
-  btn.style.display='none';
+  $('btn-watch-ad').style.display='none';
   gameplayStop();
   adInProgress=true;
   try{
@@ -1771,15 +1794,37 @@ function requestRewardedAd(){
         console.warn('[CrazyGames] rewarded ad error',error,errorData);
         adInProgress=false;
         setCrazyMute(!!window.CrazyGames.SDK.game.settings.muteAudio);
+        /* Not earned, so the offer comes back - but only while the run still
+           has its revive. */
         rewardedUsed=false;
-        btn.style.display='block';
+        refreshWatchAdBtn();
         gameplayStart();
       }
     });
   }catch(e){
     console.warn('[CrazyGames] rewarded ad request failed',e);
-    adInProgress=false;rewardedUsed=false;btn.style.display='block';gameplayStart();
+    adInProgress=false;rewardedUsed=false;refreshWatchAdBtn();gameplayStart();
   }
+}
+/* ---- interstitials: game-over RETRY and MENU, pause RESTART and MENU ----
+   Studio.ads.interstitial is (onDone, placement) - CALLBACK FIRST. Passing
+   them the other way round makes the shim treat the placement string as the
+   callback, so the ad plays and the button then does nothing.
+   adInProgress is raised for the duration so a mash-tap cannot queue two, and
+   released before the action runs so startGame()'s own guard lets it through. */
+function withInterstitial(placement,fn){
+  if(adInProgress)return;
+  adInProgress=true;
+  gameplayStop();
+  const done=()=>{
+    adInProgress=false;
+    const s=window.CrazyGames&&window.CrazyGames.SDK&&window.CrazyGames.SDK.game
+      &&window.CrazyGames.SDK.game.settings;
+    setCrazyMute(!!(s&&s.muteAudio));
+    fn();
+  };
+  try{Studio.ads.interstitial(done,placement);}
+  catch(e){done();}
 }
 
 const sMenu=$('s-menu'),sHow=$('s-how'),sSet=$('s-set'),
@@ -1806,6 +1851,11 @@ function startGame(){
   if(adInProgress)return;
   gameplayStart();
   rewardedUsed=false;
+  /* The shell caps rewarded revives at ONE PER RUN and only learns that a new
+     run began from the game. A retry happens in page, so the Activity is never
+     recreated and without this the second run's CONTINUE button would be
+     refused with "limit_reached" for the rest of the session. */
+  try{if(window.NativeBridge&&window.NativeBridge.newRun)window.NativeBridge.newRun();}catch(e){}
   obstacles.length=0;clearPools();resetPlayer();
   resetZone();
   score=0;elapsed=0;spawnCount=0;beatBest=false;setScoreDom();
@@ -1823,6 +1873,7 @@ function die(){
   explosion(player.x,player.y);
   ring(player.x,player.y,'rgba(255,120,120,1)',620*vf,.6,3);
   SFX.crash();
+  haptic(HAPTIC.DEATH);
 }
 function continueAfterReward(){
   /* Rewarded ad continues the SAME run. It must not reset score,
@@ -1851,32 +1902,33 @@ function continueAfterReward(){
   updateHudVis();
   gameplayStart();
   SFX.start();
+  haptic(HAPTIC.CONTINUE);
   popupAdd(player.x,player.y-32*vf,'CONTINUE',polRGB(player.pol));
 }
 function showOver(){
   state='over';
   gameplayStop();
   completedRuns++;
-  /* The revive flag used to be reset here, so 'CONTINUE + WATCH AD' came back
-     every time the player died - including after a revive they had already
-     spent. The shell allows one revive per run, so once it is used the button
-     must stay gone for the rest of that run. startGame() clears the flag when a
-     genuinely new run begins, which is the only place it should clear. */
-  if(rewardedUsed)$('btn-watch-ad').style.display='none';
+  /* ONE revive per run. The flag used to be cleared here as well as in
+     startGame(), so 'CONTINUE + WATCH AD' came back every time the player died
+     - including after a revive they had already spent. Worse, the line that
+     respected the flag ran BEFORE the line that decided visibility, so the
+     second one always overwrote it and the button never actually went away.
+     One assignment decides it now, and it is the only one. */
+  refreshWatchAdBtn();
   $('final-score').textContent=score;
   $('final-best').textContent=best;
   $('new-best').classList.toggle('hidden',!beatBest);
-  /* Show the rewarded-ad button only after the CrazyGames SDK is initialized.
-     The v3 SDK does not expose a separate rewarded-ad preload/ready API;
-     the actual fill is confirmed by requestAd's adFinished/adError callbacks. */
-  $('btn-watch-ad').style.display=crazyReady?'block':'none';
   lsSet('magnet.best',best);
   showScreen(sOver,'over');updateHudVis();
   SFX.jingle();
-  /* Request a midgame ad every 3 completed runs, at the natural game-over break. */
-  if(completedRuns%3===0){
-    setTimeout(()=>requestMidgameAd(),180);
-  }
+}
+/* The only place that decides whether CONTINUE is offered: an ad that has not
+   been spent yet, on a run where the SDK is up. Called from showOver() and
+   again when the SDK finishes initialising, because a player who died in the
+   first moment of the screen would otherwise never see the button. */
+function refreshWatchAdBtn(){
+  $('btn-watch-ad').style.display=(crazyReady&&!rewardedUsed)?'block':'none';
 }
 function pauseGame(){if(state!=='play')return;state='pause';showScreen(sPause,'pause');}
 function resumeGame(){if(state!=='pause')return;state='play';sPause.classList.add('off');screenName='';}
@@ -1906,34 +1958,22 @@ bind('btn-how',()=>showScreen(sHow,'how'));
 bind('btn-set',()=>showScreen(sSet,'set'));
 bind('btn-how-back',uiBack);
 bind('btn-set-back',uiBack);
-bind('btn-retry',startGame);
+bind('btn-retry',()=>withInterstitial('magnet.gameover.retry',startGame));
 bind('btn-watch-ad',requestRewardedAd);
-bind('btn-over-menu',toMenu);
+bind('btn-over-menu',()=>withInterstitial('magnet.gameover.menu',toMenu));
 bind('btn-pause',pauseGame);
 bind('btn-resume',resumeGame);
-bind('btn-restart',startGame);
-bind('btn-quit',toMenu);
+bind('btn-restart',()=>withInterstitial('magnet.pause.restart',startGame));
+bind('btn-quit',()=>withInterstitial('magnet.pause.menu',toMenu));
 bind('btn-mute',()=>setMuted(!muted));
 bind('btn-sound',()=>setMuted(!muted));
+bind('btn-haptics',()=>setHaptics(!hapticsOn));
 bind('btn-shake',()=>{
   shakeOn=!shakeOn;lsSet('magnet.shake',shakeOn?'1':'0');
   setBtnTxt('btn-shake',shakeOn?'ON':'OFF');
 });
-let resetArm=false,resetTimer=0;
-bind('btn-reset',()=>{
-  if(!resetArm){
-    resetArm=true;setBtnTxt('btn-reset','SURE?');
-    clearTimeout(resetTimer);
-    resetTimer=setTimeout(()=>{resetArm=false;setBtnTxt('btn-reset','RESET');},2200);
-  }else{
-    resetArm=false;best=0;beatBest=false;lsSet('magnet.best',0);
-    setBtnTxt('btn-reset','RESET');
-    $('best-menu').textContent=best;
-    $('best-hud').textContent='BEST 0';
-    $('best-hud').classList.remove('beat');
-  }
-});
 setMuted(muted);
+setBtnTxt('btn-haptics',hapticsOn?'ON':'OFF');
 setBtnTxt('btn-shake',shakeOn?'ON':'OFF');
 
 /* ============ 14. HOW-TO DEMO ============ */
@@ -2152,15 +2192,20 @@ requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
     if(!s) return;
     try{
       if(typeof s.sound==='boolean'){ setMuted(!s.sound); }
+      /* The shell's haptics switch now actually reaches the game. It did not
+         before: settings.haptics was carried in from the bridge and then never
+         read by anything, so the shell toggle had no effect here. setHaptics
+         also pushes back, so flipping the in-game switch updates the shell and
+         the two stay in step in both directions. */
+      if(typeof s.haptics==='boolean'&&s.haptics!==hapticsOn){ hapticsOn=s.haptics;lsSet('magnet.haptics',hapticsOn?'1':'0');setBtnTxt('btn-haptics',hapticsOn?'ON':'OFF'); }
     }catch(e){}
   }
   applySettings(Studio.settings);
-  /* Banner: single player, only while a run is live. */
-  var want=false;
-  setInterval(function(){
-    var show=(state==='play');
-    if(show!==want){ want=show; Studio.ads.banner(show); }
-  },400);
+  /* Banner polling removed with the rest of the old ad set. Banners are
+     disabled app-wide and the shim's banner() is a no-op, so this loop only
+     cost a timer. Magnet Pull's ads are now exactly: one rewarded revive
+     (one per run) and four interstitials - game-over RETRY, game-over MENU,
+     pause RESTART and pause MENU. */
   window.Game={
     pause:function(){ try{ if(state==='play') pauseGame(); }catch(e){} if(prev.pause) try{ prev.pause(); }catch(e){} },
     resume:function(){ try{ if(state==='pause') resumeGame(); }catch(e){} if(prev.resume) try{ prev.resume(); }catch(e){} applySettings(Studio.settings); },
