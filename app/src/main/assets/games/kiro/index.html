@@ -12,6 +12,7 @@ aiSupport: none
 online: false
 tileColor: #ff6b57
 version: 1
+released: 2026-10-03
 -->
 <style id="studioFonts">
 /* ============================================================
@@ -42,7 +43,7 @@ backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 14p
 /* per-game theme, substituted by the integrator: the button wears the game own
    surface colour and corner radius instead of one identical grey pill */
 #studioBack{background:var(--sb-bg,rgba(8,10,14,.82));border-color:var(--sb-bd,rgba(255,255,255,.3));color:var(--sb-fg,#fff);border-radius:var(--sb-r,19px);box-shadow:0 4px 14px var(--sb-sh,rgba(0,0,0,.35))}
-</style>
+</style>
 
 <script>
 /* ============================================================
@@ -192,8 +193,8 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
       Studio.ads.interstitial(function(){started();finished();});
     }
   };
-  /* Lets the shell push a sound change back into the game the way the
-     portal's settings listener used to. */
+  /* Remove the startup interstitial as it's not in the requested list.
+     The list was: Retry, Map, Menu, and Restart. */
   window.__studioPushAudio=function(on){
     var v=!Studio.settings.sound;
     S.game.settings.muteAudio=v;
@@ -279,7 +280,7 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
   .btnRow{display:flex;gap:11px;justify-content:center;flex-wrap:wrap;margin-top:18px}
   .btnRow .btn{margin-top:0;padding:12px 22px;font-size:13px}
   .bankChip{display:inline-flex;align-items:center;gap:8px;background:rgba(255,209,102,.10);border:1px solid rgba(255,209,102,.34);color:var(--gold);font-weight:800;border-radius:999px;padding:7px 16px;font-size:15px;margin-top:14px}
-  #select .card{max-width:940px;width:min(97vw,940px)}
+  /* full-page map/shop rules live in the KIRO OVERRIDE BLOCK at end of styles */
   .selTop{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px}
   #selTitle{font-family:'Bungee';font-size:20px;letter-spacing:.03em;color:var(--coral)}
   #selMeta{font-size:13px;font-weight:700;letter-spacing:.08em}
@@ -400,10 +401,10 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
     #menu{padding:4px 8px}
     #menu h1{font-size:clamp(52px,17vh,88px)}
     #menu .kick{font-size:9px;margin-bottom:4px;letter-spacing:.38em}
-    #menu .btn{min-height:44px;min-width:min(300px,76vw);font-size:12px;padding:10px 20px;margin-top:5px}
+    /* Every menu button gets the same rhythm. The first one used to carry an   inline margin-top that made the gap above it visibly larger. */#menu .btn{min-height:44px;min-width:min(300px,76vw);font-size:12px;  padding:10px 20px;margin-top:0}/* One rhythm for every menu button. START JOURNEY used to carry an inline   margin-top that made the gap above it visibly wider than the rest. */#menu .btn+.btn{margin-top:9px}#menu .menuStack{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:16px}
     #menu .bankChip{margin-top:5px;padding:5px 12px;font-size:13px}
 
-    #shop .card,#how .card,#settings .card,#select .card,#pause .card,#done .card,#over .card{max-height:none;overflow:hidden}
+    #shop .card,#how .card,#settings .card,#select .card,#pause .card,#done .card,#over .card{max-height:none;overflow:hidden}/* Pause actions stack vertically with even rhythm; they used to sit in a   wrapping row that went ragged on narrow screens. */.btnCol{display:flex;flex-direction:column;align-items:stretch;gap:12px;  margin:18px auto 4px;width:min(300px,72vw)}.btnCol .btn{width:100%;margin-top:0;min-height:46px}
 
     /* Shop stays single-screen on short landscape displays. */
     #shop .shopHead{grid-template-columns:auto 1fr auto;gap:8px}
@@ -896,6 +897,229 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
     padding:20px 24px;
   }
 }
+/* ============ KIRO OVERRIDE BLOCK ============
+   Single consolidated authority for menu/menu-buttons/pause/buttons-panel.
+   Edit HERE, not in the scattered rules above: later equal-specificity
+   rules win the cascade, and this block sits after ALL of them. */
+
+/* Overlays: transparent veil so the game world shows through; lower layers
+   never take taps. THIS is the "game as bg" fix: .ov covers the screen but
+   only its content box blocks input. */
+.ov{align-items:stretch;justify-content:flex-start;padding:0}
+.ov.dim{background:transparent;backdrop-filter:none}
+.hidden{opacity:0 !important;pointer-events:none !important;visibility:hidden !important}
+.ov>*{pointer-events:auto}
+
+/* Menu: game canvas behind, buttons in a centered column. */
+#menu{background:transparent}
+#menu .mWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:24px}
+#menu h1,#menu .bankChip{margin-left:auto;margin-right:auto}
+.btnStack{display:flex;flex-direction:column;align-items:center;margin-top:18px;gap:8px}
+.btnStack .btn{margin-top:0}
+#menu .btn{min-height:46px;min-width:min(300px,76vw);margin-left:auto;margin-right:auto}
+
+/* Map + shop as full pages, not floating cards. */
+#select,#shop{padding:0}
+#select .card,#shop .card{max-width:none;width:100vw;min-height:100vh;max-height:none;
+  border-radius:0;border:none;background:transparent;padding:0;display:flex;flex-direction:column}
+#select .card>*,#shop .card>*{flex:0 0 auto}
+#select .mapWrap{flex:1 1 auto;min-height:0;margin:0;padding:8px;align-items:stretch}
+#select .mapWrap canvas{flex:1 1 auto;width:100%;height:100%;object-fit:contain}
+#select .selTop{padding:10px 16px 4px}
+#select .btnRow{padding:10px 16px 16px;margin-top:0;gap:12px}
+#shop .shopHead{padding:12px 14px 4px}
+#shop .shopBody{flex:1 1 auto;min-height:0;margin:0;padding:4px 14px;overflow:hidden}
+#shop .shopBody .btnRow{padding:8px 14px 16px;margin-top:0}
+
+/* Pause: vertical button column. */
+.btnCol{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin:18px auto 4px;width:min(300px,72vw)}
+.btnCol .btn{width:100%;margin-top:0;min-height:46px}
+
+/* ---------- GAME OVER: buttons were full-card width ---------- */
+/* They were a 1fr grid with width:100%, so RETRY and BACK TO MAP stretched
+   across the whole 460px fail card. They are actions, not banners: content
+   width, centred, and they wrap to a second row only if they must. */
+html body #over .failActions{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;margin-top:0}
+html body #over .failActions .btn{width:auto;min-width:0;max-width:210px;flex:0 1 auto;margin:0;
+  min-height:46px;padding:11px 20px;border-radius:14px;font-size:12px;letter-spacing:.1em}
+/* ============ END KIRO OVERRIDE BLOCK ============ */
+</style>
+
+<!-- ============================================================
+     KIRO LAYOUT BLOCK v2
+     ------------------------------------------------------------------
+     Every page rule that used to live in the scattered media queries above
+     now lives here, at the very end of the stylesheet, with `html body`
+     prefixed selectors. The old rules were authored with mixed specificity
+     (some bare `.card`, some `body.touchOn #select .card`) so their
+     precedence depended on source order and every fix fought the one above
+     it. Everything below outranks all of them, so this is the only block
+     that needs editing from now on.
+
+       MENU   - live game running behind, HUD + touch controls visible,
+                buttons evenly spaced, HOW TO PLAY is a "?" in the corner.
+       MAP    - the map IS the page. Canvas fills the screen, every control
+                floats on top of it in a corner.
+       SHOP   - one full page, no scrolling. The selected skin card turns
+                into the showcase card in place.
+     ============================================================ -->
+<style id="kiro-layout-v2">
+:root{--kbh:clamp(38px,7.4vh,52px)}
+
+/* ---------- shared page shell ---------- */
+.ov{align-items:stretch;justify-content:flex-start;padding:0}
+.ov.dim{background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none}
+.hidden{opacity:0 !important;pointer-events:none !important;visibility:hidden !important}
+.ov>*{pointer-events:auto}
+
+/* The buttons the player should reach for. One size everywhere, so a row of
+   them never looks ragged. */
+.btnStack{display:flex;flex-direction:column;align-items:center;margin-top:18px;gap:10px}
+
+/* ---------- MENU ---------- */
+html body #menu{background:transparent}
+html body #menu .mWrap{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+/* An older media query set `#menu .btn+.btn{margin-top:9px}` on top of the
+   flex gap, so the gap between buttons was 9px+10px while the gap above the
+   first one was 10px - the uneven rhythm reported on the start page. The
+   margin rule is outranked here, so the flex gap is the only spacing. */
+html body #menu .btnStack .btn{margin-top:0}
+html body #menu .btn{min-height:46px;min-width:min(300px,74vw);margin-left:auto;margin-right:auto}
+/* `.hidden` only sets opacity/visibility, so the CONTINUE button still occupied
+   a flex slot and punched a hole in the stack whenever it was hidden. */
+html body #menu .btnStack .btn.hidden{display:none}
+/* HOW TO PLAY: a "?" in the top-right corner instead of a fourth button. */
+html body .helpFab{position:absolute;right:14px;top:14px;z-index:4;
+  width:var(--kbh);height:var(--kbh);min-height:0;margin:0;padding:0;
+  border-radius:50%;border:2px solid rgba(246,234,214,.34);
+  background:rgba(5,19,34,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  color:var(--ink);font-family:'Bungee';font-size:calc(var(--kbh)*.46);line-height:1;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 18px rgba(0,0,0,.28)}
+html body .helpFab:hover{border-color:var(--coral);color:#fff}
+html body .helpFab:active{transform:scale(.94)}
+
+/* The start page is played-over, not played-in: a real level is loaded quietly
+   so the world itself is what shows through behind the buttons. The HUD chips
+   and the on-screen controls stay hidden here - they belong to the game page,
+   and putting them on the front page only made the two read as one screen. */
+html body:not(.inGame) #cPause{display:none}
+
+/* ---------- IN-GAME CONTROLS: no overlap, ever ----------
+   The four buttons used to be placed at fixed percentages (9% / 19% and
+   76% / 89%) while their SIZE was clamp(82px,12vw,108px). On any phone
+   narrower than about 690 CSS px the two centres of a pair were closer than
+   one button is wide, so LEFT sat on top of RIGHT and DASH on top of JUMP.
+   Both the size and the spacing now derive from the same custom property, so
+   the gap between a pair is always a real gap. */
+html body.touchOn{--cs:clamp(58px,min(12.5vw,25vh),100px)}
+html body .tc button{width:var(--cs,clamp(82px,12vw,108px));height:var(--cs,clamp(82px,12vw,108px));
+  font-size:clamp(10px,min(2.2vw,4.4vh),15px)}
+html body .tc svg{width:calc(var(--cs,90px)*.34);height:calc(var(--cs,90px)*.34)}
+html body #tL{left:calc(4% + var(--cs,90px) / 2)}
+html body #tR{left:calc(4% + var(--cs,90px) * 1.5 + 9px)}
+html body #tD{left:calc(96% - var(--cs,90px) * 1.5 - 9px)}
+html body #tJ{left:calc(96% - var(--cs,90px) / 2)}
+
+/* ---------- MAP ---------- */
+/* The world map is the page. Canvas fills the screen, every control floats on
+   top of it in a corner. */
+html body #select{padding:0}
+html body #select .mapPage{position:relative;width:100vw;height:100dvh;overflow:hidden;background:#040d18}
+html body.touchOn #select #mapCv,
+html body #select #mapCv{
+  position:absolute;left:0;top:0;width:100%;height:100%;
+  max-width:none;max-height:none;min-width:0;min-height:0;
+  aspect-ratio:auto;object-fit:fill;border:0;border-radius:0;display:block;touch-action:manipulation}
+html body #select .mapOverlay{position:absolute;inset:0;z-index:3;pointer-events:none}
+html body #select .mapOverlay>*{pointer-events:auto}
+html body .cornerBtn{display:inline-flex;align-items:center;gap:7px;margin:0;
+  min-height:clamp(34px,6.4vh,44px);padding:0 clamp(10px,1.6vw,16px);
+  border-radius:999px;border:2px solid rgba(246,234,214,.3);
+  background:rgba(5,19,34,.66);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  color:var(--ink);font-family:'Outfit';font-weight:800;cursor:pointer;
+  font-size:clamp(9px,1.9vh,12px);letter-spacing:.12em;white-space:nowrap;
+  box-shadow:0 6px 18px rgba(0,0,0,.3)}
+html body .cornerBtn.gold{border-color:rgba(255,209,102,.6);color:#17233c;
+  background:linear-gradient(180deg,rgba(255,224,126,.94),rgba(255,209,102,.94))}
+html body .cornerBtn:hover{border-color:var(--coral)}
+html body #select .cornerBtn.tl{position:absolute;left:12px;top:12px}
+html body #select .cornerBtn.tr{position:absolute;right:12px;top:12px}
+html body #select .mapTitle{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;
+  padding:7px clamp(12px,2vw,20px);border-radius:14px;
+  background:rgba(5,19,34,.62);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  border:1px solid rgba(217,242,255,.12);max-width:70vw}
+html body #select #selTitle{font-family:'Bungee';font-size:clamp(12px,2.5vh,18px);color:var(--gold);letter-spacing:.04em}
+html body #select #selMeta{font-size:clamp(8px,1.7vh,11px);font-weight:700;letter-spacing:.08em}
+html body #select .mapPagers{position:absolute;left:12px;bottom:12px;display:flex;gap:8px}
+html body #select .mapPagers .pgBtn{width:clamp(32px,6vh,42px);height:clamp(32px,6vh,42px);font-size:clamp(15px,3vh,20px)}
+
+/* ---------- SHOP ---------- */
+html body #shop{padding:0}
+html body #shop .shopPage{width:100vw;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+  background:linear-gradient(180deg,#10294c 0%,#0a1c33 55%,#06111f 100%)}
+html body #shop .shopTopBar{flex:0 0 auto;display:grid;grid-template-columns:auto 1fr auto;
+  align-items:center;gap:clamp(8px,1.4vw,14px);padding:clamp(7px,1.4vh,12px) clamp(10px,1.6vw,16px);
+  border-bottom:1px solid rgba(217,242,255,.10)}
+html body #shop .shopTopBar h2{margin:0;text-align:center;font-size:clamp(13px,3.2vh,21px)}
+html body #shop .shopBackBtn{min-height:clamp(32px,6vh,42px);padding:0 clamp(10px,1.6vw,16px);
+  font-size:clamp(9px,1.9vh,12px);letter-spacing:.1em}
+html body #shop .bankChip{margin:0;padding:clamp(4px,.9vh,7px) clamp(9px,1.4vw,14px);font-size:clamp(11px,2.2vh,15px)}
+html body #shop #charsGrid{flex:1 1 auto;min-height:0;overflow:hidden;
+  display:grid;gap:clamp(5px,1vh,9px);padding:clamp(7px,1.4vh,12px) clamp(10px,1.6vw,16px);
+  grid-template-columns:repeat(4,1fr);grid-auto-rows:minmax(0,1fr);align-content:stretch}
+
+/* A plain skin tile. */
+html body #shop .chcard{position:relative;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:clamp(2px,.5vh,4px);min-height:0;overflow:hidden;
+  padding:clamp(4px,.9vh,9px) 4px;border-radius:clamp(9px,1.6vh,14px);
+  background:rgba(255,255,255,.045);border:2px solid transparent;
+  font-family:inherit;color:var(--ink);cursor:pointer;text-align:center;
+  transition:background .15s,transform .15s;-webkit-tap-highlight-color:transparent}
+html body #shop .chcard:hover{background:rgba(255,255,255,.09)}
+html body #shop .chcard>canvas{width:auto;height:clamp(26px,5.2vh,56px);aspect-ratio:1/1;flex:0 1 auto;min-height:0;display:block}
+html body #shop .chcard .cn{display:flex;align-items:center;gap:4px;font-size:clamp(8px,1.7vh,11px);font-weight:700;letter-spacing:.04em}
+html body #shop .chcard .dot{width:clamp(5px,.9vh,7px);height:clamp(5px,.9vh,7px);border-radius:50%;flex:0 0 auto}
+html body #shop .chcard .cpr{font-size:clamp(7.5px,1.5vh,10.5px);font-weight:700;color:var(--gold);
+  display:flex;gap:3px;align-items:center;min-height:0}
+html body #shop .chcard .cpr.own{color:rgba(246,234,214,.55)}
+html body #shop .chTrialTimer{position:absolute;top:5px;right:5px;z-index:2;padding:2px 4px;border-radius:6px;
+  background:rgba(12,25,45,.92);border:1px solid rgba(67,224,196,.55);color:var(--teal);
+  font-size:clamp(6px,1.2vh,8px);font-weight:900;line-height:1;white-space:nowrap;pointer-events:none}
+
+/* The island-rental confirm is a MODAL over the world map, not a page swap,
+   so the player can still see the island they are deciding about. It keeps its
+   own dimmed backdrop - the shared .ov.dim rule makes overlays transparent so
+   the game shows through, which is right for the map and wrong for a dialog. */
+html body #unlock{z-index:36;background:rgba(2,10,20,.7);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+html body #unlock .unlockCard{max-width:min(92vw,460px);width:min(92vw,460px)}
+html body #unlock #unlockBody{font-size:clamp(11px,2.2vh,14px);line-height:1.45;color:rgba(236,248,255,.92);text-align:center;margin:0 0 4px}
+
+/* The selected tile BECOMES the showcase card - preview, name, rarity, blurb and
+   both actions all live in that one card. There is no separate side panel. */
+html body #shop .chcard.sel{grid-column:span 2;grid-row:span 2;gap:clamp(3px,.7vh,6px);
+  padding:clamp(6px,1.2vh,12px) clamp(8px,1.2vw,14px);border-width:2px;
+  background:linear-gradient(180deg,#15345a,#1b122e)}
+html body #shop .chcard.sel>canvas{flex:1 1 0;min-height:0;height:0;width:100%;
+  max-width:100%;max-height:100%;aspect-ratio:auto;object-fit:contain;display:block}
+html body #shop .chcard.sel .cn{font-size:clamp(11px,2.4vh,17px)}
+html body #shop .chcard.sel .cpr{font-size:clamp(8px,1.6vh,11px)}
+html body #shop .chcard.sel .chTag{font-size:clamp(8px,1.6vh,11.5px);color:rgba(246,234,214,.62);
+  line-height:1.25;padding:0 4px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+html body #shop .chcard.sel .chRar{font-size:clamp(7px,1.4vh,10px);font-weight:800;letter-spacing:.28em;text-indent:.28em}
+html body #shop .chcard.sel .chTrialInfo{min-height:0;font-size:clamp(7.5px,1.5vh,11px);font-weight:800;
+  letter-spacing:.05em;color:var(--gold)}
+html body #shop .chcard.sel .chTrialInfo.active{color:var(--teal)}
+html body #shop .chcard.sel .chBtns{flex:0 0 auto;display:flex;gap:clamp(4px,.8vw,8px);
+  width:100%;justify-content:center;align-items:stretch}
+html body #shop .chcard.sel .chBtns .btn{flex:1 1 0;min-width:0;margin:0;
+  min-height:clamp(28px,5.4vh,40px);padding:0 clamp(5px,1vw,12px);border-radius:11px;
+  font-size:clamp(8px,1.6vh,12px);letter-spacing:.06em;text-indent:0;white-space:nowrap;overflow:hidden}
+
+/* ---------- PAUSE ---------- */
+.btnCol{display:flex;flex-direction:column;align-items:stretch;gap:12px;margin:18px auto 4px;width:min(300px,72vw)}
+.btnCol .btn{width:100%;margin-top:0;min-height:46px}
 </style>
 </head>
 <body>
@@ -917,35 +1141,29 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
 <div id="banner"></div>
 
 <div id="menu" class="ov">
+ <div class="mWrap">
   <h1>KIRO</h1>
   <div class="bankChip"><svg width="17" height="17" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#ffd166" stroke="#b8862f" stroke-width="2"/><circle cx="10" cy="10" r="3.4" fill="#fff1c4"/></svg><span id="menuBank">0</span></div>
-  <button class="btn" id="bStart" style="margin-top:18px">START JOURNEY</button>
+<div class="btnStack">  <button class="btn" id="bStart">START JOURNEY</button>
   <button class="btn violet hidden" id="bContinue">CONTINUE</button>
   <button class="btn gold" id="bShopM">CHARACTER SHOP</button>
   <button class="btn violet" id="bSettingsM">SETTINGS</button>
-  <button class="btn teal" id="bHowM">HOW TO PLAY</button>
-</div>
+  </div>
+  </div>
+ <button class="helpFab" id="bHowM" aria-label="How to play" title="How to play">?</button>
+ </div>
 
 <div id="shop" class="ov dim hidden">
-  <div class="card">
-    <div class="shopHead">
-      <button class="btn ghost shopBackBtn" id="bShopBack">BACK</button>
+  <div class="shopPage">
+    <div class="shopTopBar">
+      <button class="btn ghost shopBackBtn" id="bShopBack">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span>BACK</span>
+      </button>
       <h2>CHARACTER SHOP</h2>
       <div class="bankChip" style="margin-top:0"><svg width="16" height="16" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#ffd166" stroke="#b8862f" stroke-width="2"/><circle cx="10" cy="10" r="3.4" fill="#fff1c4"/></svg><span id="shopBank">0</span></div>
     </div>
-    <div class="shopBody">
-      <div class="previewPanel">
-        <canvas id="prevCv" width="360" height="400"></canvas>
-        <div id="prevName">KIRO</div>
-        <div id="prevRar">COMMON</div>
-        <div id="prevTag">The original explorer</div>
-        <div id="trialInfo"></div>
-        <button class="btn slate" id="bBuy">EQUIPPED</button>
-        <button class="btn violet" id="bTrial">WATCH AD · 2H</button>
-      </div>
-      <div id="charsGrid"></div>
-    </div>
-    <div class="btnRow"><button class="btn ghost" id="bShopClose">CLOSE</button></div>
+    <div id="charsGrid"></div>
   </div>
 </div>
 
@@ -967,20 +1185,37 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
 </div>
 
 <div id="select" class="ov dim hidden">
-  <div class="card">
-    <div class="selTop">
-      <div id="selTitle">CHOOSE AN ISLAND</div>
-      <div id="selMeta"></div>
+  <div class="mapPage">
+    <canvas id="mapCv" width="840" height="430"></canvas>
+    <div class="mapOverlay">
+      <button class="cornerBtn tl" id="bBack" aria-label="Back to menu">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span>BACK</span>
+      </button>
+      <div class="mapTitle">
+        <div id="selTitle">WORLD MAP</div>
+        <div id="selMeta"></div>
+      </div>
+      <button class="cornerBtn tr gold" id="bShopS" aria-label="Character shop">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <span>SHOP</span>
+      </button>
+      <div class="mapPagers">
+        <button class="pgBtn" id="pgL" aria-label="Previous region">‹</button>
+        <button class="pgBtn" id="pgR" aria-label="Next region">›</button>
+      </div>
     </div>
-    <div class="mapWrap">
-      <button class="pgBtn" id="pgL">‹</button>
-      <canvas id="mapCv" width="840" height="430"></canvas>
-      <button class="pgBtn" id="pgR">›</button>
-    </div>
+  </div>
+</div>
+
+<div id="unlock" class="ov dim hidden">
+  <div class="card unlockCard">
+    <h2>LOCKED ISLAND</h2>
+    <div class="rule"></div>
+    <p id="unlockBody"></p>
     <div class="btnRow">
-      <button class="btn ghost" id="bBack">BACK</button>
-      <button class="btn gold" id="bShopS">SHOP</button>
-      <button class="btn" id="bPlayCur">PLAY</button>
+      <button class="btn ghost" id="bUnlockNo">NOT NOW</button>
+      <button class="btn gold" id="bUnlockYes">WATCH AD</button>
     </div>
   </div>
 </div>
@@ -989,11 +1224,12 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
   <div class="card">
     <h2>PAUSED</h2>
     <div class="rule"></div>
-    <div class="btnRow">
+        <div class="btnCol">
       <button class="btn" id="bResume">RESUME</button>
-      <button class="btn violet" id="bRetry">RETRY</button>
+      <button class="btn violet" id="bRestart">RESTART</button>
       <button class="btn violet" id="bSettingsP">SETTINGS</button>
-      <button class="btn ghost" id="bMap1">MAP</button>
+      <button class="btn gold" id="bMap1">MAP</button>
+      <button class="btn ghost" id="bMenuP">MENU</button>
     </div>
   </div>
 </div>
@@ -1048,6 +1284,7 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
     <div class="failRule"></div>
     <div class="failActions">
       <button class="btn teal" id="bRetryFail">RETRY</button>
+      <button class="btn violet" id="bHeartFail">+1 HEART · AD</button>
       <button class="btn ghost" id="bFailMap">BACK TO MAP</button>
     </div>
   </div>
@@ -1201,17 +1438,22 @@ function packSave(s){
   const stars=[],times=[];
   for(let i=0;i<=max;i++){stars.push(s.lv[i]?s.lv[i].stars:0);times.push(s.lv[i]?Math.round(s.lv[i].time):0);}
   const trials=Object.entries(s.trialUntil||{}).filter(([id,t])=>Number.isFinite(+t)&&+t>Date.now()).map(([id,t])=>id+':'+Math.floor(+t)).join(',');
-  return '5|'+s.bank+'|'+s.unlocked+'|'+(s.seen?1:0)+'|'+s.equipped+'|'+s.owned.join(',')+'|'+stars.join('')+'|'+times.join(',')+'|'+trials;}
+  /* Level AD RENTALS ride the save in the same packed string as everything
+     else. Field 9 is new, so the version tag moves 5 -> 6; unpackSave still
+     accepts 4 and 5 so every existing Kiro save still loads. */
+  const ltrials=Object.entries(s.lvUntil||{}).filter(([id,t])=>Number.isFinite(+t)&&+t>Date.now()).map(([id,t])=>id+':'+Math.floor(+t)).join(',');
+  return '6|'+s.bank+'|'+s.unlocked+'|'+(s.seen?1:0)+'|'+s.equipped+'|'+s.owned.join(',')+'|'+stars.join('')+'|'+times.join(',')+'|'+trials+'|'+ltrials;}
 function unpackSave(str){
   try{
-    const p=String(str).split('|');if(p[0]!=='4'&&p[0]!=='5')return null;
+    const p=String(str).split('|');if(p[0]!=='4'&&p[0]!=='5'&&p[0]!=='6')return null;
     const s={bank:+p[1]||0,unlocked:+p[2]||1,seen:p[3]==='1',equipped:p[4]||'kiro',
-      owned:(p[5]||'kiro').split(',').filter(Boolean),lv:{},trialUntil:{}};
+      owned:(p[5]||'kiro').split(',').filter(Boolean),lv:{},trialUntil:{},lvUntil:{}};
     const stars=(p[6]||'').split(''),times=(p[7]||'').split(',');
     for(let i=0;i<stars.length;i++){
       const st=+stars[i]||0,tm=+times[i]||0;
       if(st>0||tm>0)s.lv[i]={stars:st,time:tm};}
-    if(p[0]==='5'&&p[8])for(const item of p[8].split(',')){const q=item.split(':');if(q.length===2&&q[0]&&Number.isFinite(+q[1]))s.trialUntil[q[0]]=+q[1];}
+    if(p[0]!=='4'&&p[8])for(const item of p[8].split(',')){const q=item.split(':');if(q.length===2&&q[0]&&Number.isFinite(+q[1]))s.trialUntil[q[0]]=+q[1];}
+    if(p[0]==='6'&&p[9])for(const item of p[9].split(',')){const q=item.split(':');if(q.length===2&&q[0]&&Number.isFinite(+q[1]))s.lvUntil[q[0]]=+q[1];}
     return s;
   }catch(e){return null;}}
 function ckSave(s){try{document.cookie='kiro='+encodeURIComponent(packSave(s))+
@@ -1242,6 +1484,7 @@ function richParse(cand){
   if(!s||typeof s!=='object'||typeof s.bank!=='number')return null;
   if(!s.lv)s.lv={};
   if(!s.trialUntil||typeof s.trialUntil!=='object')s.trialUntil={};
+  if(!s.lvUntil||typeof s.lvUntil!=='object')s.lvUntil={};
   if(!Array.isArray(s.owned)||!s.owned.length)s.owned=['kiro'];
   if(typeof s.unlocked!=='number'||s.unlocked<1)s.unlocked=1;
   if(typeof s.equipped!=='string'||!s.equipped)s.equipped='kiro';
@@ -1258,11 +1501,44 @@ try{if(window.name&&window.name.indexOf(WNKEY)===0)
 try{if(location.hash&&location.hash.length>1)
   consider(unpackSave(b64d(location.hash.slice(1))));}catch(e){}
 
-let save=bestCand||{unlocked:1,lv:{},seen:0,bank:0,owned:['kiro'],equipped:'kiro',trialUntil:{}};
+let save=bestCand||{unlocked:1,lv:{},seen:0,bank:0,owned:['kiro'],equipped:'kiro',trialUntil:{},lvUntil:{}};
 if(!save.trialUntil||typeof save.trialUntil!=='object')save.trialUntil={};
+if(!save.lvUntil||typeof save.lvUntil!=='object')save.lvUntil={};
 function trialActive(id){return !save.owned.includes(id)&&Number(save.trialUntil[id]||0)>Date.now();}
 function hasCharacterAccess(id){return save.owned.includes(id)||trialActive(id);}
 function cleanupExpiredTrials(){let changed=false;for(const id of Object.keys(save.trialUntil)){if(Number(save.trialUntil[id]||0)<=Date.now()){delete save.trialUntil[id];if(save.equipped===id){save.equipped='kiro';changed=true;}}}if(changed)persist();}
+
+/* ---------- AD-BORROWED LEVELS ----------
+   A rewarded ad lends the player the NEXT island for half an hour. It is a
+   RENTAL, not a purchase: the rental lapses, and the only thing that makes an
+   island permanent is clearing it with 3 stars - the same rule Sheepdog Trials
+   uses. Kept apart from save.lv so a borrowed island never reads as
+   "completed".
+
+   SEQUENTIAL, like everything else in Kiro: an ad can only open the one island
+   immediately after the player's furthest cleared one. It can never skip a
+   level, and it can never be pre-bought further ahead. */
+const AD_UNLOCK_MS=30*60*1000;
+function levelTrialLeft(i){return Math.max(0,Number(save.lvUntil[i]||0)-Date.now());}
+function levelTrialActive(i){return levelTrialLeft(i)>0;}
+function levelStars(i){return (save.lv[i]&&save.lv[i].stars)||0;}
+/* The single island an ad may open: the next one in line, whatever a stale
+   save might say about further ones. */
+function adEligibleLevel(){return save.unlocked;}
+function levelUnlocked(i){
+  if(i<save.unlocked)return true;
+  if(levelStars(i)>=3)return true;
+  return i===adEligibleLevel()&&levelTrialActive(i);}
+function cleanupLevelTrials(){
+  let changed=false;
+  /* Anything past the eligible island is from an older, looser rule and is
+     dropped rather than honoured. */
+  for(const k of Object.keys(save.lvUntil)){
+    if(+k!==adEligibleLevel()||Number(save.lvUntil[k])<=Date.now()){delete save.lvUntil[k];changed=true;}}
+  if(changed)persist();}
+/* How far the world map pages. One island beyond the cleared ones is always
+   listed, because that is the one carrying the AD chip. */
+function progCount(){return save.unlocked+1;}
 cleanupExpiredTrials();
 
 
@@ -1368,13 +1644,22 @@ function lvlTitle(i){
 
 /* ================= audio ================= */
 let AC=null,master=null,musicGain=null,sfxGain=null,noiseB=null,muted=false;
-let soundVol=.5,sfxVol=1,musicOn=true,hapticsOn=true;
+/* Loudness. The game's own mix sat far too low to hear on a phone at full
+   volume: the music bed was ~0.03 and the busiest effects peaked at 0.16
+   before a master of 0.5. These are FIXED bus gains, not user settings, so
+   the lift applies to an existing install too - a player who already has
+   sound:0.5 stored gets the same headroom as a fresh one. */
+const MASTER_BOOST=1.2,SFX_BOOST=1.3,MUSIC_BOOST=1.6;
+let soundVol=.65,sfxVol=1,musicOn=true,hapticsOn=true;
 function loadAudioSettings(){try{const v=JSON.parse(localStorage.getItem('kiro_audio_v1')||'null');if(v){if(Number.isFinite(+v.sound))soundVol=clamp(+v.sound,0,1);if(Number.isFinite(+v.sfx))sfxVol=clamp(+v.sfx,0,1);if(typeof v.music==='boolean')musicOn=v.music;}}catch(e){}
   try{const v=JSON.parse(localStorage.getItem('kiro_haptics_v1')||'null');if(v&&typeof v.on==='boolean')hapticsOn=v.on;}catch(e){}
 }
 function saveAudioSettings(){try{localStorage.setItem('kiro_audio_v1',JSON.stringify({sound:soundVol,sfx:sfxVol,music:musicOn}));}catch(e){}}
 function saveHapticsSettings(){try{localStorage.setItem('kiro_haptics_v1',JSON.stringify({on:hapticsOn}));}catch(e){}}
-function applyAudioVolumes(){if(master)master.gain.value=muted?0:soundVol;if(musicGain)musicGain.gain.value=musicOn?1:0;if(sfxGain)sfxGain.gain.value=sfxVol;}
+function applyAudioVolumes(){
+  if(master)master.gain.value=muted?0:clamp(soundVol*MASTER_BOOST,0,1);
+  if(musicGain)musicGain.gain.value=musicOn?MUSIC_BOOST:0;
+  if(sfxGain)sfxGain.gain.value=clamp(sfxVol*SFX_BOOST,0,1.5);}
 function haptic(pattern=8){if(!hapticsOn||!navigator.vibrate)return;try{navigator.vibrate(pattern);}catch(e){}}
 function initAudio(){
   if(AC){if(AC.state==='suspended')AC.resume();applyAudioVolumes();return;}
@@ -1461,6 +1746,8 @@ const gameKeyCodes=new Set([
 let jumpBuf=0,jHeld=false;
 const shopOpen=()=>!$('shop').classList.contains('hidden');
 const howOpen=()=>!$('how').classList.contains('hidden');
+const settingsOpen=()=>!$('settings').classList.contains('hidden');
+const unlockOpen=()=>!$('unlock').classList.contains('hidden');
 function pressJump(){jumpBuf=0.12;}
 function clearTransientInput(){
   for(const k of gameKeyCodes)keys[k]=false;
@@ -1491,6 +1778,8 @@ document.addEventListener('keydown',e=>{
 
   if(c==='Escape'||c==='KeyP'){
     if(e.repeat)return;
+    if(unlockOpen()){clearTransientInput();closeUnlock();return;}
+    if(settingsOpen()){clearTransientInput();closeSettings();return;}
     if(shopOpen()){clearTransientInput();closeShop();return;}
     if(howOpen()){clearTransientInput();closeHow();return;}
     if(state==='complete'){clearTransientInput();openSelect();return;}
@@ -1904,8 +2193,18 @@ function genBG(seed){
 let page=0,selIdx=0,mapHits=[];
 const hudEl=$('hud'),menuEl=$('menu'),selEl=$('select'),pauseEl=$('pause'),
       doneEl=$('done'),bannerEl=$('banner'),howEl=$('how'),overEl=$('over'),
-      shopEl=$('shop'),settingsEl=$('settings'),layoutEditorEl=$('layoutEditor');
+      shopEl=$('shop'),settingsEl=$('settings'),layoutEditorEl=$('layoutEditor'),
+      unlockEl=$('unlock');
 function show(el,on){el.classList.toggle('hidden',!on);}
+/* One page at a time, always.
+   Several bugs on this screen came from buttons that only HID one overlay and
+   left another up: MENU from the pause screen left the pause card underneath
+   it, and SHOP from the start page left the whole start page underneath it, so
+   the two rendered on top of each other as one blurred page. Nothing opens a
+   page any more except through here. */
+const PAGE_ELS=[menuEl,selEl,shopEl,howEl,pauseEl,doneEl,overEl,settingsEl,layoutEditorEl];
+function hideAllPages(){for(const el of PAGE_ELS)show(el,false);show(hudEl,false);}
+function showPage(el){hideAllPages();if(el)show(el,true);}
 function banner(txt){bannerEl.textContent=txt;bannerEl.classList.remove('show');
   void bannerEl.offsetWidth;bannerEl.classList.add('show');}
 function updHUD(){
@@ -1921,22 +2220,49 @@ function refreshMenu(){
   show(cont,save.unlocked>1);
   if(save.unlocked>1)cont.textContent='CONTINUE · LV '+save.unlocked;
 }
-function openSelect(){state='select';setGameInput(false);
+/* The start page is played-over, not played-in: a real level is loaded quietly
+   so the world, the HUD chips and the on-screen controls are all visible behind
+   the buttons instead of an empty sky. */
+function ensureMenuWorld(){
+  if(lvlW>0)return;
+  try{loadLevel(clamp(progCount()-1,0,9999),true);}catch(e){}
+}
+function showMenu(){
+  state='menu';
+  ensureMenuWorld();
+  persist();refreshMenu();
+  showPage(menuEl);
+  setGameInput(false);
+  sClick();}
+function openSelect(keepPos){
+  heartUsed=false;
+  cleanupLevelTrials();
+  state='select';setGameInput(false);
   /* The map selection follows the player's furthest unlocked level.
      Do not call loadLevel() here: it changes cur and makes the PLAY label
-     lag one level behind the actual progress when the map is opened. */
-  selIdx=clamp(save.unlocked-1,0,Math.max(0,save.unlocked-1));
-  page=Math.floor(selIdx/WORLD);
-  show(menuEl,false);show(pauseEl,false);show(doneEl,false);show(overEl,false);
-  show(shopEl,false);show(hudEl,false);show(selEl,true);buildSelect();sClick();}
-function backMenu(){state='menu';
-  /* Interstitial on the way back to the main menu: the one moment that is a
-     real session break rather than an interruption mid-play. This is only a
-     REQUEST. AdPolicy owns frequency, so inside the first-session grace
-     window, before the minimum gap, or after the once-per-session cap the
-     shell answers "cooldown" and nothing is shown. */
-  Studio.ads.interstitial('kiro.menu.return');setGameInput(false);persist();refreshMenu();show(selEl,false);show(shopEl,false);show(menuEl,true);sClick();}
-const CONTROL_DEFAULTS={L:{x:11,y:80,scale:.78,opacity:.82},R:{x:24,y:80,scale:.78,opacity:.82},D:{x:76,y:80,scale:.78,opacity:.82},J:{x:89,y:80,scale:.78,opacity:.82}};
+     lag one level behind the actual progress when the map is opened.
+     keepPos is for coming BACK to the map (leaving the shop): re-deriving the
+     region there threw the player out of the region they were reading. */
+  if(!keepPos){
+    selIdx=clamp(save.unlocked-1,0,Math.max(0,save.unlocked-1));
+    /* Open on the region holding the island the player can actually act on -
+       the one carrying the AD chip. With no rental running that is the island
+       after the last cleared one, which can be on the next region over. */
+    page=Math.floor((levelTrialActive(adEligibleLevel())?selIdx:adEligibleLevel())/WORLD);
+  }
+  sizeMapCanvas();
+  showPage(selEl);buildSelect();sClick();}
+function backMenu(){
+  /* No ad here. This used to fire an interstitial on every walk back to the
+     start page, which meant the button felt broken whenever the governor
+     swallowed it. The agreed interstitials are on the game-over buttons,
+     RESTART and MENU only. */
+  showMenu();}
+/* Same geometry as the CSS above, expressed in percent for the layout editor.
+   The old defaults were 11/24 and 76/89, i.e. 13% apart, which is less than
+   one button's width on a small landscape phone - the pair overlapped. 10/26
+   and 74/90 keep the same visual weight with a gap that always fits. */
+const CONTROL_DEFAULTS={L:{x:10,y:80,scale:.78,opacity:.82},R:{x:26,y:80,scale:.78,opacity:.82},D:{x:74,y:80,scale:.78,opacity:.82},J:{x:90,y:80,scale:.78,opacity:.82}};
 let controlLayout=JSON.parse(JSON.stringify(CONTROL_DEFAULTS));
 let controlsEditing=false,selectedControl='J';
 function normalizeControl(v,k){
@@ -1970,9 +2296,15 @@ function updateAudioUI(){
   if(mt){mt.classList.toggle('on',musicOn);mt.setAttribute('aria-pressed',musicOn?'true':'false');$('musicToggleState').textContent=musicOn?'ON':'OFF';}
   if(ht){ht.classList.toggle('on',hapticsOn);ht.setAttribute('aria-pressed',hapticsOn?'true':'false');$('hapticsToggleState').textContent=hapticsOn?'ON':'OFF';}
 }
+/* Where SETTINGS was opened from. It used to infer the return target from
+   `state`, but the layout editor overwrites state on its way out, so closing
+   DONE after using the editor could drop a player who came from the menu onto
+   the PAUSE screen. The origin is remembered instead. */
+let settingsFrom='menu';
 function openSettings(fromPause=false){
+  settingsFrom=state;
   controlsEditing=false;document.body.classList.remove('controlsEditing','layoutEditorOpen');
-  show(menuEl,false);show(pauseEl,false);show(selEl,false);show(shopEl,false);show(howEl,false);show(doneEl,false);show(overEl,false);show(hudEl,false);show(layoutEditorEl,false);show(settingsEl,true);
+  showPage(settingsEl);
   updateAudioUI();updateLayoutEditorUI();sClick();
 }
 function startCustomizeLayout(){
@@ -2004,14 +2336,18 @@ function closeLayoutEditor(){
   layoutEditorEl.classList.remove('inGameEditor');
   saveControlLayout();
   show(layoutEditorEl,false);
-  state='pause';
-  show(settingsEl,true);
+  /* The editor is only reachable from SETTINGS, so leaving it returns to
+     SETTINGS - and back to wherever SETTINGS itself came from, instead of
+     hard-coding 'pause' and stranding a menu visitor on the pause screen. */
+  state=settingsFrom;
+  showPage(settingsEl);
   updateAudioUI();
 }
 function closeSettings(){
   controlsEditing=false;document.body.classList.remove('controlsEditing','layoutEditorOpen');saveControlLayout();saveAudioSettings();show(settingsEl,false);show(layoutEditorEl,false);
-  if(state==='pause'){show(pauseEl,true);setGameInput(false);}else if(state==='menu'){show(menuEl,true);refreshMenu();}else if(state==='play'){show(hudEl,true);setGameInput(true);}else if(state==='select'){show(selEl,true);}else if(state==='gameover'){show(overEl,true);}
-}
+  if(settingsFrom==='pause'){state='pause';showPage(pauseEl);setGameInput(false);}
+  else if(settingsFrom==='select'){state='select';showPage(selEl);}
+  else showMenu();}
 function resetControlLayout(){controlLayout=JSON.parse(JSON.stringify(CONTROL_DEFAULTS));selectedControl='J';updateLayoutEditorUI();saveControlLayout();sClick();}
 function setGameInput(on){
   document.body.classList.toggle('inGame',!!on);
@@ -2020,29 +2356,106 @@ loadControlLayout();
 function showFail(){
   state='gameover';goT=0;
   $('bRetryFail').disabled=false;
-  show(overEl,true);setGameInput(false);sLose();
+  /* One extra heart per run, never a second one. The button disappears once
+     it has been used so it can never look like a dead offer. */
+  show($('bHeartFail'),!heartUsed);
+  showPage(overEl);setGameInput(false);sLose();
 }
-function retryCurrentLevel(){
-  if(state!=='gameover')return;
-  clearTransientInput();
-  show(overEl,false);
-  startLevel(cur);
+/* ---- rewarded: ONE extra heart, once per run ---- */
+let heartUsed=false;
+function restartLevel(){
+  clearTransientInput();show(overEl,false);startLevel(cur);}
+function adMessage(why){
+  var m=String(why||'');
+  if(m.indexOf('cooldown:')===0)return 'AD READY IN '+parseInt(m.slice(9),10)+'S';
+  if(m==='cooldown')return 'AD NOT READY YET';
+  if(m==='limit_reached')return 'NO HEARTS LEFT THIS RUN';
+  if(m==='offline')return 'OFFLINE - AD UNAVAILABLE';
+  if(m==='first_session')return 'AD UNAVAILABLE';
+  return 'AD UNAVAILABLE';}
+function watchHeartAd(){
+  if(heartUsed){restartLevel();return;}
+  if(window.__kiroAdBusy)return;
+  window.__kiroAdBusy=true;
+  var released=function(){window.__kiroAdBusy=false;};
+  /* The placement contains "revive", so the shell treats this as a revive:
+     one per run, with its own cooldown. */
+  Studio.ads.rewarded('kiro.revive.extra-heart',
+    function(){
+      released();
+      heartUsed=true;
+      clearTransientInput();show(overEl,false);
+      /* keepHeartOffer: this restart continues the same run. */
+      startLevel(cur,true);
+      /* Exactly one heart, not a fresh set of three. */
+      lives=1;updLives();
+      banner('+1 HEART');},
+    function(why){ released();banner(adMessage(why));}
+  );
 }
-function startLevel(i){
+/* ---- rewarded: borrow one island for 30 minutes ---- */
+let unlockIdx=-1;
+function askLevelUnlock(i){
+  unlockIdx=i;
+  $('unlockBody').innerHTML='<b>ISLAND '+(i+1)+'</b> is locked. Watch an ad to play it for <b>30 minutes</b>. '
+    +'Clear it with <b>3 stars</b> and it unlocks permanently.';
+  /* A MODAL over the map, not a page swap: the player is deciding about an
+     island and needs to still see which one. */
+  show(unlockEl,true);
+  sClick();}
+function closeUnlock(){
+  unlockIdx=-1;
+  show(unlockEl,false);
+  buildSelect();sClick();}
+function runLevelUnlockAd(){
+  var i=unlockIdx;
+  if(i<0)return;
+  if(window.__kiroAdBusy)return;
+  window.__kiroAdBusy=true;
+  var released=function(){window.__kiroAdBusy=false;};
+  /* Placement carries "unlock", which is what puts this on the shell's 120s
+     unlock gap instead of the uncapped cosmetic path. */
+  Studio.ads.rewarded('kiro.level-unlock-'+i,
+    function(){
+      released();
+      save.lvUntil[i]=Date.now()+AD_UNLOCK_MS;
+      persist();
+      unlockIdx=-1;
+      banner('ISLAND '+(i+1)+' OPEN · 30 MIN');
+      show(unlockEl,false);
+      buildSelect();},
+    function(why){ released();banner(adMessage(why));}
+  );
+}
+/* Tells the shell a new attempt has begun. The per-run revive cap lives in
+   AdPolicy and is only cleared by this call, because a retry happens in page
+   and never recreates the Activity - without it the shell still believed the
+   previous run had spent its heart and would refuse the next one with
+   "limit_reached", which is exactly the dead-button bug this replaced. */
+function reportNewRun(){
+  try{if(window.NativeBridge&&window.NativeBridge.newRun)window.NativeBridge.newRun();}catch(e){}
+}
+function startLevel(i,keepHeartOffer){
   i=Math.max(0,Math.floor(i));
   goLandscape();
   clearTransientInput();
-  loadLevel(i,false);state='play';setGameInput(true);
-  if(!isMobile)focusGame();
+  loadLevel(i,false);state='play';
+  /* Starting an attempt is a new run, so the single extra heart is offered
+     again. The heart's own payout passes keepHeartOffer, because that restart
+     continues the SAME run - re-offering the heart there would hand out one
+     per death. */
+  if(!keepHeartOffer){heartUsed=false;reportNewRun();}
   save.unlocked=Math.max(save.unlocked,Math.min(i+1,1e9));
   persist();
-  show(menuEl,false);show(selEl,false);show(pauseEl,false);show(doneEl,false);
-  show(howEl,false);show(overEl,false);show(shopEl,false);show(settingsEl,false);show(hudEl,true);
+  hideAllPages();
+  show(hudEl,true);
+  setGameInput(true);
+  if(!isMobile)focusGame();
   fadeT=1;
 }
 function togglePause(){
-  if(state==='play'){state='pause';clearTransientInput();persist();show(pauseEl,true);setGameInput(false);}
-  else if(state==='pause'){state='play';show(pauseEl,false);show(hudEl,true);setGameInput(true);updHUD();}
+  if(state==='play'){state='pause';clearTransientInput();persist();showPage(pauseEl);setGameInput(false);}
+  else if(state==='pause'){state='play';showPage(null);show(hudEl,true);setGameInput(true);updHUD();}
 }
 let nextTransitionBusy=false;
 function nextLevel(){
@@ -2063,20 +2476,50 @@ function nextLevel(){
 }
 
 const starSVG=(f,s)=>'<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" fill="'+(f?'#ffd166':'none')+'" stroke="'+(f?'#ffd166':'rgba(217,242,255,.25)')+'" stroke-width="2" stroke-linejoin="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>';
- $('bStart').onclick=()=>{initAudio();goLandscape();openSelect();};
+$('bStart').onclick=()=>{initAudio();goLandscape();openSelect();};
  $('bContinue').onclick=()=>{initAudio();goLandscape();startLevel(save.unlocked-1);};
  $('bBack').onclick=backMenu;
- $('bPlayCur').onclick=()=>{initAudio();goLandscape();startLevel(selIdx);};
+ /* #bPlayCur was removed: tapping a map node opens that level directly, so
+   there is no separate PLAY button and nothing to wire up here. */
  $('pgL').onclick=()=>pageMove(-1);
  $('pgR').onclick=()=>pageMove(1);
  $('bPause').onclick=()=>{if(state==='play'||state==='pause')togglePause();};
  $('bResume').onclick=togglePause;
- $('bRetry').onclick=()=>startLevel(cur);
- $('bRetryFail').onclick=()=>{initAudio();retryCurrentLevel();};
- $('bFailMap').onclick=()=>{show(overEl,false);openSelect();};
- $('bMap1').onclick=()=>{show(pauseEl,false);openSelect();};
- $('bMap2').onclick=()=>{show(doneEl,false);openSelect();};
- $('bReplay').onclick=()=>startLevel(cur);
+ /* ---- AGREED AD PLACEMENTS ----
+    interstitials: game-over buttons, RESTART, MENU (pause)
+    rewarded:      +1 heart (one per run), 30-minute island rental,
+                   2-hour skin trial
+    Everything else that used to fire an ad - the walk back to the start page,
+    MAP from the pause screen, REPLAY and the banner poll - is gone.
+
+    Studio.ads.interstitial is (onDone, placement): CALLBACK FIRST. These four
+    used to pass the placement first, so the shim treated the placement string
+    as the callback and the real callback as the placement. The ad still played
+    - the bridge was called correctly either way - but onDone was never a
+    function, so nothing the button was supposed to do ever happened and the
+    button looked completely dead. */
+ $('bMenuP').onclick=()=>{
+  Studio.ads.interstitial(function(){showMenu();},'kiro.pause.menu');
+};
+ $('bRestart').onclick=()=>{
+  Studio.ads.interstitial(function(){initAudio();startLevel(cur);},'kiro.pause.restart');
+};
+ $('bMap1').onclick=()=>{openSelect();};
+ $('bRetryFail').onclick=()=>{
+  Studio.ads.interstitial(function(){initAudio();restartLevel();},'kiro.gameover.retry');
+ };
+ $('bHeartFail').onclick=()=>{initAudio();watchHeartAd();};
+ $('bFailMap').onclick=()=>{
+  Studio.ads.interstitial(function(){openSelect();},'kiro.gameover.map');
+ };
+ $('bUnlockYes').onclick=()=>{initAudio();runLevelUnlockAd();};
+ $('bUnlockNo').onclick=()=>{closeUnlock();};
+ $('bMap2').onclick=()=>{openSelect();};
+ $('bReplay').onclick=()=>{
+  /* Replay is essentially a restart of the current level, not a session break.
+     Removing interstitial as it's not in the requested list. */
+  initAudio();startLevel(cur);
+};
  $('bNext').onclick=e=>{e.preventDefault();e.stopPropagation();nextLevel();};
  $('bHowM').onclick=()=>{initAudio();goLandscape();openHow();sClick();};
  $('bHowOk').onclick=()=>{closeHow();sClick();};
@@ -2324,19 +2767,33 @@ function drawHowIll(){
 
 /* ================= region map ================= */
 const mapCv=$('mapCv'),mg=mapCv.getContext('2d');
+/* The map is authored at 840x430. It is DRAWN in that fixed design space and
+   scaled to cover the screen, so the composition is identical everywhere and
+   never letterboxes (a black bar around the map read as "popup"). The backing
+   store is resized to the viewport, which also keeps a click at CSS pixel (x,y)
+   landing on the same map pixel the node test uses. */
+const MAP_W=840,MAP_H=430;
+function sizeMapCanvas(){
+  const dpr=Math.min(devicePixelRatio||1,2);
+  const w=Math.max(320,Math.round((innerWidth||800)*dpr));
+  const h=Math.max(200,Math.round((innerHeight||450)*dpr));
+  if(mapCv.width!==w||mapCv.height!==h){mapCv.width=w;mapCv.height=h;}
+}
 const MP=[[.09,.58],[.25,.30],[.41,.56],[.57,.28],[.73,.54],[.91,.32]];
-function pageMove(d){const maxP=Math.ceil(save.unlocked/WORLD)-1;
+function pageMove(d){const maxP=Math.ceil(progCount()/WORLD)-1;
   page=clamp(page+d,0,maxP);buildSelect();sClick();}
 function buildSelect(){
-  const maxP=Math.ceil(save.unlocked/WORLD)-1;
+  cleanupLevelTrials();
+  const reach=progCount();
+  const maxP=Math.ceil(reach/WORLD)-1;
   page=clamp(page,0,Math.max(0,maxP));
   const pageStart=page*WORLD;
-  const pageEnd=Math.min(pageStart+WORLD-1,Math.max(0,save.unlocked-1));
+  const pageEnd=Math.min(pageStart+WORLD-1,Math.max(0,reach-1));
   selIdx=clamp(selIdx,pageStart,pageEnd);
-  let tot=0;for(let i=0;i<save.unlocked;i++)tot+=(save.lv[i]&&save.lv[i].stars)||0;
+  let tot=0;for(let i=0;i<reach;i++)tot+=(save.lv[i]&&save.lv[i].stars)||0;
   $('selMeta').innerHTML='STARS <b>'+tot+'</b> · BANK <b>'+save.bank+'</b>';
   $('selTitle').textContent='WORLD MAP';
-  $('bPlayCur').textContent='PLAY LV '+(selIdx+1);
+  /* PLAY LV label removed with the button. */
   $('pgL').disabled=page<=0;
   $('pgR').disabled=page>=maxP;
   drawMap();}
@@ -2366,9 +2823,12 @@ function silLayer(g,w,h,type,yb,col,seed){
     g.lineTo(w,h);}
   g.closePath();g.fill();}
 function drawMap(){
-  const w=mapCv.width,h=mapCv.height;
+  sizeMapCanvas();
+  const cw=mapCv.width,ch=mapCv.height;
+  const s=Math.max(cw/MAP_W,ch/MAP_H);
+  const w=MAP_W,h=MAP_H;
+  mg.setTransform(s,0,0,s,(cw-w*s)/2,(ch-h*s)/2);
   const th=THEMES[page%THEMES.length],pl=th.pal;
-  mg.setTransform(1,0,0,1,0,0);
   const grd=mg.createLinearGradient(0,0,0,h);
   grd.addColorStop(0,pl.top);grd.addColorStop(.6,pl.mid);grd.addColorStop(1,pl.bot);
   mg.fillStyle=grd;mg.fillRect(0,0,w,h);
@@ -2412,20 +2872,43 @@ function drawMap(){
     mg.quadraticCurveTo(mx,my,pts[i][0],pts[i][1]);}
   mg.stroke();mg.setLineDash([]);
   mapHits=[];
+  const nextLocked=adEligibleLevel();
   for(let n=0;n<WORLD;n++){
     const idx=page*WORLD+n;
     const [x,y]=pts[n];
-    const unlocked=idx<save.unlocked;
+    const unlocked=levelUnlocked(idx);
+    const adOpen=idx===nextLocked;
     const isB=n===WORLD-1;
     const rec=save.lv[idx],st=rec?rec.stars:0;
     const r=isB?27:22;
-    mapHits.push({x,y,r:r+10,idx});
+    mapHits.push({x,y,r:r+14,idx});
     mg.fillStyle='rgba(0,0,0,.3)';
     mg.beginPath();mg.ellipse(x,y+r+5,r*.9,6,0,0,TAU);mg.fill();
     mg.fillStyle=unlocked?'#2e2249':'#221a35';
     mg.strokeStyle=unlocked?(isB?'#ffb35c':'#ffd166'):'rgba(246,234,214,.25)';
     mg.lineWidth=3;
     mg.beginPath();mg.arc(x,y,r,0,TAU);mg.fill();mg.stroke();
+    /* An island that is open on a rental wears the teal accent, so borrowed
+       progress is never mistaken for earned progress. */
+    if(levelTrialActive(idx)){
+      mg.strokeStyle='#2ed6bd';mg.lineWidth=2.5;mg.setLineDash([5,4]);
+      mg.beginPath();mg.arc(x,y,r+6,0,TAU);mg.stroke();mg.setLineDash([]);}
+    /* AD chip on the one island an ad can open. It is drawn ABOVE the node,
+       where the compass used to be, so nothing on the map can sit under the
+       SHOP button. */
+    if(adOpen){
+      const left=Math.ceil(levelTrialLeft(idx)/60000);
+      const label=left>0?('AD '+left+'m'):'WATCH AD';
+      mg.font='800 10px Outfit';mg.textAlign='center';mg.textBaseline='middle';
+      const tw=Math.max(34,mg.measureText(label).width+14);
+      const ty=y-r-24;
+      mg.fillStyle='rgba(8,34,32,.94)';
+      rr(mg,x-tw/2,ty,tw,17,8.5);mg.fill();
+      mg.strokeStyle=levelTrialActive(idx)?'rgba(67,224,196,.9)':'rgba(255,209,102,.85)';
+      mg.lineWidth=1.5;rr(mg,x-tw/2,ty,tw,17,8.5);mg.stroke();
+      mg.fillStyle=levelTrialActive(idx)?'#7ff0dc':'#ffd166';
+      mg.fillText(label,x,ty+9);
+      mg.textBaseline='alphabetic';}
     if(unlocked&&idx===selIdx){
       const pr=8+Math.sin(time*4)*3;
       mg.strokeStyle='rgba(255,200,87,.8)';mg.lineWidth=2.5;
@@ -2450,19 +2933,36 @@ function drawMap(){
     mg.font='700 10px Outfit';mg.fillStyle='rgba(255,244,226,.85)';
     mg.fillText(isB?'BOSS':lvlTitle(idx),x,y+r+32);
     mg.textBaseline='alphabetic';}
-  const cx0=w-46,cy0=48;
-  mg.strokeStyle='rgba(255,244,226,.5)';mg.lineWidth=2;
-  mg.beginPath();mg.arc(cx0,cy0,20,0,TAU);mg.stroke();
-  mg.fillStyle='rgba(255,244,226,.7)';
-  mg.beginPath();mg.moveTo(cx0,cy0-16);mg.lineTo(cx0-5,cy0+2);mg.lineTo(cx0+5,cy0+2);mg.closePath();mg.fill();
-  mg.font='700 11px Outfit';mg.textAlign='center';
-  mg.fillText('N',cx0,cy0-24);
-  mg.textAlign='left';
+  /* Region label, centred between the two corner buttons. The compass that used
+     to live in the top-right of the canvas has been removed: it rendered
+     directly underneath the SHOP button and looked like part of it. */
+  mg.textAlign='center';
   mg.font='20px Bungee';mg.fillStyle='#f5fbff';
-  mg.fillText('REGION '+(page+1),22,40);
+  mg.fillText('REGION '+(page+1),w/2,42);
   mg.font='700 12px Outfit';mg.fillStyle='rgba(255,244,226,.75)';
-  mg.fillText('· '+th.name+' —',22,60);
+  mg.fillText(th.name,w/2,62);
   mg.textAlign='left';}
+/* Node taps: an open island starts, a locked one offers the 30-minute rental.
+   The map canvas fills the screen, so the click has to be mapped back through
+   the cover transform before it can be compared with mapHits. */
+mapCv.addEventListener('click',e=>{
+  const r=mapCv.getBoundingClientRect();
+  const cx=(e.clientX-r.left)*mapCv.width/r.width;
+  const cy=(e.clientY-r.top)*mapCv.height/r.height;
+  const sc=Math.max(mapCv.width/MAP_W,mapCv.height/MAP_H);
+  const x=(cx-mapCv.width/2)/sc+MAP_W/2;
+  const y=(cy-mapCv.height/2)/sc+MAP_H/2;
+  for(const nd of mapHits){
+    if(Math.hypot(x-nd.x,y-nd.y)<nd.r){
+      initAudio();
+      if(levelUnlocked(nd.idx))startLevel(nd.idx);
+      /* Only the island immediately after the last cleared one can be opened
+         with an ad. Every other locked island just refuses - tapping it used to
+         offer a rental that could never be honoured, because the sequential
+         rule only ever admits one ad-eligible island at a time. */
+      else if(nd.idx===adEligibleLevel())askLevelUnlock(nd.idx);
+      else sDeny();
+      return;}}});
 function drawStar(g,x,y,r,fill){
   g.beginPath();
   for(let i=0;i<10;i++){
@@ -2472,33 +2972,26 @@ function drawStar(g,x,y,r,fill){
   g.closePath();
   g.fillStyle=fill?'#ffd166':'rgba(246,234,214,.18)';
   g.fill();}
-mapCv.addEventListener('click',e=>{
-  const r=mapCv.getBoundingClientRect();
-  const x=(e.clientX-r.left)*mapCv.width/r.width;
-  const y=(e.clientY-r.top)*mapCv.height/r.height;
-  for(const nd of mapHits){
-    if(Math.hypot(x-nd.x,y-nd.y)<nd.r){
-      initAudio();
-      if(nd.idx<save.unlocked)startLevel(nd.idx);else sDeny();
-      return;}}});
 
 /* ================= shop ================= */
 let shopSel=null,shopFrom='menu';
 function openShop(){
   shopFrom=state;
   shopSel=curCh().id;
-  show(shopEl,true);
-  if(state==='select')show(selEl,false);
+  /* The shop used to raise itself without putting the start page away, so the
+     two drew on top of each other and read as one broken page. showPage()
+     guarantees a single page. */
+  showPage(shopEl);
   renderShop();startShopTimer();sClick();}
 function closeShop(){
   clearInterval(shopTimer);shopTimer=null;
-  show(shopEl,false);
-  if(shopFrom==='select'){show(selEl,true);state='select';drawMap();}
+  if(shopFrom==='select'){openSelect(true);}
+  else if(shopFrom==='pause'){state='pause';showPage(pauseEl);setGameInput(false);}
+  else showMenu();
   sClick();}
  $('bShopM').onclick=()=>{initAudio();goLandscape();openShop();};
  $('bShopS').onclick=()=>{initAudio();openShop();};
  $('bShopBack').onclick=closeShop;
- $('bShopClose').onclick=closeShop;
 const coinIco='<svg width="11" height="11" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#ffd166" stroke="#b8862f" stroke-width="2"/></svg>';
 function charPortrait(ch){
   const c=document.createElement('canvas');c.width=120;c.height=120;
@@ -2526,20 +3019,41 @@ function startShopTimer(){
     cleanupExpiredTrials();renderShop(false);
   },1000);
 }
-function renderShop(playSound=true){
+/* The live preview canvas is created once and MOVED into whichever card is
+   currently selected. Creating it fresh every second used to be fine when the
+   preview lived in its own panel; now it would mean tearing down and rebuilding
+   a canvas inside a card the player may be tapping. */
+let prevCvEl=null,prevCtx=null;
+function previewCanvas(){
+  if(!prevCvEl){
+    prevCvEl=document.createElement('canvas');
+    prevCvEl.className='chShowCv';prevCvEl.width=360;prevCvEl.height=400;
+    prevCtx=prevCvEl.getContext('2d');
+  }
+  return prevCvEl;
+}
+/* Builds the grid. The selected card spans two columns and two rows and holds
+   the preview, the name, the rarity, the blurb and both actions - the old side
+   panel is gone, so nothing is duplicated and nothing has to be clicked twice
+   to reach the buttons. */
+function renderShop(){
   cleanupExpiredTrials();
   if(!shopSel||!charById(shopSel))shopSel=curCh().id;
   $('shopBank').textContent=save.bank;
   const grid=$('charsGrid');grid.innerHTML='';
   for(const ch of CHARS){
     const owned=save.owned.includes(ch.id), trial=trialActive(ch.id), eq=save.equipped===ch.id;
-    const rc=RAR[ch.rarity].col;
-    const card=document.createElement('button');
-    card.className='chcard'+(shopSel===ch.id?' sel':'');
-    card.style.borderColor=shopSel===ch.id?rc:hexA(rc,0.30);
-    if(shopSel===ch.id)card.style.boxShadow='0 0 14px '+hexA(rc,0.25);
-    card.appendChild(charPortrait(ch));
-    if(trial){
+    const rc=RAR[ch.rarity].col, sel=shopSel===ch.id;
+    /* A div, not a <button>: the selected card now contains real buttons, and
+       nested interactive elements are invalid and mis-handle taps. */
+    const card=document.createElement('div');
+    card.className='chcard'+(sel?' sel':'');
+    card.setAttribute('role','button');
+    card.setAttribute('tabindex','0');
+    card.style.borderColor=sel?rc:hexA(rc,0.30);
+    if(sel)card.style.boxShadow='0 0 16px '+hexA(rc,0.28);
+    if(!sel)card.appendChild(charPortrait(ch));
+    if(trial&&!sel){
       const tt=document.createElement('div');
       tt.className='chTrialTimer';
       tt.textContent=formatTrial(Number(save.trialUntil[ch.id])-Date.now());
@@ -2548,58 +3062,81 @@ function renderShop(playSound=true){
     const nm=document.createElement('div');nm.className='cn';
     nm.innerHTML='<span class="dot" style="background:'+rc+'"></span>'+ch.name;
     card.appendChild(nm);
-    const pr=document.createElement('div');pr.className='cpr'+((owned||trial)?' own':'');
-    pr.innerHTML=owned?(eq?'EQUIPPED':'OWNED'):(trial?'TRIAL':' '+coinIco+' '+ch.price);
-    card.appendChild(pr);
-    card.onclick=()=>{shopSel=ch.id;sClick();renderShop(false);};
+
+    if(!sel){
+      const pr=document.createElement('div');pr.className='cpr'+((owned||trial)?' own':'');
+      pr.innerHTML=owned?(eq?'EQUIPPED':'OWNED'):(trial?'TRIAL':' '+coinIco+' '+ch.price);
+      card.appendChild(pr);
+      const pick=()=>{shopSel=ch.id;sClick();renderShop();};
+      card.onclick=pick;
+      card.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();pick();}};
+      grid.appendChild(card);
+      continue;
+    }
+
+    /* ---- the showcase card ---- */
+    card.appendChild(previewCanvas());
+    const rar=document.createElement('div');rar.className='chRar';
+    rar.textContent=RAR[ch.rarity].label;rar.style.color=rc;
+    card.appendChild(rar);
+    const tag=document.createElement('div');tag.className='chTag';
+    tag.textContent=ch.tag;
+    card.appendChild(tag);
+    const ti=document.createElement('div');ti.className='chTrialInfo';
+    const btns=document.createElement('div');btns.className='chBtns';
+    const b=document.createElement('button');
+    b.className='btn';b.type='button';
+    let offerTrial=false;
+    if(eq&&owned){b.textContent='EQUIPPED';b.className='btn slate cant';}
+    else if(owned||trial){
+      b.textContent='EQUIP';b.className='btn teal';
+      b.onclick=e=>{e.stopPropagation();save.equipped=ch.id;persist();sCp();renderShop();};
+      ti.textContent=owned?'PERMANENT':'TRIAL · '+formatTrial(Number(save.trialUntil[ch.id])-Date.now());
+      ti.className='chTrialInfo active';
+    }else if(save.bank>=ch.price){
+      b.innerHTML='BUY · '+ch.price+' '+coinIco;b.className='btn gold';
+      b.onclick=e=>{e.stopPropagation();save.bank-=ch.price;save.owned.push(ch.id);delete save.trialUntil[ch.id];save.equipped=ch.id;persist();sBuy();banner(ch.name+' UNLOCKED!');renderShop();};
+      offerTrial=true;
+    }else{
+      b.textContent='NEED '+(ch.price-save.bank)+' MORE';b.className='btn ghost cant';
+      offerTrial=true;
+    }
+    btns.appendChild(b);
+    /* A skin the player does not own always carries the 2-hour ad offer beside
+       the coin price, so a locked skin can be tried without being bought.
+       Buying with coins is what makes it permanent; the ad only lends it. */
+    if(offerTrial){
+      const t=document.createElement('button');
+      t.type='button';t.className='btn violet';t.textContent='AD · 2H';
+      t.onclick=e=>{e.stopPropagation();watchCharacterAd(ch.id);};
+      btns.appendChild(t);}
+    card.appendChild(ti);
+    card.appendChild(btns);
     grid.appendChild(card);
   }
-  const ch=charById(shopSel),rc=RAR[ch.rarity],b=$('bBuy'),bt=$('bTrial'),ti=$('trialInfo');
-  const owned=save.owned.includes(ch.id),trial=trialActive(ch.id),eq=save.equipped===ch.id;
-  $('prevName').textContent=ch.name;$('prevRar').textContent=rc.label;$('prevRar').style.color=rc.col;$('prevTag').textContent=ch.tag;
-  if(eq&&owned){
-    b.textContent='EQUIPPED';b.className='btn slate';b.onclick=null;
-  }else if(owned||trial){
-    b.textContent='EQUIP';b.className='btn teal';
-    b.onclick=()=>{save.equipped=ch.id;persist();sCp();renderShop(false);};
-  }else if(save.bank>=ch.price){
-    b.innerHTML='BUY · '+ch.price+' '+coinIco;b.className='btn gold';
-    b.onclick=()=>{save.bank-=ch.price;save.owned.push(ch.id);delete save.trialUntil[ch.id];save.equipped=ch.id;persist();sBuy();banner(ch.name+' UNLOCKED!');renderShop(false);};
-  }else{
-    b.textContent='NEED '+(ch.price-save.bank)+' MORE';b.className='btn ghost cant';b.onclick=null;
-  }
-  if(owned){
-    bt.classList.add('hidden');ti.textContent='PERMANENT';ti.className='active';
-  }else if(trial){
-    bt.classList.add('hidden');ti.textContent='TRIAL · '+formatTrial(Number(save.trialUntil[ch.id])-Date.now());ti.className='active';
-  }else{
-    bt.classList.remove('hidden');bt.textContent='WATCH AD · 2H';bt.className='btn violet';
-    bt.onclick=()=>watchCharacterAd(ch.id);
-    ti.textContent='';ti.className='';
-  }
-  if(playSound){};
 }
+/* ---- rewarded: 2-hour skin trial ---- */
 function watchCharacterAd(id){
   if(save.owned.includes(id))return;
-  const reward=()=>{
-    save.trialUntil[id]=Date.now()+2*60*60*1000;
-    save.equipped=id;
-    persist();sBuy();banner(charById(id).name+' · 2H TRIAL!');renderShop(false);
-  };
-  /* Real rewarded ad through the shell bridge.
-     This used to be a hand-rolled countdown that LOOKED like a rewarded ad
-     and granted the 2-hour skin trial on a timer whether or not an ad was
-     ever served - the same fake that shipped in Root.io. The bridge only
-     invokes the reward callback when it reports "granted", and returns a
-     separate "unavailable" token when no ad could be served at all, so a
-     genuine fill failure is not mistaken for the player backing out. */
   if(window.__kiroAdBusy)return;
   window.__kiroAdBusy=true;
   var released=function(){window.__kiroAdBusy=false;};
+  /* Real rewarded ad through the shell bridge. The bridge only calls the
+     reward callback when it reports "granted", so the trial can never be
+     granted by a timer whether or not an ad actually served. */
   Studio.ads.rewarded('kiro.shop.skin_trial',
-    function(){ released(); reward(); },
-    function(why){ released(); banner(why==='unavailable'?'AD UNAVAILABLE':'AD SKIPPED'); });
+    function(){
+      released();
+      save.trialUntil[id]=Date.now()+2*60*60*1000;
+      save.equipped=id;
+      persist();sBuy();banner(charById(id).name+' · 2H TRIAL!');renderShop();},
+    function(why){ released();banner(adMessage(why));}
+  );
 }
+/* watchCharacterAd() is gone with the rest of the old ad set: the 2-hour
+   character trial was not on the agreed list. Skins are bought with coins or
+   already owned, and the two rewarded ads Kiro keeps are the 30-minute island
+   rental and the single extra heart. */
 
 function drawCharInto(g,ch,x,feetY,s,o){
   o=o||{};
@@ -2735,12 +3272,16 @@ function drawCharInto(g,ch,x,feetY,s,o){
   }
   g.restore();
   g.globalAlpha=1;}
-const pcv=$('prevCv'),pctx=pcv.getContext('2d');
+/* The preview canvas now lives inside the selected card (see previewCanvas()),
+   so there is no fixed #prevCv element to look up any more - it draws only
+   when a canvas has actually been built, and paints to whichever card is
+   selected this frame. */
 let pScarf=[];for(let i=0;i<6;i++)pScarf.push({x:0,y:0});
 function drawPreview(){
-  const g=pctx;
+  if(!prevCtx||!prevCvEl||!prevCvEl.isConnected)return;
+  const g=prevCtx;
   g.setTransform(1,0,0,1,0,0);
-  const w=360,h=400;
+  const w=prevCvEl.width,h=prevCvEl.height;
   const gr=g.createLinearGradient(0,0,0,h);
   gr.addColorStop(0,'#3a2a5e');gr.addColorStop(1,'#1a1230');
   g.fillStyle=gr;g.fillRect(0,0,w,h);
@@ -2756,7 +3297,7 @@ function drawPreview(){
     g.fillRect(w-sx,sy,1.8,1.8);}
   const px=w/2+Math.sin(time*1.4)*46;
   const face=Math.cos(time*1.4)>0?1:-1;
-  const S=2.6,feet=318;
+  const S=2.6,feet=h*0.795;
   const nx=px-face*11*S,ny=feet-32*S;
   pScarf[0].x=nx;pScarf[0].y=ny;
   for(let i=1;i<pScarf.length;i++){
@@ -2770,7 +3311,7 @@ function drawPreview(){
     blink:(time%3.4)<0.12,scarf:pScarf});
   g.fillStyle='rgba(255,244,226,.85)';
   g.font='700 11px Outfit';g.textAlign='center';
-  g.fillText('— LIVE PREVIEW —',w/2,372);
+  g.fillText('— LIVE PREVIEW —',w/2,h-28);
   g.textAlign='left';}
 
 /* ================= gameplay ================= */
@@ -2939,7 +3480,12 @@ function completeLevel(){
   const stars=Math.max(1,lives);
   newBest=!!prev.time&&timer<prev.time;
   save.lv[cur]={stars:Math.max(stars,prev.stars||0),time:Math.min(timer,prev.time||1e9)};
-  save.unlocked=Math.max(save.unlocked,cur+2);
+  /* Clearing an island normally unlocks the next one for good. An island the
+     player BORROWED for 30 minutes must not hand out permanent progression -
+     that is the whole difference between earning a level and renting it. The
+     permanent win condition is 3 stars, which levelUnlocked() reads straight
+     off save.lv. */
+  if(cur<save.unlocked)save.unlocked=Math.max(save.unlocked,cur+2);
   persist();
   refreshMenu();
   return stars;}
@@ -3298,10 +3844,45 @@ function render(){
   if(fadeT>0){ctx.fillStyle='rgba(15,8,22,'+fadeT+')';ctx.fillRect(0,0,VW,VH);}}
 
 /* ================= main loop ================= */
-loadLevel(0,true);
-applyControlLayout();
-refreshMenu();
-if(!save.seen){openHow();}
+window.addEventListener('error',function(ev){
+ try{console.error('[KIRO] uncaught',ev.message);}catch(e){}
+ try{if(typeof menuEl!=='undefined'&&menuEl){show(menuEl,true);}}catch(e){}
+});
+
+/* BOOT.
+   The start page used to sit on an empty sky: no level was ever loaded until
+   the player pressed START, so the canvas behind the buttons had nothing in it
+   and read as a black background. The world is now loaded quietly at boot and
+   the HUD chips go up with it, so the first thing a player sees is the game
+   itself - level, character, controls and all - with the menu laid over it. */
+(function boot(){
+  try{
+   cleanupLevelTrials();
+   ensureMenuWorld();
+   show(menuEl,true);
+   refreshMenu();
+   /* Apply the saved (or default) control geometry at boot, so the on-screen
+      buttons are laid out by the same numbers the editor shows instead of
+      falling back to the stylesheet until the editor is opened once. */
+   applyControlLayout();
+  }catch(e){try{console.error('[KIRO] boot failed',e);}catch(_){}}
+})();
+
+/* Boot watchdog: if the boot chain left every overlay hidden, force the
+   main menu up so the player is never stranded on a dead screen. */
+setTimeout(function(){
+ try{
+  var anyUp=false;
+  ['menuEl','selEl','shopEl','howEl','pauseEl','doneEl','overEl'].forEach(function(k){
+   var el=eval(k);
+   if(el&&el.classList&&!el.classList.contains('hidden'))anyUp=true;
+  });
+  if(!anyUp){
+   console.warn('[KIRO] no overlay after boot, forcing menu');
+   showMenu();
+  }
+ }catch(e){}
+},3500);
 let last=performance.now();
 function frame(now){
   requestAnimationFrame(frame);
@@ -3341,12 +3922,11 @@ requestAnimationFrame(frame);
     }catch(e){}
   }
   applySettings(Studio.settings);
-  /* Banner: single player, only while a level is actually being played. */
-  var want=false;
-  setInterval(function(){
-    var show=(state==='play');
-    if(show!==want){ want=show; Studio.ads.banner(show); }
-  },400);
+  /* Banner polling removed with the rest of the old ad set. Banners are
+     disabled app-wide and the shim's banner() is a no-op, so this loop only
+     cost a timer. Kiro's ads are now exactly: two rewarded (30-minute island
+     rental, one extra heart) and three interstitials (game-over RETRY,
+     game-over BACK TO MAP, pause RESTART / pause MENU). */
   window.Game={
     pause:function(){ try{ if(state==='play') togglePause(); }catch(e){} if(prev.pause) try{ prev.pause(); }catch(e){} },
     resume:function(){ try{ if(state==='pause') togglePause(); }catch(e){} if(prev.resume) try{ prev.resume(); }catch(e){} applySettings(Studio.settings); },
