@@ -343,6 +343,7 @@ button{font-family:var(--f);cursor:pointer;border:none;background:none;color:inh
       <div class="set-row"><b>SFX</b><div class="sw" id="sw-sfx"></div></div>
       <div class="set-row"><b>MUSIC</b><div class="sw" id="sw-music"></div></div>
       <div class="set-row"><b>VIBRATION</b><div class="sw" id="sw-vib"></div></div>
+      <div class="set-row"><b>FLIP SCREEN</b><div class="sw" id="sw-flip"></div></div>
       <button id="btn-set-back" class="btn orange">BACK</button>
     </div>
   </section>
@@ -389,10 +390,6 @@ button{font-family:var(--f);cursor:pointer;border:none;background:none;color:inh
       <div class="sub-label">FINAL SCORE</div>
       <div id="score-list"></div>
       <div id="win-line"></div>
-      <div id="ad-offer">
-        <button id="btn-ad-board" class="btn amber">WATCH AD - BIGGER BOARD</button>
-        <small id="ad-note"></small>
-      </div>
       <div class="btn-row">
         <button id="btn-again" class="btn green">PLAY AGAIN</button>
         <button id="btn-menu2" class="btn slate">MAIN MENU</button>
@@ -445,16 +442,25 @@ window.Studio = window.Studio || {};
       const b=bridge();if(!b)return;
       try{ if(visible&&b.showBanner)b.showBanner(); else if(!visible&&b.hideBanner)b.hideBanner(); }catch(e){}
     },
-    interstitial(onDone){
+    /* Placement is forwarded for the analytics tag. Each request also gets its
+       own callback name: these now fire from four different buttons, and a
+       single shared global means two taps in quick succession would race - the
+       second request overwrites the first's callback, so the first button's
+       action would hang until its 45s watchdog fired. The watchdog is kept:
+       it is what stops a lost ad response stranding a button forever. */
+    interstitial(onDone,placement){
       const b=bridge();
+      const go=(typeof onDone==='function')?onDone:null;
       if(b&&b.showInterstitial){
         let settled=false;
-        const done=()=>{if(settled)return;settled=true;if(onDone)onDone();};
+        const done=()=>{if(settled)return;settled=true;if(go)go();};
         const watchdog=setTimeout(done,45000);
-        window.__studioInterCb=()=>{clearTimeout(watchdog);done();};
-        try{b.showInterstitial('__studioInterCb','');return;}catch(e){clearTimeout(watchdog);}
+        window.__studioInterSeq=(window.__studioInterSeq||0)+1;
+        const cb='__studioInterCb'+window.__studioInterSeq;
+        window[cb]=()=>{clearTimeout(watchdog);try{delete window[cb];}catch(_){}done();};
+        try{b.showInterstitial(cb,placement||'');return;}catch(e){clearTimeout(watchdog);try{delete window[cb];}catch(_){}done();return;}
       }
-      if(onDone)onDone();
+      if(go)go();
     }
   };
 })(window.Studio);
@@ -462,7 +468,7 @@ const Studio = window.Studio;
 if(!Studio.ads){
   Studio.ads={
     banner(visible){const b=window.NativeBridge;if(!b)return;try{if(visible&&b.showBanner)b.showBanner();else if(!visible&&b.hideBanner)b.hideBanner();}catch(e){}},
-    interstitial(onDone){const b=window.NativeBridge;if(b&&b.showInterstitial){window.__studioInterCb=function(){if(onDone)onDone();};try{b.showInterstitial('__studioInterCb','');return;}catch(e){}}if(onDone)onDone();},
+    interstitial(onDone,placement){const b=window.NativeBridge;const go=(typeof onDone==='function')?onDone:null;if(b&&b.showInterstitial){window.__studioInterSeq=(window.__studioInterSeq||0)+1;const cb='__studioInterCb'+window.__studioInterSeq;window[cb]=function(){try{delete window[cb];}catch(_){}if(go)go();};try{b.showInterstitial(cb,placement||'');return;}catch(e){try{delete window[cb];}catch(_){}}}if(go)go();},
     rewarded(placement,onReward,onFail){
       const b=window.NativeBridge;
       if(!b||!b.showRewardedAd){if(onFail)onFail('unavailable');return;}
@@ -505,9 +511,18 @@ function on(t,e,f,o){t.addEventListener(e,f,o);LN.push([t,e,f]);}
 let sfxOn = Studio.settings.get('sfxOn', true)!==false;
 let musicOn = Studio.settings.get('musicOn', true)!==false;
 let vibOn = Studio.settings.get('vibOn', true)!==false;
+/* OFF BY DEFAULT, unlike the three above. The rotation this gates was never a
+   choice - it fired on its own whenever player two took a turn in 2-player - so
+   the default has to be the behaviour people actually had a say in. It is also
+   a violent read: every card, label and score comes up upside down, and it is
+   only correct if the phone really is lying on a table between two players
+   facing each other, which is not how most people hold one. Kept as an
+   explicit opt-in. */
+let flipOn = Studio.settings.get('flipOn', false)!==false;
 let masterMuted=false;
 function saveSettings(){
   Studio.settings.set('sfxOn',sfxOn); Studio.settings.set('musicOn',musicOn); Studio.settings.set('vibOn',vibOn);
+  Studio.settings.set('flipOn',flipOn);
 }
 function applyShellSettings(s){
   if(!s || typeof s!=='object') return;
@@ -722,19 +737,6 @@ let phase='idle';
 let paused=false,destroyed=false;
 let setupPlayers = Studio.settings.get('setupPlayers',2)||2;
 let setupMode    = Studio.settings.get('setupMode','friends')||'friends';
-/* Largest board the setup screen offers, and the rewarded target. */
-const MAX_CARDS = 24;
-
-function adMessage(reason){
-  switch(reason){
-    case 'limit_reached': return 'You have used all your ad rewards for now.';
-    case 'cooldown':      return 'Give it a moment, then try again.';
-    case 'offline':
-    case 'unavailable':   return 'Ad unavailable. Check your connection.';
-    default:              return 'Ad unavailable. Try again later.';
-  }
-}
-
 let setupCards   = Studio.settings.get('setupCards',16)||16;
 let settingsReturn='home';
 let nPlayers=2,nCards=16,mode='friends',cur=0;
@@ -939,17 +941,24 @@ function evalPair(){
 }
 /* turn switch is internal: highlight moves silently to the new
    player's colored box; 2P board still rotates for phone-passing */
+/* The screen rotation, now behind the settings toggle.
+   Only ever for two human players facing each other; a bot never causes it,
+   because the view should keep facing the last human. With the toggle off the
+   class is actively cleared rather than just not set, so a round that started
+   with the toggle on cannot leave the board upside down if it is switched off
+   mid-match - and the shorter beat is used, since there is nothing to watch
+   turn over. */
+function applyFlip(){
+  const want=flipOn&&nPlayers===2&&!players[cur].bot&&cur===1;
+  $('game').classList.toggle('rot',want);
+  return want;
+}
 function nextTurn(){
   cur=(cur+1)%nPlayers;
   firstIdx=-1;secondIdx=-1;
   phase='transition';
   markActiveBox();
-  if(nPlayers===2&&!players[cur].bot){
-    $('game').classList.toggle('rot',cur===1);
-    Timers.after(T.rotateMs,beginTurn);
-  }else{
-    Timers.after(180,beginTurn);
-  }
+  Timers.after(applyFlip()?T.rotateMs:180,beginTurn);
 }
 
 /* ----------------------------- bots ------------------------------ */
@@ -1062,6 +1071,7 @@ function refreshToggles(){
   $('sw-sfx').classList.toggle('on',sfxOn&&!masterMuted);
   $('sw-music').classList.toggle('on',musicOn&&!masterMuted);
   $('sw-vib').classList.toggle('on',vibOn);
+  $('sw-flip').classList.toggle('on',flipOn);
 }
 function bindSwitch(id,get,set){
   $(id).addEventListener('click',()=>{
@@ -1112,32 +1122,24 @@ document.querySelectorAll('.mode-btn').forEach(b=>b.addEventListener('click',()=
  $('btn-start').addEventListener('click',()=>{SFX.click();startRound();});
  $('btn-pause').addEventListener('click',()=>{SFX.click();openPause();});
  $('btn-resume').addEventListener('click',()=>{SFX.click();closePause();});
- $('btn-restart').addEventListener('click',()=>{SFX.click();closePause();startRound();});
+ $('btn-restart').addEventListener('click',()=>{SFX.click();Studio.ads.interstitial(()=>{closePause();startRound();},'pause.restart');});
  $('btn-p-settings').addEventListener('click',()=>{SFX.click();settingsReturn='pause';showScreen('scr-settings');refreshToggles();});
- $('btn-p-menu').addEventListener('click',()=>{SFX.click();toMenu();});
-  $('btn-again').addEventListener('click',()=>{SFX.click();Studio.ads.interstitial(()=>startRound());});
-  /* Rewarded offer: jump to the largest board. A round always ends in
-     "MEMORY COMPLETE", so there is no failure to continue from and a
-     continue button would be a lie - a bigger board is a real, wanted reward.
-     It is a NORMAL reward, so the 5-per-game cap applies, not the revive cap. */
-  $('btn-ad-board').addEventListener('click',()=>{
-    SFX.click();
-    const b=$('btn-ad-board');
-    b.disabled=true;b.textContent='LOADING AD...';
-    Studio.ads.rewarded('bigger_board',
-      function(){
-        setupCards=MAX_CARDS;saveSetup();refreshSetup();
-        startRound();
-      },
-      function(reason){
-        b.disabled=false;b.textContent='WATCH AD - BIGGER BOARD';
-        $('ad-note').textContent=adMessage(reason);
-      });
-  });
-  $('btn-menu2').addEventListener('click',()=>{SFX.click();Studio.ads.interstitial(()=>toMenu());});
+ $('btn-p-menu').addEventListener('click',()=>{SFX.click();Studio.ads.interstitial(()=>toMenu(),'pause.menu');});
+  $('btn-again').addEventListener('click',()=>{SFX.click();Studio.ads.interstitial(()=>startRound(),'gameover.rematch');});
+  /* The rewarded "watch an ad for the big board" offer is gone from the
+     results card. It was also broken: the Studio shim above assigns
+     S.ads = {banner, interstitial}, which REPLACES the whole ads object, so
+     rewarded - defined only in the !Studio.ads fallback that never installs -
+     was not a function. Tapping the button threw before any ad was requested.
+     Nothing is lost by removing it: the setup screen already offers 16 / 20 /
+     24 directly, so the biggest board was never locked behind the ad. */
+  $('btn-menu2').addEventListener('click',()=>{SFX.click();Studio.ads.interstitial(()=>toMenu(),'gameover.menu');});
 bindSwitch('sw-sfx',()=>sfxOn,v=>sfxOn=v);
 bindSwitch('sw-music',()=>musicOn,v=>musicOn=v);
 bindSwitch('sw-vib',()=>vibOn,v=>vibOn=v);
+/* Toggling this mid-round takes effect immediately rather than at the next turn,
+   so the switch always reflects what the player is looking at right now. */
+bindSwitch('sw-flip',()=>flipOn,v=>{flipOn=v;applyFlip();});
 
 on(window,'keydown',e=>{if(e.code==='Escape'&&state==='game')openPause();});
 on(window,'blur',()=>{if(state==='game')openPause();});
