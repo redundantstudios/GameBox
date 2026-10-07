@@ -107,11 +107,6 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
   .pzRow:active .card{transform:scale(.985);background:var(--panel2)}
   .pzName{font-size:15px;font-weight:800;letter-spacing:1px;flex:1;color:var(--accent)}
   .pzCount{font-size:12px;font-weight:700;color:var(--ink-dim);margin-right:10px}
-  .streakFlame{width:34px;height:34px;min-width:34px;border-radius:10px;background:var(--panel2);
-    border:2px solid var(--line);display:flex;align-items:center;justify-content:center;margin-right:12px}
-  #streakNow{font-size:22px;font-weight:800}
-  #streakBest{font-size:12px;font-weight:700;color:var(--ink-dim);margin-top:1px}
-  #streakShield{font-size:12px;font-weight:800;color:var(--accent);margin-top:2px}
   .dailyHead{display:flex;align-items:center}
   .dailyTitle{font-size:13px;font-weight:800;letter-spacing:2px;color:var(--ink-dim);flex:1}
   .badge{font-size:10px;font-weight:800;letter-spacing:1px;background:var(--panel2);
@@ -137,22 +132,18 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
   #botBadge.thinking #botDots span:nth-child(3){animation-delay:.36s}
   @keyframes dotBlink{0%,100%{opacity:.2}45%{opacity:1;background:var(--accent)}}
 
-  .ctlRow{display:flex;align-items:center;justify-content:center;margin:7px 0}
-  .ctlRow .iconBtn{margin:0 5px}
-  .sideDot{width:12px;height:12px;min-width:12px;border-radius:7px;border:2px solid var(--line)}
-  .sideDot.sp{margin-right:18px}
-  .sideDot.ghost{visibility:hidden;margin-right:0;margin-left:18px}
-  #pzBar{display:none;align-items:center;justify-content:center;margin:4px 0 8px}
-  #pzBar button{margin:0 6px}
-  #pzBar.on{display:flex}
-  #pzStep{min-width:78px;text-align:center;font-size:12px;font-weight:800;
-    letter-spacing:2px;color:var(--ink-dim)}
-  #boardArea{position:relative;flex:1 1 0;min-height:0}
-  #boardWrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    border-radius:12px;overflow:hidden;box-shadow:0 3px 14px rgba(0,0,0,.35)}
-  #boardShake{position:absolute;left:0;top:0;width:100%;height:100%}
-  #boardWrap canvas{position:absolute;left:0;top:0;width:100%;height:100%;
-    display:block;touch-action:none}
+   .ctlRow{display:flex;align-items:center;justify-content:center;margin:7px 0}
+   .ctlRow .iconBtn{margin:0 5px}
+   .sideDot{width:12px;height:12px;min-width:12px;border-radius:7px;border:2px solid var(--line)}
+   .sideDot.sp{margin-right:18px}
+   .sideDot.ghost{visibility:hidden;margin-right:0;margin-left:18px}
+   #boardArea{position:relative;flex:1 1 0;min-height:0}
+   #boardWrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+     border-radius:12px;overflow:hidden;box-shadow:0 3px 14px rgba(0,0,0,.35)}
+   #boardShake{position:absolute;left:0;top:0;width:100%;height:100%}
+   #boardWrap canvas{position:absolute;left:0;top:0;width:100%;height:100%;
+     display:block;touch-action:none}
+
 
   .modalWrap{display:none;position:fixed;left:0;top:0;right:0;bottom:0;
     background:rgba(15,10,6,.62);z-index:50;align-items:center;justify-content:center;padding:22px}
@@ -264,27 +255,15 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
       </button>
       <h2>PUZZLES</h2>
     </div>
+    <div class="card" style="margin-top:10px">
+      <div class="dailyHead">
+        <div class="dailyTitle">DAILY PUZZLE</div>
+        <div class="badge" id="dailyBadge">EASY</div>
+      </div>
+      <div id="dailyDate">—</div>
+      <button id="dailySolve" class="btn primary">SOLVE</button>
+    </div>
     <div class="scrollBody">
-      <div class="card" style="display:flex;align-items:center">
-        <div class="streakFlame">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-            <path d="M12 2c1 4-3 5.5-3 9a3 3 0 0 0 6 .2C16.4 13 18 11 17 8c2.6 1.7 4 4.4 4 7a9 9 0 1 1-18 0C3 9.5 8.5 7.5 12 2z" fill="#e08a3c"/>
-          </svg>
-        </div>
-        <div>
-          <div id="streakNow">0 DAYS</div>
-          <div id="streakBest">BEST 0</div>
-          <div id="streakShield">SHIELDS 0</div>
-        </div>
-      </div>
-      <div class="card" style="margin-top:10px">
-        <div class="dailyHead">
-          <div class="dailyTitle">DAILY PUZZLE</div>
-          <div class="badge" id="dailyBadge">EASY</div>
-        </div>
-        <div id="dailyDate">—</div>
-        <button id="dailySolve" class="btn primary">SOLVE</button>
-      </div>
       <button class="pzRow" id="tierEasy">
         <div class="card">
           <div class="pzName">EASY</div>
@@ -384,21 +363,6 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
         </svg>
       </button>
       <span class="sideDot ghost"></span>
-    </div>
-    <!-- Puzzle move scrubber: step the puzzle's line back and forth to review
-         what has moved and what comes next. Only shown in puzzle mode. -->
-    <div id="pzBar">
-      <button id="pzPrev" class="iconBtn" aria-label="Previous move">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path d="M15 5.5 8.5 12 15 18.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <span id="pzStep">0 / 0</span>
-      <button id="pzNext" class="iconBtn" aria-label="Next move">
-        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-          <path d="M9 5.5 15.5 12 9 18.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
     </div>
   </section>
 </main>
@@ -1588,11 +1552,9 @@ const app=$("app"), wrap=$("boardWrap"), boardShake=$("boardShake"),
       introGear=$("introGear"), introBack=$("introBack"), playBtn=$("playBtn"), continueBtn=$("continueBtn"),
       knightCv=$("knightCv"), modeKnightCv=$("modeKnightCv"),
       setupBack=$("setupBack"), oppSeg=$("oppSeg"), aiBlock=$("aiBlock"),
-      lvlSeg=$("lvlSeg"), colSeg=$("colSeg"), startBtn=$("startBtn"),
-      pzBack=$("pzBack"), streakNow=$("streakNow"), streakBest=$("streakBest"),
-      pzBar=$("pzBar"), pzPrev=$("pzPrev"), pzStep=$("pzStep"), pzNext=$("pzNext"),
-      streakShield=$("streakShield"),
-      dailyDate=$("dailyDate"), dailySolve=$("dailySolve"),
+       lvlSeg=$("lvlSeg"), colSeg=$("colSeg"), startBtn=$("startBtn"),
+pzBack=$("pzBack"),
+       dailyDate=$("dailyDate"), dailySolve=$("dailySolve"),
       solvedEasy=$("solvedEasy"), solvedNormal=$("solvedNormal"), solvedHard=$("solvedHard"),
       tierEasy=$("tierEasy"), tierNormal=$("tierNormal"), tierHard=$("tierHard"),
       pauseBtn=$("pauseBtn"), icoPause=$("icoPause"), icoBack=$("icoBack"),
@@ -1624,7 +1586,7 @@ const setup={opp:"2p", level:"easy", color:"w"};
 let aiColor=-1;
 let thinking=false;
 let stats={streak:0,best:0,shields:0,lastDaily:"",solved:{easy:0,normal:0,hard:0}};
-let pendingShieldAd=false, endIsChess=true;
+let endIsChess=true;
 const undoStack=[], redoStack=[];
 let snapPre=null;
 let pz=null, wrongSq=-1, wrongUntil=0;
@@ -2067,7 +2029,6 @@ function openEnd(title,sub,pl,pf,sl,sf){
   overSub.textContent=sub;
   overPrimary.textContent=pl; endPfn=pf||null;
   overSecondary.textContent=sl; endSfn=sf||null;
-  pendingShieldAd=false;
   openModal(overSheet);
 }
 function chessOverSheet(){
@@ -2421,47 +2382,9 @@ function startPuzzle(entry,tier,daily){
   after(650, playPly);
 }
 
-/**
- * Rewinds/replays a puzzle to ply [k]. Used by the ◀ / ▶ scrubber so the player
- * can look at what has already been played and step forward again. The line is
- * scripted, so the position is rebuilt by replaying it from the puzzle's FEN
- * through the normal engine (every ply re-validated), which keeps repetition
- * history, status text and legal-move highlighting honest.
- *
- * It never steps past [pz.furthest] - the deepest ply actually reached - so the
- * scrubber reviews the game instead of letting the player walk into the future.
- */
-function pzGoto(k){
-  if(mode!=="puzzle"||!pz||closing) return;
-  const target=Math.max(0,Math.min(k,pz.furthest));
-  Engine.loadFEN(pz.p[1]);
-  Engine.keys.length=0; Engine.keys.push(Engine.posKey());
-  sans=[]; lastMove=null; result=null; sel=-1; anim=null; pop=null; picker=null; wrongSq=-1;
-  clearTimers(); clearCinematics();
-  for(let i=0;i<target;i++){
-    const mv=pz.line[i];
-    try{
-      const res=Engine.make(mv);
-      sans.push(res.san);
-      lastMove={from:mv.from,to:mv.to};
-      if(res.over) result=res.result;
-    }catch(e){ break; }
-  }
-  pz.idx=target;
-  AudioSys.play("tap");
-  gameHaptic("light");
-  refreshLegal(); updateStatus(); updatePzBar();
-  bgDirty=true; dirty=true;
-}
-
-/** Shows the scrubber only while a puzzle is on screen, with an x / n readout. */
+/** Tracks how far into a puzzle the player has actually reached. */
 function updatePzBar(){
-  const on=(mode==="puzzle"&&!!pz&&curScreen==="game");
-  pzBar.classList.toggle("on",on);
-  if(!on) return;
-  pzStep.textContent = pz.idx + " / " + pz.line.length;
-  pzPrev.disabled = (pz.idx<=0);
-  pzNext.disabled = (pz.idx>=pz.furthest);
+  if(pz && pz.idx>pz.furthest) pz.furthest=pz.idx;
 }
 function playPly(){
   if(!pz||mode!=="puzzle"||curScreen!=="game") return;
@@ -2479,54 +2402,34 @@ function showPuzzleSolved(){
   AudioSys.play("end"); gameHaptic("success");
   if(lastMove) spawnRings(cx(lastMove.to),cy(lastMove.to),"#e0b45c",3,false);
   stats.solved[pz.tier]=(stats.solved[pz.tier]||0)+1;
-  const everyN=totalSolved()%CFG.ads.rewardEveryN===0;
   let extra="";
   if(pz.daily){
     const t=todayStr();
     if(stats.lastDaily!==t){
       const y=yesterdayStr();
-      let shieldNote="";
       if(stats.lastDaily===y){
         stats.streak++;
-      } else if(stats.shields>0){
-        stats.shields--;
-        stats.streak++;
-        shieldNote=" · shield used";
       } else {
         stats.streak=1;
       }
       if(stats.streak>stats.best) stats.best=stats.streak;
       stats.lastDaily=t;
-      persistStats();
-      extra=" · Streak "+stats.streak+shieldNote
-        +(pz.failed?" (retry used — streak safe)":"");
-    } else {
       extra=" · Streak "+stats.streak;
+      persistStats();
     }
   }
+  persistStats();
   updateHub();
-  bumpEl(streakNow);
   spawnConfetti();
   endIsChess=false;
   const tier=pz.tier;
-  pendingShieldAd=everyN;
   openEnd("PUZZLE SOLVED","Rating "+pz.p[3]+extra,
     "NEXT PUZZLE", function(){ const p=pickRandom(tier); if(p) beginPuzzle(p,tier,false); },
-    everyN?("+1 SHIELD — WATCH AD"):("PUZZLE HUB"),
+    "PUZZLE HUB",
     function(){
-      if(pendingShieldAd){
-        pendingShieldAd=false;
-        rewardedAd("puzzle_shield",function(){
-          stats.shields++;
-          persistStats();
-          updateHub();
-          bumpEl(streakShield);
-          openSoon("SHIELD EARNED","A Streak Shield protects your streak across one missed day.",null,null);
-        });
-      } else {
-        pz=null; showScreen("puzzles");
-      }
-    });
+      pz=null; showScreen("puzzles");
+    }
+  );
 }
 function pickRandom(tier){
   const arr=PUZZLE_DATA[tier]||[];
@@ -2699,9 +2602,6 @@ function validateChunked(restoreEng){
 const DAYS=["SUN","MON","TUE","WED","THU","FRI","SAT"];
 const MONTHS=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 function updateHub(){
-  streakNow.textContent=stats.streak+(stats.streak===1?" DAY":" DAYS");
-  streakBest.textContent="BEST "+stats.best;
-  streakShield.textContent="SHIELDS "+(stats.shields||0);
   solvedEasy.textContent=String(stats.solved.easy||0);
   solvedNormal.textContent=String(stats.solved.normal||0);
   solvedHard.textContent=String(stats.solved.hard||0);
@@ -2910,8 +2810,6 @@ function bindEvents(){
   startBtn.addEventListener("click",onStart);
 
   pzBack.addEventListener("click",function(){ AudioSys.play("tap"); pz=null; showScreen("intro"); });
-  pzPrev.addEventListener("click",function(){ if(pz) pzGoto(pz.idx-1); });
-  pzNext.addEventListener("click",function(){ if(pz) pzGoto(pz.idx+1); });
   dailySolve.addEventListener("click",function(){
     AudioSys.play("tap");
     if(!PUZZLE_DATA.easy.length){
@@ -2920,8 +2818,8 @@ function bindEvents(){
     }
     const t=todayStr();
     if(stats.lastDaily===t){
-      openSoon("DAILY DONE","Already solved today — current streak "+stats.streak+".",
-        "PLAY RANDOM",function(){ const p=pickRandom("easy"); if(p) beginPuzzle(p,"easy",false); });
+      dailySolve.textContent="SOLVED";
+      openSoon("DAILY SOLVED","You already solved today. Current streak is "+stats.streak+". Come back tomorrow.");
       return;
     }
     const p=dailyPick();

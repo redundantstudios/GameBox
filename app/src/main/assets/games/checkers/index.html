@@ -1519,7 +1519,7 @@ let pzJudge=null, pzTries=0, pzBadTo=-1, pzBadUntil=0, pzHintFrom=-1;
 let pzSolvedShot=false;
 let judgeNodes=-1, judgeNodeCap=0, judgeAbort=false;
 let pzDailyGenerating=false;
-let pstats={streak:0,best:0,lastDaily:"",solved:{easy:0,normal:0,hard:0}};
+let pstats={streak:0,best:0,lastDaily:"",solved:{easy:0,normal:0,hard:0},freePuzzles:5,puzzlesSinceAd:0};
 let tutPage=0;
 
 function dispX(s){ const c=flipped?7-(s&7):(s&7); return mgn+c*sq+sq/2; }
@@ -2246,12 +2246,9 @@ function onPuzzleSolved(exactShot){
   if(lastMove) spawnBurst(dispX(lastMove[lastMove.length-1]),dispY(lastMove[lastMove.length-1]),12);
   pstats.solved[pzTier]=(pstats.solved[pzTier]||0)+1;
   pstats.puzzlesSinceAd=(pstats.puzzlesSinceAd||0)+1;
-  if(pstats.puzzlesSinceAd>=CFG.ads.rewardEveryN){
+  let rewardAdPending=pstats.puzzlesSinceAd>=CFG.ads.rewardEveryN;
+  if(rewardAdPending){
     pstats.puzzlesSinceAd=0;
-    try { Studio.ads.rewarded("puzzle_unlock", function(){
-      pstats.freePuzzles=(pstats.freePuzzles||0)+CFG.ads.freePuzzleReward;
-      persistPStats(); updateHub();
-    }, function(){}); } catch(e){}
   }
   let extra="";
   if(pzIsDaily&&pstats.lastDaily!==todayStr()){
@@ -2265,9 +2262,15 @@ function onPuzzleSolved(exactShot){
   updateHub();
   overKind="puzzle";
   overTitle.textContent=exactShot?"SHOT FOUND!":"PUZZLE SOLVED!";
-  overSub.textContent=(pzIsDaily?"Daily solved."+extra:(pzTier.toUpperCase()+" solved."));
-  overPrimary.textContent="NEXT PUZZLE";
-  overSecondary.textContent="PUZZLE HUB";
+  if(rewardAdPending){
+    overSub.textContent="Solved "+(pzTier?pzTier.toUpperCase():"5")+" puzzles. Watch ad for 5 more!";
+    overPrimary.textContent="WATCH AD";
+    overSecondary.textContent="PUZZLE HUB";
+  }else{
+    overSub.textContent=(pzIsDaily?"Daily solved."+extra:(pzTier.toUpperCase()+" solved."));
+    overPrimary.textContent="NEXT PUZZLE";
+    overSecondary.textContent="PUZZLE HUB";
+  }
   openModal(overSheet);
 }
 function tierStats(t){
@@ -2355,6 +2358,8 @@ function loadPStats(){
       normal:(d.solved&&d.solved.normal)||0,
       hard:(d.solved&&d.solved.hard)||0
     };
+    pstats.freePuzzles=(d.freePuzzles||5);
+    pstats.puzzlesSinceAd=(d.puzzlesSinceAd||0);
   }catch(e){ console.warn("[checkers] pstats parse failed",e); }
 }
 function persistPStats(){
@@ -3153,9 +3158,22 @@ function bindEvents(){
 
   function tierTap(tier){
     AudioSys.play("tap");
+    if(pstats.freePuzzles<=0){
+      openMsg("NO PUZZLES LEFT","Watch an ad to get 5 more puzzles!","WATCH AD",function(){
+        try{
+          Studio.ads.rewarded("puzzle_unlock",function(){
+            pstats.freePuzzles=CFG.ads.freePuzzleReward;
+            persistPStats(); updateHub();
+            tierTap(tier);
+          },function(){});
+        }catch(e){}
+      });
+      return;
+    }
     PZDB.build();
     const pool=PZDB.tiers[tier];
     if(pool&&pool.length){
+      pstats.freePuzzles--;
       const p=pool[Math.floor(Math.random()*pool.length)];
       startPuzzle(p,false);
       return;
@@ -3203,6 +3221,23 @@ function bindEvents(){
   overPrimary.addEventListener("click",function(){
     AudioSys.play("tap"); closeModal();
     if(overKind==="puzzle"){
+      if(overPrimary.textContent==="WATCH AD"){
+        try{
+          Studio.ads.rewarded("puzzle_unlock",function(){
+            pstats.freePuzzles=(pstats.freePuzzles||0)+CFG.ads.freePuzzleReward;
+            persistPStats();
+            updateHub();
+            const pool=PZDB.tiers[pzTier];
+            if(pool&&pool.length){
+              const p=pool[Math.floor(Math.random()*pool.length)];
+              startPuzzle(p,false);
+            } else {
+              updateHub(); showScreen("puzzles");
+            }
+          },function(){});
+        }catch(e){}
+        return;
+      }
       const pool=PZDB.tiers[pzTier];
       if(pool&&pool.length){
         const p=pool[Math.floor(Math.random()*pool.length)];
@@ -3211,6 +3246,7 @@ function bindEvents(){
         updateHub(); showScreen("puzzles");
       }
     } else {
+      try{ Studio.ads.interstitial(); }catch(e){}
       newGame();
     }
   });
@@ -3222,6 +3258,7 @@ function bindEvents(){
       updateHub();
       showScreen("puzzles");
     } else {
+      try{ Studio.ads.interstitial(); }catch(e){}
       persist(); showScreen("intro");
     }
   });
