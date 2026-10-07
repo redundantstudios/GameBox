@@ -40,24 +40,20 @@ object AdDebugBadge {
     private const val TICK_MS = 500L
 
     /**
-     * SHOW THE ON-SCREEN AD BADGE: false.
+     * SHOW THE ON-SCREEN AD BADGE: true.
      *
-     * Turned off at the director's request - it was being read as part of the
-     * game rather than as a development overlay, and it sits below the footer
-     * where it looked like a stray UI element.
+     * The badge was briefly turned off on the strength of a report that a "small
+     * black capsule" was sitting at the bottom of a game screen. That turned out
+     * to be something else entirely - this badge is cyan/green text on a dark
+     * pill, bottom-LEFT, and the thing that was actually being seen was a
+     * different element. A diagnostic that earns its place by answering "why did
+     * that ad not show?" should not be disabled because of a misattributed
+     * sighting; the governor refuses silently by design, so from inside a game
+     * this question cannot be answered any other way.
      *
-     * It remains DEBUG-only regardless (see [attach]), so it could never reach a
-     * release build either way; this flag just stops it appearing on the daily
-     * debug builds.
-     *
-     * IT IS STILL THE FASTEST WAY TO ANSWER "why did that ad not show?", so it
-     * is one edit away: set this back to true. The badge reports whether the
-     * 180s interstitial gap has elapsed, which is invisible from inside a game
-     * because the governor refuses SILENTLY by design. Reading logcat for
-     * "Interstitial denied by policy: ..." answers the same question without
-     * putting anything on screen.
+     * Still DEBUG-only via [attach], so it cannot reach a release build.
      */
-    private const val ENABLED = false
+    private const val ENABLED = true
 
     private var attached = false
     private var label: TextView? = null

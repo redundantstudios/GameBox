@@ -499,7 +499,7 @@ body{
 #chPanel{width:100%;flex:1 1 auto;padding:11px 13px;display:flex;flex-direction:column;gap:8px;min-height:0}
 .ch-head{display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;width:100%}
 #chDesc{font-weight:900;font-size:clamp(14px,4.4cqw,19px);line-height:1.15;overflow-wrap:anywhere;word-break:break-word;max-width:100%}
-#chArea{display:flex;flex-direction:column;align-items:center;gap:10px;justify-content:center;min-height:132px;flex:1;position:relative}
+#chArea{display:flex;flex-direction:column;align-items:center;gap:clamp(5px,1.3cqh,10px);justify-content:center;min-height:132px;flex:1 1 auto;position:relative;overflow:hidden}
 .ch-note{font-weight:900;font-size:13px;color:#8a7a62;text-align:center;min-height:18px}
 .ch-counter{font-weight:900;font-size:20px}
 @keyframes passPulse{50%{transform:scale(1.035)}}
@@ -526,7 +526,7 @@ body{
 .pw-ad.on{display:inline-flex}
 
 /* ---------- tip toast ---------- */
-#tipToast{position:absolute;left:50%;bottom:22px;transform:translateX(-50%) translateY(160%);z-index:94;background:var(--ink);color:var(--cream);padding:10px 18px;border-radius:14px;font-weight:900;font-size:13px;box-shadow:0 5px 0 rgba(0,0,0,.25);transition:transform .28s cubic-bezier(.2,1.4,.4,1);max-width:88%;text-align:center;pointer-events:none}
+#tipToast{position:absolute;left:50%;bottom:22px;transform:translateX(-50%) translateY(calc(100% + 34px));z-index:94;background:var(--ink);color:var(--cream);padding:10px 18px;border-radius:14px;font-weight:900;font-size:13px;box-shadow:0 5px 0 rgba(0,0,0,.25);transition:transform .28s cubic-bezier(.2,1.4,.4,1);max-width:88%;text-align:center;pointer-events:none}
 #tipToast.show{transform:translateX(-50%) translateY(0)}
 
 /* ---------- ad screen ---------- */
@@ -591,7 +591,7 @@ body{
 .math-q{font-size:clamp(28px,8cqw,44px);font-weight:900}
 .math-q .mq{color:var(--red)}
 .ans-grid{display:grid;grid-template-columns:repeat(2,minmax(96px,150px));gap:10px;width:100%;max-width:340px}
-.ans-btn{height:52px;border-radius:14px;border:3px solid var(--ink);background:var(--cream);box-shadow:0 4px 0 var(--ink);cursor:pointer;font-family:inherit;font-size:23px;font-weight:900;color:var(--ink);width:100%}
+.ans-btn{height:clamp(38px,7.4cqh,52px);border-radius:14px;border:3px solid var(--ink);background:var(--cream);box-shadow:0 4px 0 var(--ink);cursor:pointer;font-family:inherit;font-size:23px;font-weight:900;color:var(--ink);width:100%}
 .ans-btn.wrong{background:var(--red);color:#fff;animation:boing .2s}
 .ans-btn.killed{opacity:.22;pointer-events:none}
 .sh-target{display:flex;align-items:center;gap:10px}
@@ -620,10 +620,10 @@ body{
 .hole.up{background:#F6EACF}
 .hole.up svg{display:block;animation:popin .16s}
 @keyframes popin{from{transform:scale(.3)}}
-.flashbox{position:relative;width:min(264px,74cqw);height:140px;border:3px solid var(--ink);border-radius:14px;background:#2B2233;overflow:hidden}
+.flashbox{position:relative;width:min(264px,74cqw);height:clamp(88px,17cqh,140px);border:3px solid var(--ink);border-radius:14px;background:#2B2233;overflow:hidden}
 .flash-ic{position:absolute;width:28px;transform:translate(-50%,-50%)}
 .ans-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-.ans-btn.sm{min-width:52px;height:46px;font-size:19px}
+.ans-btn.sm{min-width:52px;height:clamp(32px,6.4cqh,46px);font-size:clamp(15px,3.4cqh,19px)}
 .swap-grid{display:flex;gap:10px;justify-content:center}
 .swap-tile{width:clamp(48px,15cqw,58px);height:clamp(62px,19cqw,74px);border-radius:14px;border:3px solid var(--ink);background:var(--cream);box-shadow:0 4px 0 var(--ink);cursor:pointer;font-family:inherit;font-size:26px;font-weight:900;color:var(--ink)}
 .swap-tile.sel{background:var(--amber);transform:translateY(-4px)}
@@ -2919,11 +2919,22 @@ const CH=[
          box.innerHTML='';note.textContent='HOW MANY WERE THERE?';
          const set=new Set([n]);let guard=0;
          while(set.size<4&&guard++<50){const v=n+pick([-1,1,2,-2,3]);if(v>=1&&v<=12)set.add(v);}
+         let left=set.size-1;
          [...set].sort((a,b)=>a-b).forEach(v=>{
            const b=el('button','ans-btn sm',String(v));ansWrap.appendChild(b);
            b.addEventListener('pointerdown',()=>{if(!h.alive)return;
              if(v===n)api.win();
-             else{api.fail(2);b.classList.add('wrong');h.after(750,play);}});});});});}
+             else{
+              /* One penalty per option, and the question STAYS.
+                 This used to call h.after(750,play) - which re-rolled n, wiped
+                 the icons and put a fresh, different count on screen - while
+                 leaving this button enabled. Four misses therefore cost eight
+                 seconds and finished on a count the player had never been
+                 shown the evidence for, and a double-tap charged them twice.
+                 The maths challenge next door already disables the option and
+                 keeps the question; this now behaves the same way. */
+                api.fail(2);b.classList.add('wrong');b.disabled=true;
+                left--;if(left<=0)api.win();}});});});});}
    play();
    return{hint(){if(h.alive)play();}};
  }},
