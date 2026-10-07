@@ -107,6 +107,10 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
   .pzRow:active .card{transform:scale(.985);background:var(--panel2)}
   .pzName{font-size:15px;font-weight:800;letter-spacing:1px;flex:1;color:var(--accent)}
   .pzCount{font-size:12px;font-weight:700;color:var(--ink-dim);margin-right:10px}
+  .streakFlame{width:34px;height:34px;min-width:34px;border-radius:10px;background:var(--panel2);
+    border:2px solid var(--line);display:flex;align-items:center;justify-content:center;margin-right:12px}
+  #streakNow{font-size:22px;font-weight:800}
+  #streakBest{font-size:12px;font-weight:700;color:var(--ink-dim);margin-top:1px}
   .dailyHead{display:flex;align-items:center}
   .dailyTitle{font-size:13px;font-weight:800;letter-spacing:2px;color:var(--ink-dim);flex:1}
   .badge{font-size:10px;font-weight:800;letter-spacing:1px;background:var(--panel2);
@@ -254,6 +258,17 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
         </svg>
       </button>
       <h2>PUZZLES</h2>
+    </div>
+    <div class="card" style="display:flex;align-items:center">
+      <div class="streakFlame">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path d="M12 2c1 4-3 5.5-3 9a3 3 0 0 0 6 .2C16.4 13 18 11 17 8c2.6 1.7 4 4.4 4 7a9 9 0 1 1-18 0C3 9.5 8.5 7.5 12 2z" fill="#e08a3c"/>
+        </svg>
+      </div>
+      <div>
+        <div id="streakNow">0 DAYS</div>
+        <div id="streakBest">BEST 0</div>
+      </div>
     </div>
     <div class="card" style="margin-top:10px">
       <div class="dailyHead">
@@ -1553,7 +1568,7 @@ const app=$("app"), wrap=$("boardWrap"), boardShake=$("boardShake"),
       knightCv=$("knightCv"), modeKnightCv=$("modeKnightCv"),
       setupBack=$("setupBack"), oppSeg=$("oppSeg"), aiBlock=$("aiBlock"),
        lvlSeg=$("lvlSeg"), colSeg=$("colSeg"), startBtn=$("startBtn"),
-pzBack=$("pzBack"),
+pzBack=$("pzBack"), streakNow=$("streakNow"), streakBest=$("streakBest"),
        dailyDate=$("dailyDate"), dailySolve=$("dailySolve"),
       solvedEasy=$("solvedEasy"), solvedNormal=$("solvedNormal"), solvedHard=$("solvedHard"),
       tierEasy=$("tierEasy"), tierNormal=$("tierNormal"), tierHard=$("tierHard"),
@@ -2602,6 +2617,8 @@ function validateChunked(restoreEng){
 const DAYS=["SUN","MON","TUE","WED","THU","FRI","SAT"];
 const MONTHS=["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
 function updateHub(){
+  streakNow.textContent=stats.streak+(stats.streak===1?" DAY":" DAYS");
+  streakBest.textContent="BEST "+stats.best;
   solvedEasy.textContent=String(stats.solved.easy||0);
   solvedNormal.textContent=String(stats.solved.normal||0);
   solvedHard.textContent=String(stats.solved.hard||0);

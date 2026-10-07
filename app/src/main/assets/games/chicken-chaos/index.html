@@ -587,10 +587,10 @@ function computeZones(){
     return;
   }
   const base=Math.min(cw,ch);              // displayed CSS px
-  const jr=clamp(base*0.115,34,52);        // joystick radius (⌀ 68-104)
-  const dr=clamp(base*0.09,27,40);         // dash radius (⌀ 54-80)
+  const jr=clamp(base*0.125,36,56);        // joystick radius (⌀ 72-112) was 0.115/34-52
+  const dr=clamp(base*0.095,28,42);        // dash radius (⌀ 56-84) was 0.09/27-40
   const m=clamp(base*0.032,8,18);          // edge margin (8-18 CSS px)
-  const gv=clamp(jr*0.22,8,14);            // joystick<->dash gap
+  const gv=clamp(jr*0.24,9,15);            // joystick<->dash gap was 0.22/8-14 (10% larger)
   const humans=players.filter(p=>!p.ai);
   const soloLayout=game.solo&&humans.length===1;
 
@@ -2471,11 +2471,11 @@ function drawPaused(){
   const bw=Math.min(280,cw*0.34),bh=clamp(ch*0.115,52,66);
   const bx=cw/2-bw/2;
   let by=ch*0.42;
-  uiBtn('res',bx,by,bw,bh,'RESUME',{fill:'#59c126',stroke:'#2e6b12',fs:bh*0.38,fn:()=>Game.resume()});
+  uiBtn('res',bx,by,bw,bh,'RESUME',{fill:'#59c126',stroke:'#2e6b12',fs:bh*0.38,fn:()=>{ adBreak(()=>{ Game.resume(); }); }});
   by+=bh+14;
-  uiBtn('restart',bx,by,bw,bh,'RESTART',{fill:'#f6b41e',stroke:'#8f6206',fs:bh*0.38,fn:startMatch});
+  uiBtn('restart',bx,by,bw,bh,'RESTART',{fill:'#f6b41e',stroke:'#8f6206',fs:bh*0.38,fn:()=>{ adBreak(startMatch); }});
   by+=bh+14;
-  uiBtn('menu',bx,by,bw,bh,'MENU',{fill:'#e8483f',stroke:'#8f1f18',fs:bh*0.38,fn:toMenu});
+  uiBtn('menu',bx,by,bw,bh,'MENU',{fill:'#e8483f',stroke:'#8f1f18',fs:bh*0.38,fn:()=>{ adBreak(toMenu); }});
   drawSettingsBtn();
   drawSettingsPanel();
 }
