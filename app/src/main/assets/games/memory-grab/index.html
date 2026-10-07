@@ -118,9 +118,9 @@ button{font-family:var(--f);cursor:pointer;border:none;background:none;color:inh
   background:#FFF3DC;border:3px solid #E3CD9D;border-radius:calc(var(--u)*4);padding:calc(var(--u)*2.8) calc(var(--u)*3.8)}
 .set-row b{color:#5B3A16;font-size:max(15px,calc(var(--u)*4.2));letter-spacing:1px}
 .sw{width:calc(var(--u)*15);height:calc(var(--u)*8);border-radius:999px;background:#CBB58C;border:3px solid #8a6b42;position:relative;transition:background .18s,border-color .18s;flex:0 0 auto}
-.sw::after{content:'';position:absolute;top:50%;transform:translateY(-50%);left:5%;width:42%;aspect-ratio:1;border-radius:50%;background:#fff;border:2px solid rgba(0,0,0,.25);transition:transform .18s cubic-bezier(.3,1.4,.5,1)}
+.sw::after{content:'';position:absolute;top:50%;transform:translateY(-50%);left:5%;width:42%;aspect-ratio:1;border-radius:50%;background:#fff;border:2px solid rgba(0,0,0,.25);transition:left .15s}
 .sw.on{background:#58BE3E;border-color:#2F7A1E}
-.sw.on::after{transform:translateY(-50%) translateX(109.52%)}
+.sw.on::after{left:51%}
 #scr-settings .btn{width:calc(var(--u)*74)}
 
 /* =====================================================================
