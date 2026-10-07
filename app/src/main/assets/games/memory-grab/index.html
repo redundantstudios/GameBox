@@ -117,10 +117,10 @@ button{font-family:var(--f);cursor:pointer;border:none;background:none;color:inh
 .set-row{display:flex;align-items:center;justify-content:space-between;width:100%;
   background:#FFF3DC;border:3px solid #E3CD9D;border-radius:calc(var(--u)*4);padding:calc(var(--u)*2.8) calc(var(--u)*3.8)}
 .set-row b{color:#5B3A16;font-size:max(15px,calc(var(--u)*4.2));letter-spacing:1px}
-.sw{width:calc(var(--u)*15);height:calc(var(--u)*8);border-radius:999px;background:#CBB58C;border:3px solid #8a6b42;position:relative;transition:background .15s;flex:0 0 auto}
-.sw::after{content:'';position:absolute;top:50%;transform:translateY(-50%);left:5%;width:42%;aspect-ratio:1;border-radius:50%;background:#fff;border:2px solid rgba(0,0,0,.25);transition:left .15s}
+.sw{width:calc(var(--u)*15);height:calc(var(--u)*8);border-radius:999px;background:#CBB58C;border:3px solid #8a6b42;position:relative;transition:background .18s,border-color .18s;flex:0 0 auto}
+.sw::after{content:'';position:absolute;top:50%;transform:translateY(-50%);left:5%;width:42%;aspect-ratio:1;border-radius:50%;background:#fff;border:2px solid rgba(0,0,0,.25);transition:transform .18s cubic-bezier(.3,1.4,.5,1)}
 .sw.on{background:#58BE3E;border-color:#2F7A1E}
-.sw.on::after{left:51%}
+.sw.on::after{transform:translateY(-50%) translateX(109.52%)}
 #scr-settings .btn{width:calc(var(--u)*74)}
 
 /* =====================================================================
@@ -414,7 +414,10 @@ const CFG = {
   evalMs: 400,
   mismatchHoldMs: 800,
   afterFlipBackMs: 520,
-  rotateMs: 460,
+  /* MUST exceed the .46s CSS transition on #game below, or the turn starts while
+     the board is still turning. The old value was exactly 460 - the transition
+     length - so it landed on the final frame with no margin. */
+  rotateMs: 560,
   dealMs: 620,
   botFirstMin: 650, botFirstMax: 1200,
   botSecondMin: 600, botSecondMax: 1100,
@@ -949,9 +952,18 @@ function evalPair(){
    mid-match - and the shorter beat is used, since there is nothing to watch
    turn over. */
 function applyFlip(){
-  const want=flipOn&&nPlayers===2&&!players[cur].bot&&cur===1;
-  $('game').classList.toggle('rot',want);
-  return want;
+  const p=players[cur];
+  /* players[cur] is undefined outside a round - the settings screen is
+     reachable before one has started - so this needs an existence check, not
+     just a .bot check. Without it the whole click handler threw. */
+  const want=flipOn&&nPlayers===2&&!!p&&!p.bot&&cur===1;
+  const g=$('game');
+  const was=g.classList.contains('rot');
+  g.classList.toggle('rot',want);
+  /* True when the board is about to TURN, whichever way. Returning want
+     instead meant the spin back to seat 1 took the short 180ms beat while the
+     board needed 460, so the next player was handed a moving board. */
+  return want!==was;
 }
 function nextTurn(){
   cur=(cur+1)%nPlayers;
@@ -1075,7 +1087,13 @@ function refreshToggles(){
 }
 function bindSwitch(id,get,set){
   $(id).addEventListener('click',()=>{
-    set(!get());saveSettings();refreshToggles();SFX.click();
+    /* Each step is guarded on its own: a setter that throws must not stop the
+       switch from repainting, or the player is left tapping a control that
+       looks stuck and gives no clue why. */
+    try{ set(!get()); }catch(e){ try{console.error('[memory-grab] '+id+' setter: '+e.message);}catch(_){} }
+    try{ saveSettings(); }catch(e){}
+    try{ refreshToggles(); }catch(e){}
+    SFX.click();
     // Local game toggles may temporarily override the shell's off state. The
     // next actual shell payload (sent by GameActivity when the shell changes)
     // is authoritative again.
