@@ -268,8 +268,6 @@ let nPlayers=2,soloMode=false,aiSkill=0.55;
 let uiBtns=[],sysPause={x:0,y:0,r:18},sysMute={x:0,y:0,r:18};
 let spawnPts=null;
 let pin=null,pinHolder=null,pinOwnerId=-1,pinHoldT=0,pinSpawnT=2;
-/* Set by the rewarded offer, consumed by the next startMatch. */
-let adBoostPending=false;
 /* ================= SETTINGS (synced with the shell) =================
    Sound and haptics are the PLAYER's choices, so they live in the shell's
    shared 'shell:settings' store - not in a private game key. That way turning
@@ -291,15 +289,30 @@ function saveShellSettings(){
     store('shell:settings',JSON.stringify(s));
   }catch(e){}
 }
-/* Haptics were never wired up in this game. They now ride the shared flag and
-   go through the shell bridge, exactly like Egg Rush's hap(). */
+/* Haptics were plumbed all the way through - the shell bridge, the shared
+   'shell:settings' flag, and a toggle in the settings sheet - and then never
+   used: hap() had exactly ONE caller in the whole file, the settings toggle
+   itself. So the switch worked, the bridge worked, and no moment in the game
+   ever produced a vibration. That is the whole reason haptics read as broken.
+
+   Now every moment that already has a sound also has a pulse, and nothing new
+   was invented: each call sits next to the SFX.play() for the same event, so
+   what you feel always matches what you hear. The debounce matters - BUMP and
+   POP can fire several times a second, and a buzzer on every frame is noise
+   rather than feedback. */
+const HAP_MIN_GAP={light:0,medium:40,heavy:0,success:0};
+let hapLast=0;
 function hap(kind){
   if(!hapticsOn)return;
+  const ms=HAP[kind]!=null?HAP[kind]:HAP.light;
+  const now=performance.now();
+  if(HAP_MIN_GAP[kind]&&now-hapLast<HAP_MIN_GAP[kind])return;
+  hapLast=now;
   try{
     if(window.NativeBridge&&NativeBridge.haptic){
-      NativeBridge.haptic(HAP[kind]!=null?HAP[kind]:HAP.light);
+      NativeBridge.haptic(ms);
     }else if(navigator.vibrate){
-      navigator.vibrate(HAP[kind]!=null?HAP[kind]:HAP.light);
+      navigator.vibrate(ms);
     }
   }catch(e){}
 }
@@ -324,7 +337,6 @@ function setHaptics(on,persist){
    panel; both are exclusive with each other and with the settings panel. */
 let showSettings=false,showModes=false,showHow=false;
 /* Scroll offset for the HOW TO PLAY panel; advanced while a finger is held. */
-let howToScroll=0,howToHoldId=-1;
 const menuB=[];
 for(let i=0;i<10;i++)menuB.push({x:Math.random(),y:Math.random(),s:rand(0.6,1.3),ci:i%4,ph:rand(0,TAU)});
 /* ================= PARTICLES ================= */
@@ -349,7 +361,7 @@ function dustPuff(x,y,n,col){
     spawnP({type:0,x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*0.5-20,size:rand(4,8),color:col||'rgba(255,255,255,0.8)',life:rand(0.3,0.55)});}
 }
 function floater(x,y,t,col,size){floaters.push({x,y,txt:t,col,life:0.95,max:0.95,size:size||18});}
-/* ================= ARENA ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â SKY ISLAND ================= */
+/* ================= ARENA - SKY ISLAND ================= */
 function buildObstacles(){
   obstacles=[];decor=[];flagLines=[];
   const cx=WORLD_W/2,cy=WORLD_H/2,L=AR.x,T=AR.y,R=AR.x+AR.w,B=AR.y+AR.h;
@@ -577,17 +589,26 @@ function spawnPoints(n){
   return[P(.34,.62),P(.66,.62),P(.34,.24),P(.66,.24)];
 }
 /* Leaving a match: drop the banner (gameplay-only) and bring the attract match
-   back up behind the menu, so returning to the intro is seamless. */
-function backToMenu(){
+   back up behind the menu, so returning to the intro is seamless.
+
+   THE AD WAS NEVER REQUESTED FROM EITHER MENU BUTTON.
+   This used to be `if(state==='ENDING')showInterstitialOnce();`. 'ENDING' is the
+   1.6s window between the balloon popping and the results card appearing - the
+   state the player never sees. By the time MENU is tappable on the results card
+   the state is 'RESULT', and from the pause menu it is 'PLAYING', so the guard
+   was false on both and neither button asked for an ad. That is the whole reason
+   "no interstitials work" was true from every MENU button.
+
+   The game now simply ASKS on both, with a placement that says which button it
+   was, and AdPolicy decides whether one is due: it owns the 180s app-wide gap,
+   the first-session grace window, and the offline check. Deciding "is this a
+   natural break?" in game code is exactly what duplicated policy caused. */
+function backToMenu(placement){
   showBannerFor(false);
   clearGameplayInput();
-  /* MENU from the results card is a genuine session break - the bout is over, so
-     the interstitial belongs here (see exitToShell for why BACK does NOT get
-     one). Guarded so it only fires when a match actually finished; if backToMenu
-     is ever reached mid-bout there is no ad. */
-  if(state==='ENDING')showInterstitialOnce();
-  state='MENU';stateT=0;paused=false;showSettings=false;showModes=false;showHow=false;
-  howToScroll=0;howToHoldId=-1;
+  showInterstitialOnce(placement||'menu');
+  state='MENU';stateT=0;paused=false;
+  closePanels();
   attractEnter();
 }
 /* STARTING A BOUT vs REPLAYING ONE - these are NOT the same thing and the ad
@@ -607,9 +628,9 @@ function backToMenu(){
 
    The distinction is a deliberate reading of "no ad on PLAY": it means the
    start-page PLAY button and everything it leads to, not the results card. */
-function playWithAd(np,solo){
+function playWithAd(np,solo,placement){
   interstitialShown=false;          /* allow one per session-leg, not once ever */
-  showInterstitial(function(){startMatch(np,solo);});
+  showInterstitial(placement||'play',function(){startMatch(np,solo);});
 }
 function startMatch(np,solo){
   requestMobileFullscreen();
@@ -632,25 +653,16 @@ function startMatch(np,solo){
   resetParticles();
   shake=0;hitStop=0;
   buildZones();
-  /* Consume an ad-earned boost for this bout only, humans only, so it
-     never advantages the AI. */
-  if(adBoostPending){
-    adBoostPending=false;
-    for(const p of players)if(p.human){
-      p.speedT=CFG.SPEED_BOOST_DURATION;
-      p.shieldT=CFG.SHIELD_DURATION;
-    }
-    lastAdReason='Speed boost + shield active!';
-  }
   state='COUNTDOWN';stateT=0;cdNum=4;cdPop=0;paused=false;
 }
-/* ============ ZONES / INPUT ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â LOCKED SEAT-MAPPED SCREEN LAYOUT ============
+/* ============ ZONES / INPUT - LOCKED SEAT-MAPPED SCREEN LAYOUT ============
    Anchors depend ONLY on zone count + seat index (slot), never on the
    player's world position:
-     SOLO : joystick BOTTOM_LEFT, dash BOTTOM_RIGHT (thumbs split L/R)
-     2P   : P1 BOTTOM_LEFT, P2 BOTTOM_RIGHT
-     3P   : P1 BOTTOM_LEFT, P2 BOTTOM_RIGHT, P3 TOP_LEFT
-     4P   : P1 BOTTOM_LEFT, P2 BOTTOM_RIGHT, P3 TOP_LEFT, P4 TOP_RIGHT
+SOLO : joystick BOTTOM_LEFT, dash BOTTOM_RIGHT (thumbs split L/R)
+      2P   : P1 BOTTOM_LEFT, P2 TOP_RIGHT - rotated 180 degrees from each other,
+             so the phone lies flat between two players facing one another
+      3P   : P1 BOTTOM_LEFT, P2 BOTTOM_RIGHT, P3 TOP_LEFT
+      4P   : P1 BOTTOM_LEFT, P2 BOTTOM_RIGHT, P3 TOP_LEFT, P4 TOP_RIGHT
    Dash sits BESIDE its joystick (right for left-side seats, left for
    right-side seats), horizontally aligned, except SOLO (bottom-right). */
 function buildZones(){
@@ -681,6 +693,21 @@ function layoutZones(){
     if(n===1){
       jx=lx;jy=botY;
       dx=w-hM-dashR;dy=botY;
+    }else if(n===2){
+      /* TWO PLAYERS: ONE AT THE BOTTOM, ONE AT THE TOP, ROTATED 180 DEGREES
+         FROM EACH OTHER. Both used to sit along the bottom edge (bottom-left and
+         bottom-right), which meant the two people playing had to sit side by
+         side and reach across the same edge of the phone.
+
+         The intended play here is the phone flat on a table between two people
+         facing each other, so each one's controls belong on their own side:
+         P1 works the bottom, P2 works the top, and P2's pair is P1's pair turned
+         through 180 degrees - joystick in the far corner from P1's joystick,
+         dash on the other side of it. Reaching for your own controls then needs
+         no crossing over, and a thumb resting on the bezel does not cover the
+         other player's side. */
+      if(s===0){jx=lx;jy=botY;dx=jx+c2c;dy=jy;}
+      else{jx=rx;jy=topY;dx=jx-c2c;dy=jy;}
     }else if(s===0){
       jx=lx;jy=botY;dx=jx+c2c;dy=jy;
     }else if(s===1){
@@ -712,6 +739,24 @@ function releasePtr(id){
 function clearGameplayInput(){
   for(const z of zones){z.joyId=-1;z.dashId=-1;z.vx=0;z.vy=0;}
 }
+/* A PANEL OWNS THE HIT LIST.
+   hitUI() walks uiBtns backwards and takes the topmost match, and drawMenu()
+   pushes the menu's own PLAY / HOW TO PLAY / BACK / gear buttons BEFORE any
+   panel is drawn. drawHowPanel pushes nothing at all, and sheetClose() is
+   deliberately empty - so while HOW TO PLAY was open, uiBtns still held the
+   menu row underneath it. Tapping the panel where PLAY happened to sit started
+   the match. The seat sheet had the same hole everywhere outside its four
+   buttons.
+
+   So a panel now DISCARDS the buttons beneath it: the menu's entries are spliced
+   out and only the panel's own survive. A panel with no buttons of its own (How
+   To Play) correctly ends up with an empty hit list, which is what makes a tap
+   anywhere on it read as "tap the scrim" and dismiss. */
+function withPanelButtons(fn){
+  const keep=uiBtns.length;
+  fn();
+  uiBtns.splice(0,keep);
+}
 function hitUI(x,y){
   /* REVERSE order. Buttons are pushed in draw order, and a panel pushes its
      buttons AFTER the menu's BACK / settings / PLAY row. Iterating forward let
@@ -740,29 +785,33 @@ window.addEventListener('keydown',kickAudio,{passive:true});
 window.addEventListener('touchstart',kickAudio,{passive:true});
 document.addEventListener('visibilitychange',function(){if(!document.hidden)kickAudio();});
 kickAudio();
+/* ---------- OVERLAY INPUT ----------
+   One rule, enforced before anything else: while an overlay is up it OWNS the
+   screen. Two separate things used to break that.
+
+   The guard itself only applied inside `if(state==='MENU'||'RESULT')`, so
+   "a panel swallows the tap" depended on the panel flags never being true in
+   any other state - true today, not a property worth relying on.
+
+   And more concretely: the panels did not actually take the hit list away. They
+   were drawn ON TOP of a uiBtns that still held the menu's own PLAY / HOW TO
+   PLAY / BACK / gear buttons, and hitUI takes the topmost match - so tapping a
+   panel where PLAY happened to sit started the match. See withPanelButtons. */
+function panelOpen(){return showModes||showHow||showSettings;}
+function closePanels(){
+  showModes=false;showHow=false;showSettings=false;
+}
 function onDown(e){
   kickAudio();
   try{canvas.setPointerCapture(e.pointerId);}catch(_){}
   const x=e.clientX,y=e.clientY;
   if(rotateBlock)return;
-  if(paused){hitUI(x,y);return;}
-  if(state==='MENU'||state==='RESULT'){
-    /* While a panel is open it OWNS the screen: a tap either hits a panel
-       button (topmost wins) or is swallowed by the scrim and closes it. It must
-       never fall through to the menu row underneath. */
-    if(showModes||showHow||showSettings){
-      /* Holding on the HOW TO PLAY panel scrolls it, so all eight rules are
-         reachable. Releasing keeps it open; a plain tap on the scrim (no hold)
-         dismisses. */
-      if(showHow&&!hitUI(x,y)){howToHoldId=e.pointerId;howToScroll+=18;}
-      else if(!hitUI(x,y)){
-        SFX.playUI('click');
-        showModes=false;showHow=false;showSettings=false;
-      }
-      return;
-    }
-    hitUI(x,y);return;
+  if(panelOpen()){
+    if(hitUI(x,y))return;         /* a panel button - topmost wins */
+    SFX.playUI('click');closePanels();return;
   }
+  if(paused){hitUI(x,y);return;}
+  if(state==='MENU'||state==='RESULT'){hitUI(x,y);return;}
   if(d2(x,y,sysPause.x,sysPause.y)<(sysPause.r+8)*(sysPause.r+8)){SFX.play('click');Game.pause();return;}
   if(d2(x,y,sysMute.x,sysMute.y)<(sysMute.r+8)*(sysMute.r+8)){setSound(SFX.muted);return;}
   if(state!=='PLAYING'&&state!=='COUNTDOWN')return;
@@ -777,7 +826,7 @@ function onMove(e){
   if(paused||state==='MENU'||state==='RESULT')return;
   for(const z of zones)if(z.joyId===e.pointerId)updJoy(z,e.clientX,e.clientY);
 }
-function onUp(e){if(howToHoldId===e.pointerId)howToHoldId=-1;releasePtr(e.pointerId);}
+function onUp(e){releasePtr(e.pointerId);}
 const keys={};let kbDash1=false,kbDash2=false;
 /* ================= COMBAT / PIN ================= */
 function tryDash(p){
@@ -785,7 +834,7 @@ function tryDash(p){
   let dx=p.jx,dy=p.jy;const m=Math.hypot(dx,dy);
   if(m<0.25){dx=p.facX;dy=p.facY;}else{dx/=m;dy/=m;}
   p.ddx=dx;p.ddy=dy;p.dashT=CFG.DASH_DURATION;p.dashCD=CFG.DASH_COOLDOWN;
-  SFX.play('dash');shake=Math.max(shake,2.5);
+  SFX.play('dash');hap('medium');shake=Math.max(shake,2.5);
   dustPuff(p.x-dx*p.r,p.y,4);
 }
 function tryAttack(p){
@@ -800,7 +849,7 @@ function tryAttack(p){
   if(!best)return;
   p.atkCD=CFG.ATTACK_COOLDOWN;
   if(bq.shieldT>0){
-    bq.shieldT=0;SFX.play('shield');
+    bq.shieldT=0;SFX.play('shield');hap('medium');
     spawnP({type:3,x:bq.x,y:bq.y,r0:14,r1:70,color:'rgba(120,230,255,0.95)',life:0.35});
     for(let i=0;i<6;i++){const a=rand(0,TAU);spawnP({type:4,x:bq.x,y:bq.y,vx:Math.cos(a)*160,vy:Math.sin(a)*160,size:5,color:'#8CE8FF',life:0.4});}
     floater(bq.x,bq.y-bq.r*2.4,'BLOCKED!','#7ADCFF',16);
@@ -815,7 +864,7 @@ function popBalloon(q,i,attacker){
   q.hurtT=0.5;
   popBurst(b.x,b.y,PAL[q.ci].main);
   shake=Math.max(shake,3.2);hitStop=CFG.HIT_STOP;
-  SFX.play('pop');
+  SFX.play('pop');hap('heavy');
   floater(b.x,b.y-20,'POP!','#FFFFFF',15);
   if(q.balloonsLeft<=0)eliminatePlayer(q);
   checkWin();
@@ -825,7 +874,7 @@ function eliminatePlayer(q){
   if(pinHolder===q){pinHolder=null;pinOwnerId=-1;pinSpawnT=1.2;}
   const slot=elimCount++;
   q.specX=WORLD_W*(0.3+0.133*slot);q.specY=AR.y-32;
-  SFX.play('elim');shake=Math.max(shake,3);
+  SFX.play('elim');hap('heavy');shake=Math.max(shake,3);
   floater(q.x,q.y-q.r*2.6,'ELIMINATED!','#FF5B4A',20);
 }
 /* One predicate for "is the world actually simulating". The menu keeps
@@ -845,7 +894,7 @@ function checkWin(){
     winner=alive[0];winner.joy=true;
     state='ENDING';stateT=0;confetti=true;
     pin=null;pinHolder=null;pinOwnerId=-1;
-    SFX.play('victory');
+    SFX.play('victory');hap('success');
   }else if(alive.length===0){
     winner=null;state='ENDING';stateT=0;confetti=false;
     pin=null;pinHolder=null;pinOwnerId=-1;
@@ -858,7 +907,7 @@ function spawnPin(){
     if(powerups.some(u=>d2(u.x,u.y,s.x,s.y)<140*140))continue;
     pin={x:s.x,y:s.y,phase:rand(0,TAU),life:CFG.PIN_LIFETIME,born:simT};
     rings.push({x:s.x,y:s.y,t:0,dur:0.5,r1:70,col:'#FFC93C'});
-    SFX.play('pin');
+    SFX.play('pin');hap('medium');
     floater(s.x,s.y-64,'PIN!','#FFC93C',18);
     return;
   }
@@ -869,7 +918,7 @@ function collectPin(p){
   pinHolder=p;
   pinOwnerId=p.id;
   pinHoldT=CFG.PIN_POWER_TIME;
-  SFX.play('pin');shake=Math.max(shake,2);
+  SFX.play('pin');hap('light');shake=Math.max(shake,2);
   for(let i=0;i<10;i++){const a=rand(0,TAU),sp=rand(80,240);
     spawnP({type:4,x:p.x,y:p.y-p.r,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-40,g:180,size:rand(4,7),color:i%2?'#FFC93C':'#FFFFFF',life:0.5,vr:rand(-8,8)});}
   floater(p.x,p.y-p.r*3,'P'+p.id+' GOT THE PIN!',PAL[p.ci].light,17);
@@ -892,7 +941,7 @@ function spawnPU(){
 }
 function collectPU(p,pu,idx){
   powerups.splice(idx,1);
-  SFX.play('pickup');
+  SFX.play('pickup');hap('medium');
   for(let i=0;i<8;i++){const a=rand(0,TAU),sp=rand(60,200);
     spawnP({type:4,x:pu.x,y:pu.y-26,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-60,g:200,size:rand(4,6),color:pu.t.col,life:0.45,vr:rand(-8,8)});}
   floater(pu.x,pu.y-56,pu.t.label,pu.t.col,17);
@@ -1028,7 +1077,7 @@ function collideWorld(p){
       p.x=o.x+nx*rr2;p.y=o.y+ny*rr2;
       const vn=p.vx*nx+p.vy*ny;
       if(vn<0){p.vx-=vn*nx*1.4;p.vy-=vn*ny*1.4;
-        if(vn<-260){SFX.play('bump');dustPuff(p.x,p.y,3);}}
+        if(vn<-260){SFX.play('bump');hap('light');dustPuff(p.x,p.y,3);}}
     }
   }
 }
@@ -1122,7 +1171,7 @@ function bumpPass(){
       const imp=CFG.BUMP_FORCE*boost;
       a.vx-=nx*imp;a.vy-=ny*imp;b.vx+=nx*imp;b.vy+=ny*imp;
       if(boost>1)shake=Math.max(shake,3);
-      SFX.play('bump');
+      SFX.play('bump');hap('light');
       dustPuff((a.x+b.x)/2,(a.y+b.y)/2,3);
     }
   }
@@ -1153,8 +1202,9 @@ function update(sdt,dt){
     case 'MENU':
       /* The intro runs a real 4-AI match behind the menu, forever. */
       if(attract)attractStep(sdt);
-      /* Auto-scroll the HOW TO PLAY panel while a finger is held on it. */
-      if(showHow&&howToHoldId>=0)howToScroll+=26*sdt;
+      /* HOW TO PLAY scrolls by DRAG now (see onMove), not by holding. Holding
+         while scrolling meant a tap on the scrim also nudged the text instead of
+         dismissing the panel. */
       for(const b of menuB){b.y-=0.045*b.s*dt;if(b.y<-0.12){b.y=1.12;b.x=Math.random();}}
       break;
     case 'COUNTDOWN':{
@@ -1170,7 +1220,7 @@ function update(sdt,dt){
       if(!pin&&!pinHolder&&pinSpawnT<=0)spawnPin();
       if(pin){
         pin.life-=sdt;
-        if(pin.life<=0){pin=null;pinSpawnT=CFG.PIN_RESPAWN_DELAY;SFX.play('pinlost');}
+        if(pin.life<=0){pin=null;pinSpawnT=CFG.PIN_RESPAWN_DELAY;SFX.play('pinlost');hap('light');}
         else if(Math.random()<sdt*5)
           spawnP({type:4,x:pin.x+rand(-14,14),y:pin.y-30+rand(-10,10),vx:rand(-20,20),vy:rand(-40,-10),size:4,color:'#FFE08A',life:0.5,vr:6});
       }
@@ -1179,7 +1229,7 @@ function update(sdt,dt){
         if(pinHoldT<=0){
           floater(pinHolder.x,pinHolder.y-pinHolder.r*3,'PIN EXPIRED','#c9c9c9',15);
           pinHolder=null;pinOwnerId=-1;pinSpawnT=CFG.PIN_RESPAWN_DELAY;
-          SFX.play('pinlost');
+          SFX.play('pinlost');hap('light');
         }
       }
       puT-=sdt;
@@ -1613,6 +1663,52 @@ function drawPinBearer(p){
   ctx.stroke();
   ctx.restore();
 }
+/* PIN BEARER HEAD TAG.
+   The ground ring, glow and countdown arc are all FLAT, and flat is exactly what
+   loses in a four-player scrum: from across the arena they are foreshortened into
+   thin ellipses and they sit underneath whatever character happens to be drawn
+   over them. The one signal that cannot be lost is a mark that floats ABOVE the
+   holder, is drawn in the foreground after every character, and carries the
+   number of seconds left - so "who has it" and "for how much longer" are both
+   readable at a glance, from any angle, without moving.
+
+   The ground ring stays: it is the right cue when you are close enough to play
+   the holder, this is the one that works when you are not. */
+function drawPinBearerTag(p){
+  const k=persp(p.y);
+  const left=Math.max(0,pinHoldT);
+  const bob=Math.sin(simT*3.4)*3;
+  const secs=Math.ceil(left);
+  const label=secs+'s';
+  ctx.save();
+  ctx.font='bold 14px '+FONT;
+  const tw=ctx.measureText(label).width;
+  const w=40+tw, h=26, x=-w/2, y=-h/2;
+  /* a small kick as the last moment lands, then it settles */
+  const pop=1+Math.max(0,1-clamp(left/0.3,0,1))*0.22;
+  ctx.translate(p.x,p.y-96*k);
+  ctx.scale(k*pop,k*pop);
+  ctx.translate(0,bob);
+  /* plate + shadow */
+  ctx.fillStyle='rgba(10,20,35,0.35)';
+  rr(ctx,x+1,y+3,w,h,9);ctx.fill();
+  ctx.fillStyle=left<2?'#EF4D3C':'#FFD166';
+  rr(ctx,x,y,w,h,9);ctx.fill();
+  ctx.strokeStyle='#5b3a1e';ctx.lineWidth=2.5;
+  rr(ctx,x,y,w,h,9);ctx.stroke();
+  /* pin glyph on the left, in its usual place so it reads as "the pin" */
+  ctx.save();ctx.translate(x+14,0);ctx.scale(0.62,0.62);pinIconShape(ctx);ctx.restore();
+  /* remaining seconds */
+  ctx.font='bold 14px '+FONT;
+  ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillStyle='#5b3a1e';
+  ctx.fillText(label,x+26,1);
+  /* a bar that drains along the bottom of the tag */
+  const frac=clamp(left/CFG.PIN_POWER_TIME,0,1);
+  ctx.fillStyle=left<2?'#7a1f16':'#37913c';
+  rr(ctx,x+2,y+h-4.5,Math.max(0,(w-4)*frac),2.5,1.2);ctx.fill();
+  ctx.restore();
+}
 function drawPU(u){
   const k=persp(u.y);
   const bob=Math.sin(simT*2+u.phase)*4;
@@ -1753,13 +1849,16 @@ function drawControls(){
   }
 }
 function drawCountdown(){
-  const n=cdNum;
-  const s=1+cdPop*2;
-  ctx.save();ctx.translate(cssW/2,cssH*0.42);ctx.scale(s,s);
-  txt(ctx,n>0?String(n):'GO!',0,0,Math.min(150,cssH*0.38),n>0?'#fff':'#7DFF6B','center','rgba(30,20,10,0.9)',12);
-  ctx.restore();
-  if(stateT<2.6)txt(ctx,'GRAB THE PIN TO POP BALLOONS!',cssW/2,cssH*0.62,Math.min(22,cssW*0.035),'#FFF3C4','center','rgba(30,20,10,0.8)',5);
-}
+   const n=cdNum;
+   const s=1+cdPop*2;
+   ctx.save();ctx.translate(cssW/2,cssH*0.42);ctx.scale(s,s);
+   /* 150px was filling a third of a phone screen and crowding the arena it sits
+      over. Reduced to 104px, and the outline weight came down with it so the
+      stroke does not swamp the fill at the smaller size. */
+   txt(ctx,n>0?String(n):'GO!',0,0,Math.min(104,cssH*0.27),n>0?'#fff':'#7DFF6B','center','rgba(30,20,10,0.9)',9);
+   ctx.restore();
+   if(stateT<2.6)txt(ctx,'GRAB THE PIN TO POP BALLOONS!',cssW/2,cssH*0.62,Math.min(22,cssW*0.035),'#FFF3C4','center','rgba(30,20,10,0.8)',5);
+ }
 function menuButton(x,y,w,h,label,np,act,sel){
   ctx.fillStyle='rgba(0,0,0,0.35)';rr(ctx,x+3,y+5,w,h,16);ctx.fill();
   /* A preselected seat count (from the shell's N PLAYER tile) reads as a gold
@@ -1769,7 +1868,14 @@ function menuButton(x,y,w,h,label,np,act,sel){
   ctx.strokeStyle=sel?'#FFD23F':'#1f5c23';ctx.lineWidth=sel?5:3;ctx.stroke();
   ctx.fillStyle='rgba(255,255,255,0.16)';rr(ctx,x+3,y+3,w-6,h*0.42,12);ctx.fill();
   if(sel)txt(ctx,'SELECTED',x+w/2,y+h-11,Math.min(11,w*0.062),'#FFE98A','center','rgba(20,40,15,0.6)',3);
-  txt(ctx,label,x+w/2,y+h*0.42,Math.min(21,w*0.11),'#fff','center','rgba(20,40,15,0.7)',4);
+  /* VERTICAL CENTRING.
+     The label used to be pinned at y+h*0.42 for every button. That offset made
+     sense on the seat buttons, which carry a row of player dots along the
+     bottom edge and need their text lifted clear of it - but the plain menu
+     buttons (PLAY, HOW TO PLAY) have no dots, so the same offset left their
+     text sitting visibly above the middle of the plate. They are centred now. */
+  if(np===0)txt(ctx,label,x+w/2,y+h/2,Math.min(21,w*0.11),'#fff','center','rgba(20,40,15,0.7)',4);
+  else txt(ctx,label,x+w/2,y+h*0.42,Math.min(21,w*0.11),'#fff','center','rgba(20,40,15,0.7)',4);
   for(let k=0;k<np;k++){ctx.fillStyle=PAL[k].main;ell(ctx,x+20+k*16,y+h-12,5.5,5.5);ctx.fill();
     ctx.strokeStyle='rgba(255,255,255,0.8)';ctx.lineWidth=1.5;ctx.stroke();}
   if(np===1){ctx.fillStyle='#cfd6dd';ell(ctx,x+w-22,y+h-12,6,6);ctx.fill();
@@ -1784,7 +1890,7 @@ function drawMenuBalloons(){
     drawBalloonSpr(ctx,x,y,b.ci,b.s,Math.sin(stateT*1.5+b.ph)*8);
   }
 }
-/* ================= ATTRACT MODE ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â 4 AIs, FOREVER =================
+/* ================= ATTRACT MODE - 4 AIs, FOREVER =================
    The intro page used to be a flat blue wash with ten balloons drifting up it,
    which said nothing about the game. It now runs a REAL 4-AI match behind the
    menu: the same makePlayer / aiUpdate / updPlayer / pin / power-up systems the
@@ -1943,37 +2049,49 @@ function drawMenu(){
   /* FOOTER: the studio credit, bottom-centre, clear of the safe area. */
   txt(ctx,'Redundant Studios',cssW/2,cssH-(safeB+16),Math.min(15,cssW*0.024),
       'rgba(255,255,255,0.92)','center','rgba(20,40,15,0.75)',4);
-  if(showModes)drawModeSheet();
-  if(showHow)drawHowPanel();
+  if(showModes)withPanelButtons(drawModeSheet);
+  if(showHow)withPanelButtons(drawHowPanel);
+  if(showSettings)withPanelButtons(drawSettingsPanel);
 }
 const settingsGear={x:0,y:0,r:26},backBtn={x:0,y:0,r:26};
+/* A PLAIN GEAR, SMALLER THAN ITS PLATE.
+   The plate is the tap target and keeps its full size; only the glyph inside is
+   reduced, so the icon no longer fills its button edge to edge and stops reading
+   as a sticker. Root radius, tip radius and tooth width are all taken from a
+   glyph radius that is a fraction of the plate radius. */
+function drawGearIcon(cx,cy,r,plate){
+  const R=plate?r*0.74:r;
+  if(plate){
+    ctx.fillStyle='rgba(0,0,0,0.35)';
+    rr(ctx,cx-r-5,cy-r-2, r*2+10, r*2+10, r+5);ctx.fill();
+    ctx.fillStyle='#FFFBF0';rr(ctx,cx-r-2,cy-r-2, r*2+4, r*2+4, r+2);ctx.fill();
+    ctx.strokeStyle='#EF4D3C';ctx.lineWidth=3;rr(ctx,cx-r-2,cy-r-2, r*2+4, r*2+4, r+2);ctx.stroke();
+  }
+  const hubR=R*0.40, rootR=R*0.72, tipR=R*0.94;
+  ctx.fillStyle='#2B2233';
+  ctx.beginPath();
+  for(let i=0;i<8;i++){
+    const a0=i*TAU/8-TAU/64, a1=i*TAU/8+TAU/64;
+    const a2=(i+1)*TAU/8-TAU/64, a3=(i+1)*TAU/8+TAU/64;
+    ctx.arc(cx,cy,rootR,a0,a1,false);
+    ctx.lineTo(cx+Math.cos(a1)*tipR,cy+Math.sin(a1)*tipR);
+    ctx.lineTo(cx+Math.cos(a2)*tipR,cy+Math.sin(a2)*tipR);
+    ctx.lineTo(cx+Math.cos(a2)*rootR,cy+Math.sin(a2)*rootR);
+    ctx.arc(cx,cy,rootR,a2,a3,false);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ell(ctx,cx,cy,rootR,rootR);ctx.fill();
+  /* hub hole, in the plate colour so the gear reads as a ring */
+  ctx.fillStyle=plate?'#FFFBF0':'#2B2233';
+  ell(ctx,cx,cy,hubR*0.52,hubR*0.52);ctx.fill();
+}
 function drawSettingsBtn(){
   readSafeInsets();
   settingsGear.x=cssW-(safeR+42);
   settingsGear.y=safeT+42;
   const r=settingsGear.r;
-  /* Settings icon: a proper GEAR - the studio-standard settings mark. Earlier
-     attempts used a sliders glyph, which reads as a mixer/volume control rather
-     than settings, and clashed with the game's chunky cartoon shapes. */
-  ctx.fillStyle='rgba(0,0,0,0.35)';
-  rr(ctx,settingsGear.x-r-3,settingsGear.y-r, r*2+6, r*2+6, 12);ctx.fill();
-  ctx.fillStyle='#2B2233';rr(ctx,settingsGear.x-r-3,settingsGear.y-r-3, r*2+6, r*2+6, 12);ctx.fill();
-  ctx.fillStyle='#FFFBF0';rr(ctx,settingsGear.x-r,settingsGear.y-r, r*2, r*2, 10);ctx.fill();
-  ctx.strokeStyle='#EF4D3C';ctx.lineWidth=3.5;rr(ctx,settingsGear.x-r,settingsGear.y-r, r*2, r*2, 10);ctx.stroke();
-  /* gear body + teeth, in the game ink */
-  const gcx=settingsGear.x,gcy=settingsGear.y;
-  const gr=r*0.42, toothR=r*0.72, tw=r*0.24;
-  ctx.fillStyle='#2B2233';
-  for(let i=0;i<8;i++){
-    const a=i*TAU/8+Math.PI/8;
-    ctx.save();
-    ctx.translate(gcx,gcy);ctx.rotate(a);
-    rr(ctx,-tw/2,-toothR,tw,tw*1.15,tw*0.28);ctx.fill();
-    ctx.restore();
-  }
-  ell(ctx,gcx,gcy,gr,gr);ctx.fill();
-  ctx.fillStyle='#FFFBF0';
-  ell(ctx,gcx,gcy,gr*0.44,gr*0.44);ctx.fill();
+  drawGearIcon(settingsGear.x,settingsGear.y,r,true);
   uiBtns.push({x:settingsGear.x-r-8,y:settingsGear.y-r-8,w:(r+8)*2,h:(r+8)*2,
     act:()=>{SFX.play('click');hap('light');showSettings=!showSettings;showModes=false;showHow=false;}});
 }
@@ -1981,13 +2099,17 @@ function drawSettingsBtn(){
    on every other game. Exits through the bridge; a no-op in a plain browser. */
 function drawBackBtn(){
   readSafeInsets();
-  backBtn.x=safeL+42;backBtn.y=safeT+42;
+  /* ATTACHED TO THE LEFT EDGE. This was safeL+42 with a 26px radius, so the
+     plate's left edge sat 16px in from the safe area - a visible gutter on a
+     phone whose bezel is already close. It now hangs off the edge with only the
+     safe-area inset left as padding. */
+  backBtn.x=safeL+30;
+  backBtn.y=safeT+32;
   const r=backBtn.r;
   ctx.fillStyle='rgba(0,0,0,0.35)';
-  rr(ctx,backBtn.x-r-3,backBtn.y-r, r*2+6, r*2+6, 12);ctx.fill();
-  ctx.fillStyle='#2B2233';rr(ctx,backBtn.x-r-3,backBtn.y-r-3, r*2+6, r*2+6, 12);ctx.fill();
-  ctx.fillStyle='#FFFBF0';rr(ctx,backBtn.x-r,backBtn.y-r, r*2, r*2, 10);ctx.fill();
-  ctx.strokeStyle='#EF4D3C';ctx.lineWidth=3.5;rr(ctx,backBtn.x-r,backBtn.y-r, r*2, r*2, 10);ctx.stroke();
+  rr(ctx,backBtn.x-r-4,backBtn.y-r-1, r*2+8, r*2+8, 15);ctx.fill();
+  ctx.fillStyle='#FFFBF0';rr(ctx,backBtn.x-r-1,backBtn.y-r-1, r*2+2, r*2+2, 13);ctx.fill();
+  ctx.strokeStyle='#EF4D3C';ctx.lineWidth=3.5;rr(ctx,backBtn.x-r-1,backBtn.y-r-1, r*2+2, r*2+2, 13);ctx.stroke();
   ctx.strokeStyle='#2B2233';ctx.lineWidth=3.4;ctx.lineCap='round';ctx.lineJoin='round';
   ctx.beginPath();
   ctx.moveTo(backBtn.x+r*0.38,backBtn.y);
@@ -1998,7 +2120,7 @@ function drawBackBtn(){
   ctx.lineTo(backBtn.x-r*0.38,backBtn.y);
   ctx.lineTo(backBtn.x-r*0.02,backBtn.y+r*0.32);
   ctx.stroke();
-  uiBtns.push({x:backBtn.x-r-8,y:backBtn.y-r-8,w:(r+8)*2,h:(r+8)*2,
+  uiBtns.push({x:backBtn.x-r-10,y:backBtn.y-r-10,w:(r+10)*2,h:(r+10)*2,
     act:()=>{SFX.play('click');try{exitToShell();}catch(e){}}});
 }
 function exitToShell(){
@@ -2039,14 +2161,14 @@ function drawModeSheet(){
    the panel's inner width, so nothing can spill outside the panel on a narrow
    screen - the original single-line body overflowed badly on a phone. */
 const HOW_ROWS=[
-  ['move','MOVE','Drag your joystick to run. You steer in any direction - there is no forward button, and bumping into another player is a legal (if risky) tactic.'],
-  ['pin','GRAB THE PIN','A golden PIN drops on the island every few seconds. Run over it to pick it up. Only the PIN holder can attack, and only for 8 seconds.'],
-  ['attack','ATTACK','With the PIN, get close to a rival and your balloon bursts against them. Without the PIN your hits do nothing.'],
-  ['balloon','BALLOONS ARE LIFE','Everyone starts with 3 balloons. Every hit pops one. Pop all of yours and you are out of the round.'],
-  ['shield','SHIELD','A blue dome wraps around you. It eats one hit, then pops. The dome fades in its last second, so you can see it running out.'],
-  ['speed','SPEED','You move noticeably faster, and a yellow chevron trail follows you. It makes you quicker - and an easier target.'],
-  ['last','LAST ONE STANDING','When only one player still has balloons, they win. Go for the leader, not for the weakest.'],
-  ['careful','WATCH THE PIN','The ring under the PIN holder burns down as their time runs out. When it empties the PIN drops free for anyone.']
+  ['move','MOVE','Drag the joystick to run in any direction. Bumping rivals is legal - if risky.'],
+  ['pin','GRAB THE PIN','A golden pin drops every few seconds. Run over it. Only the holder can attack.'],
+  ['attack','ATTACK','With the pin, get close and a rival\'s balloon bursts. Without it, your hits do nothing.'],
+  ['balloon','BALLOONS ARE LIFE','Everyone starts with three. Every hit pops one. Lose them all and you are out.'],
+  ['shield','SHIELD','A blue dome eats one hit, then pops. It fades in its last second.'],
+  ['speed','SPEED','You move faster and leave a chevron trail. Quicker - and easier to catch.'],
+  ['last','LAST STANDING','One player left with balloons wins. Hunt the leader, not the weakest.'],
+  ['careful','WATCH THE PIN','The ring under the holder burns down. When it empties, the pin drops free.']
 ];
 const HOW_COLORS={move:'#43A047',pin:'#F6B41E',attack:'#EF4D3C',balloon:'#F45D9C',
   shield:'#4AD6FF',speed:'#FFD24A',last:'#3D8EE0',careful:'#A05CD6'};
@@ -2124,39 +2246,106 @@ function drawHowIcon(kind,cx,cy,r){
     ctx.beginPath();ctx.ellipse(cx,cy,r*0.15,r*0.15,0,0,TAU);ctx.fill();
   }
 }
+/* Body copy gets a normal UI face. Every string on this panel used to be set in
+   the chunky all-caps display font at two nearby sizes, which is why the heading
+   and its description read as the same thing: shouting at the same volume in the
+   same typeface. The display face is now reserved for the headings, and the
+   descriptions are set in a plain UI face, in sentence case, lighter and
+   smaller, with more leading - so the eye lands on the heading first. */
+const UIFONT='"Trebuchet MS","Segoe UI",Roboto,system-ui,sans-serif';
+function txtUI(g,s,x,y,size,fill,weight,align){
+  g.font=(weight||'400')+' '+size+'px '+UIFONT;
+  g.textAlign=align||'left';g.textBaseline='middle';
+  g.fillStyle=fill;g.fillText(s,x,y);
+}
+/* TWO COLUMNS, TWO PER ROW, NO SCROLLING.
+   The panel used to be a single full-width column of eight tall rows with a
+   scroll gesture bolted on, and it still ran off the bottom on any short screen.
+   It is now a fixed 2x4 grid of compact cards, and the type is measured and
+   scaled until all four rows fit inside the panel. There is nothing to scroll,
+   so nothing can be scrolled into - the earlier DRAG TO SCROLL hint is gone
+   with the gesture. */
+const HOW_COLS=2;
+function layoutHow(innerW,avail,scale){
+  const headFs=Math.min(15,innerW*0.058)*scale;
+  const bodyFs=Math.min(12,innerW*0.046)*scale;
+  const lh=bodyFs*1.30;
+  const iconR=Math.max(12,Math.min(19,innerW*0.10))*scale;
+  const pad=Math.max(7,innerW*0.032)*scale;
+  const rowGap=Math.max(6,innerW*0.028)*scale;
+  const colGap=Math.max(8,innerW*0.038)*scale;
+  const colW=(innerW-colGap*(HOW_COLS-1))/HOW_COLS;
+  const headFont='bold '+headFs+'px '+FONT;
+  const bodyFont='400 '+bodyFs+'px '+UIFONT;
+  const cells=[];
+  let maxRowH=0;
+  for(let i=0;i<HOW_ROWS.length;i+=HOW_COLS){
+    const rowCells=[];
+    let rowH=0;
+    for(let c=0;c<HOW_COLS;c++){
+      const idx=i+c;
+      if(idx>=HOW_ROWS.length)break;
+      const row=HOW_ROWS[idx];
+      const headLines=wrapText(ctx,row[1],colW-iconR*2-10,headFont);
+      const bodyLines=wrapText(ctx,row[2],colW-iconR*2-10,bodyFont);
+      const h=Math.max(iconR*2+pad*0.6,headLines.length*headFs*1.16+bodyLines.length*lh+pad*0.9);
+      rowCells.push({row,headLines,bodyLines,h});
+      if(h>rowH)rowH=h;
+    }
+    cells.push({rowCells,rowH});
+    maxRowH+=rowH+rowGap;
+  }
+  return {cells,total:Math.max(0,maxRowH-rowGap),headFs,bodyFs,lh,iconR,pad,colGap,colW,rowGap};
+}
+let howLayout=null,howViewH=0;
 function drawHowPanel(){
-  const w=Math.min(540,cssW*0.93),h=Math.min(460,cssH*0.93);
+  const w=Math.min(600,cssW*0.95),h=Math.min(cssH*0.93,780);
   const x=cssW/2-w/2,y=cssH/2-h/2;
   panel(x,y,w,h,'HOW TO PLAY');
-  const padX=20;
-  const iconR=Math.max(16,Math.min(23,w*0.047));
-  const headFs=Math.min(19,w*0.043);
-  const bodyFs=Math.min(15,w*0.036);
-  const innerW=w-padX*2-iconR*2-12;
-  const headFont='bold '+headFs+'px '+FONT;
-  const bodyFont='bold '+bodyFs+'px '+FONT;
-  let yy=y+78;
-  for(const row of HOW_ROWS){
-    const col=HOW_COLORS[row[0]];
-    const headLines=wrapText(ctx,row[1],innerW,headFont);
-    const bodyLines=wrapText(ctx,row[2],innerW,bodyFont);
-    const textH=headLines.length*headFs*1.18+bodyLines.length*bodyFs*1.30;
-    const rowH=Math.max(iconR*2+8,textH);
-    const cy=yy+rowH/2;
-    /* icon disc */
-    const cx=x+padX+iconR;
-    ctx.fillStyle='rgba(0,0,0,0.14)';ell(ctx,cx,cy+2,iconR,iconR);ctx.fill();
-    ctx.fillStyle=col;ell(ctx,cx,cy,iconR,iconR);ctx.fill();
-    ctx.strokeStyle='#2B2233';ctx.lineWidth=3;ctx.stroke();
-    drawHowIcon(row[0],cx,cy,iconR);
-    /* heading + body, vertically centred against the disc */
-    const tx=x+padX+iconR*2+12;
-    let ty=cy-(textH-headFs*0.55)/2;
-    for(const hl of headLines){txt(ctx,hl,tx,ty,headFs,'#2B2233','left');ty+=headFs*1.18;}
-    ty+=bodyFs*0.22;
-    for(const bl of bodyLines){txt(ctx,bl,tx,ty,bodyFs,'#5C5449','left');ty+=bodyFs*1.30;}
-    yy+=rowH+14;
+  const padX=16;
+  const viewY=y+64,viewH=h-64-26;
+  howViewH=viewH;
+  let scale=1;
+  howLayout=layoutHow(w-padX*2,viewH,scale);
+  while(howLayout.total>viewH&&scale>0.58){
+    scale-=0.03;
+    howLayout=layoutHow(w-padX*2,viewH,scale);
   }
+  const L=howLayout;
+  let yy=viewY;
+  for(const gridRow of L.cells){
+    for(let c=0;c<gridRow.rowCells.length;c++){
+      const cell=gridRow.rowCells[c];
+      const cx=x+padX+c*(L.colW+L.colGap);
+      const cy=yy;
+      /* card plate */
+      ctx.fillStyle='rgba(43,34,51,0.06)';
+      rr(ctx,cx,cy,L.colW,gridRow.rowH,L.iconR*0.5);ctx.fill();
+      ctx.strokeStyle='rgba(43,34,51,0.12)';ctx.lineWidth=2;
+      rr(ctx,cx,cy,L.colW,gridRow.rowH,L.iconR*0.5);ctx.stroke();
+      /* icon disc */
+      const col=HOW_COLORS[cell.row[0]];
+      const ix=cx+L.pad*0.5+L.iconR, iy=cy+gridRow.rowH*0.34;
+      ctx.fillStyle='rgba(0,0,0,0.10)';ell(ctx,ix,iy+1.5,L.iconR,L.iconR);ctx.fill();
+      ctx.fillStyle=col;ell(ctx,ix,iy,L.iconR,L.iconR);ctx.fill();
+      ctx.strokeStyle='#2B2233';ctx.lineWidth=Math.max(2,L.iconR*0.11);ctx.stroke();
+      drawHowIcon(cell.row[0],ix,iy,L.iconR);
+      /* heading (display face, uppercase, dark) then body (UI face, sentence
+         case, lighter). Size, weight, colour and case all differ, so the two can
+         no longer be read as the same thing. */
+      const tx=ix+L.iconR+L.pad*0.55;
+      let ty=cy+gridRow.rowH*0.34-cell.headLines.length*L.headFs*0.58;
+      ctx.font='bold '+L.headFs+'px '+FONT;
+      ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle='#2B2233';
+      for(const hl of cell.headLines){ctx.fillText(hl,tx,ty);ty+=L.headFs*1.16;}
+      ctx.font='400 '+L.bodyFs+'px '+UIFONT;
+      ctx.fillStyle='#6A6055';
+      let by=cy+gridRow.rowH*0.34+Math.max(cell.headLines.length*L.headFs*1.16,L.iconR)*0.6+L.bodyFs*0.72;
+      for(const bl of cell.bodyLines){ctx.fillText(bl,tx,by);by+=L.lh;}
+    }
+    yy+=gridRow.rowH+L.rowGap;
+  }
+  txt(ctx,'TAP OUTSIDE TO CLOSE',x+w/2,y+h-14,10,'#A79880');
 }
 /* Shared sheet chrome. Themed to the game rather than a plain white box: a
    thick balloon-red rim, a dark outer edge and a warm cream face, matching the
@@ -2246,8 +2435,8 @@ function drawPause(){
     uiBtns.push({x:px+40,y:by,w:bw,h:bh,act});
   };
   mk(py+70,'RESUME','#3f9a44','#ffffff',()=>Game.resume());
-  mk(py+130,'RESTART','#e0a53c','#ffffff',()=>{paused=false;playWithAd(nPlayers,soloMode);});
-  mk(py+190,'MENU','#5b7f9e','#ffffff',()=>{paused=false;clearGameplayInput();backToMenu();});
+  mk(py+130,'RESTART','#e0a53c','#ffffff',()=>{paused=false;playWithAd(nPlayers,soloMode,'pause.restart');});
+  mk(py+190,'MENU','#5b7f9e','#ffffff',()=>{paused=false;clearGameplayInput();backToMenu('pause.menu');});
 }
 function drawResult(){
   uiBtns.length=0;
@@ -2284,25 +2473,15 @@ function drawResult(){
       sy+=24;
     }
   }
-  if(lastAdReason)txt(ctx,lastAdReason,cssW/2,py+ph-118,12,'#7a5a3a','center');
-  /* Above the PLAY AGAIN / MENU row, so it never displaces them. */
-  if(adOfferVisible()){
-    const ow=Math.min(268,pw*0.64),oh=38,oy=py+ph-110;
-    ctx.fillStyle='rgba(0,0,0,0.25)';rr(ctx,cssW/2-ow/2+3,oy+3,ow,oh,12);ctx.fill();
-    ctx.fillStyle=rewardedBusy?'#9aa4ad':'#e8912d';rr(ctx,cssW/2-ow/2,oy,ow,oh,12);ctx.fill();
-    txt(ctx,rewardedBusy?'LOADING AD...':'WATCH AD - SPEED BOOST + SHIELD NEXT MATCH',
-        cssW/2,oy+oh/2+1,rewardedBusy?14:12,'#fff','center');
-    uiBtns.push({x:cssW/2-ow/2,y:oy,w:ow,h:oh,act:()=>offerAdBoost()});
-  }
   const bw=Math.min(180,pw*0.36),bh=44,byy=py+ph-62;
   ctx.fillStyle='rgba(0,0,0,0.25)';rr(ctx,cssW/2-bw-10+3,byy+3,bw,bh,14);ctx.fill();
   ctx.fillStyle='#37913c';rr(ctx,cssW/2-bw-10,byy,bw,bh,14);ctx.fill();
   txt(ctx,'PLAY AGAIN',cssW/2-bw/2-10,byy+bh/2+1,17,'#fff');
-  uiBtns.push({x:cssW/2-bw-10,y:byy,w:bw,h:bh,act:()=>playWithAd(nPlayers,soloMode)});
+  uiBtns.push({x:cssW/2-bw-10,y:byy,w:bw,h:bh,act:()=>playWithAd(nPlayers,soloMode,'gameover.playAgain')});
   ctx.fillStyle='rgba(0,0,0,0.25)';rr(ctx,cssW/2+10+3,byy+3,bw,bh,14);ctx.fill();
   ctx.fillStyle='#5b7f9e';rr(ctx,cssW/2+10,byy,bw,bh,14);ctx.fill();
   txt(ctx,'MENU',cssW/2+bw/2+10,byy+bh/2+1,17,'#fff');
-  uiBtns.push({x:cssW/2+10,y:byy,w:bw,h:bh,act:()=>{clearGameplayInput();backToMenu();}});
+  uiBtns.push({x:cssW/2+10,y:byy,w:bw,h:bh,act:()=>{clearGameplayInput();backToMenu('gameover.menu');}});
 }
 function drawRotate(){
   ctx.fillStyle='#123a6b';ctx.fillRect(0,0,cssW,cssH);
@@ -2330,6 +2509,46 @@ function drawDim(){
   ctx.fillStyle='rgba(12,52,105,0.52)';ctx.fillRect(0,0,cssW,cssH);
 }
 /* ================= MAIN LOOP ================= */
+/* ================= TRANSITIONS =================
+   Every screen change used to be a hard cut: the state string flipped and the
+   next frame was a completely different picture. Two small pieces fix that, and
+   neither of them snapshots or re-renders anything.
+
+   - STATE DIP: on a state change the whole frame is dipped toward the deep sky
+     colour and brought back over ~0.26s. A dip-to-dark reads as a cut of film
+     rather than a glitch, and costs one fillRect.
+
+   - OVERLAY RISE: an overlay (panel / pause / results) fades up and settles
+     from 96% scale over ~0.18s. The buttons still register instantly - hit
+     testing uses the real rects, not the animation - so nothing becomes
+     harder to tap while it animates. */
+let lastState=state,stateFade=1,uiT=1,uiKey='';
+const TRANS_DUR=0.26,UI_DUR=0.18;
+function easeOut(t){return 1-Math.pow(1-clamp(t,0,1),3);}
+function overlayKey(){
+  if(panelOpen())return 'panel';
+  if(paused)return 'pause';
+  if(state==='RESULT')return 'result';
+  return '';
+}
+function stepTransitions(dt){
+  if(state!==lastState){lastState=state;stateFade=0;}
+  stateFade=Math.min(1,stateFade+dt/TRANS_DUR);
+  const k=overlayKey();
+  if(k!==uiKey){uiKey=k;uiT=k?0:1;}
+  if(k)uiT=Math.min(1,uiT+dt/UI_DUR);
+}
+function withOverlay(fn){
+  const e=easeOut(uiT);
+  ctx.save();
+  ctx.globalAlpha=e;
+  ctx.translate(cssW/2,cssH/2);
+  const s=0.96+0.04*e;
+  ctx.scale(s,s);
+  ctx.translate(-cssW/2,-cssH/2);
+  fn(e);
+  ctx.restore();
+}
 function render(){
   uiBtns.length=0;
   ctx.setTransform(1,0,0,1,0,0);
@@ -2359,6 +2578,11 @@ function render(){
   }
   list.sort((m,n)=>m.y-n.y);
   for(const e of list)e.f(e.a,e.b);
+  /* The PIN tag is drawn AFTER every character rather than sorted into the list.
+     Sorted, it would sit behind whatever was drawn over the holder - which in a
+     crowded scrum is usually the point. On top, it is always the most readable
+     thing on the arena after the HUD. */
+  if(pinHolder&&!pinHolder.eliminated)drawPinBearerTag(pinHolder);
   drawRingsFx();
   drawParticles();
   drawFloatersFx();
@@ -2368,17 +2592,23 @@ function render(){
        stays readable on top of it. */
     drawDim();
     drawMenu();
-    if(showSettings)drawSettingsPanel();
-    if(paused)drawPause();
+    /* Same rule as the panels: an overlay takes the hit list away from whatever
+       it is covering, so the menu row cannot be tapped through the pause card. */
+    if(paused)withPanelButtons(drawPause);
     if(rotateBlock)drawRotate();
-    return;
+  }else{
+    if(state==='COUNTDOWN'){drawControls();drawHUD();drawCountdown();}
+    else if(state==='PLAYING'){drawControls();drawHUD();}
+    else if(state==='ENDING'){drawHUD();}
+    else if(state==='RESULT')withOverlay(drawResult);
+    if(paused)withPanelButtons(drawPause);
+    if(rotateBlock)drawRotate();
   }
-  if(state==='COUNTDOWN'){drawControls();drawHUD();drawCountdown();}
-  else if(state==='PLAYING'){drawControls();drawHUD();}
-  else if(state==='ENDING'){drawHUD();}
-  else if(state==='RESULT'){drawResult();}
-  if(paused)drawPause();
-  if(rotateBlock)drawRotate();
+  /* the state dip, painted over everything */
+  if(stateFade<1){
+    ctx.fillStyle='rgba(6,20,40,'+((1-easeOut(stateFade))*0.55).toFixed(3)+')';
+    ctx.fillRect(0,0,cssW,cssH);
+  }
 }
 let lastT=0,rafId=0,running=true,frameWarned=false;
 function frame(now){
@@ -2389,6 +2619,7 @@ function frame(now){
   if(dt<=0)return;
   if(dt>0.033)dt=0.033;
   stateT+=dt;
+  stepTransitions(dt);
   let ts=1;
   if(hitStop>0){hitStop-=dt;ts=0.1;}
   /* A throw anywhere in update()/render() used to kill the rAF loop for good,
@@ -2440,16 +2671,21 @@ function showBannerFor(on){
    global registered here. It is NOT fired on a timer and never over live play.
    No banner in this game at all - see the ADS note above. */
 var interstitialBusy=false;
-function showInterstitial(onDone){
-  if(interstitialBusy){if(onDone)onDone();return;}
+function showInterstitial(placement,onDone){
+  if(interstitialBusy){
+    console.log('[Balloon Battle] interstitial "'+placement+'" ignored: a request is already open');
+    if(onDone)onDone();
+    return;
+  }
   var b=window.NativeBridge;
   if(b&&b.showInterstitial){
     interstitialBusy=true;
     var fired=false;
-    var done=function(){
+    var done=function(result){
       if(fired)return;
       fired=true;
       interstitialBusy=false;
+      console.log('[Balloon Battle] interstitial "'+placement+'" settled: '+(result||'no-token'));
       if(onDone)onDone();
     };
     /* The shell invokes the name it was handed. A late second call (the ad
@@ -2460,85 +2696,55 @@ function showInterstitial(onDone){
       /* Two arguments: showInterstitial(callback, placement) takes two
          parameters and addJavascriptInterface matches by EXACT arity, so the
          one-argument form THREW and the catch below turned that into a silent
-         no-op - this game's ad break could never appear. */
-      b.showInterstitial('__studioInterCb','');
-      /* Safety net: if the shell never calls back (no ad inventory, a provider
-         error), release the UI instead of stranding the player on a dead
-         button. */
-      setTimeout(function(){done();},4000);
+         no-op - this game's ad break could never appear. Every call site
+         previously passed '' for the placement, so the shell's log could not
+         say which button asked and every request looked identical. */
+      console.log('[Balloon Battle] requesting interstitial: '+placement);
+      b.showInterstitial('__studioInterCb',placement||'');
+      /* SAFETY NET, CORRECTED.
+         This used to be setTimeout(done, 4000). `done` runs the ACTION, and an
+         interstitial takes far longer than four seconds to start and finish - so
+         on every successful ad the game restarted or left the match WHILE the ad
+         was still on screen, and the ad's own closing callback then hit `fired`
+         and did nothing. The timer now only re-arms the request guard; the
+         action still waits for the shell. */
+      setTimeout(function(){
+        if(fired)return;
+        interstitialBusy=false;
+        console.log('[Balloon Battle] interstitial "'+placement+'": no callback after 45s, releasing the guard');
+      },45000);
       return;
-    }catch(e){}
-    done();
+    }catch(e){
+      console.log('[Balloon Battle] interstitial bridge call threw: '+((e&&e.message)||e));
+    }
+    done('bridge_error');
     return;
   }
+  console.log('[Balloon Battle] no NativeBridge.showInterstitial - running the action directly');
   if(onDone)onDone();
 }
-/* Rewarded: the player's tap asks the shell, the shell decides WHEN.
-   `ok` is true only when a reward was actually granted; every other outcome
-   (skipped, offline, cap reached, cooldown) arrives as a reason string, which
-   the game turns into a message rather than swallowing. */
-function showRewarded(done){
-  var b=window.NativeBridge;
-  if(b&&b.showRewardedAd){
-    var fired=false;
-    var finish=function(result){
-      if(fired)return;
-      fired=true;
-      /* Allow-list, not deny-list. Enumerating the refusal tokens by hand
-         means the next one anyone adds pays out as a free reward. */
-      var granted=(result==='granted'||result===''||result===undefined||result===null);
-      done(granted?true:result);
-    };
-    /* A callback name of its own per request: two requests sharing one global
-       callback let the first ad pay out the second action. */
-    var cb='__bbRewCb'+(window.__bbRewSeq=(window.__bbRewSeq||0)+1);
-    window[cb]=finish;
-    try{
-      b.showRewardedAd(cb,'boost','normal');
-      setTimeout(function(){finish('unavailable');},45000);
-      return;
-    }catch(e){}
-  }
-  done('unavailable');
-}
-var rewardedBusy=false;
-var lastAdReason='';
-/* Head start on the NEXT bout: every human player begins with the game's own
-   speed boost and shield. Next match only, so it stays a reward rather than a
-   permanent edge, and humans only, so it never advantages the AI. */
-function offerAdBoost(){
-  if(rewardedBusy)return;
-  rewardedBusy=true;
-  showRewarded(function(ok){
-    rewardedBusy=false;
-    if(ok){adBoostPending=true;playWithAd(nPlayers,soloMode);}
-    else{lastAdReason=adMessage(ok);}
-  });
-}
-/* The shell owns the cap, so the game cannot know for certain how many rewards
-   are left. Showing the offer is harmless either way - a refusal is explained. */
-function adOfferVisible(){ return lastAdReason.indexOf('all your ad rewards')===-1; }
+/* NO REWARDED ADS IN THIS GAME.
+   Balloon Battle is local multiplayer, with or without AI. Nothing is lost when
+   a player is knocked out - the other people at the table are still there, and
+   PLAY AGAIN is one tap away - so there is no failure state for a reward to
+   rescue, and a "watch an ad for a speed boost next match" button on the results
+   card is asking a group of friends to stop playing for thirty seconds so one of
+   them can start slightly faster. All of it is gone: the offer button, the
+   bridge call, the pending-boost flag and the reason string.
 
-function adMessage(reason){
-  switch(reason){
-    case 'limit_reached': return 'You have used all your ad rewards for now.';
-    case 'cooldown':      return 'Give it a moment, then try again.';
-    case 'offline':
-    case 'unavailable':   return 'Ad unavailable. Check your connection.';
-    default:              return 'Ad unavailable. Try again later.';
-  }
-}
+   The game's own SPEED and SHIELD power-ups are untouched. Those drop in the
+   arena and anyone can take them, which is how a speed boost should be earned. */
 
 /* Kept for the exit path, so a real BACK (not the page being torn down) gets
    its ad. */
 var interstitialShown=false;
-function showInterstitialOnce(){
+function showInterstitialOnce(placement){
   if(interstitialShown)return;
   interstitialShown=true;
-  showInterstitial(function(){interstitialShown=false;});
+  showInterstitial(placement,function(){interstitialShown=false;});
 }
-window.addEventListener('pagehide',showInterstitialOnce);
-document.addEventListener('visibilitychange',function(){if(document.hidden)showInterstitialOnce();});
+window.addEventListener('pagehide',function(){showInterstitialOnce('exit');});
+document.addEventListener('visibilitychange',function(){if(document.hidden)showInterstitialOnce('exit');});
 window.Game={
   pause(){if((state==='PLAYING'||state==='COUNTDOWN')&&!paused){paused=true;clearGameplayInput();SFX.play('click');}},
   resume(){if(paused){paused=false;lastT=0;}},
@@ -2620,18 +2826,22 @@ requestAnimationFrame(frame);
     const wantPlayers=parseInt(QS.get('players')||'0',10);
     if(QS.get('mode')==='pass'&&wantPlayers>=1&&wantPlayers<=4){
       preselectMode=wantPlayers;
+      console.log('[Balloon Battle] shell auto-path: mode=pass players='+wantPlayers+' -> straight into the match');
+    }else if(QS.get('players')){
+      console.log('[Balloon Battle] players='+wantPlayers+' is outside this game\'s 1-4 range, opening the menu');
     }
     setupWorld();buildObstacles();buildPUSpots();spawnPts=null;renderBG();
     if(solo){startMatch(1,true);showBannerFor(true);}
     else if(preselectMode){
-      /* OPEN STRAIGHT INTO THE GAME. The shell's "N PLAYER" tile is the player
-         already saying "we are N", so re-asking them to tap the matching button
-         is a wasted step. The game honours the request and goes straight to the
-         bout. The ad still runs first, exactly as if they had tapped PLAY, so
-         this path cannot be used to skip it.
+      /* OPEN STRAIGHT INTO THE GAME. The shell's "N PLAYER" page is the player
+         already saying "we are N": ModeActivity passes
+         ?mode=pass&skill=medium&players=N for the 1-4 pages (and deliberately
+         NOT for All Games or Party, which keep the game's own menu). Making them
+         tap the matching button again is a wasted step, so the request is
+         honoured and the bout begins.
 
-         The attract loop is skipped deliberately - the demo would be torn down
-         a frame later, which just looks like a glitch. N=1 is SOLO (vs bots). */
+         The attract loop is skipped deliberately - the demo would be torn down a
+         frame later, which just looks like a glitch. N=1 is SOLO (vs bots). */
       const n=preselectMode;
       preselectMode=0;   /* consumed: the results card must not auto-restart */
       showModes=false;showHow=false;showSettings=false;
