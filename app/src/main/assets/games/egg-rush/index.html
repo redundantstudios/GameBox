@@ -346,6 +346,19 @@ html,body{width:100%;height:100%;overflow:hidden;position:fixed;background:#79b6
 /* settings sheet: SOUND + HAPTICS, same cream/wood board as everything else */
 .setcard{min-width:min(80vw,300px);max-width:min(90vw,380px)}
 .title.sm{font-size:clamp(20px,4.4vmin,34px)}
+/* In-panel titles are NOT the wordmark. .title is white fill + a 3px outline,
+   which only works while the letter strokes are wider than 6px - true of the
+   40-66px menu wordmark, false here. On a landscape phone 4.4vmin resolves to
+   18px and the 20px floor takes over; a 'Luckiest Guy' stroke is then about
+   3px, so a 3px outline consumes the fill on both sides and neighbouring
+   outlines fuse into one another. What that looks like is a border sliced off
+   the middle of the letters - which is exactly how it was reported, and it
+   was mistaken for clipping twice. Nothing was clipped. A card heading wants
+   the card's own type colour, the same #4b321b as .howtxt b, .tag and
+   .setlbl, with no outline: crisp at 20px and at the 34px cap. The padding
+   gives the rotate(-2deg) box room for its corners and separates the title
+   from the first howrow. No scrolling is introduced. */
+.panel .title.sm{padding:10px 12px 12px;line-height:1.2;color:#4b321b;text-shadow:none}
 .setrow{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:clamp(8px,2.3vmin,17px) 0}
 .setlbl{font-weight:900;font-size:clamp(12px,2.9vmin,16px);letter-spacing:1.5px;color:#7a5a34}
 .tgl{width:clamp(74px,15vmin,104px);border:3px solid #4b321b;border-radius:999px;padding:clamp(6px,1.8vmin,10px) 0;
@@ -608,14 +621,22 @@ const Studio = (() => {
       },
       /* The shell always answers - 'closed' when the ad played, 'unavailable'
          when it could not (offline / no fill) - so a game can never hang on a
-         callback that never comes. */
-      interstitial(onDone){
+         callback that never comes. The placement is forwarded for the tag,
+         and like rewarded() each request gets its own callback name: two taps
+         in quick succession would otherwise race on one shared global and run
+         one button's action under the other button's ad. A non-function first
+         argument is now ignored instead of called, which is exactly what used
+         to throw - the one call site passed a placement STRING here. */
+      interstitial(onDone,placement){
         const b=bridge();
+        const go=(typeof onDone==='function')?onDone:null;
         if(b&&b.showInterstitial){
-          window.__studioInterCb=function(){ if(onDone) onDone(); };
-          try{ b.showInterstitial('__studioInterCb',''); return; }catch(e){}
+          window.__studioInterSeq=(window.__studioInterSeq||0)+1;
+          const cb='__studioInterCb'+window.__studioInterSeq;
+          window[cb]=function(){ try{ delete window[cb]; }catch(_){} if(go) go(); };
+          try{ b.showInterstitial(cb,placement||''); return; }catch(e){ try{ delete window[cb]; }catch(_){} }
         }
-        if(onDone) onDone();
+        if(go) go();
       }
     }
   };
@@ -1202,7 +1223,7 @@ let attract=true, destroyed=false;
 let players=[], eggs=[], powerups=[], baskets=[], flyEggs=[];
 let matchT=CFG.MATCH_TIME, cdT=0, cdStep=4, timeUpT=0;
 let eggT=0, puT=4, goldenT=9, time=0, hitstop=0, rdt=0.016;
-let cam={x:W/2,y:H/2,z:0.7}, shakeT=0, shakeMag=0, shakeOx=0, shakeOy=0;
+let cam={x:W/2,y:H/2,z:1}, shakeT=0, shakeMag=0, shakeOx=0, shakeOy=0;
 let modeCfg={count:4,humans:0,race:false,target:CFG.RACE_TARGET_DEFAULT}, hintT=-1;
 let humansSkill=0.65;
 let raceMode=false, raceTarget=CFG.RACE_TARGET_DEFAULT, raceWinner=null, raceAllBankedWarned=false;
@@ -1284,7 +1305,7 @@ function buildMatch(count,hum){
   matchT=raceMode?CFG.RACE_TIME:CFG.MATCH_TIME;
   eggT=0; puT=4; goldenT=9; hitstop=0; shakeT=0;
   raceWinner=null; raceAllBankedWarned=false;
-  cam.x=W/2; cam.y=H/2; cam.z=Math.max(vw/W,vh/H);
+  cam.x=W/2; cam.y=H/2; cam.z=Math.min(vw/W,vh/H);
   if(raceMode){
     const total=racePoolSize(raceTarget,count);
     const pool=EGG_SPOTS.concat(GOLD_SPOTS);
@@ -1411,11 +1432,11 @@ function endRaceWin(p){
 }
 function showResult(){
   state='RESULT';
-  /* Interstitial at the end of a run, on the results screen - a real break,
-     not mid-play. This is only a REQUEST: AdPolicy in the shell decides, so
-     inside the first-session grace window or before the minimum gap the shell
-     answers "cooldown" and nothing is shown. */
-  try{ Studio.ads.interstitial('egg-rush.result'); }catch(e){} $('controls').innerHTML=''; ctrls=[];
+  /* No ad on arriving at the results screen. It used to request one from here,
+     and passed a placement string where this shim expects a callback - so the
+     completion path threw every single time it fired. Ads now hang off the
+     buttons that actually leave or reset play; see withAd(). */
+  $('controls').innerHTML=''; ctrls=[];
   clearInputs();
   $('sys').classList.add('hidden');
   const st=[...players].sort((a,b)=>b.score-a.score||b.golden-a.golden||b.eggs-a.eggs||a.id-b.id);
@@ -1473,10 +1494,19 @@ function buildControls(){
       [ {t:'joy',a:'tr'}, {t:'dash',a:'br'} ]
     ];
   }else if(humans===3){
+    /* Player 3 was given 'bc' - a bottom-CENTRE slot, the one place on the
+       screen that is not a corner. It read as a stray stick marooned in the
+       middle of the field, and it was also the slot the layout had to raise
+       (bcRaise) to clear the centred #sys row underneath it. The four control
+       corners are exactly what the hens are pushed out of at match start
+       (CFG.START_EDGE_CLEAR), so a centre joystick was outside the contract
+       that code assumes. 'tr' is the corner player 2 already uses in 2-player
+       mode, so three players now take bl / br / tr and every stick sits where
+       the spawn exclusion expects to find one. */
     specs=[
       [ {t:'joy',a:'bl'}, {t:'dash',a:'bl-side'} ],
       [ {t:'joy',a:'br'}, {t:'dash',a:'br-side'} ],
-      [ {t:'joy',a:'bc'}, {t:'dash',a:'bc-side'} ]
+      [ {t:'joy',a:'tr'}, {t:'dash',a:'tr-side'} ]
     ];
   }else{
     specs=[
@@ -1554,7 +1584,12 @@ function buildControls(){
 
 function layoutControls(){
   const short=Math.min(vw,vh);
-  const jr =clamp(short*0.075,45,70);
+  /* The stick was a little small to play on - the whole control is 2*jr across,
+     so at 7.5% of the short edge it could land under 45px on a compact phone.
+     8.2% with a 52px floor is about a fifth more thumb to aim with. The thumb
+     (td) and the deflection limit (c.max) are both derived from jr, so they
+     grow with it and stay in proportion. */
+  const jr =clamp(short*0.082,52,76);
   const dr =clamp(short*0.055,36,55);
   const m  =clamp(short*0.025,10,24);
   const hp =clamp(short*0.018,8,14);
@@ -1563,7 +1598,6 @@ function layoutControls(){
   geo={jr,dr,m,hp,td,gap};
   const JD=Math.round((jr+hp)*2);
   const DD=Math.round((dr+hp)*2);
-  const bcRaise=Math.round(m+56+gap);
   let maxBottom=0;
   const place=(el,o)=>{
     el.style.width=Math.round(o.w)+'px'; el.style.height=Math.round(o.h)+'px';
@@ -1579,10 +1613,10 @@ function layoutControls(){
       const el=pc.el, a=pc.sp.a;
       if(pc.sp.t==='joy'){
         place(el,{w:JD,h:JD,
-          l:(a==='bl'||a==='tl')?m:(a==='bc'?vw/2-(jr+hp):undefined),
+          l:(a==='bl'||a==='tl')?m:undefined,
           r:(a==='br'||a==='tr')?m:undefined,
           t:(a==='tl'||a==='tr')?m:undefined,
-          b:(a==='bl'||a==='br')?m:(a==='bc'?bcRaise:undefined)});
+          b:(a==='bl'||a==='br')?m:undefined});
         const joy=el.querySelector('.joy'), th=el.querySelector('.thumb');
         joy.style.width=joy.style.height=Math.round(jr*2)+'px';
         joy.style.margin=Math.round(-jr)+'px';
@@ -1593,7 +1627,6 @@ function layoutControls(){
         let o;
         if(a==='bl-side')      o={w:DD,h:DD, l:m+2*jr+gap,      b:m+jr-dr};
         else if(a==='br-side') o={w:DD,h:DD, r:m+2*jr+gap,      b:m+jr-dr};
-        else if(a==='bc-side') o={w:DD,h:DD, l:vw/2+jr+gap-hp,  b:bcRaise+jr-dr};
         else if(a==='tl-side') o={w:DD,h:DD, l:m+2*jr+gap,      t:m+jr-dr};
         else if(a==='tr-side') o={w:DD,h:DD, r:m+2*jr+gap,      t:m+jr-dr};
         else if(a==='tl')      o={w:DD,h:DD, l:m,               t:m};
@@ -2166,22 +2199,30 @@ function updSpawns(d){
     if(best){ applyPU(best,u); powerups.splice(i,1); }
   }
 }
-function updCamera(d){
-  let minX=1e9,minY=1e9,maxX=-1e9,maxY=-1e9;
-  for(const p of players){ minX=Math.min(minX,p.x); minY=Math.min(minY,p.y); maxX=Math.max(maxX,p.x); maxY=Math.max(maxY,p.y); }
-  for(const e of eggs) if(e.golden&&e.state!=='CARRIED'){ minX=Math.min(minX,e.x); minY=Math.min(minY,e.y); maxX=Math.max(maxX,e.x); maxY=Math.max(maxY,e.y); }
-  if(minX>maxX){ minX=W/2; maxX=W/2; minY=H/2; maxY=H/2; }
-  const pad=350;
-  let z=Math.min(vw/(maxX-minX+pad*2), vh/(maxY-minY+pad*2));
-  const zmin=Math.max(vw/W, vh/H);
-  z=clamp(z, zmin, Math.max(zmin,1.05));
-  cam.z+=(z-cam.z)*Math.min(1,d*3);
-  const viewW=vw/cam.z, viewH=vh/cam.z;
-  let tx=(minX+maxX)/2, ty=(minY+maxY)/2;
-  tx=viewW>=W?W/2:clamp(tx,viewW/2,W-viewW/2);
-  ty=viewH>=H?H/2:clamp(ty,viewH/2,H-viewH/2);
-  cam.x+=(tx-cam.x)*Math.min(1,d*5);
-  cam.y+=(ty-cam.y)*Math.min(1,d*5);
+/* FIXED CAMERA - the whole farm is on screen at all times.
+   This used to frame the hens and whatever loose golden eggs existed, then
+   pan toward them. Nests were never in that box, so the moment the players
+   bunched up in one corner - which is what winning is - every other basket
+   walked off the screen. You cannot play egg-collection when your own nest
+   has to be found by accident. The zoom also ran as high as 1.05, which is
+   a deliberate zoom-in on the action, but it is the same knob.
+   Now the camera never moves and the zoom is the CONTAIN fit, min(), not the
+   cover fit, max(). That distinction matters on a phone in landscape, which
+   is the only orientation this game allows: the world is 1720x1040 (1.65:1)
+   but a handset sits nearer 2.2:1, so cover zoom filled the width and sliced
+   the top and bottom off the world. At 915x412, cover leaves only 774 world
+   units of the 1040 visible - the 4-player nests at y=175 and y=875 were
+   hanging off both edges even before the camera panned anywhere. min() fits
+   all 1040. The trade is honest and worth stating: on a wide screen the farm
+   now draws a little smaller and leaves grass at the sides, which the render
+   already fills (#5d8a3c). Screen shake is untouched - it is applied outside
+   this, in render(), so impacts still read as impacts.
+   Steering is unaffected either way: the joystick yields a direction vector
+   from its own centre, never a world coordinate, so no input depends on the
+   zoom having been whatever it used to be. */
+function updCamera(){
+  cam.z=Math.min(vw/W, vh/H);
+  cam.x=W/2; cam.y=H/2;
 }
 function updEffects(d){
   for(const q of parts){ if(!q.on) continue;
@@ -2683,6 +2724,24 @@ function updateHUD(){
   }
 }
 
+/* ---------- ads on the buttons that end a run ----------
+   Interstitials hang off the actions that leave or reset play - PLAY AGAIN,
+   MENU, RESUME, RESTART - instead of firing on their own when a screen
+   appears. Nothing interrupts a result the player is still reading, and a run
+   that is merely paused and resumed costs no ad.
+
+   Each of these is only a REQUEST. AdPolicy in the shell decides: inside the
+   first-session grace window, before the app-wide minimum gap, or with no
+   network, it answers "cooldown" or "unavailable" and shows nothing. So the
+   action is never gated behind a successful ad - it runs either way, and
+   `once` stops a late or repeated callback running it a second time. */
+function withAd(placement,done){
+  let ran=false;
+  const go=()=>{ if(ran) return; ran=true; try{ done(); }catch(e){} };
+  try{ Studio.ads.interstitial(go,placement); }
+  catch(e){ go(); }
+}
+
 /* ---------- pause / sdk ---------- */
 let prePause=null;
 function doPause(){
@@ -2698,13 +2757,14 @@ function doResume(){
   $('pauseOv').classList.add('hidden');
 }
  $('pauseBtn').addEventListener('click',()=>{ playSnd('click'); doPause(); });
- $('resumeBtn').addEventListener('click',()=>{ playSnd('click'); doResume(); });
+ $('resumeBtn').addEventListener('click',()=>{ playSnd('click'); withAd('pause.resume',doResume); });
  /* etwVal is a fixed 5 now, so restarting never needs to restore it. */
  $('restartBtn').addEventListener('click',()=>{ playSnd('click');
-  $('pauseOv').classList.add('hidden');
-  menuMode=modeCfg.race?'race':'classic';
-  startMatch(modeCfg.count,modeCfg.humans); });
- $('pmenuBtn').addEventListener('click',()=>{ playSnd('click'); startAttract(); });
+  withAd('pause.restart',()=>{
+    $('pauseOv').classList.add('hidden');
+    menuMode=modeCfg.race?'race':'classic';
+    startMatch(modeCfg.count,modeCfg.humans); }); });
+ $('pmenuBtn').addEventListener('click',()=>{ playSnd('click'); withAd('pause.menu',startAttract); });
  $('muteBtn').addEventListener('click',()=>{ initAudio(); resumeAudio(); setMuted(!muted); playSnd('click'); hap('light'); });
 
 /* ---------- start page wiring ---------- */
@@ -2832,8 +2892,8 @@ function openSettings(open){
  $('setOv').addEventListener('click',e=>{ if(e.target===$('setOv')) openSettings(false); });
  $('tglSound').addEventListener('click',()=>{ initAudio(); resumeAudio(); setMuted(!muted); playSnd('click'); });
  $('tglHap').addEventListener('click',()=>{ playSnd('click'); setHaptics(Studio.settings.haptics===false); });
- $('againBtn').addEventListener('click',()=>{ playSnd('click'); startMatch(modeCfg.count,modeCfg.humans); });
- $('rmenuBtn').addEventListener('click',()=>{ playSnd('click'); startAttract(); });
+ $('againBtn').addEventListener('click',()=>{ playSnd('click'); withAd('gameover.rematch',()=>startMatch(modeCfg.count,modeCfg.humans)); });
+ $('rmenuBtn').addEventListener('click',()=>{ playSnd('click'); withAd('gameover.menu',startAttract); });
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&state==='PLAYING') doPause(); });
 
 window.Game={
