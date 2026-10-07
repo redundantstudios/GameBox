@@ -330,7 +330,7 @@ button{font-family:var(--f);cursor:pointer;border:none;background:none;color:inh
       <div class="hrow"><div class="hico" style="--hc:#E8574C"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="10" height="14" rx="2.5" fill="#fff"/><rect x="11" y="3" width="10" height="14" rx="2.5" fill="#FFE9B8" stroke="#2F1D10" stroke-width="2"/></svg></div><div class="htxt"><b>STEP 3</b><span>Tap a second card.</span></div></div>
       <div class="hrow"><div class="hico" style="--hc:#58BE3E"><svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="htxt"><b>STEP 4</b><span>MATCH = +1 and you keep your turn!</span></div></div>
       <div class="hrow"><div class="hico" style="--hc:#C77DEF"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg></div><div class="htxt"><b>STEP 5</b><span>No match = cards hide, next player's turn.</span></div></div>
-      <div class="hrow"><div class="hico" style="--hc:#39A9E8"><svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M20 2.5l-.5 4.8-4.6-1.4z" fill="#fff"/></svg></div><div class="htxt"><b>2 PLAYERS</b><span>The screen turns around on turn change &mdash; pass the phone! In BOTS mode the board stays facing you.</span></div></div>
+      <div class="hrow"><div class="hico" style="--hc:#39A9E8"><svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M20 2.5l-.5 4.8-4.6-1.4z" fill="#fff"/></svg></div><div class="htxt"><b>PASS THE PHONE</b><span>With FLIP SCREEN on in SETTINGS, the board turns for the second and fourth players, in 2, 3 or 4 player. In BOTS mode it stays facing you.</span></div></div>
       <div class="hrow"><div class="hico" style="--hc:#FFC53D"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.6 5.6 6 .7-4.5 4.1 1.2 5.9-5.3-3-5.3 3 1.2-5.9L3.4 8.8l6-.7z" fill="#fff"/></svg></div><div class="htxt"><b>WIN</b><span>No timer &mdash; ends when every pair is found. Highest score wins.</span></div></div>
       <button id="btn-how-back" class="linkbtn">BACK</button>
     </div>
@@ -956,7 +956,10 @@ function applyFlip(){
   /* players[cur] is undefined outside a round - the settings screen is
      reachable before one has started - so this needs an existence check, not
      just a .bot check. Without it the whole click handler threw. */
-  const want=flipOn&&nPlayers===2&&!!p&&!p.bot&&cur===1;
+  /* ODD SEATS ROTATE: 2p -> seat 2, 3p -> seat 2, 4p -> seats 2 and 4. Same
+     rule as Bomb Relay (i%2===1), so the two games agree. It used to require
+     nPlayers===2, which left 3 and 4 player with a board that never turned. */
+  const want=flipOn&&nPlayers>=2&&!!p&&!p.bot&&(cur%2)===1;
   const g=$('game');
   const was=g.classList.contains('rot');
   g.classList.toggle('rot',want);
