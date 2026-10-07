@@ -735,6 +735,56 @@ body{
 .over-btns .btn{width:100%;min-width:0;padding:14px 10px;font-size:clamp(16px,4.6cqw,20px)}
 
 /* ---------- short-frame tuning (container = the phone screen) ---------- */
+/* ==== SHORT-FRAME SAFETY =============================================
+   Full-bleed means #app is now the whole viewport, so the challenge stack is
+   laid out against the real height. Most of its parts were sized in FIXED px,
+   which cannot shrink, so on a short frame (landscape, or a small phone after
+   the system bars take their cut) the panel overflowed and #chArea clipped the
+   answer row out of sight. Each rule below keeps its ORIGINAL value as the
+   maximum, so a normal frame renders exactly as it did and only a short one
+   shrinks. cqh tracks the frame height, not the width.
+
+   The @container breakpoints further down still win over this block where they
+   set a smaller value for a specific short case. */
+.ch-head{gap:clamp(3px,1.1cqh,6px)}
+#chPanel{gap:clamp(5px,1.6cqh,8px);padding:clamp(7px,2.1cqh,11px) clamp(9px,2.6cqh,13px)}
+#playZone{gap:clamp(5px,2cqh,10px)}
+.ch-note{font-size:clamp(10px,2.5cqh,13px);min-height:clamp(11px,3.5cqh,18px)}
+.pw-btn{padding:clamp(5px,1.8cqh,9px) clamp(3px,1cqh,4px);font-size:clamp(10px,2.5cqh,13px)}
+.pw-btn svg{width:clamp(11px,3.3cqh,17px);height:clamp(11px,3.3cqh,17px)}
+.ord-btn{height:clamp(34px,11cqh,56px)}
+.tm-track{height:clamp(28px,9.4cqh,48px)}
+.bal-track{height:clamp(32px,11cqh,56px)}
+.bal-meter{height:clamp(11px,4cqh,20px)}
+.bal-ball{width:clamp(15px,5.1cqh,26px);height:clamp(15px,5.1cqh,26px)}
+.bal-btn{padding:clamp(7px,2.4cqh,12px) clamp(10px,3.6cqh,18px);font-size:clamp(11px,3.1cqh,16px)}
+.bot-meter{height:clamp(9px,3.1cqh,16px)}
+.bot-overlay{gap:clamp(5px,2cqh,10px);padding:clamp(5px,2cqh,10px)}
+.bot-overlay svg{width:clamp(26px,8.4cqh,44px);height:clamp(26px,8.4cqh,44px)}
+.ans-btn{font-size:clamp(15px,4.4cqh,23px)}
+.sh-target svg{width:clamp(26px,8.4cqh,44px);height:clamp(26px,8.4cqh,44px)}
+.sh-btn svg{width:clamp(22px,7cqh,36px);height:clamp(22px,7cqh,36px)}
+.heart{width:clamp(13px,4.2cqh,22px);height:clamp(13px,4.2cqh,22px)}
+.crb-icon{width:clamp(30px,10cqh,52px);height:clamp(30px,10cqh,52px)}
+/* Square tiles are sized from cqw, so a short-and-wide frame grew them instead
+   of shrinking them. Cap the height against cqh; inert above ~380px tall. */
+.swap-tile{max-height:min(74px,13cqh)}
+.scr-letter{max-height:min(46px,8cqh)}
+.scr-slot{max-height:min(50px,9cqh)}
+.stroop-btn{max-height:min(58px,10cqh)}
+.mem-pad{max-height:min(72px,12.5cqh)}
+.arrow-card{max-height:min(104px,20cqh)}
+/* Square grids: height tracks width, so tie the width to the height available.
+   Inert above ~380px tall. */
+.sh-grid,.grid3{max-width:min(320px,84cqh)}
+/* Per-column minima could force a row wider than a narrow frame. Lowering only
+   the floor leaves the capped column width - and so the normal look - intact. */
+.ord-grid{grid-template-columns:repeat(2,minmax(64px,140px))}
+.ans-grid{grid-template-columns:repeat(2,minmax(64px,150px))}
+.sh-grid{grid-template-columns:repeat(3,minmax(48px,96px))}
+.grid3{grid-template-columns:repeat(3,minmax(40px,64px))}
+/* ==== END SHORT-FRAME SAFETY =========================================== */
+
 @container (max-height:700px){
   #scr-menu{gap:4px}
   .menu-main{gap:4px}
