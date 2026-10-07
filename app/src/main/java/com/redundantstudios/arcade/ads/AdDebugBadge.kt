@@ -39,6 +39,26 @@ object AdDebugBadge {
 
     private const val TICK_MS = 500L
 
+    /**
+     * SHOW THE ON-SCREEN AD BADGE: false.
+     *
+     * Turned off at the director's request - it was being read as part of the
+     * game rather than as a development overlay, and it sits below the footer
+     * where it looked like a stray UI element.
+     *
+     * It remains DEBUG-only regardless (see [attach]), so it could never reach a
+     * release build either way; this flag just stops it appearing on the daily
+     * debug builds.
+     *
+     * IT IS STILL THE FASTEST WAY TO ANSWER "why did that ad not show?", so it
+     * is one edit away: set this back to true. The badge reports whether the
+     * 180s interstitial gap has elapsed, which is invisible from inside a game
+     * because the governor refuses SILENTLY by design. Reading logcat for
+     * "Interstitial denied by policy: ..." answers the same question without
+     * putting anything on screen.
+     */
+    private const val ENABLED = false
+
     private var attached = false
     private var label: TextView? = null
     private val handler = Handler(Looper.getMainLooper())
@@ -52,6 +72,7 @@ object AdDebugBadge {
 
     /** Adds the badge over [activity]'s content view. Safe to call repeatedly. */
     fun attach(activity: Activity) {
+        if (!ENABLED) return
         if (!com.redundantstudios.arcade.BuildConfig.DEBUG) return
         if (attached) { update(); return }
         val root = activity.findViewById<ViewGroup>(android.R.id.content) ?: return

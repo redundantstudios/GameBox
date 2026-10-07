@@ -56,27 +56,30 @@ body{
   position:fixed;inset:0;                 /* immune to mobile URL-bar scrolling */
   font-family:var(--font);color:var(--ink);
   -webkit-text-size-adjust:100%;
-  background:#171021;
-  background-image:radial-gradient(rgba(255,247,228,.05) 2px,transparent 2.6px);
-  background-size:24px 24px;
+  /* FULL BLEED. This was #171021 with a dot pattern, which showed as a black
+     frame all the way round the game on any phone wider than the 560px cap -
+     the "black screen around the game". The body now carries the game's own
+     paper colour, so even if a safe-area inset ever leaves a strip, it is the
+     same cream as the game rather than a dark border. */
+  background:var(--bg);
   display:flex;align-items:center;justify-content:center;
   overflow:hidden;overscroll-behavior:none;
-  /* gap on every edge = frame gap + clamped safe area (JS-verified) */
-  padding:calc(var(--frameGap) + var(--sat))
-          calc(var(--frameGap) + var(--sar))
-          calc(var(--frameGap) + var(--sab))
-          calc(var(--frameGap) + var(--sal));
+  /* Safe-area padding is KEPT - dropping it would put the HUD under a notch.
+     Only the decorative frame gap is gone. */
+  padding:var(--sat) var(--sar) var(--sab) var(--sal);
   -webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
   touch-action:none;
 }
 #app{
-  position:relative;width:100%;height:100%;max-width:560px;min-height:0;overflow:hidden;
+  position:relative;width:100%;height:100%;max-width:none;min-height:0;overflow:hidden;
   container-type:size;                    /* cqw / cqh measure the FRAME, not the window */
   background:var(--bg);
   background-image:radial-gradient(rgba(43,34,51,.06) 2px,transparent 2.6px);
   background-size:24px 24px;
-  border-radius:clamp(14px,4vmin,30px);
-  box-shadow:0 0 0 3px #2B2233,0 16px 44px rgba(0,0,0,.45);
+  /* the rounded card and its drop shadow were a "phone mockup" look; the game is
+     a full-screen app now, so the frame is gone with the gap */
+  border-radius:0;
+  box-shadow:none;
 }
 
 /* MAIN MENU BOMB — visible runtime bomb */
@@ -771,8 +774,13 @@ body{
 }
 
 /* corner-pinned elements keep a sane offset (JS clamps the vars) */
-.btn-back{top:calc(14px + var(--sat))}
-.corner-home{top:calc(14px + var(--sat));right:calc(14px + var(--sar))}
+/* The corner buttons are absolutely positioned INSIDE #app, and #app is already
+   inset by the body's safe-area padding. Adding var(--sat)/var(--sar) to their
+   offsets here counted the status bar and the side inset TWICE, which is why BACK
+   sat noticeably below the top edge of the game. The base rules (top:14px /
+   left:14px / right:14px) are correct now that the body owns the safe area. */
+.btn-back{top:14px;left:14px}
+.corner-home{top:14px;right:14px}
 
 /* ============================================================
    MOBILE TYPOGRAPHY FIX
@@ -1772,11 +1780,15 @@ body, button, input, textarea, select, #app, #app * {
           <div><b>HAPTICS</b></div>
           <div class="switch" id="swHap"></div>
         </div>
-        <div class="set-row" style="border-bottom:0">
-          <div><b>SCREEN SHAKE</b></div>
-          <div class="switch" id="swShake"></div>
-        </div>
-      </div>
+<div class="set-row">
+<div><b>SCREEN SHAKE</b></div>
+<div class="switch" id="swShake"></div>
+</div>
+<div class="set-row" style="border-bottom:0">
+<div><b>FLIP SCREEN</b></div>
+<div class="switch" id="swFlip"></div>
+</div>
+</div>
     </section>
 
     <!-- ============ PASS SCREEN (multiplayer) ============ -->
@@ -1994,11 +2006,16 @@ const Studio = (() => {
         }
         return false;
       },
-      interstitial(onDone){
+      interstitial(onDone,placement){
         const b=bridge();
         if(b&&b.showInterstitial){
           window.__studioInterCb=function(){if(onDone)onDone();};
-          try{b.showInterstitial('__studioInterCb','');return true;}catch(_){}
+          /* Two arguments: showInterstitial(callback, placement) takes two
+             parameters and addJavascriptInterface matches by EXACT arity, so the
+             one-argument form THREW and the catch turned it into a silent no-op.
+             The shim used to hardcode '' for the placement as well, which meant
+             the shell's log could not say which button asked. */
+          try{b.showInterstitial('__studioInterCb',placement||'');return true;}catch(_){}
         }
         if(onDone)onDone();
         return false;
@@ -2203,7 +2220,7 @@ const FX=(()=>{
    4. GLOBAL DATA, SETTINGS, GAME STATE
    ============================================================ */
 const PALETTE=['#FF5148','#FFAA1D','#2FBE6A','#4A8DFF','#F45D9C','#14B3A7'];
-const settings={shake:store.get('shake',true)};
+const settings={shake:store.get('shake',true),flip:store.get('flip',false)};
 /* ============================================================
    CFG — all production gameplay/system tunables live here
    ============================================================ */
@@ -2294,9 +2311,16 @@ function setFlip(f){
   flipWrap.classList.toggle('flipped',G.flip);
 }
 function flipForSeat(i){
-  const p=G.players[i];
-  setFlip(G.n>1&&!p.bot&&i%2===1);
-}
+ const p=G.players[i];
+ /* GATED BY THE SETTINGS TOGGLE, WHICH IS OFF BY DEFAULT.
+    The screen used to flip 180 degrees for seats 2 and 4 with no way to turn it
+    off. Two things were wrong with that: it is a violent read - every label,
+    button and the bomb itself upside down - and it is only correct if the phone
+    really is on the table between two players facing each other, which is not
+    how most people hold a phone. Now it is an explicit choice, and off means the
+    screen never turns. */
+ setFlip(!!settings.flip&&G.n>1&&!p.bot&&i%2===1);
+ }
 
 /* ============================================================
    6. THE CARTOON BOMB + SHARED ICONS + LITTLE PEOPLE
@@ -3341,12 +3365,28 @@ const CH=[
    root.append(note);
    const fill=meter.firstChild;
    const cx=()=>box.clientWidth/2,cy=()=>box.clientHeight/2;
-   function place(){dot.style.left=cx()+'px';dot.style.top=cy()+'px';}
+   /* THE DOT WAS NEVER WHERE THE HAND-CHECK LOOKED FOR IT.
+      place() ran synchronously inside build(), before the challenge had been
+      laid out, so box.clientWidth/2 and box.clientHeight/2 were both 0 and the
+      dot was pinned to the TOP-LEFT CORNER of the box - which is exactly where
+      it appears on screen. The hit test, however, measures from the box CENTRE
+      with a small radius. A player pressing the visible dot was pointing a
+      couple of hundred pixels away from the target, the hold never started,
+      and the bar sat empty no matter how long it was held.
+
+      The dot now centres itself with CSS - left/top 50% plus the negative
+      margin .st-dot already carries - which needs no measurement and cannot
+      be wrong about WHEN layout happens. place() only re-asserts it, and a
+      ResizeObserver covers a frame that changes size. The hit radius is up
+      from 46 to 52 so it matches the dot's own 46px width. */
+   function place(){dot.style.left='50%';dot.style.top='50%';}
    place();
+   if(window.ResizeObserver){try{new ResizeObserver(place).observe(box);}catch(_){}}
+   addEventListener('resize',place);
    const local=e=>{const r=box.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
    box.addEventListener('pointerdown',e=>{e.preventDefault();
      const p=local(e);
-     if(Math.hypot(p.x-cx(),p.y-cy())<46){
+     if(Math.hypot(p.x-cx(),p.y-cy())<52){
        holding=true;sx=p.x;sy=p.y;
        try{box.setPointerCapture(e.pointerId);}catch(err){}
        note.textContent='STEADY\u2026';}});
@@ -4005,11 +4045,12 @@ segCount.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
 });
 
 /* settings */
-const swSound=$('swSound'),swShake=$('swShake'),swHap=$('swHap');
+const swSound=$('swSound'),swShake=$('swShake'),swHap=$('swHap'),swFlip=$('swFlip');
 function syncSettingsUI(){
   swSound.classList.toggle('on',!SFX.muted&&Studio.settings.sound!==false);
   swHap.classList.toggle('on',Studio.settings.haptics!==false);
   swShake.classList.toggle('on',settings.shake);
+  swFlip.classList.toggle('on',!!settings.flip);
   icoOn.style.display=SFX.muted?'none':'block';
   icoOff.style.display=SFX.muted?'block':'none';
 }
@@ -4033,6 +4074,9 @@ swSound.addEventListener('click',()=>{SFX.setMuted(!SFX.muted);saveShellSettings
    toggle and this one read the same value */
 swHap.addEventListener('click',()=>{Studio.settings.haptics=Studio.settings.haptics===false;saveShellSettings();syncSettingsUI();SFX.click();Studio.haptic('light');});
 swShake.addEventListener('click',()=>{settings.shake=!settings.shake;store.set('shake',settings.shake);SFX.click();syncSettingsUI();});
+swFlip.addEventListener('click',()=>{settings.flip=!settings.flip;store.set('flip',settings.flip);SFX.click();
+  /* Apply immediately, so the player can see what they just turned on. */
+  setFlip(!!settings.flip);syncSettingsUI();});
 hudMute.addEventListener('click',()=>{SFX.setMuted(!SFX.muted);saveShellSettings();syncSettingsUI();if(!SFX.muted)SFX.click();});
 
 /* navigation */
@@ -4050,9 +4094,16 @@ hudMute.addEventListener('click',()=>{SFX.setMuted(!SFX.muted);saveShellSettings
  $('btnSetBack').addEventListener('click',()=>{SFX.click();show('scr-menu');});
  $('btnRematch').addEventListener('click',()=>{
   SFX.click();
-  Studio.ads.interstitial(()=>startMatch(G.setup));
+  Studio.ads.interstitial(()=>startMatch(G.setup),'gameover.rematch');
 });
- $('btnMenu2').addEventListener('click',()=>{SFX.click();setFlip(false);show('scr-menu');});
+ /* MAIN MENU asked for nothing. It went straight to the title screen, so it was
+    the one button on the game-over card with no ad at all - while REMATCH beside
+    it always had one. Leaving the result to start something else is the same
+    natural break REMATCH is. */
+ $('btnMenu2').addEventListener('click',()=>{
+  SFX.click();
+  Studio.ads.interstitial(()=>{setFlip(false);show('scr-menu');},'gameover.menu');
+ });
 document.addEventListener('contextmenu',e=>{if(e.target.closest('#scr-game'))e.preventDefault();});
 
 /* ============================================================
