@@ -131,13 +131,21 @@ object ShellAudio {
      * silence and the music walked in seconds late. Decoding during the splash
      * window means it is already ready when the first shell screen resumes.
      *
-     * Deliberately does NOT set a target volume: the loop stays parked and
-     * silent until a host screen actually resumes, so warming it up can never
-     * make music play over a game or in the background.
+     * This DOES hand the loop its level, so the music is already sounding while
+     * the splash is still up instead of waiting for the first onResume(). That
+     * used to read as the app "starting with a little offset": the loop was
+     * decoded and then left parked, so the first note arrived only after the
+     * launcher, the splash and the activity's own resume had all finished.
+     *
+     * It is still not unconditional - [musicLevel] is 0 when the player has music
+     * switched off, and [BgmLoop] cuts straight to its target on a cold start
+     * rather than fading, so this cannot click. Once a real host screen resumes,
+     * [hostResumed] takes over and the usual fades resume.
      */
     fun warmUp(context: Context) {
         init(context)
-        ensureBgm()
+        val loop = ensureBgm() ?: return
+        loop.setTarget(musicLevel() * BGM_GAIN)
     }
 
     /** A shell screen came to the foreground. Starts (or resumes) with a fade. */

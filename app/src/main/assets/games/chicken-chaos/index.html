@@ -170,12 +170,22 @@ const Studio = (() => {
       },
       /* Match-end break. The shell always answers — 'closed' when the ad played,
          'unavailable' when it could not (offline / no fill) — so the game always
-         gets its continuation back and can never hang on a missing callback. */
-      interstitial(onDone){
+         gets its continuation back and can never hang on a missing callback.
+
+         TWO ARGUMENTS, and `placement` MUST be a declared parameter. This
+         function used to read a bare `placement||'break'` that existed nowhere
+         in scope: under this file's "use strict" that throws ReferenceError, the
+         catch below swallowed it, and the ad request died before reaching the
+         bridge — so chicken-chaos asked for NO interstitials at all while every
+         other game showed them. addJavascriptInterface also matches by EXACT
+         arity, so the two-argument call is required. The placement is '' rather
+         than 'exit': AdPolicy refuses "exit", because AdMob disallows an
+         interstitial on app exit. */
+      interstitial(onDone,placement){
         const b=bridge();
         if(b&&b.showInterstitial){
           window.__studioInterCb=function(){ if(onDone) onDone(); };
-          try{ b.showInterstitial('__studioInterCb',placement||'break'); return; }catch(_){}
+          try{ b.showInterstitial('__studioInterCb',placement||''); return; }catch(_){}
         }
         if(onDone) onDone();
       }
@@ -587,7 +597,12 @@ function computeZones(){
     return;
   }
   const base=Math.min(cw,ch);              // displayed CSS px
-  const jr=clamp(base*0.125,36,56);        // joystick radius (⌀ 72-112) was 0.115/34-52
+  /* Joystick radius, nudged up again (0.125/36-56 -> 0.138/40-62, so ⌀ 80-124).
+     It is the one control that has to be found without looking, mid-chase,
+     with a thumb landing on a moving target - every other size here is a
+     deliberate reading, this one is a reach. Dash is left alone: it is pressed
+     deliberately and often from the same spot, so growing it just eats arena. */
+  const jr=clamp(base*0.138,40,62);
   const dr=clamp(base*0.095,28,42);        // dash radius (⌀ 56-84) was 0.09/27-40
   const m=clamp(base*0.032,8,18);          // edge margin (8-18 CSS px)
   const gv=clamp(jr*0.24,9,15);            // joystick<->dash gap was 0.22/8-14 (10% larger)
@@ -2460,9 +2475,9 @@ function drawResult(){
 
   /* --- the two options: the ad runs only when one of THESE is chosen --- */
   uiBtn('rem',rx,by,bw,bh,'PLAY AGAIN',
-    {fill:UI.green,stroke:UI.greenEdge,fs:bh*0.30,fn:()=>adBreak(startMatch)});
+    {fill:UI.green,stroke:UI.greenEdge,fs:bh*0.30,fn:()=>adBreak(startMatch,'chicken-chaos.result.playAgain')});
   uiBtn('menu',rx+bw+gap,by,bw,bh,'MENU',
-    {fill:UI.grey,stroke:UI.greyEdge,fs:bh*0.30,fn:()=>adBreak(toMenu)});
+    {fill:UI.grey,stroke:UI.greyEdge,fs:bh*0.30,fn:()=>adBreak(toMenu,'chicken-chaos.result.menu')});
   ctx.restore();
 }
 function drawPaused(){
@@ -2471,11 +2486,11 @@ function drawPaused(){
   const bw=Math.min(280,cw*0.34),bh=clamp(ch*0.115,52,66);
   const bx=cw/2-bw/2;
   let by=ch*0.42;
-  uiBtn('res',bx,by,bw,bh,'RESUME',{fill:'#59c126',stroke:'#2e6b12',fs:bh*0.38,fn:()=>{ adBreak(()=>{ Game.resume(); }); }});
+  uiBtn('res',bx,by,bw,bh,'RESUME',{fill:'#59c126',stroke:'#2e6b12',fs:bh*0.38,fn:()=>{ adBreak(()=>{ Game.resume(); },'chicken-chaos.pause.resume'); }});
   by+=bh+14;
-  uiBtn('restart',bx,by,bw,bh,'RESTART',{fill:'#f6b41e',stroke:'#8f6206',fs:bh*0.38,fn:()=>{ adBreak(startMatch); }});
+  uiBtn('restart',bx,by,bw,bh,'RESTART',{fill:'#f6b41e',stroke:'#8f6206',fs:bh*0.38,fn:()=>{ adBreak(startMatch,'chicken-chaos.pause.restart'); }});
   by+=bh+14;
-  uiBtn('menu',bx,by,bw,bh,'MENU',{fill:'#e8483f',stroke:'#8f1f18',fs:bh*0.38,fn:()=>{ adBreak(toMenu); }});
+  uiBtn('menu',bx,by,bw,bh,'MENU',{fill:'#e8483f',stroke:'#8f1f18',fs:bh*0.38,fn:()=>{ adBreak(toMenu,'chicken-chaos.pause.menu'); }});
   drawSettingsBtn();
   drawSettingsPanel();
 }
@@ -2551,29 +2566,27 @@ function toMenu(){
   game.menuT=0; game.settingsOpen=false; game.setT=0;
 }
 function endMatch(){
-  game.state='RESULT'; game.stateT=1.2;
-  const ranked=[...players].sort((a,b)=>b.score-a.score);
-  game.winnerSeat=ranked[0].seat;
-  game.tie=ranked.length>1&&ranked[1].score===ranked[0].score;
   confetti=[];
   for(let i=0;i<110;i++) confetti.push({x:rand(0,cw),y:rand(-ch,0),vx:rand(-30,30),vy:rand(60,160),
     rot:rand(0,TAU),vr:rand(-4,4),w:rand(6,11),h:rand(4,7),
     c:[PCOL[i%4].m,'#ffd23e','#7ee04a','#fff'][i%4]});
+  const ranked=[...players].sort((a,b)=>b.score-a.score);
+  game.winnerSeat=ranked[0].seat;
+  game.tie=ranked.length>1&&ranked[1].score===ranked[0].score;
+  game.state='RESULT'; game.stateT=1.2;
   stars(cw/2,ch*0.3,14);
   ringFx(cw/2,ch*0.3,'rgba(255,210,62,',10,60);
   Snd.play('victory'); hap('success');
 }
-/* Result-card ad: ONE interstitial, asked of the shell only when the player
-   CHOOSES to leave the card (PLAY AGAIN / MENU) — never popped over the result
-   the instant the match ends. The shell always answers (too-early, frequency
-   cap, not-loaded and offline all call back immediately), so the game never
-   waits on it, and `next` is whatever the player actually tapped. */
-function adBreak(next){
+/* Every interstitial break in the game funnels through here.
+   `placement` is handed to the shell so AdPolicy can log/refuse per trigger
+   (and so a future "exit" trigger would be refused rather than shown). */
+function adBreak(next,placement){
   let done=false;
   const go=function(){ if(done) return; done=true; game.adBusy=false; if(next) next(); };
   if(game.demo||game.adBusy){ if(next) next(); return; }   /* one ask at a time */
   game.adBusy=true;
-  try{ Studio.ads.interstitial(go); }catch(_){ go(); }
+  try{ Studio.ads.interstitial(go,placement||'chicken-chaos.break'); }catch(_){ go(); }
 }
 function updateConfetti(dt){
   for(const c of confetti){
@@ -2641,7 +2654,16 @@ function update(dt){
     game.stateT-=dt;
     updatePlayers(dt,false); updateChicken(dt);
     updParticles(dt); updFloats(dt);
-    if(game.stateT<=0) endMatch();
+    if(game.stateT<=0){
+      /* Match over. This is the one automatic break in the game — every other
+         trigger is a deliberate tap — so the ad is asked for HERE, after TIME UP!
+         has played and before the result card is built. endMatch() runs from the
+         shell's callback, so the card (and its confetti) is only created once the
+         ad is out of the way. */
+      let done=false;
+      const go=function(){ if(done) return; done=true; endMatch(); };
+      adBreak(go,'chicken-chaos.matchEnd');
+    }
   }
   else if(st==='MENU'){
     game.menuT=Math.min(2,(game.menuT||0)+dt);

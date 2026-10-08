@@ -13,6 +13,7 @@ import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.model.ESTABLISHED_GAME_IDS
 import com.redundantstudios.arcade.model.GameManifest
+import com.redundantstudios.arcade.model.NEW_GAME_IDS
 import com.redundantstudios.arcade.util.GameSeenStore
 
 class GameAdapter(
@@ -46,10 +47,21 @@ class GameAdapter(
         holder.players.visibility = if (hidePlayerTag) View.GONE else View.VISIBLE
         holder.tileRoot.cardColor = tileColor(game.tileColor)
 
-        /* Established games never wear the tag (see ESTABLISHED_GAME_IDS);
-           everything else falls to the normal first-seen window. */
+        /* NEW tag.
+           Two independent reasons to wear it:
+             - the game is in NEW_GAME_IDS (the current cohort, added after
+               last-balloon), which is an explicit list and therefore cannot
+               expire;
+             - OR it is not established and is still inside its first-seen
+               window, which is what catches a game added later with no code
+               change at all.
+           The old test was the second clause alone, and because every bundled
+           game had been scanned during development those windows had all closed
+           - so the tags were gone from every tile. */
         holder.newBadge.visibility = if (
-            game.id !in ESTABLISHED_GAME_IDS && GameSeenStore.isNew(holder.itemView.context, game.id)
+            game.id in NEW_GAME_IDS ||
+                (game.id !in ESTABLISHED_GAME_IDS &&
+                    GameSeenStore.isNew(holder.itemView.context, game.id))
         ) {
             View.VISIBLE
         } else {

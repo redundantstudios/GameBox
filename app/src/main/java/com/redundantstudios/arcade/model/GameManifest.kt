@@ -77,3 +77,34 @@ val ESTABLISHED_GAME_IDS: Set<String> = setOf(
     "egg-rush",
     "last-balloon"
 )
+
+/**
+ * Games added AFTER `last-balloon`, which are the current NEW cohort.
+ *
+ * WHY THIS IS A LIST AND NOT JUST THE FIRST-SEEN WINDOW
+ * [com.redundantstudios.arcade.util.GameSeenStore.isNew] only reports a game as
+ * new for [GameSeenStore.NEW_WINDOW_DAYS] days after the shell FIRST scans it.
+ * These games were all scanned during development, so their windows opened and
+ * closed long before anybody played the shipped build - the tags had quietly
+ * disappeared from every one of them and the whole NEW row read as gone.
+ *
+ * A window measured from first scan cannot express "new since the last
+ * release", because the two dates are unrelated: a game added yesterday on a
+ * build that shipped last month is not new by that measure.
+ *
+ * So the current cohort is named explicitly and the tag is driven by that, with
+ * the window left to do what it is good at - catching genuinely future games
+ * with no code change. When one of these settles, move its id into
+ * [ESTABLISHED_GAME_IDS] and its tag retires, exactly like the games above.
+ */
+val NEW_GAME_IDS: Set<String> = setOf(
+    "colour-rush",
+    "ember",
+    "orrery",
+    "sheepdog-trials",
+    "pool-8ball",
+    "midnight-overdrive",
+    "magnet-pull",
+    "kiro",
+    "root-io"
+)

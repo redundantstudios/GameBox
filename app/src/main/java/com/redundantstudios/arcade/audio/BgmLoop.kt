@@ -8,6 +8,7 @@ import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.util.Log
+import android.os.SystemClock
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -77,13 +78,68 @@ internal class BgmLoop(context: Context, private val resId: Int) {
      */
     private var wasFaded = true
 
+    // ------------------------------------------------------------------
+    // Streaming PCM hand-off
+    //
+    // The decode and the playback are two SEPARATE threads and they overlap.
+    // Decoding this 155s track takes ~9s on device, so waiting for the whole
+    // thing before playing anything is what the player hears as "the music
+    // starts a few seconds late". Instead the decoder publishes growing
+    // snapshots of the PCM as it goes and the feeder plays them straight away:
+    // half a second of audio is decoded in ~30ms, so sound starts essentially
+    // with the app.
+    //
+    // Snapshots are immutable holders rather than a size field beside an array
+    // field, because the decoder swaps in a LARGER array as it grows. If the
+    // feeder could read the size before the array it would see a new length
+    // against the old, short array and walk off the end of it. Reading one
+    // reference gives a matched (array, length) pair every time.
+    // ------------------------------------------------------------------
+
+    private class Snap(val data: ShortArray, val size: Int, val total: Int)
+
+    /** -1 total means "not fully decoded yet", so the feeder must not wrap. */
+    @Volatile private var snap = Snap(ShortArray(1 shl 16), 0, -1)
+
+    /** Set if the decode gave up, so a feeder waiting on data can give up too. */
+    @Volatile private var decodeFailed = false
+
     /**
-     * Decodes the asset on a background thread, then starts feeding. Safe to
-     * call repeatedly; only the first call does work.
+     * True once the decoder has read the asset's real sample rate and channel
+     * count.
+     *
+     * CRITICAL, NOT COSMETIC. [feed] builds its AudioTrack from these fields,
+     * and it now runs on its own thread alongside the decoder instead of after
+     * it. Without this gate the feeder wins the race, sees the 44100 default,
+     * and opens the track at 44100Hz while the PCM is 32000Hz - which does not
+     * sound wrong, it sounds like a chipmunk: the music plays 44100/32000 =
+     * 1.38x fast for the whole session. The two must be the same number.
+     */
+    @Volatile private var formatReady = false
+
+    /** Set when playback work starts, so first-audio can be timed from it. */
+    private val startedAt = SystemClock.elapsedRealtime()
+
+    /**
+     * Decodes the asset on a background thread, feeding playback as it goes.
+     * Safe to call repeatedly; only the first call does work.
      */
     fun prepare() {
         if (worker != null || released) return
-        worker = Thread({ decodeThenFeed() }, "shell-bgm").apply {
+        worker = Thread({
+            /* One extra thread: the decode has to keep running while the feeder
+               is playing, which a single sequential decode-then-feed cannot do. */
+            val decoder = Thread({ decodeToBuffer() }, "shell-bgm-decode").apply {
+                priority = Thread.MIN_PRIORITY
+                start()
+            }
+            try {
+                feed()
+            } catch (e: Exception) {
+                Log.w(TAG, "BGM playback stopped", e)
+            }
+            decoder.interrupt()
+        }, "shell-bgm-feed").apply {
             priority = Thread.MIN_PRIORITY
             start()
         }
@@ -112,33 +168,64 @@ internal class BgmLoop(context: Context, private val resId: Int) {
     }
 
     // ------------------------------------------------------------------
-    // Decode once, then feed forever
+    // Decode into growing snapshots while the feeder plays them
     // ------------------------------------------------------------------
 
-    private fun decodeThenFeed() {
-        val data = try {
-            decode()
-        } catch (e: Exception) {
-            Log.w(TAG, "BGM decode failed, music disabled", e)
-            null
-        } catch (e: OutOfMemoryError) {
-            Log.w(TAG, "BGM too large to decode", e)
-            null
-        }
-        if (data == null || data.isEmpty() || released) return
-        Log.d(TAG, "decoded ${data.size / channels} frames @ ${sampleRate}Hz, ${channels}ch")
-        try {
-            feed(data)
-        } catch (e: Exception) {
-            Log.w(TAG, "BGM playback stopped", e)
+    /** Appends one decoded buffer, growing and republishing the snapshot. */
+    private fun publish(buffer: ByteBuffer) {
+        val shorts = buffer.remaining() / 2
+        if (shorts <= 0) return
+        val cur = snap
+        if (cur.size + shorts > cur.data.size) {
+            var cap = cur.data.size
+            while (cap < cur.size + shorts) cap = cap shl 1
+            val bigger = cur.data.copyOf(cap)
+            buffer.order(ByteOrder.nativeOrder()).asShortBuffer().get(bigger, cur.size, shorts)
+            snap = Snap(bigger, cur.size + shorts, cur.total)
+        } else {
+            buffer.order(ByteOrder.nativeOrder()).asShortBuffer().get(cur.data, cur.size, shorts)
+            snap = Snap(cur.data, cur.size + shorts, cur.total)
         }
     }
 
+    /** Marks the end of the track, which is what lets the feeder wrap. */
+    private fun publishTotal() {
+        val cur = snap
+        snap = Snap(cur.data, cur.size, cur.size)
+    }
+
+    private fun decodeToBuffer() {
+        try {
+            decode()
+        } catch (e: Exception) {
+            Log.w(TAG, "BGM decode failed, music disabled", e)
+            decodeFailed = true
+            return
+        } catch (e: OutOfMemoryError) {
+            Log.w(TAG, "BGM too large to decode", e)
+            decodeFailed = true
+            return
+        }
+        if (released) return
+        val cur = snap
+        if (cur.size == 0) {
+            decodeFailed = true
+            return
+        }
+        publishTotal()
+        Log.d(
+            TAG,
+            "decoded ${cur.size / channels} frames @ ${sampleRate}Hz, ${channels}ch " +
+                "in ${SystemClock.elapsedRealtime() - startedAt}ms"
+        )
+    }
+
     /**
-     * Decodes the whole track into one interleaved 16-bit buffer. A whole-track
-     * buffer is what makes the wrap exact: there is nothing to re-read later.
+     * Decodes the whole track, publishing it as it arrives. The buffer keeps
+     * growing and is only ever appended to, so the feeder can start on the first
+     * chunk and the wrap at the end is still sample-exact.
      */
-    private fun decode(): ShortArray? {
+    private fun decode() {
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
         try {
@@ -156,56 +243,96 @@ internal class BgmLoop(context: Context, private val resId: Int) {
                     break
                 }
             }
-            if (trackIndex < 0 || format == null) return null
+            if (trackIndex < 0 || format == null) return
             extractor.selectTrack(trackIndex)
 
             sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
             channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
-            val mime = format.getString(MediaFormat.KEY_MIME) ?: return null
+            val mime = format.getString(MediaFormat.KEY_MIME) ?: return
+            /* The real format is now known. The feeder must not build its
+               AudioTrack before this point - see [formatReady]. */
+            formatReady = true
 
             codec = MediaCodec.createDecoderByType(mime)
             codec.configure(format, null, null, 0)
             codec.start()
 
-            val out = ShortArrayBuilder()
             val info = MediaCodec.BufferInfo()
             var inputDone = false
             var outputDone = false
 
+            /* THROUGHPUT, NOT CORRECTNESS, IS THE WHOLE GAME HERE.
+               This loop used to queue ONE input buffer and take ONE output
+               buffer per pass, with a 10ms blocking timeout on each. That
+               serialises feeding against draining, so the codec is starved and
+               spends most of the loop sitting in that timeout: decoding the
+               155s track took 13.6s on device, which is exactly the "the music
+               starts a few seconds late" delay - and no amount of warming the
+               decode up earlier can hide 13.6s of work.
+
+               So: queue everything the codec will take, drain everything it has
+               produced, and only block when BOTH sides are genuinely empty. The
+               blocking call is kept for that idle case, otherwise this spins. */
             while (!outputDone && !released) {
+                /* 1. Feed, never blocking. */
                 if (!inputDone) {
-                    val inIndex = codec.dequeueInputBuffer(10_000)
-                    if (inIndex >= 0) {
-                        val buffer = codec.getInputBuffer(inIndex) ?: return null
+                    while (true) {
+                        val inIndex = codec.dequeueInputBuffer(0)
+                        if (inIndex < 0) break
+                        val buffer = codec.getInputBuffer(inIndex) ?: return
                         val size = extractor.readSampleData(buffer, 0)
                         if (size < 0) {
                             codec.queueInputBuffer(
                                 inIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM
                             )
                             inputDone = true
-                        } else {
-                            codec.queueInputBuffer(
-                                inIndex, 0, size, extractor.sampleTime, 0
-                            )
-                            extractor.advance()
+                            break
                         }
+                        codec.queueInputBuffer(
+                            inIndex, 0, size, extractor.sampleTime, 0
+                        )
+                        extractor.advance()
                     }
                 }
-                val outIndex = codec.dequeueOutputBuffer(info, 10_000)
-                if (outIndex >= 0) {
+
+                /* 2. Drain everything already decoded, never blocking. */
+                var progressed = false
+                while (true) {
+                    val outIndex = codec.dequeueOutputBuffer(info, 0)
+                    if (outIndex == MediaCodec.INFO_TRY_AGAIN_LATER) break
+                    if (outIndex < 0) continue
+                    progressed = true
                     val buffer: ByteBuffer? = codec.getOutputBuffer(outIndex)
                     if (buffer != null && info.size > 0) {
                         buffer.position(info.offset)
                         buffer.limit(info.offset + info.size)
-                        out.append(buffer.order(ByteOrder.nativeOrder()))
+                        publish(buffer.order(ByteOrder.nativeOrder()))
                     }
                     codec.releaseOutputBuffer(outIndex, false)
                     if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
                         outputDone = true
+                        break
+                    }
+                }
+
+                /* 3. Nothing moved and there is still input to give it: wait. */
+                if (!progressed && !inputDone && !outputDone) {
+                    val outIndex = codec.dequeueOutputBuffer(info, 10)
+                    if (outIndex >= 0) {
+                        val buffer: ByteBuffer? = codec.getOutputBuffer(outIndex)
+                        if (buffer != null && info.size > 0) {
+                            buffer.position(info.offset)
+                            buffer.limit(info.offset + info.size)
+                            publish(buffer.order(ByteOrder.nativeOrder()))
+                        }
+                        codec.releaseOutputBuffer(outIndex, false)
+                        if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+                            outputDone = true
+                        }
                     }
                 }
             }
-            return out.toArray()
+            return
         } finally {
             try {
                 codec?.stop()
@@ -220,11 +347,29 @@ internal class BgmLoop(context: Context, private val resId: Int) {
     }
 
     /**
-     * Streams the decoded PCM into an AudioTrack and wraps at the end of the
+     * Plays the decoded PCM into an AudioTrack, wrapping at the end of the
      * buffer. Wrapping an index is what makes the loop seamless - there is no
      * file to re-open and no seek, so nothing can insert a gap or a step.
+     *
+     * It does NOT wait for the decode to finish: it starts on the first
+     * published chunk and catches up as more arrives, only ever wrapping once
+     * [Snap.total] says the whole track is there. Until then it pauses at the
+     * frontier instead of wrapping onto samples that do not exist yet.
      */
-    private fun feed(data: ShortArray) {
+    private fun feed() {
+        /* Nothing below may run until the decoder has published the real
+           format. See [formatReady] - skipping this plays the track at the
+           wrong rate. */
+        while (!released && !formatReady && !decodeFailed) {
+            try {
+                Thread.sleep(5)
+            } catch (_: InterruptedException) {
+                return
+            }
+        }
+        if (released || decodeFailed || !formatReady) return
+        Log.d(TAG, "AudioTrack at ${sampleRate}Hz x$channels (matches decoded PCM)")
+
         val minBytes = AudioTrack.getMinBufferSize(
             sampleRate,
             if (channels == 1) AudioFormat.CHANNEL_OUT_MONO else AudioFormat.CHANNEL_OUT_STEREO,
@@ -265,6 +410,10 @@ internal class BgmLoop(context: Context, private val resId: Int) {
         val step = 1f / (sampleRate * FADE_MS / 1000f)
 
         var pos = 0
+        /* Half a second of audio before the first sample: enough that the track
+           is never primed from an empty buffer, and it decodes in ~30ms. */
+        val primeShorts = sampleRate * channels / 2
+        var loggedFirstAudio = false
         while (!released) {
             if (target <= SILENT && gain <= SILENT) {
                 // Faded out: park the hardware instead of streaming silence.
@@ -284,9 +433,41 @@ internal class BgmLoop(context: Context, private val resId: Int) {
                 }
                 continue
             }
+
+            /* Wait for enough decoded audio to start, and never read past what
+               the decoder has published. One snapshot per pass, so array and
+               length always agree. */
+            val cur = snap
+            if (cur.size < primeShorts) {
+                if (decodeFailed) return
+                try {
+                    Thread.sleep(5)
+                } catch (_: InterruptedException) {
+                    return
+                }
+                continue
+            }
+            val end = if (cur.total >= 0) cur.total else cur.size
+            if (pos >= end) {
+                if (cur.total >= 0 && cur.total > 0) {
+                    pos = 0                      // whole track decoded: loop it
+                } else {
+                    try {
+                        Thread.sleep(5)          // still decoding: hold position
+                    } catch (_: InterruptedException) {
+                        return
+                    }
+                    continue
+                }
+            }
+
             if (!playing) {
                 audioTrack.play()
                 playing = true
+                if (!loggedFirstAudio) {
+                    loggedFirstAudio = true
+                    Log.d(TAG, "first audio written at +${SystemClock.elapsedRealtime() - startedAt}ms")
+                }
                 /* STARTING FROM SILENCE IS THE "DELAY" THE PLAYER HEARS.
                  * `gain` is 0 until the feeder ramps it up, and the ramp is a
                  * deliberate 2.2s fade so that pausing/resuming the music never
@@ -308,14 +489,16 @@ internal class BgmLoop(context: Context, private val resId: Int) {
             }
 
             var i = 0
-            while (i < chunk.size) {
+            val stop = minOf(end, pos + chunk.size)
+            while (i < chunk.size && pos < stop) {
                 if (gain < target) gain = (gain + step).coerceAtMost(target)
                 else if (gain > target) gain = (gain - step).coerceAtLeast(target)
-                chunk[i] = (data[pos] * gain).toInt().toShort()
+                chunk[i] = (cur.data[pos] * gain).toInt().toShort()
                 i++
                 pos++
-                if (pos == data.size) pos = 0
             }
+            /* Everything written was real audio; a zero tail would be a click. */
+            while (i < chunk.size) chunk[i++] = 0
             val written = audioTrack.write(chunk, 0, chunk.size)
             if (written < 0) {
                 Log.w(TAG, "AudioTrack.write failed: $written")
@@ -324,25 +507,4 @@ internal class BgmLoop(context: Context, private val resId: Int) {
         }
     }
 
-    /** Growable 16-bit sample buffer - no boxing, no per-sample allocations. */
-    private class ShortArrayBuilder {
-        private var data = ShortArray(1 shl 18)
-        private var size = 0
-
-        fun append(buffer: ByteBuffer) {
-            val shorts = buffer.remaining() / 2
-            ensure(size + shorts)
-            buffer.asShortBuffer().get(data, size, shorts)
-            size += shorts
-        }
-
-        private fun ensure(capacity: Int) {
-            if (capacity <= data.size) return
-            var next = data.size
-            while (next < capacity) next = next shl 1
-            data = data.copyOf(next)
-        }
-
-        fun toArray(): ShortArray = data.copyOf(size)
-    }
 }
