@@ -19,6 +19,7 @@ import com.redundantstudios.arcade.ads.AdMobManager
 import com.redundantstudios.arcade.ads.AdPolicy
 import com.redundantstudios.arcade.bridge.NativeBridge
 import com.redundantstudios.arcade.bridge.NativeBridgeContext
+import com.redundantstudios.arcade.model.BannerEdge
 import com.redundantstudios.arcade.model.GameManifest
 import com.redundantstudios.arcade.ui.ShellTransition
 import com.redundantstudios.arcade.util.GameWindow
@@ -32,6 +33,9 @@ class GameActivity : AppCompatActivity() {
 
     /** The view that holds the game WebView. */
     private lateinit var gameRoot: LinearLayout
+
+    /** Banner placeholder on the edge the game's manifest asked for, if any. */
+    private var bannerPlaceholder: View? = null
 
     /** Guards the exit: back twice must not run it twice. */
     private var closing = false
@@ -72,6 +76,25 @@ class GameActivity : AppCompatActivity() {
             if (hex.isNullOrBlank()) DEFAULT_BACKDROP else android.graphics.Color.parseColor(hex)
         } catch (e: IllegalArgumentException) {
             DEFAULT_BACKDROP
+        }
+    }
+
+    /**
+     * The colour the banner strip wears behind the ad.
+     *
+     * The game's own page background from its manifest (`bannerBg:`), NOT the
+     * tile colour: the tile is launcher artwork and root.io's is a light green
+     * against a near-black game, so the tile colour put a green bar on a dark
+     * screen. Falls back to black, which is wrong less loudly than a bright
+     * tile colour would be.
+     */
+    private fun bannerBackdrop(): Int {
+        val hex = currentGame?.bannerBg
+        return try {
+            if (hex.isNullOrBlank()) BANNER_FALLBACK_BACKDROP
+            else android.graphics.Color.parseColor(hex)
+        } catch (e: IllegalArgumentException) {
+            BANNER_FALLBACK_BACKDROP
         }
     }
 
@@ -120,6 +143,16 @@ class GameActivity : AppCompatActivity() {
     private companion object {
         /** Transition timing traces (see sinceLaunch). */
         const val TAG_TIME = "GameTransition"
+
+        /**
+         * Height of the banner strip. 50dp is the AdMob BANNER unit's own
+         * height, so the reserved space matches the ad exactly and the canvas
+         * never has a gap under it.
+         */
+        const val BANNER_HEIGHT_DP = 50
+
+        /** Used when a game's manifest gives no `bannerBg:`. */
+        val BANNER_FALLBACK_BACKDROP: Int = android.graphics.Color.BLACK
 
         /**
          * How long the exit slide (320ms, see `nav_out_right`) is given before
@@ -238,13 +271,35 @@ class GameActivity : AppCompatActivity() {
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT
             )
-        }
+            }
 
-        /* BANNERS ARE OFF.
-           The banner strip is gone for now: the ad unit, the strip and the games'
-           own show/hide polling are all disconnected, so the game gets the whole
-           viewport. Re-enabling it later means putting the container, the load
-           call and the bridge handler back - nothing else here depends on it. */
+        /* The banner strip, on the edge this game's manifest asked for. Absent
+           banner: line means the game gets the whole viewport and its own
+           show/hide polling is never forwarded to the SDK. The spacer is GONE,
+           so a game with no ad never loses playfield to an empty strip. */
+val bannerEdge = currentGame?.bannerEdge
+        android.util.Log.d(
+            "GameActivity",
+            "banner: game=${currentGame?.id} edge=$bannerEdge bg=${currentGame?.bannerBg}"
+        )
+        if (bannerEdge != null) {
+            bannerPlaceholder = View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    // Multiply BEFORE truncating: density is fractional (2.625 on
+                    // this device), so truncating it first turned 50dp into
+                    // 50*2 = 100px instead of 131px and the strip came out short.
+                    (BANNER_HEIGHT_DP * resources.displayMetrics.density).toInt()
+                )
+                setBackgroundColor(bannerBackdrop())
+                visibility = android.view.View.GONE
+            }
+            // TOP puts the strip first so it sits above the WebView; BOTTOM puts
+            // it last so it sits below. The WebView carries weight=1 either way,
+            // so it takes whatever is left and the canvas shrinks rather than
+            // being covered.
+            if (bannerEdge == BannerEdge.TOP) rootLayout.addView(bannerPlaceholder)
+        }
 
         webView = WebView(this).apply {
             /* Visible from the very first frame, with its background set to the
@@ -332,6 +387,8 @@ class GameActivity : AppCompatActivity() {
         }
 
         rootLayout.addView(webView)
+        // A bottom strip goes after the WebView, so it lands below the canvas.
+        if (bannerEdge == BannerEdge.BOTTOM) rootLayout.addView(bannerPlaceholder)
         // The window content is a plain frame: the game canvas, and (for a tile
         // launch) the tile's own artwork above it while the game opens.
         contentHost = FrameLayout(this)
@@ -434,9 +491,22 @@ class GameActivity : AppCompatActivity() {
            never runs again - without this the shell still believed the first
            run's revive had been spent and refused the second run's. */
         NativeBridgeContext.runHandler = { AdPolicy.onRunStarted() }
-        /* A game's showBanner()/hideBanner() still arrive here, but they are now
-           deliberate no-ops (see BANNERS ARE OFF). The call is NOT forwarded to
-           the SDK, so a game cannot bring the strip back on its own. */
+
+        /* Banner handler: games call Studio.ads.showBanner()/hideBanner().
+           Only wired for a game whose manifest carries a `banner:` line, so a
+           game that never opted in cannot bring a strip up on its own. */
+        NativeBridgeContext.bannerHandler = { show ->
+            runOnUiThread {
+                val slot = bannerPlaceholder ?: return@runOnUiThread
+                adMobManager.setBannerBackdrop(bannerBackdrop())
+                if (show) {
+                    adMobManager.setBannerPlaceholder(slot)
+                    adMobManager.showBanner()
+                } else {
+                    adMobManager.hideBanner()
+                }
+            }
+        }
     }
 
     /**

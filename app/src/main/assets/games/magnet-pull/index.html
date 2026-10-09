@@ -11,6 +11,8 @@ maxPlayers: 1
 aiSupport: none
 online: false
 tileColor: #3de0c7
+banner: bottom
+bannerBg: #070a12
 version: 1
 released: 2026-10-03
 -->
@@ -141,7 +143,18 @@ var Studio=(function(){
          still poll for it keep working - it just does nothing, and no banner
          request ever reaches the SDK. Re-enabling banners means restoring the
          bridge handler in GameActivity and the unit in AdMobManager. */
-      banner:function(){}
+      /* Banner strip. Opt-in is PER GAME and lives at the CALL SITE: a game
+         that never calls this gets no banner. This only carries the request to
+         the shell, which decides whether to actually show one. show=true asks
+         for the strip, show=false hands it back. */
+      banner:function(show){
+        var b=bridge();
+        if(!b)return;
+        try{
+          if(show){ if(b.showBanner)b.showBanner(); }
+          else{ if(b.hideBanner)b.hideBanner(); }
+        }catch(_){}
+      }
     }
   };
 })();
@@ -2206,6 +2219,16 @@ requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
      cost a timer. Magnet Pull's ads are now exactly: one rewarded revive
      (one per run) and four interstitials - game-over RETRY, game-over MENU,
      pause RESTART and pause MENU. */
+  /* Banner: solo, and only while a run is alive. Driven off `state` rather
+     than sprinkled through startGame/pauseGame/die so a transition that is
+     missed cannot leave the strip up over a menu. The shell owns the edge
+     (this game's manifest asks for bottom) and the strip's colour. */
+  var bannerOn=false;
+  setInterval(function(){
+    var want=(state==='play');
+    if(want!==bannerOn){ bannerOn=want; try{ Studio.ads.banner(want); }catch(e){} }
+  },400);
+
   window.Game={
     pause:function(){ try{ if(state==='play') pauseGame(); }catch(e){} if(prev.pause) try{ prev.pause(); }catch(e){} },
     resume:function(){ try{ if(state==='pause') resumeGame(); }catch(e){} if(prev.resume) try{ prev.resume(); }catch(e){} applySettings(Studio.settings); },

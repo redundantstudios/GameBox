@@ -49,12 +49,52 @@ data class GameManifest(
     val tileColor: String,
     val version: String,
     /**
+     * Where this game's banner ad goes, from the manifest's `banner:` line.
+     *
+     * WHY THIS IS DATA AND NOT A CONSTANT
+     * The strip is full width, so it eats playfield, and which edge it costs
+     * differs per game: root.io reads best with it above the world, magnet-pull
+     * keeps its controls clear with it below. Hard-coding one edge meant the
+     * other game could not have a banner at all without patching the shell.
+     *
+     * Null (the default - the line is absent) means NO banner: the game gets
+     * the whole viewport and its own show/hide polling is never forwarded. That
+     * keeps the opt-in per game, which is the whole point of the flag.
+     */
+    val bannerEdge: BannerEdge? = null,
+    /**
+     * The colour the banner strip wears where no ad artwork covers it, from the
+     * manifest's `bannerBg:` line.
+     *
+     * WHY NOT JUST tileColor
+     * tileColor is the LAUNCHER tile - root.io's is a light green while the
+     * game itself sits on near-black soil, so tinting the strip with it put a
+     * green bar over a dark game. This is the game's own page background, so an
+     * ad that has not filled yet reads as part of the game.
+     *
+     * Null falls back to black, which is closer to right than a bright tile
+     * colour ever would be.
+     */
+    val bannerBg: String? = null,
+    /**
      * When the game was integrated, read from the manifest's `released:`
      * line. [ReleaseDate.UNKNOWN] when absent - which sorts last, so a
      * game is never hidden or silently promoted by a missing field.
      */
     val released: ReleaseDate = ReleaseDate.UNKNOWN
 )
+
+/** The edge a game's banner strip is anchored to. */
+enum class BannerEdge { TOP, BOTTOM;
+    companion object {
+        /** Parses a manifest's `banner:` value; anything unrecognised means off. */
+        fun parse(raw: String?): BannerEdge? = when (raw?.trim()?.lowercase()) {
+            "top" -> TOP
+            "bottom" -> BOTTOM
+            else -> null
+        }
+    }
+}
 
 /**
  * Games that are established enough to no longer wear the NEW tag.

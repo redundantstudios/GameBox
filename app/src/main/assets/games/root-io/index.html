@@ -11,6 +11,8 @@ maxPlayers: 1
 aiSupport: true
 online: false
 tileColor: #8fbf6a
+banner: top
+bannerBg: #0e0906
 version: 1
 released: 2026-09-30
 -->
@@ -136,12 +138,18 @@ var Studio=(function(){
         }
         if(onDone) onDone();
       },
-      /* BANNERS ARE OFF.
-         Banners are disabled app-wide for now. The call is kept so the games that
-         still poll for it keep working - it just does nothing, and no banner
-         request ever reaches the SDK. Re-enabling banners means restoring the
-         bridge handler in GameActivity and the unit in AdMobManager. */
-      banner:function(){}
+      /* Banner strip. Opt-in is PER GAME and lives at the CALL SITE: a game
+         that never calls this gets no banner. This only carries the request to
+         the shell, which decides whether to actually show one. show=true asks
+         for the strip, show=false hands it back. */
+      banner:function(show){
+        var b=bridge();
+        if(!b)return;
+        try{
+          if(show){ if(b.showBanner)b.showBanner(); }
+          else{ if(b.hideBanner)b.hideBanner(); }
+        }catch(_){}
+      }
     }
   };
 })();
@@ -307,17 +315,15 @@ button{font-family:inherit}
 .co{font-size:11px;color:var(--amber);margin-top:3px}.co.own{color:var(--green)}
 .rp{text-align:center;font-size:14px;color:var(--dim);letter-spacing:.08em}.rp b{color:var(--amber);font-size:17px}
 #hud{position:fixed;inset:0;z-index:10;pointer-events:none}
-#hudTL{position:absolute;top:12px;left:14px}
+#hudTL{position:absolute;top:12px;left:14px;transition:top .18s ease}
 .ht{font-size:20px;font-weight:900;letter-spacing:.1em;text-shadow:0 2px 0 rgba(0,0,0,.5)}
 .ht em{font-style:normal;color:var(--amber)}
 .hs{margin-top:4px;font-size:13px;letter-spacing:.08em;color:var(--dim);display:flex;gap:8px;align-items:baseline}
 .hs label{font-size:10px;letter-spacing:.2em;opacity:.8}
 .hs b{font-size:17px;font-variant-numeric:tabular-nums;transition:color .15s}
 .hs b.bump{color:var(--amber)}
-#hRank{position:absolute;top:14px;left:50%;transform:translateX(-50%);background:rgba(20,13,8,.8);border:1px solid var(--line);border-radius:20px;padding:7px 18px;font-size:13px;font-weight:800;letter-spacing:.18em}
-#hudTR{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+#hudTR{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:8px;transition:top .18s ease}
 .mr{display:flex;gap:8px;align-items:flex-start}
-#minimap{width:156px;height:156px;border-radius:10px;border:2px solid var(--line);background:#140d07;box-shadow:0 6px 20px rgba(0,0,0,.5)}
 #leaderboard{width:196px;background:rgba(20,13,8,.82);border:1px solid var(--line);border-radius:10px;padding:8px 10px;backdrop-filter:blur(4px)}
 .lh{font-size:10px;font-weight:800;letter-spacing:.22em;color:var(--amber);margin-bottom:6px;text-align:center}
 .lr{display:flex;align-items:center;gap:6px;font-size:12px;padding:2.5px 0;color:var(--dim);font-variant-numeric:tabular-nums}
@@ -382,9 +388,12 @@ button{font-family:inherit}
 @keyframes howInNext{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 @keyframes howInPrev{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
 @media (max-width:640px){.howWrap{min-height:360px}.howCard{padding:16px 14px;min-height:325px}.howShot{height:128px}.howTitle{font-size:21px}.howText{font-size:13px}.howNav .btn{min-width:108px;padding:11px 14px}}
-@media (max-width:640px){#minimap{width:104px;height:104px}#leaderboard{width:150px;font-size:11px;padding:6px 8px}.lr{font-size:10.5px}.ht{font-size:16px}.hs b{font-size:14px}.panel{padding:18px 16px}#boostBtn{width:76px;height:76px;right:18px;bottom:96px}}
+@media (max-width:640px){#leaderboard{width:150px;font-size:11px;padding:6px 8px}.lr{font-size:10.5px}.ht{font-size:16px}.hs b{font-size:14px}.panel{padding:18px 16px}#boostBtn{width:76px;height:76px;right:18px;bottom:96px}}
 @media (pointer:coarse){#boostBtn{display:none!important}.ptip{display:none!important}}
-@media (max-height:460px){#leaderboard{max-height:120px;overflow:hidden}#minimap{width:90px;height:90px}}
+@media (max-height:460px){#leaderboard{max-height:120px;overflow:hidden}}
+/* The shell's banner AdView occupies the top strip (50dp) while a run is
+   alive. Push the HUD clear of it so nothing hides behind the ad. */
+body.adTop #hudTL,body.adTop #hudTR{top:62px}
 </style>
 </head>
 <body>
@@ -397,11 +406,9 @@ button{font-family:inherit}
     <div class="hs"><label>SCORE</label><b id="hScore">0</b></div>
     <div class="hs"><label>LENGTH</label><b id="hGrowth">0</b></div>
   </div>
-  <div id="hRank">RANK #–</div>
   <div id="hudTR">
     <div class="mr">
       <button id="pauseBtn" class="ib" aria-label="Pause"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1.4"/><rect x="14" y="4" width="4" height="16" rx="1.4"/></svg></button>
-      <canvas id="minimap"></canvas>
     </div>
     <div id="leaderboard"><div class="lh">ROOT RANKING</div><div id="lbList"></div></div>
   </div>
@@ -813,7 +820,6 @@ function armCooldownButton(button,secs,label){
 
 /* ---------------- canvas ---------------- */
 const canvas=$('game'),ctx=canvas.getContext('2d');
-const mm=$('minimap'),mmCtx=mm.getContext('2d');
 let W=0,H=0,DPR=1,FIT=1;
 function resize(){
   DPR=Math.min(1.5,window.devicePixelRatio||1);
@@ -821,8 +827,6 @@ function resize(){
   canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);
   canvas.style.width=W+'px';canvas.style.height=H+'px';
   FIT=clamp(Math.min(W/1250,H/760),.5,1.2);
-  const mw=mm.clientWidth||156;
-  mm.width=Math.round(mw*DPR);mm.height=Math.round(mw*DPR);
   joyCenter=null;
 }
 window.addEventListener('resize',resize);
@@ -2191,6 +2195,11 @@ function showGameOver(){
   $('btnContinueAd').textContent='Watch Ad to Continue';
   $('hud').classList.add('hidden');
   showOnly('gameover');
+  /* ON-COMPLETE AD: game over ends a run, which is a natural break for an
+     interstitial. The shell's own frequency cap decides whether it is actually
+     due - the callback always fires either way, so the revive button is never
+     left waiting on this. */
+  try{ Studio.ads.interstitial(function(){}); }catch(e){}
 }
 
 /* ---------------- mobile presentation ---------------- */
@@ -2387,7 +2396,7 @@ function update(dt){
         }
       }
       hudTick-=dt;
-      if(hudTick<=0){hudTick=.15;updateHUD();updateLeaderboard();drawMinimap()}
+      if(hudTick<=0){hudTick=.15;updateHUD();updateLeaderboard()}
       if(player){
         $('edgeWarn').style.opacity=nearEdge(player.x,player.y)?1:0;
         updateCamera(dt);
@@ -2968,12 +2977,11 @@ function drawRoot(r){
     }
   }
 }
-/* ---------------- HUD / minimap / leaderboard ---------------- */
+/* ---------------- HUD / leaderboard ---------------- */
 function updateHUD(){
   if(!player)return;
   $('hScore').textContent=fmt(player.score);
   $('hGrowth').textContent=fmt(player.gr);
-  $('hRank').textContent='RANK #'+(playerRank||'–');
   if(player.score>lastScoreShown+40){
     const el=$('hScore');
     el.classList.add('bump');
@@ -2996,46 +3004,6 @@ function updateLeaderboard(){
   $('lbList').innerHTML=html;
   playerRank=rank||list.length;
 }
-function drawMinimap(){
-  const size=mm.width;
-  if(!size)return;
-  const k=size/WORLD;
-  mmCtx.setTransform(1,0,0,1,0,0);
-  mmCtx.fillStyle='#191009';
-  mmCtx.fillRect(0,0,size,size);
-  mmCtx.fillStyle='rgba(88,183,255,.3)';
-  for(let i=0;i<pockets.length;i++){const p=pockets[i];mmCtx.beginPath();mmCtx.arc(p.x*k,p.y*k,p.r*k,0,TAU);mmCtx.fill()}
-  mmCtx.fillStyle='rgba(140,190,80,.3)';
-  for(let i=0;i<fertiles.length;i++){const f=fertiles[i];mmCtx.beginPath();mmCtx.arc(f.x*k,f.y*k,f.r*k,0,TAU);mmCtx.fill()}
-  mmCtx.fillStyle='rgba(182,120,255,.3)';
-  for(let i=0;i<caves.length;i++){const c=caves[i];mmCtx.beginPath();mmCtx.arc(c.x*k,c.y*k,c.r*k,0,TAU);mmCtx.fill()}
-  for(let i=0;i<resources.length;i++){
-    const s=resources[i];
-    if(s.type!=='golden')continue;
-    mmCtx.fillStyle='#ffd23f';
-    mmCtx.fillRect(s.x*k-1,s.y*k-1,2.5,2.5);
-  }
-  for(let i=0;i<roots.length;i++){
-    const r=roots[i];
-    if(r.dead||r===player)continue;
-    mmCtx.fillStyle=r.body;
-    mmCtx.beginPath();mmCtx.arc(r.x*k,r.y*k,2,0,TAU);mmCtx.fill();
-  }
-  if(player&&!player.dead){
-    /* draw your actual path on the minimap */
-    mmCtx.fillStyle=player.body;mmCtx.globalAlpha=.55;
-    const tp=player.pts;
-    for(let i=0;i<tp.length;i+=8)mmCtx.fillRect(tp[i].x*k-1,tp[i].y*k-1,2,2);
-    mmCtx.globalAlpha=1;
-    mmCtx.fillStyle='#fff';
-    mmCtx.beginPath();mmCtx.arc(player.x*k,player.y*k,3.5,0,TAU);mmCtx.fill();
-    mmCtx.strokeStyle='#e8b04b';mmCtx.lineWidth=1.5;
-    mmCtx.beginPath();mmCtx.arc(player.x*k,player.y*k,5.5,0,TAU);mmCtx.stroke();
-  }
-  mmCtx.strokeStyle='rgba(243,233,210,.25)';mmCtx.lineWidth=1;
-  mmCtx.strokeRect(vx0*k,vy0*k,vw*k,vh*k);
-}
-
 /* ---------------- UI ---------------- */
 const SCREENS=['menu','howto','settings','customize','pauseScr','gameover'];
 function showOnly(id){
@@ -3448,7 +3416,10 @@ requestAnimationFrame(frame);
   setInterval(function(){
     var show=false;
     try{ show=R().playing(); }catch(e){}
-    if(show!==want){ want=show; Studio.ads.banner(show); }
+    if(show!==want){ want=show; Studio.ads.banner(show);
+      /* Mirror the native banner's presence in the DOM so the HUD can slide
+         clear of the top strip instead of hiding behind the ad. */
+      try{ document.body.classList.toggle('adTop',!!show); }catch(e){} }
   },400);
   window.Game={
     pause:function(){ try{ R().pause(); }catch(e){} if(prev.pause) try{ prev.pause(); }catch(e){} },

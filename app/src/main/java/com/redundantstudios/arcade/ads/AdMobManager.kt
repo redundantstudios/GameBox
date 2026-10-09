@@ -1,9 +1,11 @@
 package com.redundantstudios.arcade.ads
 
 import android.app.Activity
+import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.MobileAds
@@ -50,6 +52,10 @@ class AdMobManager(private val activity: Activity) {
     private val interstitialUnitId =
         if (isDebug) "ca-app-pub-3940256099942544/1033173712"
         else "ca-app-pub-9565881819222312/1364982660"
+
+    private val bannerUnitId =
+        if (isDebug) "ca-app-pub-3940256099942544/6300978111"
+        else "ca-app-pub-9565881819222312/8702711494"
 
     /**
      * Marks this device as an AdMob TEST device in debug builds.
@@ -460,5 +466,116 @@ class AdMobManager(private val activity: Activity) {
         pendingReward = null
         rewardedAd = null
         interstitialAd = null
+        destroyBanner()
+    }
+
+    /* ===== BANNER SUPPORT =====
+   The banner lives in the game's own LinearLayout: GameActivity adds a
+   zero-content spacer on the edge the game's manifest asked for, and the first
+   showBanner() swaps that spacer for a real AdView which then stays in the
+   layout for the rest of the game and is only shown and hidden. The swap
+   happens EXACTLY ONCE - re-deriving the insertion point on every show is what
+   used to break, because after the first swap the spacer is no longer a child
+   and indexOfChild returns -1. */
+    private var bannerAdView: com.google.android.gms.ads.AdView? = null
+    private var bannerPlaceholder: android.view.View? = null
+
+    /**
+     * The colour the strip wears where no ad artwork covers it.
+     *
+     * Supplied by GameActivity from the game's own palette, because a banner
+     * that has not filled yet must read as part of the game rather than as a
+     * hole in it.
+     */
+    private var bannerBackdrop: Int = Color.BLACK
+
+    fun setBannerPlaceholder(placeholder: android.view.View?) {
+        bannerPlaceholder = placeholder
+    }
+
+    /** The game's own colour, so an unfilled strip is not a foreign block. */
+    fun setBannerBackdrop(color: Int) {
+        bannerBackdrop = color
+        bannerAdView?.setBackgroundColor(color)
+        bannerPlaceholder?.setBackgroundColor(color)
+    }
+
+    /**
+     * Clears the background the Google SDK paints on the AdView's own children.
+     *
+     * WHY THIS IS NEEDED AT ALL
+     * setBackgroundColor on the AdView is not enough. The SDK wraps the ad in
+     * its own FrameLayout and paints that white, so the strip stayed white even
+     * though the view we touched was transparent - the colour was one level
+     * down, and it only exists once the ad has actually loaded, which is why it
+     * came back looking correct for a moment and white afterwards.
+     */
+    private fun paintStrip(view: android.view.View) {
+        view.setBackgroundColor(bannerBackdrop)
+        if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) view.getChildAt(i)?.let { paintStrip(it) }
+        }
+    }
+
+    /**
+     * Replaces the spacer with an AdView the first time it is needed, then keeps
+     * returning that same view. Null when there is nowhere to put it.
+     */
+    private fun ensureBannerView(): com.google.android.gms.ads.AdView? {
+        bannerAdView?.let { return it }
+        val placeholder = bannerPlaceholder ?: run {
+            Log.w(TAG, "banner: no placeholder registered")
+            return null
+        }
+        val parent = placeholder.parent as? ViewGroup ?: run {
+            Log.w(TAG, "banner: placeholder has no ViewGroup parent")
+            return null
+        }
+        val index = parent.indexOfChild(placeholder)
+        Log.d(TAG, "banner: swapping spacer at index=$index of ${parent.childCount}")
+        if (index < 0) return null
+        val lp = placeholder.layoutParams
+        val ad = com.google.android.gms.ads.AdView(activity).apply {
+            adUnitId = bannerUnitId
+            setAdSize(com.google.android.gms.ads.AdSize.BANNER)
+            setBackgroundColor(bannerBackdrop)
+            visibility = android.view.View.GONE
+            setAdListener(object : com.google.android.gms.ads.AdListener() {
+                override fun onAdLoaded() {
+                    // The SDK has just built its container, so this is the first
+                    // moment there is anything to recolour.
+                    paintStrip(this@apply)
+                }
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    Log.e(TAG, "Banner failed to load: code=${error.code} ${error.message}")
+                    paintStrip(this@apply)
+                }
+            })
+        }
+        parent.removeViewAt(index)
+        parent.addView(ad, index, lp)
+        bannerAdView = ad
+        return ad
+    }
+
+    fun showBanner() {
+        if (destroyed) return
+        val ad = ensureBannerView() ?: return
+        if (ad.visibility != android.view.View.VISIBLE) ad.visibility = android.view.View.VISIBLE
+        // Paint again on show too: a previous load may have left children behind.
+        paintStrip(ad)
+        ad.loadAd(request())
+    }
+
+    fun hideBanner() {
+        val ad = bannerAdView ?: return
+        ad.visibility = android.view.View.GONE
+    }
+
+    fun destroyBanner() {
+        val ad = bannerAdView ?: return
+        (ad.parent as? ViewGroup)?.removeView(ad)
+        ad.destroy()
+        bannerAdView = null
     }
 }

@@ -2,6 +2,7 @@ package com.redundantstudios.arcade.util
 
 import android.content.Context
 import android.util.Log
+import com.redundantstudios.arcade.model.BannerEdge
 import com.redundantstudios.arcade.model.GameManifest
 import com.redundantstudios.arcade.model.ReleaseDate
 import org.json.JSONObject
@@ -63,6 +64,8 @@ object ManifestParser {
                                         online = json.optBoolean("online", false),
                                         tileColor = json.optString("tileColor", "#FFFFFF"),
                                         version = json.optString("version", "1.0.0"),
+                                        bannerEdge = BannerEdge.parse(json.opt("banner") as? String),
+                                        bannerBg = json.opt("bannerBg") as? String,
                                         released = ReleaseDate.parse(
                                             // optString with a null fallback is a type
                                             // mismatch and hands back the literal
@@ -109,6 +112,8 @@ object ManifestParser {
                                     online = props["online"]?.toBoolean() ?: false,
                                     tileColor = props["tileColor"] ?: "#FFFFFF",
                                     version = props["version"] ?: "1.0.0",
+                                    bannerEdge = BannerEdge.parse(props["banner"]),
+                                    bannerBg = props["bannerBg"],
                                     released = ReleaseDate.parse(
                                         props["released"], title.lowercase()
                                     )

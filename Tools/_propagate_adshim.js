@@ -43,7 +43,15 @@ const NEW_INTER_SIG = "      interstitial:function(onDone,placement){";
 const OLD_INTER_CALL = "          try{ b.showInterstitial('__studioInterCb'); return; }catch(_){}";
 const NEW_INTER_CALL = "          try{ b.showInterstitial('__studioInterCb',placement||'break'); return; }catch(_){}";
 
-// 3. Banner comment: record the per-game decision instead of "off for now".
+// 3. Banner: forward the request to the bridge.
+//
+// WHY IT IS NOT A NO-OP ANYMORE
+// `banner:function(){}` meant a game could poll for a banner forever and never
+// once reach the SDK - the call looked wired and silently did nothing. The
+// opt-in stays PER GAME, but it moves to the CALL SITE: a game that never calls
+// Studio.ads.banner() gets no banner, and one that does gets a real strip. The
+// shim's only job is to carry the request across, and to keep working in a plain
+// browser tab where there is no bridge at all.
 const OLD_BANNER = [
   "      /* BANNERS ARE OFF.",
   "         Banners are disabled app-wide for now. The call is kept so the games that",
@@ -52,13 +60,21 @@ const OLD_BANNER = [
   "         bridge handler in GameActivity and the unit in AdMobManager. */",
 ].join('\n');
 const NEW_BANNER = [
-  "      /* BANNERS ARE OFF for now, but they are coming back.",
-  "         The director's decision: banners return on SPECIFIC games where a",
-  "         bottom strip will not eat the playfield - planet merge, chess and",
-  "         checkers were the examples - chosen per game, not app-wide. Until a",
-  "         game opts in this stays a no-op, so no banner request ever reaches the",
-  "         SDK. Enabling one game means a manifest flag, the unit + strip restored",
-  "         in AdMobManager/GameActivity, and this calling through. */",
+  "      /* Banner strip. Opt-in is PER GAME and lives at the CALL SITE: a game",
+  "         that never calls this gets no banner. This only carries the request to",
+  "         the shell, which decides whether to actually show one. show=true asks",
+  "         for the strip, show=false hands it back. */",
+].join('\n');
+const OLD_BANNER_FN = "      banner:function(){}";
+const NEW_BANNER_FN = [
+  "      banner:function(show){",
+  "        var b=bridge();",
+  "        if(!b)return;",
+  "        try{",
+  "          if(show){ if(b.showBanner)b.showBanner(); }",
+  "          else{ if(b.hideBanner)b.hideBanner(); }",
+  "        }catch(_){}",
+  "      }",
 ].join('\n');
 
 /* 4. A shared message helper, so a refusal reads as English on screen.
@@ -69,7 +85,8 @@ const NEW_BANNER = [
    contract - see AdPolicy.token. */
 const OLD_TAIL = "      banner:function(){}\n    }\n  };";
 const NEW_TAIL = [
-  "      banner:function(){}",
+  NEW_BANNER_FN,
+  "    },",
   "    },",
   "    /* Turns a shell refusal into something a player can read.",
   "       Games pass whatever onFail received straight into this. */",
@@ -111,6 +128,7 @@ for (const dir of fs.readdirSync(GAMES)) {
   html = html.split(OLD_INTER_SIG).join(NEW_INTER_SIG);
   html = html.split(OLD_INTER_CALL).join(NEW_INTER_CALL);
   html = html.split(OLD_BANNER).join(NEW_BANNER);
+  html = html.split(OLD_BANNER_FN).join(NEW_BANNER_FN);
   html = html.split(OLD_TAIL).join(NEW_TAIL);
 
   if (html === before) { skipped.push(dir + ' (no change)'); continue; }
