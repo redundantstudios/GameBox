@@ -11,6 +11,8 @@ maxPlayers: 1
 aiSupport: none
 online: false
 tileColor: #ff8a3d
+banner: bottom
+bannerBg: #0a0618
 version: 1
 released: 2026-09-28
 -->
@@ -136,12 +138,18 @@ var Studio=(function(){
         }
         if(onDone) onDone();
       },
-      /* BANNERS ARE OFF.
-         Banners are disabled app-wide for now. The call is kept so the games that
-         still poll for it keep working - it just does nothing, and no banner
-         request ever reaches the SDK. Re-enabling banners means restoring the
-         bridge handler in GameActivity and the unit in AdMobManager. */
-      banner:function(){}
+      /* Banner strip. Opt-in is PER GAME and lives at the CALL SITE: a game
+         that never calls this gets no banner. This only carries the request to
+         the shell, which decides whether to actually show one. show=true asks
+         for the strip, show=false hands it back. */
+      banner:function(show){
+        var b=bridge();
+        if(!b)return;
+        try{
+          if(show){ if(b.showBanner)b.showBanner(); }
+          else{ if(b.hideBanner)b.hideBanner(); }
+        }catch(_){}
+      }
     }
   };
 })();
@@ -3981,6 +3989,9 @@ function musicIntensity(){
   if(state==='playing') return .3+(P.speed/MAXS)*.7;
   return 0;
 }
+/* Every voice in the game - sfx, music, engine, wind - is fed from AU.master,
+   so ramping that one node is the only switch that silences all of it. */
+const MO_BASE_GAIN=.9;
 const AU={
   ctx:null,ready:false,
   sfxOn:store.get('moSfx')!=='0',
@@ -3992,7 +4003,7 @@ const AU={
     if(!AC) return;
     const ctx=this.ctx=new AC();
     if(ctx.state==='suspended') ctx.resume();
-    this.master=ctx.createGain(); this.master.gain.value=.9; this.master.connect(ctx.destination);
+    this.master=ctx.createGain(); this.master.gain.value=MO_BASE_GAIN; this.master.connect(ctx.destination);
     this.sfx=ctx.createGain(); this.sfx.gain.value=this.sfxOn?1:0; this.sfx.connect(this.master);
     this.mus=ctx.createGain(); this.mus.gain.value=this.musOn?.4:0; this.mus.connect(this.master);
     const len=ctx.sampleRate*2;
@@ -4117,6 +4128,18 @@ const AU={
       const p=this.ctx.createStereoPanner(); p.pan.value=clamp(pan,-1,1);
       const g=this.ctx.createGain(); g.gain.value=.001; g.connect(p); p.connect(this.sfx);
     }
+  },
+  /* Silence EVERYTHING for as long as a fullscreen ad is up.
+
+     An ad is not part of the game, so the game's own audio must not be
+     audible underneath it. Ramping master covers every voice at once, and
+     ramping rather than cutting means nothing clicks on the way in or out. */
+  adMute(on){
+    if(!this.ready||!this.master) return;
+    const g=this.master.gain,t=this.ctx.currentTime;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(g.value,t);
+    g.setTargetAtTime(on?0:MO_BASE_GAIN,t,on?.04:.12);
   },
   failTune(){
     const notes=[392,370,349,330];
@@ -4712,7 +4735,10 @@ function gameOver(){
     driftTotal:P.driftTotal,topSpeed:P.topSpeed,dist:dist};
   $('continueBtn').classList.toggle('hidden',moReviveUsed);
   MUSIC.stop();
-  AU.failTune();
+  /* The fail sting waits for the ad callback below rather than playing here.
+     failTune() runs ~2s and used to start at the exact moment an interstitial
+     came up, so the crash sting played under the ad. The sting is still heard
+     once the ad is gone; it is just silent while the ad is on screen. */
   $('hud').classList.add('hidden');
   const s=Math.floor(P.score),dk=+(dist/1000).toFixed(2);
   const isBest=s>best;
@@ -4725,8 +4751,16 @@ function gameOver(){
   $('oDrift').textContent=fmt(P.driftTotal);
   $('oQuip').textContent=pick(['OOF!','BONK!','CRUNCH!','YIKES!','OUCH!']);
   $('oNew').style.display='none';
-  if(isBest){ AU.bestJingle(); }
   $('over').classList.remove('hidden');
+  /* INTERSTITIAL ON GAME OVER.
+     The shell's frequency cap decides whether one is actually due, and the
+     callback always fires either way - so nothing on the result screen ever
+     waits on an ad that will not come. Game audio is muted for the duration
+     and the death sting is replayed after, so the crash still lands. */
+  AU.adMute(true);
+  const sting=function(){ try{ AU.adMute(false); AU.failTune(); if(isBest){ AU.bestJingle(); } }catch(e){} };
+  try{ Studio.ads.interstitial(sting,'gameover'); }
+  catch(e){ sting(); }
 }
 function toMenu(){
   /* back to the main menu is the interstitial break */
@@ -4917,14 +4951,20 @@ function setSfx(){ AU.setSfx(!AU.sfxOn); refreshToggles(); if(AU.sfxOn) AU.uiCli
      default:              return 'Ad unavailable. Try again shortly.';
    }
  }
- $('continueBtn').addEventListener('click',e=>{ e.stopPropagation();
-   if(moReviveUsed)return;
-   const hint=$('oRetryHint');
-   if(hint)hint.textContent='LOADING AD…';
-   Studio.ads.rewarded('continue',
-    function(){ continueFromAd(); },
-    function(reason){
-      AU.uiClick();
+$('continueBtn').addEventListener('click',e=>{ e.stopPropagation();
+    if(moReviveUsed)return;
+    const hint=$('oRetryHint');
+    if(hint)hint.textContent='LOADING AD…';
+    /* Same rule as the game-over interstitial: the ad is not part of the
+       game, so nothing of the game may be heard while it is up. The revive
+       resumes the run, and restartRun-style audio is restored on the way
+       back in - see the grant path below. */
+    AU.adMute(true);
+    Studio.ads.rewarded('continue',
+     function(){ try{ AU.adMute(false); }catch(e){} continueFromAd(); },
+     function(reason){
+       try{ AU.adMute(false); }catch(e){}
+       AU.uiClick();
       const msg=moAdMessage(reason);
       if(hint)hint.textContent=msg;
       /* Hide the offer ONLY when the revive is genuinely spent. A cooldown or
@@ -5132,6 +5172,17 @@ document.addEventListener('fullscreenchange',()=>{
   var prev=window.Game||{};
   var S=function(){ return window.__shellMO||{}; };
   try{ S().applySettings(Studio.settings); }catch(e){}
+  /* Banner: only while a run is actually being driven. Driven off `state` so a
+     transition cannot leave the strip up over the menu or the result screen.
+     'crashing' counts as playing - the run has not ended yet - but the strip
+     goes as soon as it does. The shell owns the edge (bottom, per this game's
+     manifest) and the strip's colour. */
+  var bannerOn=false;
+  setInterval(function(){
+    var want=(state==='playing'||state==='crashing')&&!paused;
+    if(want!==bannerOn){ bannerOn=want; try{ Studio.ads.banner(want); }catch(e){} }
+  },400);
+
   window.Game={
     pause:function(){ try{ S().pause(); }catch(e){} if(prev.pause) try{ prev.pause(); }catch(e){} },
     resume:function(){ if(prev.resume) try{ prev.resume(); }catch(e){} try{ S().resume(); S().applySettings(Studio.settings); }catch(e){} },
