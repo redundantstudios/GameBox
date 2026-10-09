@@ -136,12 +136,18 @@ var Studio=(function(){
         }
         if(onDone) onDone();
       },
-      /* BANNERS ARE OFF.
-         Banners are disabled app-wide for now. The call is kept so the games that
-         still poll for it keep working - it just does nothing, and no banner
-         request ever reaches the SDK. Re-enabling banners means restoring the
-         bridge handler in GameActivity and the unit in AdMobManager. */
-      banner:function(){}
+      /* Banner strip. Opt-in is PER GAME and lives at the CALL SITE: a game
+         that never calls this gets no banner. This only carries the request to
+         the shell, which decides whether to actually show one. show=true asks
+         for the strip, show=false hands it back. */
+      banner:function(show){
+        var b=bridge();
+        if(!b)return;
+        try{
+          if(show){ if(b.showBanner)b.showBanner(); }
+          else{ if(b.hideBanner)b.hideBanner(); }
+        }catch(_){}
+      }
     }
   };
 })();

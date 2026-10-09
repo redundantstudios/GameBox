@@ -141,7 +141,14 @@ var Studio=(function(){
          still poll for it keep working - it just does nothing, and no banner
          request ever reaches the SDK. Re-enabling banners means restoring the
          bridge handler in GameActivity and the unit in AdMobManager. */
-      banner:function(){}
+      banner:function(show){
+        var b=bridge();
+        if(!b)return;
+        try{
+          if(show){ if(b.showBanner)b.showBanner(); }
+          else{ if(b.hideBanner)b.hideBanner(); }
+        }catch(_){}
+      }
     }
   };
 })();
@@ -2360,7 +2367,25 @@ function showFail(){
      it has been used so it can never look like a dead offer. */
   show($('bHeartFail'),!heartUsed);
   showPage(overEl);setGameInput(false);sLose();
+  /* ON-COMPLETE AD, loss side: running out of lives IS the end of a run, so the
+     ad is asked for HERE - at the moment the run actually ends - rather than
+     waiting for the player to touch one of the three buttons on the card. Every
+     one of those buttons would otherwise be a separate request for the same
+     break, and the player would have to guess which tap was the ad one.
+
+     The guard is a same-frame double-ask guard only. It is released as soon as
+     the shell answers, so whether an ad really shows is AdPolicy's decision and
+     not this game's: on the 90s gap it answers "skipped" immediately and the
+     next end of a run asks again. */
+  if(!outOfLivesAdAsked){
+    outOfLivesAdAsked=true;
+    Studio.ads.interstitial(function(){outOfLivesAdAsked=false;},'kiro.gameover.lives');
+  }
 }
+/* Set for the duration of one outstanding out-of-lives request. Never a
+   per-run flag - a long session can end several runs, and each one deserves to
+   ask. */
+let outOfLivesAdAsked=false;
 /* ---- rewarded: ONE extra heart, once per run ---- */
 let heartUsed=false;
 function restartLevel(){
@@ -2486,11 +2511,11 @@ $('bStart').onclick=()=>{initAudio();goLandscape();openSelect();};
  $('bPause').onclick=()=>{if(state==='play'||state==='pause')togglePause();};
  $('bResume').onclick=togglePause;
  /* ---- AGREED AD PLACEMENTS ----
-    interstitials: game-over buttons, RESTART, MENU (pause)
+    interstitials: game-over buttons, RESTART, MENU, MAP (pause)
     rewarded:      +1 heart (one per run), 30-minute island rental,
                    2-hour skin trial
     Everything else that used to fire an ad - the walk back to the start page,
-    MAP from the pause screen, REPLAY and the banner poll - is gone.
+    REPLAY on the clear card and the banner poll - is gone.
 
     Studio.ads.interstitial is (onDone, placement): CALLBACK FIRST. These four
     used to pass the placement first, so the shim treated the placement string
@@ -2504,7 +2529,9 @@ $('bStart').onclick=()=>{initAudio();goLandscape();openSelect();};
  $('bRestart').onclick=()=>{
   Studio.ads.interstitial(function(){initAudio();startLevel(cur);},'kiro.pause.restart');
 };
- $('bMap1').onclick=()=>{openSelect();};
+ $('bMap1').onclick=()=>{
+  Studio.ads.interstitial(function(){openSelect();},'kiro.pause.map');
+};
  $('bRetryFail').onclick=()=>{
   Studio.ads.interstitial(function(){initAudio();restartLevel();},'kiro.gameover.retry');
  };
@@ -2514,13 +2541,24 @@ $('bStart').onclick=()=>{initAudio();goLandscape();openSelect();};
  };
  $('bUnlockYes').onclick=()=>{initAudio();runLevelUnlockAd();};
  $('bUnlockNo').onclick=()=>{closeUnlock();};
- $('bMap2').onclick=()=>{openSelect();};
+$('bMap2').onclick=()=>{openSelect();};
+ /* ON-COMPLETE AD, win side. Clearing an island is the end of a run, so both
+    ways out of the clear card - NEXT into the following island, or REPLAY of
+    the one just finished - ask for the break. MAP stays clean: that button
+    leaves the game, and AdMob disallows an interstitial on app exit.
+
+    An earlier version of this file argued REPLAY was "essentially a restart of
+    the current level, not a session break" and left it ad-free. That is
+    exactly what the director overrode: both are taps that end one completed
+    island and start another, so they are treated the same. The 90s gap is what
+    stops NEXT-then-REPLAY-then-NEXT from stacking ads. */
  $('bReplay').onclick=()=>{
-  /* Replay is essentially a restart of the current level, not a session break.
-     Removing interstitial as it's not in the requested list. */
-  initAudio();startLevel(cur);
-};
- $('bNext').onclick=e=>{e.preventDefault();e.stopPropagation();nextLevel();};
+   Studio.ads.interstitial(function(){initAudio();startLevel(cur);},'kiro.done.replay');
+ };
+ $('bNext').onclick=e=>{
+   e.preventDefault();e.stopPropagation();
+   Studio.ads.interstitial(function(){nextLevel();},'kiro.done.next');
+ };
  $('bHowM').onclick=()=>{initAudio();goLandscape();openHow();sClick();};
  $('bHowOk').onclick=()=>{closeHow();sClick();};
  $('bSettingsM').onclick=()=>{initAudio();goLandscape();openSettings(false);};
