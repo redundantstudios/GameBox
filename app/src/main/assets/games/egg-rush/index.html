@@ -8,6 +8,8 @@ maxPlayers: 4
 aiSupport: true
 online: false
 tileColor: #F2B441
+banner: bottom
+bannerBg: #79b651
 version: 2
 released: 2026-09-24
 -->
@@ -608,6 +610,14 @@ const Studio = (() => {
          granted the reward anyway. Each request also gets its own callback
          name, otherwise two overlapping requests race on one global and the
          first ad pays out the second action. */
+      /* Banner strip. The bridge exposes showBanner()/hideBanner(); show=true asks
+         for the strip, false hands it back. The shell decides whether to serve
+         one, and owns which edge it sits on (bottom, per this manifest). */
+      banner(visible){
+        const b=bridge();
+        if(!b)return;
+        try{ if(visible){ if(b.showBanner)b.showBanner(); } else { if(b.hideBanner)b.hideBanner(); } }catch(e){}
+      },
       rewarded(placement,onReward){
         const b=bridge();
         if(!b||!b.showRewardedAd) return;
@@ -2896,7 +2906,16 @@ function openSettings(open){
  $('rmenuBtn').addEventListener('click',()=>{ playSnd('click'); withAd('gameover.menu',startAttract); });
 document.addEventListener('visibilitychange',()=>{ if(document.hidden&&state==='PLAYING') doPause(); });
 
-window.Game={
+/* Banner: up while a round is being played, gone for the menus, the pause
+     screen and the results. COUNTDOWN is included so the strip is up and filled
+     before the round actually starts. */
+  var bannerOn=false;
+  setInterval(function(){
+    var want=(state==='PLAYING'||state==='COUNTDOWN');
+    if(want!==bannerOn){ bannerOn=want; try{ Studio.ads.banner(want); }catch(e){} }
+  },400);
+
+  window.Game={
   pause(){ doPause(); },
   resume(){ doResume(); },
   setMuted(m){ setMuted(!!m); },

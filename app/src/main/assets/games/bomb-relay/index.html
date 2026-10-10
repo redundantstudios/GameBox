@@ -8,6 +8,8 @@ maxPlayers: 5
 aiSupport: full
 online: false
 tileColor: fuse-red
+banner: bottom
+bannerBg: #221c2b
 version: 1
 released: 2026-09-27
 -->
@@ -2026,7 +2028,10 @@ const Studio = (() => {
     settings,
     exitGame:()=>{const b=bridge();if(b&&b.exitGame){try{b.exitGame();}catch(_){}}},
     ads:{
-      banner(visible){const b=bridge();if(b&&b.banner){try{b.banner(visible?'show':'hide');}catch(_){}}},
+      /* The bridge exposes showBanner()/hideBanner(). This used to call
+         b.banner('show'|'hide'), which is not a bridge method at all, so the
+         strip never appeared however often the game asked for it. */
+      banner(visible){const b=bridge();if(!b)return;try{if(visible){if(b.showBanner)b.showBanner();}else{if(b.hideBanner)b.hideBanner();}}catch(_){}},
       rewarded(placement,onReward){
         const b=bridge();
         if(b&&b.showRewardedAd){

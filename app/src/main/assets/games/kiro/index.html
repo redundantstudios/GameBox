@@ -11,6 +11,8 @@ maxPlayers: 1
 aiSupport: none
 online: false
 tileColor: #ff6b57
+banner: bottom
+bannerBg: #0f2542
 version: 1
 released: 2026-10-03
 -->
@@ -3960,11 +3962,19 @@ requestAnimationFrame(frame);
     }catch(e){}
   }
   applySettings(Studio.settings);
-  /* Banner polling removed with the rest of the old ad set. Banners are
-     disabled app-wide and the shim's banner() is a no-op, so this loop only
-     cost a timer. Kiro's ads are now exactly: two rewarded (30-minute island
-     rental, one extra heart) and three interstitials (game-over RETRY,
-     game-over BACK TO MAP, pause RESTART / pause MENU). */
+  /* Banner polling is BACK. It was removed when banners were disabled app-wide
+     and the shim's banner() was a no-op, so the loop only cost a timer. The
+     shell forwards it now and this game's manifest opts in (banner: bottom), so
+     the strip rides under the island while a run is being played and is gone
+     for the menus, the pause screen and the results. */
+  var bannerOn=false;
+  setInterval(function(){
+    var want=(state==='play');
+    if(want!==bannerOn){ bannerOn=want; try{ Studio.ads.banner(want); }catch(e){} }
+  },400);
+  /* Kiro's other ads: two rewarded (30-minute island rental, one extra heart)
+     and three interstitials (game-over RETRY, game-over BACK TO MAP, pause
+     RESTART / pause MENU). */
   window.Game={
     pause:function(){ try{ if(state==='play') togglePause(); }catch(e){} if(prev.pause) try{ prev.pause(); }catch(e){} },
     resume:function(){ try{ if(state==='pause') togglePause(); }catch(e){} if(prev.resume) try{ prev.resume(); }catch(e){} applySettings(Studio.settings); },

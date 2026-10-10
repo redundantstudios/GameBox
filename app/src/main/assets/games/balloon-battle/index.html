@@ -14,6 +14,8 @@ maxPlayers: 4
 aiSupport: full
 online: false
 tileColor: #F2724B
+banner: bottom
+bannerBg: #79bfe6
 version: 1
 released: 2026-09-27
 -->
@@ -600,7 +602,7 @@ function spawnPoints(n){
    "no interstitials work" was true from every MENU button.
 
    The game now simply ASKS on both, with a placement that says which button it
-   was, and AdPolicy decides whether one is due: it owns the 180s app-wide gap,
+   was, and AdPolicy decides whether one is due: it owns the 90s app-wide gap,
    the first-session grace window, and the offline check. Deciding "is this a
    natural break?" in game code is exactly what duplicated policy caused. */
 function backToMenu(placement){
@@ -2641,8 +2643,8 @@ function onVis(){if(document.hidden&&state==='PLAYING'&&!paused)Game.pause();}
    nothing in this file calls showBanner()/hideBanner().
 
    Interstitial: KEPT. It is a studio-wide break between sessions, not a
-   gameplay overlay, and it fires on the way out of a match - never on a timer
-   and never over live play.
+   gameplay overlay, and it fires on the player's own tap out of a match - never
+   on a timer, never over live play, and never on exiting the game.
 
    Rewarded: not used. This game has no continue / reward / power-up purchase,
    so there is nothing honest to sell. If that ever changes, the ad must be
@@ -2735,16 +2737,19 @@ function showInterstitial(placement,onDone){
    The game's own SPEED and SHIELD power-ups are untouched. Those drop in the
    arena and anyone can take them, which is how a speed boost should be earned. */
 
-/* Kept for the exit path, so a real BACK (not the page being torn down) gets
-   its ad. */
+/* One request per session-leg. Used by backToMenu() - the MENU button on the
+   results card and on the pause panel - which is a deliberate break, NOT an exit.
+   NO AD ON EXIT: the pagehide / visibilitychange hooks that used to sit here are
+   gone. Leaving the game is a clean exit, and so is backgrounding the app while
+   a match is live. AdMob disallows an interstitial on app exit, and 'exit' was
+   already refused by AdPolicy anyway, so those two hooks could only ever have
+   produced a request the shell threw away. */
 var interstitialShown=false;
 function showInterstitialOnce(placement){
   if(interstitialShown)return;
   interstitialShown=true;
   showInterstitial(placement,function(){interstitialShown=false;});
 }
-window.addEventListener('pagehide',function(){showInterstitialOnce('exit');});
-document.addEventListener('visibilitychange',function(){if(document.hidden)showInterstitialOnce('exit');});
 window.Game={
   pause(){if((state==='PLAYING'||state==='COUNTDOWN')&&!paused){paused=true;clearGameplayInput();SFX.play('click');}},
   resume(){if(paused){paused=false;lastT=0;}},
@@ -2869,6 +2874,26 @@ try{
   }
 }catch(e){}
 requestAnimationFrame(frame);
+
+/* Banner strip. This game has no Studio shim - it talks to the shell's bridge
+   directly - so the request goes straight to NativeBridge rather than through
+   Studio.ads.banner(). Up while balloons are being popped, gone for the menu
+   and the result screen. COUNTDOWN is included so the strip is up and filled
+   before the round starts. */
+(function(){
+  var on=false;
+  setInterval(function(){
+    var want=(state==='PLAYING'||state==='COUNTDOWN');
+    if(want===on)return;
+    on=want;
+    try{
+      var b=window.NativeBridge;
+      if(!b)return;
+      if(want){ if(b.showBanner)b.showBanner(); }
+      else{ if(b.hideBanner)b.hideBanner(); }
+    }catch(e){}
+  },400);
+})();
 </script>
 </body>
 </html>

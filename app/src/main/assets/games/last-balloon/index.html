@@ -14,6 +14,8 @@ maxPlayers: 10
 aiSupport: none
 online: false
 tileColor: sky-blue
+banner: bottom
+bannerBg: #4e342e
 version: 1
 released: 2026-09-27
 -->
@@ -2571,21 +2573,15 @@ function render(){
  $('menuHow').addEventListener('click',function(){A.unlock();SND.click();showScreen('scr-how');initHow();});
  $('menuShop').addEventListener('click',function(){A.unlock();SND.click();showScreen('scr-shop');renderShop();});
  $('shopBack').addEventListener('click',function(){SND.click();showScreen('scr-menu');});
- /* BACK to the shell from the main menu - the same in-game exit the other games
-    use. It also fires the interstitial, because pagehide is NOT reliable here:
-    a native fullscreen ad Activity or an early WebView teardown can swallow it,
-    which is why the interstitial never appeared when leaving via BACK. Doing it
-    on the button guarantees it. A no-op outside the shell. */
- $('menuBack').addEventListener('click',function(){
-   SND.click();
-   /* NO AD ON EXIT. Backing out of the game used to call showInterstitialOnce()
-      here as well as on pagehide/visibilitychange, so the player was shown an ad
-      at the exact moment they decided to stop playing. Leaving is clean now; the
-      rewarded shop unlock and the in-play breaks are untouched. */
-   try{
-     if(window.NativeBridge&&window.NativeBridge.exitGame)window.NativeBridge.exitGame();
-   }catch(e){}
- });
+/* NO AD ON EXIT. Backing out of the game is clean - no interstitial, nothing.
+     The end-of-round break in showScreen() and the rewarded shop unlock are
+     untouched. */
+$('menuBack').addEventListener('click',function(){
+    SND.click();
+    try{
+      if(window.NativeBridge&&window.NativeBridge.exitGame)window.NativeBridge.exitGame();
+    }catch(e){}
+  });
  setInterval(function(){if(currentScreen==='scr-shop')renderShop();},1000);
  $('menuSettings').addEventListener('click',function(){A.unlock();SND.click();showScreen('scr-settings');});
  $('howBack').addEventListener('click',function(){SND.click();showScreen('scr-menu');});
@@ -2635,11 +2631,11 @@ refreshSetupUI();
    - Banner: REMOVED. Every game now runs banner-free (see AGENT.md / PROGRESS.md);
      a bottom strip fights the on-screen controls and eats vertical space. The
      old `b.showBanner()` on load is gone and nothing here shows one.
-   - Interstitial: KEPT, on pagehide (leaving the game) AND on the in-game BACK
-     button, never mid-play. pagehide alone proved unreliable - a native
-     fullscreen ad Activity or an early WebView teardown can swallow it, which
-     is why it never appeared when leaving via BACK. showInterstitialOnce()
-     guarantees a single request per session, so the two paths cannot double up.
+- Interstitial: at the END OF A ROUND only. showScreen() asks for one when
+     it routes off 'scr-game' onto a result/next screen, which is the end-of-round
+     break. NO AD ON EXIT: leaving the game (the menu BACK button) is clean, and
+     there is no pagehide / visibilitychange hook, so backgrounding the app or
+     backing out never asks for one. AdMob disallows an interstitial on exit.
    - Rewarded: USED, and honestly - the Balloon Shop's 2-hour style unlock. The
      player taps a style, watches a short ad, and gets it. See triggerShopAd.
    The setData/getData aliases are NOT ads; the shop and settings need the
@@ -2648,11 +2644,12 @@ refreshSetupUI();
   var b=window.NativeBridge; if(!b) return;
   if(!b.setData)b.setData=function(k,v){return b.save(k,String(v));};
   if(!b.getData)b.getData=function(k){return b.load(k);};
-  /* INTERSTITIAL. Fires on leaving the game. Two paths, because pagehide alone
-    proved unreliable: a native fullscreen ad Activity, or an early WebView
-    teardown, can swallow it - which is exactly why leaving via BACK showed no
-    ad. The BACK button calls this directly. Guarded so the two paths can never
-    request twice for one exit. */
+/* INTERSTITIAL, END OF ROUND. Fires from showScreen() when it routes off the
+     play screen. NO AD ON EXIT - there is deliberately no pagehide or
+     visibilitychange hook here, and the menu BACK button calls exitGame()
+     without asking, so leaving the game is always clean. This used to be an exit
+     ad, fired on pagehide and on the BACK button, which meant the player saw an
+     ad at the exact moment they decided to stop. AdMob disallows that. */
  var interstitialShown=false;
  function showInterstitialOnce(){
     if(interstitialShown)return;
@@ -2687,6 +2684,29 @@ refreshSetupUI();
     },
     destroy:function(){ setAudio(false); if(prev.destroy)try{prev.destroy();}catch(e){} }
   };
+})();
+
+/* Banner strip. This game has no Studio shim - it talks to the shell's bridge
+   directly - so the request goes straight to NativeBridge. Shown only while a
+   run is live, so it is torn down on destroy: a strip left up over the arcade
+   grid would follow the player out of the game. */
+(function(){
+  var on=false;
+  function want(v){
+    if(v===on)return;
+    on=v;
+    try{
+      var b=window.NativeBridge;
+      if(!b)return;
+      if(v){ if(b.showBanner)b.showBanner(); }
+      else{ if(b.hideBanner)b.hideBanner(); }
+    }catch(e){}
+  }
+  var iv=setInterval(function(){
+    try{ want(currentScreen==='scr-game'); }catch(e){}
+  },400);
+  /* Never leave the strip up once the page goes away. */
+  window.addEventListener('pagehide',function(){ clearInterval(iv); try{ want(false); }catch(e){} });
 })();
 </script>
 </body>
