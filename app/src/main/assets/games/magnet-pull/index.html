@@ -1935,6 +1935,14 @@ function showOver(){
   lsSet('magnet.best',best);
   showScreen(sOver,'over');updateHudVis();
   SFX.jingle();
+  /* INTERSTITIAL ON GAME OVER.
+     The result screen used to show no ad of its own - one only appeared if the
+     player then tapped RETRY or MENU, so dying and sitting on the screen cost
+     nothing. The buttons keep their own calls, so this is the break at the
+     moment the run ends, not a second one on the way out of it.
+     The callback is empty on purpose: nothing on this screen waits on the ad,
+     and the shell's governor still decides whether one is actually due. */
+  try{ Studio.ads.interstitial(function(){},'magnet.gameover'); }catch(e){}
 }
 /* The only place that decides whether CONTINUE is offered: an ad that has not
    been spent yet, on a run where the SDK is up. Called from showOver() and

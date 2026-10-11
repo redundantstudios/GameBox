@@ -302,7 +302,18 @@ val bannerEdge = currentGame?.bannerEdge
                 // map. A reserved strip is a real area the game already gave up,
                 // so it wears the game's own colour.
                 if (!bannerEdge.isOverlay) setBackgroundColor(bannerBackdrop())
-                visibility = android.view.View.GONE
+                /* INVISIBLE, not GONE, for a reserved strip: it keeps taking up
+                   its height whether or not an ad is showing.
+
+                   GONE here meant the strip appeared and vanished, and with it
+                   the WebView's height - so every show and every hide resized
+                   the WebView and re-laid-out the game's canvas. That showed up
+                   as the whole game visibly shaking twice a run, and it is far
+                   more expensive than one fixed relayout at open. The space is
+                   now reserved for the life of the screen and only the ad's own
+                   visibility changes. */
+                visibility = if (bannerEdge.isOverlay) android.view.View.GONE
+                             else android.view.View.INVISIBLE
             }
             // TOP puts the strip first so it sits above the WebView; BOTTOM puts
             // it last so it sits below. The WebView carries weight=1 either way,
@@ -426,6 +437,13 @@ val bannerEdge = currentGame?.bannerEdge
             )
             adMobManager.setBannerOverlay(true)
         }
+        /* Ask for the banner's ad NOW rather than when the game asks to show it.
+           The strip's first request used to go out at the start of a run, so the
+           ad was still arriving while the player was already playing, and the
+           SDK's first setup runs on the UI thread - which read as a hitch right
+           at the beginning of every run. Nothing is happening yet at this point
+           in the open, so it is the right moment to spend it. */
+        if (bannerEdge != null) adMobManager.preloadBanner()
         setContentView(contentHost)
         gameRoot = rootLayout
         // The rotation was decided before the first frame (see setupOrientation), so

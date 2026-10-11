@@ -491,6 +491,9 @@ class AdMobManager(private val activity: Activity) {
      */
     private var bannerOverlay = false
 
+    /** True once an ad has actually arrived, so show() does not re-request. */
+    private var bannerHasAd = false
+
     fun setBannerOverlay(overlay: Boolean) {
         bannerOverlay = overlay
     }
@@ -560,12 +563,14 @@ class AdMobManager(private val activity: Activity) {
                     // The SDK has just built its container, so this is the first
                     // moment there is anything to recolour.
                     paintStrip(this@apply)
+                    bannerHasAd = true
                     // In overlay mode this is also the first moment there is
                     // anything worth showing, so the strip appears here rather
                     // than the instant it was asked for.
                     if (bannerOverlay) this@apply.visibility = android.view.View.VISIBLE
                 }
                 override fun onAdFailedToLoad(error: LoadAdError) {
+                    bannerHasAd = false
                     Log.e(TAG, "Banner failed to load: code=${error.code} ${error.message}")
                     paintStrip(this@apply)
                 }
@@ -587,12 +592,38 @@ class AdMobManager(private val activity: Activity) {
         }
         // Paint again on show too: a previous load may have left children behind.
         paintStrip(ad)
-        ad.loadAd(request())
+        /* Only ask for an ad when there is not one already in hand. This used to
+           request on every show, so pausing and resuming - or anything else that
+           shows the strip more than once - started a fresh network request each
+           time, and that setup runs on the UI thread. The hitch repeated for the
+           whole run instead of happening once. */
+        if (!bannerHasAd) ad.loadAd(request())
     }
 
     fun hideBanner() {
         val ad = bannerAdView ?: return
-        ad.visibility = android.view.View.GONE
+        /* INVISIBLE, never GONE. GONE collapses the strip, which resizes the
+           WebView, which re-lays-out the game's canvas - so hiding an ad visibly
+           jolted the whole game. The space stays reserved and only the ad stops
+           being drawn. */
+        ad.visibility = if (bannerOverlay) android.view.View.GONE
+                        else android.view.View.INVISIBLE
+    }
+
+    /**
+     * Creates the AdView and asks for an ad WITHOUT showing it.
+     *
+     * WHY: the strip's first request used to go out at the moment the player
+     * started a run, so the ad was still arriving while they were already
+     * playing - and loadAd's first setup runs on the UI thread, which showed up
+     * as a hitch right at the start of a run. Starting the request when the game
+     * opens moves that cost to a moment when nothing is happening yet, and by
+     * the time play begins the ad is usually already there.
+     */
+    fun preloadBanner() {
+        if (destroyed) return
+        val ad = ensureBannerView() ?: return
+        ad.loadAd(request())
     }
 
     fun destroyBanner() {
