@@ -84,6 +84,16 @@ class GameActivity : AppCompatActivity() {
         (BANNER_HEIGHT_DP * resources.displayMetrics.density).toInt()
 
     /**
+     * Width reserved for a strip that stands on its end.
+     *
+     * 50dp - a banner turned on its side. It is deliberately NOT the ad's
+     * 320dp length: reserving that left a column so wide it swallowed the
+     * potted-ball tube it was meant to sit beside.
+     */
+    private fun verticalStripWidthPx(): Int =
+        (BANNER_HEIGHT_DP * resources.displayMetrics.density).toInt()
+
+    /**
      * The colour the banner strip wears behind the ad.
      *
      * The game's own page background from its manifest (`bannerBg:`), NOT the
@@ -269,13 +279,20 @@ class GameActivity : AppCompatActivity() {
         setupOrientation(manifestOrientation)
 
         // The game fills this layout completely (no banner strip: see BANNERS ARE OFF).
-        val rootLayout = LinearLayout(this).apply {
+val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = android.view.ViewGroup.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT
             )
-            }
+        }
+        /* The container is painted in the game's own colour. With a reserved
+           banner strip the strip is INVISIBLE most of the time, and nothing else
+           was painting it - so the window's own background showed through as a
+           light bar under the game on every screen. The WebView covers the rest
+           of this layout, so only the reserved strip is ever visible through it,
+           and it matches the strip's own colour exactly. */
+        rootLayout.setBackgroundColor(bannerBackdrop())
 
         /* The banner strip, on the edge this game's manifest asked for. Absent
            banner: line means the game gets the whole viewport and its own
@@ -293,9 +310,14 @@ val bannerEdge = currentGame?.bannerEdge
                 // 50*2 = 100px instead of 131px and the strip came out short.
                 (BANNER_HEIGHT_DP * resources.displayMetrics.density).toInt()
             bannerPlaceholder = View(this).apply {
+                /* A vertical strip lays out on its end: it is the WIDTH that is
+                   reserved, not the height. The real FrameLayout params replace
+                   this once the content frame exists. */
                 layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    bannerHeightPx
+                    if (bannerEdge.isVertical) bannerHeightPx
+                    else LinearLayout.LayoutParams.MATCH_PARENT,
+                    if (bannerEdge.isVertical) LinearLayout.LayoutParams.MATCH_PARENT
+                    else bannerHeightPx
                 )
                 // An overlay shows the GAME through the strip until an ad
                 // actually arrives, so it must not paint a coloured box over the
@@ -321,6 +343,12 @@ val bannerEdge = currentGame?.bannerEdge
             // being covered. An OVERLAY_TOP is added to contentHost instead, so
             // it costs the game nothing.
             if (bannerEdge == BannerEdge.TOP) rootLayout.addView(bannerPlaceholder)
+            /* Register it HERE, not on the first show. preloadBanner() runs at
+               game open, before the game has asked to show anything, and it had
+               nothing to attach the AdView to - so the preload silently did
+               nothing and the first request only went out when the run started,
+               which is the lag it was meant to remove. */
+            adMobManager.setBannerPlaceholder(bannerPlaceholder)
         }
 
         webView = WebView(this).apply {
@@ -344,6 +372,13 @@ val bannerEdge = currentGame?.bannerEdge
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
+                /* Chromium's autoplay gate holds an AudioContext suspended until
+                   the page has seen a real user gesture, so a game's score stayed
+                   silent until the player happened to tap something - and that
+                   first tap was spent arming audio instead of doing what they
+                   touched. The shell owns playback for these games, so the gate
+                   is lifted once here rather than in every game. */
+                mediaPlaybackRequiresUserGesture = false
                 allowFileAccess = true
                 allowContentAccess = true
                 allowFileAccessFromFileURLs = false
@@ -356,6 +391,49 @@ val bannerEdge = currentGame?.bannerEdge
             webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                     super.onPageStarted(view, url, favicon)
+                    /* Installed at page start so it wraps AudioContext before the
+                       game's own scripts create one - a context created before
+                       this lands would never be suspended. */
+                    /* Installed BEFORE the page's own scripts.
+                       evaluateJavascript at onPageStarted was not good enough: it
+                       can be discarded when the navigation commits, and it races
+                       a game that builds its AudioContext during boot. Logs from
+                       that attempt read "already wrapped, 0 ctx" - the wrapper
+                       went in after the context had already been made, so it
+                       suspended nothing and the music followed the player onto
+                       the home screen. addDocumentStartJavaScript is guaranteed
+                       to run first, so the context is captured as it is made. */
+                    val v = view ?: return
+                    val supported = try {
+                        androidx.webkit.WebViewFeature.isFeatureSupported(
+                            "DOCUMENT_START_SCRIPT"
+                        )
+                    } catch (e: Throwable) { false }
+                    Log.d(TAG_TIME, "documentStartScript supported=$supported")
+                    if (supported) {
+                        /* file:///android_asset pages have an opaque origin, so the
+                           rule list has to name the scheme as well as the wildcard.
+                           With only "*" the script was silently never run - which is
+                           why the tracker produced no logs and no contexts were
+                           ever captured. */
+                        try {
+                            androidx.webkit.WebViewCompat.addDocumentStartJavaScript(
+                                v, jsAudioTracker, setOf("file://", "file://*", "*")
+                            )
+                        } catch (e: Exception) {
+                            Log.w(TAG_TIME, "document-start script failed: ${e.message}")
+                        }
+                    } else {
+                        v.evaluateJavascript(jsAudioTracker, null)
+                    }
+                    /* Belt and braces: a document-start script covers the common
+                       case, but if the page somehow loaded before it landed, a
+                       retry at commit time still gets a tracker in place - and an
+                       already-created context is picked up by the patched
+                       constructor on the next context the game makes. */
+                    v.postDelayed({
+                        try { v.evaluateJavascript(jsAudioTracker, null) } catch (_: Exception) {}
+                    }, 400)
                     Log.d(TAG_TIME, "page started +${sinceLaunch()}ms")
                 }
 
@@ -436,6 +514,34 @@ val bannerEdge = currentGame?.bannerEdge
                 )
             )
             adMobManager.setBannerOverlay(true)
+        }
+        /* A RIGHT strip stands on its end against the right-hand edge. It is laid
+           over the frame rather than into rootLayout, and the WebView is inset by
+           the same width so the two sit SIDE BY SIDE: the game keeps the full
+           height, and whatever the game keeps against its right edge - pool's
+           potted-ball tube - ends up immediately beside the ad instead of under
+           it.
+
+           The reserved width is the AD's own width, not the banner's 50dp. A
+           MEDIUM_RECTANGLE is 300dp across; reserving the banner's 50dp left a
+           strip far narrower than the ad it was meant to hold, so the container
+           appeared and the ad never fitted inside it. */
+        if (bannerEdge?.isVertical == true && bannerPlaceholder != null) {
+            val stripWidthPx = verticalStripWidthPx()
+            val wp = webView.layoutParams as? LinearLayout.LayoutParams
+            if (wp != null) {
+                wp.rightMargin = stripWidthPx
+                webView.layoutParams = wp
+            }
+            contentHost.addView(
+                bannerPlaceholder,
+                FrameLayout.LayoutParams(
+                    stripWidthPx,
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    android.view.Gravity.END
+                )
+            )
+            adMobManager.setBannerVertical(true)
         }
         /* Ask for the banner's ad NOW rather than when the game asks to show it.
            The strip's first request used to go out at the start of a run, so the
@@ -647,8 +753,77 @@ val bannerEdge = currentGame?.bannerEdge
         }
     }
 
+    /* Tracks every AudioContext the page creates, so they can all be suspended when
+       the screen is backgrounded.
+       webView.onPause() stops JS timers and the render loop, but an AudioContext
+       that is ALREADY running ignores both and keeps making sound - which is how
+       a game's score followed the player onto the home screen and into other
+       apps. Doing this per game meant only the games that had opted in went
+       quiet, so the contexts are wrapped here instead and the whole page is
+       covered at once. Runs before the game's own scripts. */
+    private val jsAudioTracker = """
+        (function(){
+          /* The tracker is injected more than once (page start, then a beat
+             later because an injection at onPageStarted can be thrown away when
+             the navigation commits). A second run used to build its OWN empty
+             context list and overwrite the global suspend helper with it, so the
+             contexts the first run had captured were suspended by a tracker
+             holding nothing - logged as "suspend 0 ctx" while the game kept
+             playing. The registry lives on window so every run shares one list,
+             and a run that finds the constructor already wrapped leaves the
+             existing helper alone. */
+          var store=window.__studioAudioStore;
+          if(!store){store=window.__studioAudioStore={live:[],held:false,wrapped:false};}
+          var live=store.live;
+          function log(m){ try{console.log('AudioTrack: '+m);}catch(e){} }
+          if(store.wrapped){log('already wrapped, '+live.length+' ctx');return;}
+          function suspendAll(on){
+            store.held=!!on;
+            log((on?'suspend ':'resume ')+live.length+' ctx');
+            live.forEach(function(c){
+              try{ on?(c.__realSuspend?c.__realSuspend():c.suspend())
+                      :(c.__realResume?c.__realResume():c.resume()); }catch(e){}
+            });
+          }
+          window.__studioSuspendAudioAll=suspendAll;
+          ['AudioContext','webkitAudioContext'].forEach(function(name){
+            var Orig=window[name]; if(!Orig)return;
+            var Wrapped=function(){
+              var ctx=new (Function.prototype.bind.apply(Orig,[null].concat([].slice.call(arguments))))();
+              if(live.indexOf(ctx)<0)live.push(ctx);
+              ctx.__realResume=ctx.resume.bind(ctx);
+              ctx.__realSuspend=ctx.suspend.bind(ctx);
+              /* Games call resume() from their own audio paths, which undid a
+                 suspend issued a moment earlier. While the screen is backgrounded
+                 resume() is a no-op, so only suspendAll can restart it. */
+              ctx.resume=function(){ if(store.held)return Promise.resolve();
+                                    return ctx.__realResume(); };
+              log('captured ('+live.length+')');
+              return ctx;
+            };
+            Wrapped.prototype=Orig.prototype;
+            window[name]=Wrapped;
+          });
+          store.wrapped=true;
+          document.addEventListener('visibilitychange',function(){
+            suspendAll(document.hidden);
+          });
+          log('installed');
+        })();
+    """.trimIndent()
+
     override fun onPause() {
         super.onPause()
+        /* Put the ad strip away with the screen. Left up, it kept its slot in
+           the layout and drew over whatever the player opened next. */
+        adMobManager.hideBanner()
+        /* webView.onPause() stops JS timers and the render loop, but an
+           AudioContext that is ALREADY running ignores all of that and keeps
+           making sound - which is how the music followed the player onto the
+           home screen and into other apps. The game has to suspend its own
+           context; resume() below starts it again on the way back. */
+        webView.evaluateJavascript(
+            "window.__studioSuspendAudioAll && window.__studioSuspendAudioAll(true);", null)
         webView.evaluateJavascript("window.Game && Game.pause && Game.pause();", null)
         /* Stop the WebView itself while this screen is not in front.
            `Game.pause()` only tells the game's own loop to stop simulating - the
@@ -665,6 +840,10 @@ val bannerEdge = currentGame?.bannerEdge
     override fun onResume() {
         super.onResume()
         webView.onResume()
+        /* Counterpart to the suspend in onPause - otherwise a game that was
+           backgrounded comes back silent. */
+        webView.evaluateJavascript(
+            "window.__studioSuspendAudioAll && window.__studioSuspendAudioAll(false);", null)
         adMobManager.loadRewardedAd()
         adMobManager.loadInterstitialAd()
         /* Debug builds only (AdDebugBadge returns immediately otherwise). The

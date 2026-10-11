@@ -28,7 +28,7 @@ adb logcat -s AdPolicy NativeBridge AdMobManager
 | `Rewarded denied by policy: CAP_REACHED` | Player has used all 5 this game |
 | `Revive REFUSED: already used this game` | Second revive - correct, by design |
 | `Rewarded suppressed: 43s of the 60s cooldown left` | Too soon after the last one |
-| `Interstitial suppressed: 122s of the 180s gap left` | Too soon after the last one |
+| `Interstitial suppressed: 62s of the 90s gap left` | Too soon after the last one |
 | `Interstitial REFUSED: app exit (AdMob policy)` | Correct - never an ad on exit |
 | `Interstitial suppressed: user's first session` | Correct for a fresh install |
 | `Interstitial shown (#1 this session)` | One shown - the cap is working |
@@ -77,18 +77,18 @@ again - a fresh allowance per game, as you decided.
 
 ---
 
-## Test 4 - the interstitial gap (180s)
+## Test 4 - the interstitial gap (90s)
 
 1. Play a game, finish it, tap **Play Again**. An ad shows.
 2. Immediately exit to the shell, open a *different* game, finish it, tap Play
    Again.
 
 **Expect:** **no ad the second time**, log says
-`Interstitial suppressed: Ns of the 180s gap left`. This proves the gap is
+`Interstitial suppressed: Ns of the 90s gap left`. This proves the gap is
 **app-wide** - the old system reset per screen, so bouncing between games used
 to defeat it.
 
-3. Wait out the 180s and try again - the ad should now show.
+3. Wait out the 90s and try again - the ad should now show.
 
 ---
 

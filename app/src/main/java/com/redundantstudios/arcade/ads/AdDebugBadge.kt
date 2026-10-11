@@ -2,6 +2,7 @@ package com.redundantstudios.arcade.ads
 
 import android.app.Activity
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
@@ -31,7 +32,7 @@ import android.widget.TextView
  *     [attach] returns immediately unless this is a DEBUG build.
  *
  * WHAT IT SHOWS
- *     "AD IN 87s" while the 180s gap is running, "AD READY" once an ad would be
+ *     "AD IN 43s" while the 90s gap is running, "AD READY" once an ad would be
  *     allowed. READY does NOT mean an ad is about to appear on its own: the
  *     interstitial only ever shows because the player tapped Play Again / Menu.
  */
@@ -52,11 +53,16 @@ object AdDebugBadge {
      * this question cannot be answered any other way.
      *
      * Still DEBUG-only via [attach], so it cannot reach a release build.
+     *
+     * A tiny [resetButton] sits to the right of the badge. Tapping it resets
+     * the interstitial timer to zero, making the next ad request immediate.
+     * This is DEVELOPMENT ONLY - it does not belong in a release build.
      */
     private const val ENABLED = true
 
     private var attached = false
     private var label: TextView? = null
+    private var resetButton: View? = null
     private val handler = Handler(Looper.getMainLooper())
 
     private val tick = object : Runnable {
@@ -85,22 +91,38 @@ object AdDebugBadge {
             setColor(Color.parseColor("#E60A0D14"))
             setStroke(dp(activity, 1), Color.parseColor("#8FE3FF"))
         }
-        // Never intercept a tap: this is an overlay on top of the game.
         tv.isClickable = false
         tv.isFocusable = false
 
-        val lp = FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            Gravity.BOTTOM or Gravity.START
-        )
-        lp.leftMargin = dp(activity, 12)
-        lp.bottomMargin = dp(activity, 26)
+        val resetBtn = View(activity).apply {
+            setBackground(ColorDrawable(Color.parseColor("#8FE3FF")))
+            layoutParams = ViewGroup.MarginLayoutParams(dp(activity, 18), dp(activity, 18)).apply {
+                setMargins(dp(activity, 4), 0, dp(activity, 12), 26)
+            }
+            setOnClickListener {
+                AdPolicy.resetInterstitialTimer()
+                update()
+            }
+        }
 
-        (root as? FrameLayout)?.addView(tv, lp)
-            ?: root.addView(tv, lp)
+        val container = FrameLayout(activity).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM or Gravity.START
+            ).apply {
+                leftMargin = dp(activity, 12)
+                bottomMargin = dp(activity, 26)
+            }
+            addView(tv)
+            addView(resetBtn)
+        }
+
+        (root as? FrameLayout)?.addView(container)
+            ?: root.addView(container)
 
         label = tv
+        resetButton = resetBtn
         attached = true
         update()
         handler.postDelayed(tick, TICK_MS)

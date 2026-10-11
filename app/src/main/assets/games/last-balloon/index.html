@@ -8,14 +8,14 @@
 <!-- STUDIO_GAME_MANIFEST
 id: last-balloon
 title: Last Balloon
+banner: bottom
+bannerBg: #5cb85c
 orientation: portrait
 minPlayers: 3
 maxPlayers: 10
 aiSupport: none
 online: false
 tileColor: sky-blue
-banner: bottom
-bannerBg: #4e342e
 version: 1
 released: 2026-09-27
 -->
@@ -1379,6 +1379,7 @@ function waitGame(ms,tk){
    GAME FLOW
 ============================================================ */
 function startGame(players){
+ gameOverAdDone=false;
   G.token++;G.players=players;
   G.cur=0;G.turnCount=0;
   G.pressure=0;G.popPoint=newPopPoint();G.phase='idle';G.popped=false;
@@ -1652,6 +1653,14 @@ function showGameOver(loser){
       '<button class="btn" id="btnMenu">HOME</button>'+
     '</div>';
 $('overOverlay').classList.remove('hidden');
+  /* The round is over. Until now the only interstitials this game asked for
+     were from the REMATCH and HOME buttons, so the moment the balloon popped
+     showed nothing at all - the player had to tap a button to get an ad.
+     One-shot per round, raised here where every loss passes through. */
+  if(!gameOverAdDone){
+    gameOverAdDone=true;
+    setTimeout(function(){withInterstitial('lastballoon.gameover',function(){});},400);
+  }
   $('btnRematch').addEventListener('click',function(){
     SND.click();
     $('overOverlay').classList.add('hidden');
@@ -1668,6 +1677,8 @@ $('overOverlay').classList.remove('hidden');
    by EXACT arity, so the name must be registered on window or the shell fires
    into the void and the button appears dead. */
 var breakAdBusy=false;
+/* One game-over interstitial per round, not one per session. */
+var gameOverAdDone=false;
 function withInterstitial(placement,then){
   if(breakAdBusy){then();return;}
   var b=window.NativeBridge;
@@ -1691,16 +1702,19 @@ function quitToMenu(){
   $('overOverlay').classList.add('hidden');
   showScreen('scr-menu');
 }
- $('quitBtn').addEventListener('click',function(){
-  SND.click();
-  if(G.phase==='over'){quitToMenu();return;}
-  openModal(
+$('quitBtn').addEventListener('click',function(){
+   SND.click();
+   if(G.phase==='over'){quitToMenu();return;}
+   openModal(
     'HEAD HOME?',
     'The balloon will miss you terribly.',
     'LEAVE',
     'KEEP PLAYING',
-    quitToMenu
-  );
+    /* Only the LEAVE button is wrapped. quitToMenu is shared with the
+       game-over HOME button, which already asks for an ad - wrapping the
+       shared function would have asked for two. */
+    function(){withInterstitial('lastballoon.quit.leave',quitToMenu);}
+   );
 });
 
 /* ============================================================
@@ -2687,9 +2701,11 @@ refreshSetupUI();
 })();
 
 /* Banner strip. This game has no Studio shim - it talks to the shell's bridge
-   directly - so the request goes straight to NativeBridge. Shown only while a
-   run is live, so it is torn down on destroy: a strip left up over the arcade
-   grid would follow the player out of the game. */
+   directly - so the request goes straight to NativeBridge. Shown ONLY while a
+   run is live on the game screen, and torn down on every other screen (menu,
+   setup, shop, how-to, results) and on pagehide. The shell collapses the
+   reserved container when it is hidden, so a screen that is not scr-game shows
+   no strip and no empty bar. */
 (function(){
   var on=false;
   function want(v){
@@ -2705,7 +2721,6 @@ refreshSetupUI();
   var iv=setInterval(function(){
     try{ want(currentScreen==='scr-game'); }catch(e){}
   },400);
-  /* Never leave the strip up once the page goes away. */
   window.addEventListener('pagehide',function(){ clearInterval(iv); try{ want(false); }catch(e){} });
 })();
 </script>

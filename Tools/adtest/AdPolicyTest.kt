@@ -218,7 +218,7 @@ object AdPolicyTest {
             )
         }
 
-        // --- INTERSTITIAL: the 180s gap is the ONLY limit ------------------
+        // --- INTERSTITIAL: the 90s gap is the ONLY limit -------------------
         // There is no per-session cap any more. The first ad is allowed, and the
         // next is blocked purely by the gap - so once that elapses the next one
         // shows, and it keeps working for as long as the player taps a break

@@ -12,7 +12,7 @@ aiSupport: none
 online: false
 tileColor: #ff8a3d
 banner: bottom
-bannerBg: #0d1420
+bannerBg: #05070c
 version: 1
 released: 2026-09-28
 -->
@@ -77,7 +77,8 @@ var Studio=(function(){
     exitGame:function(){ var b=bridge(); if(b&&b.exitGame){ try{ b.exitGame(); }catch(_){} } },
     /* the game flipped a switch the shell also owns - keep them in step */
     pushSettings:function(patch){ Object.assign(settings,patch||{});
-      this.save('shell:settings',JSON.stringify({sound:!!settings.sound,music:!!settings.music,haptics:!!settings.haptics})); },
+      /* Keep every key the shell sent. This used to re-serialise only sound, music and haptics, which wiped volume, haptic and preset out of the stored copy the moment a game pushed its settings back - and a game reading settings.volume afterwards got undefined, turning a gain calculation into NaN and silencing it. JSON.stringify drops undefined values, so a key never read stays absent rather than turning into null. */
+  this.save('shell:settings',JSON.stringify({sound:!!settings.sound,music:!!settings.music,volume:settings.volume,haptics:!!settings.haptics,haptic:settings.haptic,preset:settings.preset})); },
     ads:{
       /* Rewarded. ALLOW-LIST, not deny-list.
          The bridge answers with exactly one of:
@@ -263,7 +264,17 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
        <body>, which suppresses the synthesised click on a plain <div>. That is
        why the BACK button looked live and did nothing. touchend fires for every
        real tap; the click listener stays as the desktop / AT fallback. */
-    function go(e){ e.preventDefault(); e.stopPropagation(); Studio.exitGame(); }
+    function go(e){ e.preventDefault(); e.stopPropagation();/* The BACK button is shell chrome, so it plays the shell's own tap rather than borrowing this game's UI sound - one consistent click in every game, and no per-game audio plumbing. Best-effort: never let a sound stop the button navigating. */ /* Sound like the game this button sits in: try its own click first and
+         fall back to the shell tap. The lookup is by shape, not by a name
+         per game, because each game names its audio differently and nine
+         hard-coded names is nine things to keep in step. */
+try{
+        var s=(typeof sfx!=='undefined'&&sfx)||(typeof SFX!=='undefined'&&SFX)||(typeof Snd!=='undefined'&&Snd);
+        if(s&&typeof s.click==='function')s.click();
+        else if(typeof uiClick==='function')uiClick();
+        else if(typeof click==='function')click();
+        else{var b=window.NativeBridge; if(b&&b.playUiTap)b.playUiTap();}
+      }catch(_){} Studio.exitGame(); }
     d.addEventListener('touchend',go,{passive:false});
     d.addEventListener('click',go,true);
   }
@@ -621,7 +632,11 @@ const Snd=(()=>{
        no amount of resume() revives, which is a silent game for good.
        The global capture-phase pointer/touch/key listeners added below are what
        actually calls this, and they only ever run on a genuine gesture. */
-    if(!gestureSeen)return;
+/* Was gated on `gestureSeen`, which only a tap ever sets - so the score stayed
+       silent until the player touched something, and that first touch was spent
+       arming audio instead of doing what they aimed at. The shell lifts
+       Chromium's autoplay gesture gate, so the engine is built at boot. The
+       capture-phase listeners below still call init(), now a cheap no-op. */
     tries++;
     /* Some WebViews refuse to construct more than a couple of contexts per
        session; a closed one is a dead end. Cache the failure and stop retrying
@@ -1044,7 +1059,12 @@ function drawTile(t,f,y,alpha,drift){
   ctx.globalAlpha=alpha;ctx.drawImage(t,off,y);ctx.drawImage(t,off+tw,y);ctx.globalAlpha=1;
 }
 function resize(){
-  DPR=Math.min(window.devicePixelRatio||1,2);
+  /* Capped at 1.5 rather than the display ratio. Both games lay down several
+   full-screen fills a frame (sky, parallax, chart, fog, vignette), so the cost
+   is bound by pixels, not by logic: measured median frame time was 23ms against
+   a 16.7ms budget, i.e. over budget on EVERY frame rather than in spikes.
+   Dropping 2 -> 1.5 removes about 44% of the pixels those fills touch. */
+  DPR=Math.min(window.devicePixelRatio||1,1.5);
   W=window.innerWidth;H=window.innerHeight;
   cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
   cv.style.width=W+'px';cv.style.height=H+'px';
@@ -1285,6 +1305,7 @@ function resetWorld(){
   input.hold=false;Snd.setThrust(false);Snd.setPhase(0);
 }
 function startRun(){
+  deathAdShown=false;
   /* Tell the shell a NEW RUN began. It caps rewarded revives at one per run
      and only hears about new runs from here, because Ember restarts in page
      and the Activity is never recreated. Without this the shell still thought
@@ -1317,8 +1338,19 @@ function goHome(){
   hudEl.classList.add('off');
   showScreen('home');
 }
+let deathAdShown=false;
 function showOver(){
   G.state='over';
+  /* Same fix as orrery: the game-over interstitial is raised from the over
+     screen, which every loss passes through exactly once, rather than from the
+     moment of death where a timer could be lost before it reached the shell. */
+  if(!deathAdShown){
+    deathAdShown=true;
+    setTimeout(function(){
+      if(typeof Studio!=='undefined'&&Studio.ads&&Studio.ads.interstitial)
+        Studio.ads.interstitial(function(){});
+    },400);
+  }
   hudEl.classList.add('off');
   oScore.textContent=Math.floor(meters())+G.emberScore;
   oBest.textContent=G.best;
@@ -1529,11 +1561,28 @@ function drawGate(b,sx){
     ctx.beginPath();ctx.arc(lx,sp.y,1.8*S,0,TAU);ctx.fill();}
   ctx.restore();
 }
+/* The wisp halo was a fresh radial gradient per wisp, and wisps are drawn TWICE
+   per frame - a gradient object per entity, per frame, 60 times a second. The
+   halo is identical every time, so it is rendered once into a small sprite and
+   blitted. Same picture, a fraction of the cost. */
+let _wispSprite=null,_wispS=0;
+function wispSprite(){
+  const R=30*S;
+  if(_wispSprite&&_wispS===S)return _wispSprite;
+  _wispS=S;
+  const c=document.createElement('canvas');
+  c.width=c.height=Math.ceil(R*2);
+  const x=c.getContext('2d');
+  const g=x.createRadialGradient(R,R,0,R,R,R);
+  g.addColorStop(0,'rgba(10,14,24,0.92)');g.addColorStop(0.6,'rgba(12,17,28,0.55)');g.addColorStop(1,'rgba(12,17,28,0)');
+  x.fillStyle=g;x.fillRect(0,0,R*2,R*2);
+  _wispSprite=c;
+  return c;
+}
 function drawWisp(w){
   const x=w.x-G.camX;
-  const g=ctx.createRadialGradient(x,w.y,0,x,w.y,30*S);
-  g.addColorStop(0,'rgba(10,14,24,0.92)');g.addColorStop(0.6,'rgba(12,17,28,0.55)');g.addColorStop(1,'rgba(12,17,28,0)');
-  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,w.y,30*S,0,TAU);ctx.fill();
+  const R=30*S;
+  ctx.drawImage(wispSprite(),x-R,w.y-R);
   ctx.strokeStyle='rgba(110,160,180,0.10)';ctx.lineWidth=1.2;
   ctx.beginPath();ctx.arc(x,w.y,(20+Math.sin(w.ph*3)*2)*S,0,TAU);ctx.stroke();
 }
@@ -1567,14 +1616,32 @@ function drawPlayer(){
     ctx.fillText('×'+G.mult,x,y-34*S);
   }
 }
+/* The sky, the horizon glow and the vignette were three fresh gradients per
+   frame, each one a full-screen fill on a DPR-2 canvas - the most expensive
+   thing on screen, rebuilt 60 times a second to change nothing but the palette.
+   Cached against the values they actually depend on, so they are rebuilt when
+   the day/night palette moves or the canvas resizes, and not otherwise. */
+let _skyKey='',_skyGrad=null,_horKey='',_horGrad=null,_vigGrad=null,_vigW=-1,_vigH=-1,_floorGrad=null,_floorY=-1;
 function render(){
-  const g=ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,rgb(pal.top));g.addColorStop(0.62,rgb(pal.mid));g.addColorStop(1,rgb(pal.hor));
-  ctx.fillStyle=g;ctx.fillRect(-20,-20,W+40,H+40);
-  const hg=ctx.createRadialGradient(W*0.5,H*1.06,0,W*0.5,H*1.06,H*0.7);
-  hg.addColorStop(0,'rgba(255,150,70,'+(0.20*pal.glow).toFixed(3)+')');
-  hg.addColorStop(1,'rgba(255,150,70,0)');
-  ctx.fillStyle=hg;ctx.fillRect(-20,-20,W+40,H+40);
+  const skyKey=pal.top+','+pal.mid+','+pal.hor+','+H;
+  if(skyKey!==_skyKey){
+    _skyKey=skyKey;
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,rgb(pal.top));g.addColorStop(0.62,rgb(pal.mid));g.addColorStop(1,rgb(pal.hor));
+    _skyGrad=g;
+  }
+  ctx.fillStyle=_skyGrad;ctx.fillRect(-20,-20,W+40,H+40);
+  const horKey=pal.glow+','+H;
+  if(horKey!==_horKey){
+    _horKey=horKey;
+    const hg=ctx.createRadialGradient(W*0.5,H*1.06,0,W*0.5,H*1.06,H*0.7);
+    hg.addColorStop(0,'rgba(255,150,70,1)');
+    hg.addColorStop(1,'rgba(255,150,70,0)');
+    _horGrad=hg;
+  }
+  ctx.save();ctx.globalAlpha=0.20*pal.glow;
+  ctx.fillStyle=_horGrad;ctx.fillRect(-20,-20,W+40,H+40);
+  ctx.restore();
   if(nightK>0.02){
     ctx.fillStyle='#dfe8f5';
     for(const s of STARS){
@@ -1614,9 +1681,11 @@ function render(){
   for(const b of gates){const sx=b.x-G.camX;if(sx<-260*S||sx>W+260*S)continue;drawGate(b,sx+bSway(b));}
   for(const b of bulbs)drawBulb(b);
   for(const w of wisps)drawWisp(w);
-  const gg=ctx.createLinearGradient(0,floorY,0,H);
-  gg.addColorStop(0,'#080b13');gg.addColorStop(1,'#02030a');
-  ctx.fillStyle=gg;ctx.fillRect(-20,floorY,W+40,H-floorY+20);
+if(_floorY!==floorY){_floorY=floorY;
+    const gg=ctx.createLinearGradient(0,floorY,0,H);
+    gg.addColorStop(0,'#080b13');gg.addColorStop(1,'#02030a');
+    _floorGrad=gg;}
+  ctx.fillStyle=_floorGrad;ctx.fillRect(-20,floorY,W+40,H-floorY+20);
   drawTile(tiles.fore,1.18,H-tiles.fore.height,1);
   drawTile(tiles.fogB,0.8,floorY-tiles.fogB.height*0.6,0.28+0.25*nightK,G.t*16);
   ctx.textAlign='center';
@@ -1712,8 +1781,11 @@ function render(){
   if(G.flash>0){
     const a=G.flash*0.5;
     const fg2=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.72);
-    fg2.addColorStop(0,'rgba(255,70,40,0)');fg2.addColorStop(1,'rgba(255,70,40,'+a.toFixed(3)+')');
-    ctx.fillStyle=fg2;ctx.fillRect(0,0,W,H);}
+fg2.addColorStop(0,'rgba(255,70,40,0)');fg2.addColorStop(1,'rgba(255,70,40,1)');
+    if(_vigW!==W||_vigH!==H){_vigW=W;_vigH=H;
+      _vigGrad=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.3,W/2,H/2,Math.max(W,H)*0.72);}
+    ctx.save();ctx.globalAlpha=a;
+    ctx.fillStyle=_vigGrad;ctx.fillRect(0,0,W,H);ctx.restore();}
   if(G.state==='play'&&G.light<22){
     ctx.fillStyle='rgba(10,4,10,'+(0.10+0.10*Math.sin(G.t*7)).toFixed(3)+')';
     ctx.fillRect(0,0,W,H);}
@@ -1834,7 +1906,9 @@ document.addEventListener('pointerup',e=>{
 
 /* ================= main loop ================= */
 let last=performance.now();
+let loopAlive=true;
 function frame(now){
+  if(!loopAlive)return;
   requestAnimationFrame(frame);
   const dt=Math.min(0.033,(now-last)/1000);last=now;
   /* i-frames count down here, BEFORE the hit-stop early return. They used to
@@ -1842,11 +1916,11 @@ function frame(now){
      own invulnerability timer for the duration of the hit-stop, swallowing
      the next collision instead of only the current one. */
   if(P.inv>0)P.inv=Math.max(0,P.inv-dt);
-  if(G.hitStop>0){G.hitStop-=dt;render();return;}
+  if(G.hitStop>0){G.hitStop-=dt;if(loopAlive&&!document.hidden)render();return;}
   if(G.state==='play')updatePlay(dt);
   else if(G.state==='dying')updateDying(dt);
   else if(G.state==='home')updateHome(dt);
-  render();
+  if(loopAlive&&!P.paused&&!document.hidden)render();
 }
 
 /* ================= init ================= */
@@ -1865,6 +1939,10 @@ swHap.addEventListener('change',()=>{hapOn=swHap.checked;
   store.set('ember_hap',hapOn?'1':'0');Snd.toggle();if(hapOn)hap(15);});
 bestEl.textContent=G.best;
 showScreen('home');
+/* Build the audio graph at boot so the score is already running when the
+   game opens. Before, the first tap was spent arming audio rather than
+   doing whatever the player actually aimed at. */
+try{Snd.init();}catch(_){}
 requestAnimationFrame(frame);
 </script>
 <script>
@@ -1895,6 +1973,7 @@ requestAnimationFrame(frame);
    shim, so it is published here explicitly. */
 window.__audioDuck=function(on){try{Snd.setAdDuck(!!on);}catch(_){}};
   window.Game={
+    destroy:function(){ loopAlive=false; try{if(window.__studioSuspendAudio)window.__studioSuspendAudio();}catch(e){} },
     pause:function(){ if(prev.pause) try{ prev.pause(); }catch(e){} },
     resume:function(){ if(prev.resume) try{ prev.resume(); }catch(e){} applySettings(Studio.settings); },
     setMuted:function(m){ Snd.setMuted(!!m); },

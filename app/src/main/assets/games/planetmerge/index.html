@@ -10,7 +10,7 @@ aiSupport: none
 online: false
 tileColor: #E8912F
 banner: bottom
-bannerBg: #0e0f19
+bannerBg: #c2d8b6
 version: 1
 released: 2026-09-19
 -->
@@ -152,6 +152,19 @@ body{
   transition:transform .1s,box-shadow .1s}
 .play:active{transform:translateY(5px);box-shadow:0 1px 0 #c94d86}
 .play[disabled]{opacity:.6;cursor:wait}
+/* Two end-of-run buttons share one card. At the default 64px side padding a
+   single .play is already ~300px wide inside a ~308px card, so PLAY AGAIN and
+   MAIN MENU sat on top of each other. Stacked, full width, with a real gap. */
+#overOverlay .card .play{
+  display:block;width:100%;box-sizing:border-box;
+  margin:0 0 12px;padding:16px 18px;font-size:21px;letter-spacing:.06em;
+}
+#overOverlay .card .play:last-child{margin-bottom:0;}
+#overOverlay .card .play.alt{
+  background:#5f7f9e;color:#fff;
+  box-shadow:0 6px 0 #405f7a,0 12px 24px rgba(40,70,90,.32);
+}
+#overOverlay .card .play.alt:active{box-shadow:0 1px 0 #405f7a;}
 .help-btn{font:700 22px var(--font);width:48px;height:48px;border-radius:50%;border:2px solid #ecd9b4;background:#fff;color:#a58a68;
   display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
 .help-btn:active{transform:scale(0.9)}
@@ -308,6 +321,7 @@ body{
     <div class="result"><span>Score</span><b id="finalScore">0</b></div>
     <div class="result sub"><span>Best</span><b id="finalBest">0</b></div>
     <button class="play" id="againBtn">PLAY AGAIN</button>
+    <button class="play alt" id="overMenuBtn">MAIN MENU</button>
   </div>
 </div>
 
@@ -365,13 +379,17 @@ const Studio = (() => {
     },
     interstitial(callback){
       const b=bridge(); if(b) {
-        const cbName = callback || 'interstitialCb';
+        /* A NAME, not the function. The shell evaluates the string it is given
+           and looks it up on window; passing the function itself meant the lookup
+           found nothing, so the ad showed but the code after it never ran. */
+        window.__studioInterSeq=(window.__studioInterSeq||0)+1;
+        const cbName='__studioInterCb'+window.__studioInterSeq;
         window[cbName] = function(result){
+          try{ delete window[cbName]; }catch(_){}
           if(typeof callback === 'function') callback(result);
-          delete window[cbName];
         };
-        b.showInterstitial(cbName,'');
-        return;
+        try{ b.showInterstitial(cbName,''); return; }
+        catch(e){ try{ delete window[cbName]; }catch(_){} }
       }
       if(window.CrazyGames?.SDK?.ad) {
         window.CrazyGames.SDK.ad.requestInterstitial();
@@ -1590,14 +1608,23 @@ on(playBtn,'click',()=>{
      self-guards on the pm:tutorialSeen flag). The "?" button replays it. */
   showTutorial();
 });
-on($('againBtn'),'click',()=>{const el=$('againBtn');if(!el)return;SFX.ensure();SFX.click();resetGame();});
+on($('againBtn'),'click',()=>{const el=$('againBtn');if(!el)return;SFX.ensure();SFX.click();
+  Studio.ads.interstitial(function(){ resetGame(); });});
+on($('overMenuBtn'),'click',()=>{SFX.ensure();SFX.click();
+  Studio.ads.interstitial(function(){
+    state='start';overOverlay.classList.remove('show');
+    Studio.ads.banner('hide');startOverlay.classList.add('show');updateHUD();
+  });});
 on($('resetBtn'),'click',()=>{
-  if(state==='start')return;SFX.ensure();SFX.click();resetGame();toast('New game');
+  if(state==='start')return;SFX.ensure();SFX.click();
+  Studio.ads.interstitial(function(){ resetGame(); toast('New game'); });
 });
 on($('backBtn'),'click',()=>{
   if(!startOverlay)return;
   SFX.ensure();SFX.click();
-  state='start';Studio.ads.banner('hide');startOverlay.classList.add('show');updateHUD();
+  Studio.ads.interstitial(function(){
+    state='start';Studio.ads.banner('hide');startOverlay.classList.add('show');updateHUD();
+  });
 });
 on($('introBack'),'click',introBack);
 on($('helpBtn'),'click',openHelp);

@@ -9,7 +9,7 @@ aiSupport: full
 online: false
 tileColor: fuse-red
 banner: bottom
-bannerBg: #221c2b
+bannerBg: #F8ECD4
 version: 1
 released: 2026-09-27
 -->
@@ -3768,7 +3768,12 @@ function quitToMenu(){
  $('hudHome').addEventListener('pointerup',e=>{if(e.button===0)openQuit();});
  $('btnPassHome').addEventListener('click',openQuit);
  $('btnQuitNo').addEventListener('click',closeQuit);
- $('btnQuitYes').addEventListener('click',quitToMenu);
+ /* Only this button is wrapped. quitToMenu is also reached from the game-over
+   screen, which asks for its own ad - wrapping the shared function would
+   have asked for two. */
+$('btnQuitYes').addEventListener('click',function(){
+  try{Studio.ads.interstitial(function(){quitToMenu();},'pause.quit');}catch(_){quitToMenu();}
+});
 quitModal.addEventListener('pointerdown',e=>{if(e.target===quitModal)closeQuit();});
 
 /* ============================================================
@@ -3821,6 +3826,7 @@ function nextIdx(){
   return (G.cur+1)%G.n;
 }
 function startMatch(setup){
+  overAdDone=false;
   G.setup=setup;G.players=setup.players;G.n=setup.players.length;
   G.pstate=G.players.map(()=>({hints:0,skips:0}));
   G.turn=0;G.passes=0;G.score=0;G.elapsed=0;G.remaining=0;G.total=1;
@@ -4005,6 +4011,7 @@ function explode(){
   [180,420,700].forEach(t=>setTimeout(()=>FX.smoke(c.x+R(-60,60),c.y+R(-40,40),5),t));
   simAfter(1900,showGameOver);
 }
+var overAdDone=false;
 function showGameOver(){
   veil.classList.remove('on');
   setFlip(false);
@@ -4034,6 +4041,13 @@ function showGameOver(){
   const panel=document.querySelector('#scr-over .over-panel');
   if(panel)panel.scrollTop=0;
   show('scr-over');
+  /* The round is over - this is the natural break. Only the buttons on this
+     screen asked for an ad before, so losing showed nothing until the player
+     tapped one. One-shot, reset per round in startMatch(). */
+  if(!overAdDone){
+    overAdDone=true;
+    setTimeout(function(){try{Studio.ads.interstitial(function(){},'gameover');}catch(_){}} ,400);
+  }
   simAfter(350,()=>SFX.horn());
 }
 

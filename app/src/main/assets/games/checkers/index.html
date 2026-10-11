@@ -3216,9 +3216,12 @@ function bindEvents(){
   });
   pResume.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); });
   pNew.addEventListener("click",function(){
-    armConfirm(pNew,function(){ newGame(); closeModal(); });
+    /* Starting over and walking away from a live board both end the session the
+       player was in. Neither asked for an ad before. */
+    armConfirm(pNew,function(){ Studio.ads.interstitial(function(){ newGame(); closeModal(); }); });
   });
-  pMenu.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); persist(); showScreen("intro"); });
+  pMenu.addEventListener("click",function(){ AudioSys.play("tap"); closeModal();
+    Studio.ads.interstitial(function(){ persist(); showScreen("intro"); }); });
 
   overPrimary.addEventListener("click",function(){
     AudioSys.play("tap"); closeModal();
@@ -3324,7 +3327,10 @@ function bindEvents(){
 
   settingsSheet.addEventListener("click",function(e){ if(e.target===settingsSheet) closeModal(); });
   pauseSheet.addEventListener("click",function(e){ if(e.target===pauseSheet) closeModal(); });
-  overSheet.addEventListener("click",function(e){ if(e.target===overSheet) closeModal(); });
+  /* No backdrop tap-to-close on the end sheet. Dismissing it left the player
+     sitting on a finished board, and it skipped the sheet's own buttons -
+     which is where the ads are raised from. REMATCH or MAIN MENU, or nothing. */
+  overSheet.addEventListener("click",function(e){ e.stopPropagation(); });
   resignSheet.addEventListener("click",function(e){ if(e.target===resignSheet) closeModal(); });
 
   window.addEventListener("resize",function(){

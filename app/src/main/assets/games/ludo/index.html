@@ -456,6 +456,7 @@ function applyTheme(id){
 /* ============================================================
    GAME STATE
 ============================================================ */
+let gameOverAdDone=false;
 const G={ screen:'menu', mode:null, skill:'normal', count:4, players:[], cur:0, phase:'IDLE', legal:[], winner:-1, team:false, winnerTeam:null, matchOver:false };
 const MENU={ step:'root', mode:'ai', skill:'normal', count:4, team:false };
 // 2v2 teams are the two OPPOSITE seats: bottom-left + top-right vs top-left +
@@ -494,6 +495,7 @@ function newGame(mode,skill,count,team){
       pawns:[0,1,2,3].map(id=>({id,state:'HOME',rel:-1,cx:0,cy:0,lift:0,squash:0,bump:0,moving:false})) });
   });
   G.cur=0; G.winner=-1; G.legal=[]; G.phase='IDLE'; G.order=[];
+  gameOverAdDone=false;
   DICE.value=0; DICE.face=6; DICE.final=6; DICE.rolling=false; DICE.t=0;
   DICE.rot=0; DICE.lift=0; DICE.dx=0; DICE.sx=1; DICE.sy=1; DICE.bounce=0; DICE.lastH=-1;
   paused=false; FX.fade=1; G.screen='game';
@@ -756,6 +758,10 @@ function resolveLanding(pi,pid){
   after(wait,()=>endTurn(extra));
 }
 function showVictory(){
+  /* The game is won - the natural break. Nothing asked for an ad here
+     before: the winner card came up silently and only produced one if the
+     player then tapped to-menu or rematch. One-shot per game. */
+  if(!gameOverAdDone){ gameOverAdDone=true; setTimeout(function(){ showInterstitial(function(){}); },600); }
   if(!Array.isArray(G.order)||!G.order.length) return;
   G.winner=G.team?G.order.find(i=>teamOf(i)===G.winnerTeam):G.order[0];
   G.phase='OVER';
@@ -2215,8 +2221,9 @@ function handleAction(id){
     case 'pause': if(G.screen==='game'&&G.phase!=='OVER') paused=true; break;
     case 'resume': paused=false; lastT=0; break;
     case 'to-menu':
-      if(G.phase==='OVER'&&G.winner>=0) showInterstitial(goMenu); // interstitial after every game
-      else goMenu();
+  /* Walking away from a board in progress is as much a break as leaving a
+     finished one - the player is giving the session up either way. */
+  showInterstitial(goMenu);
       break;
     case 'rematch':
       if(G.phase==='OVER'&&G.winner>=0) showInterstitial(()=>newGame(G.mode,G.skill,G.count,G.team));

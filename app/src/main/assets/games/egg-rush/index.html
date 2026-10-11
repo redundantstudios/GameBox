@@ -8,8 +8,6 @@ maxPlayers: 4
 aiSupport: true
 online: false
 tileColor: #F2B441
-banner: bottom
-bannerBg: #79b651
 version: 2
 released: 2026-09-24
 -->
@@ -613,11 +611,10 @@ const Studio = (() => {
       /* Banner strip. The bridge exposes showBanner()/hideBanner(); show=true asks
          for the strip, false hands it back. The shell decides whether to serve
          one, and owns which edge it sits on (bottom, per this manifest). */
-      banner(visible){
-        const b=bridge();
-        if(!b)return;
-        try{ if(visible){ if(b.showBanner)b.showBanner(); } else { if(b.hideBanner)b.hideBanner(); } }catch(e){}
-      },
+      /* No banner in this game. The manifest line is gone, so the shell builds no
+         container and reserves no space; this stays so the call sites still read.
+         The game's own turn banner is showBanner() - a different thing, untouched. */
+      banner(visible){},
       rewarded(placement,onReward){
         const b=bridge();
         if(!b||!b.showRewardedAd) return;
@@ -1412,6 +1409,11 @@ function startMatch(count,hum){
   openSettings(false);
   $('hud').classList.remove('hidden'); $('sys').classList.remove('hidden'); $('hint').classList.remove('hidden');
   buildHUD(); buildControls();
+
+ /* New round: allow one game-over interstitial again. Without this the flag
+    stayed set after the first round and every later finish asked for none. */
+ overAdDone=false;
+
   state='COUNTDOWN'; cdT=3.4; cdStep=4; hintT=0;
   $('hint').style.opacity=1;
   $('hint').textContent = raceMode
@@ -1478,6 +1480,10 @@ function showResult(){
   $('result').classList.remove('hidden');
   playSnd('victory');
   hap('success');
+  /* The run is over - the natural break. Only the buttons that end a run asked
+     for an ad before, so finishing showed nothing until one was tapped. */
+  try{ if(!overAdDone){ overAdDone=true; withAd('gameover',function(){}); } }catch(_){}
+
   try{ if(window.NativeBridge&&typeof window.NativeBridge.onGameOver==='function')
     window.NativeBridge.onGameOver({scores:st.map(s=>({player:s.id+1,score:s.score}))}); }catch(e){}
 }
@@ -2745,6 +2751,7 @@ function updateHUD(){
    network, it answers "cooldown" or "unavailable" and shows nothing. So the
    action is never gated behind a successful ad - it runs either way, and
    `once` stops a late or repeated callback running it a second time. */
+let overAdDone=false;
 function withAd(placement,done){
   let ran=false;
   const go=()=>{ if(ran) return; ran=true; try{ done(); }catch(e){} };

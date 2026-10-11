@@ -96,16 +96,20 @@ data class GameManifest(
  * strip pushes the map off-centre even before the player sees an ad.
  */
 enum class BannerEdge {
-    TOP, BOTTOM, OVERLAY_TOP;
+    TOP, BOTTOM, OVERLAY_TOP, RIGHT;
 
     /** True when the strip costs the game none of its viewport. */
     val isOverlay: Boolean get() = this == OVERLAY_TOP
+
+    /** True when the strip stands on its end rather than lying along an edge. */
+    val isVertical: Boolean get() = this == RIGHT
 
     companion object {
         /** Parses a manifest's `banner:` value; anything unrecognised means off. */
         fun parse(raw: String?): BannerEdge? = when (raw?.trim()?.lowercase()) {
             "top" -> TOP
             "bottom" -> BOTTOM
+            "right" -> RIGHT
             "overlay", "overlaytop", "overlay_top" -> OVERLAY_TOP
             else -> null
         }

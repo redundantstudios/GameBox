@@ -9,7 +9,7 @@ aiSupport: true
 online: false
 tileColor: #8E6FD8
 banner: bottom
-bannerBg: #2f1d10
+bannerBg: #FFE3C4
 version: 1
 released: 2026-09-24
 -->
@@ -774,6 +774,7 @@ function longLabel(i){ return mode==='bots' ? (i===0?'YOU':'BOT') : 'PLAYER '+(i
 
 /* --------------------------- round setup ------------------------- */
 function startRound(){
+  overAdDone=false;
   nPlayers=setupPlayers;nCards=setupCards;mode=setupMode;
   totalPairs=nCards/2;matchedPairs=0;
   cur=0;firstIdx=-1;secondIdx=-1;botT=0;
@@ -1031,7 +1032,11 @@ function boardCleared(){
   SFX.end();vib(50);
   announce('ALL MATCHED!','#2F5D50','#164435','#FFF7E4',1200,showResults);
 }
+let overAdDone=false;
 function showResults(){
+  /* The round is over - the natural break. Only the buttons on this screen asked
+     for an ad before, so finishing showed nothing until one was tapped. */
+  if(!overAdDone){ overAdDone=true; try{ Studio.ads.interstitial(function(){},'gameover'); }catch(_){} }
   if(state!=='game')return;
   state='results';phase='idle';
   const sorted=players.slice().sort((x,y)=>y.score-x.score);

@@ -14,8 +14,6 @@ maxPlayers: 4
 aiSupport: full
 online: false
 tileColor: #F2724B
-banner: bottom
-bannerBg: #79bfe6
 version: 1
 released: 2026-09-27
 -->
@@ -1248,7 +1246,11 @@ function update(sdt,dt){
       if(confetti&&Math.random()<sdt*22)
         spawnP({type:6,x:rand(0,WORLD_W),y:-10,vx:rand(-40,40),vy:rand(40,120),g:150,size:rand(4,7),
           color:PAL[(Math.random()*4)|0].main,life:rand(1.5,2.6),rot:rand(0,TAU),vr:rand(-6,6)});
-      if(stateT>1.6){state='RESULT';stateT=0;}
+      if(stateT>1.6){state='RESULT';stateT=0;
+       /* The round is over: this is the natural break, and until now the ad
+          was only asked for from the results buttons, so losing showed
+          nothing until the player tapped one of them. */
+       showInterstitialOnce('gameover');}
       break;
     case 'RESULT':
       updFX(sdt);updParticles(sdt);

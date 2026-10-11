@@ -58,6 +58,37 @@ class AdMobManager(private val activity: Activity) {
         else "ca-app-pub-9565881819222312/8702711494"
 
     /**
+     * Unit for a strip that stands on its END (the RIGHT edge).
+     *
+     * A vertical strip cannot use a banner unit: 6300978111 is a 320x50 BANNER
+     * unit and asking it for a rectangle is a format mismatch the SDK refuses,
+     * so the strip would simply never fill. 6300978112 is Google's MEDIUM
+     * RECTANGLE sample, which is the format that fits a strip this shape.
+     *
+     * Release keeps the banner unit until a matching MRECT unit exists in the
+     * AdMob console - a live strip needs one of its own, not a reused banner id.
+     */
+    private val mrectUnitId =
+        if (isDebug) "ca-app-pub-3940256099942544/6300978112"
+        else "ca-app-pub-9565881819222312/8702711494"
+
+    /**
+     * The slot a strip standing on its end occupies, in dp.
+     *
+     * A BANNER unit is 320x50. Turned on its side that is 50 wide and 320 tall,
+     * which is the narrow column this needs - a MEDIUM_RECTANGLE (300x250) is
+     * nearly as wide as the potted-ball column it sits beside, which is the
+     * whole reason that was the wrong format.
+     *
+     * Asked for as a CUSTOM size rather than by rotating the view: rotation is
+     * visual only and does not change how the view is measured, so a rotated
+     * AdView would still lay itself out at 320x50 and be squeezed into a 50dp
+     * slot - exactly the empty container this replaced.
+     */
+    private val VERTICAL_STRIP_WIDTH_DP = 50
+    private val VERTICAL_STRIP_HEIGHT_DP = 320
+
+    /**
      * Marks this device as an AdMob TEST device in debug builds.
      *
      * WHY THIS EXISTS: every request was coming back
@@ -494,6 +525,13 @@ class AdMobManager(private val activity: Activity) {
     /** True once an ad has actually arrived, so show() does not re-request. */
     private var bannerHasAd = false
 
+    /** True when the strip stands on its end (RIGHT edge) and wants a rectangle. */
+    private var bannerVertical = false
+
+    fun setBannerVertical(vertical: Boolean) {
+        bannerVertical = vertical
+    }
+
     fun setBannerOverlay(overlay: Boolean) {
         bannerOverlay = overlay
     }
@@ -554,12 +592,24 @@ class AdMobManager(private val activity: Activity) {
         if (index < 0) return null
         val lp = placeholder.layoutParams
         val ad = com.google.android.gms.ads.AdView(activity).apply {
+            /* A strip on its end is a BANNER unit asked for as a tall custom
+               size. It stays on the banner unit - the rectangle unit came back
+               "publisher data not found" on this app, so it never filled at all. */
             adUnitId = bannerUnitId
-            setAdSize(com.google.android.gms.ads.AdSize.BANNER)
+            setAdSize(
+                if (bannerVertical) com.google.android.gms.ads.AdSize(
+                    VERTICAL_STRIP_WIDTH_DP, VERTICAL_STRIP_HEIGHT_DP
+                )
+                else com.google.android.gms.ads.AdSize.BANNER
+            )
             setBackgroundColor(bannerBackdrop)
             visibility = android.view.View.GONE
             setAdListener(object : com.google.android.gms.ads.AdListener() {
                 override fun onAdLoaded() {
+                    /* Logged because only the failure path used to speak. With a
+                       silent success there was no way to tell "the ad arrived but
+                       the strip is collapsed" apart from "no ad ever arrived". */
+                    Log.d(TAG, "Banner loaded: ${adSize?.width}x${adSize?.height}")
                     // The SDK has just built its container, so this is the first
                     // moment there is anything to recolour.
                     paintStrip(this@apply)
@@ -582,8 +632,46 @@ class AdMobManager(private val activity: Activity) {
         return ad
     }
 
+    /** Height the banner slot had before it was collapsed, or -1 if it is not collapsed. */
+    private var bannerSlotHeight = -1
+
+    /** Takes the reserved row down to nothing so the screen shows no container. */
+    private fun collapseBannerSlot() {
+        if (bannerOverlay) return          /* an overlay reserves nothing */
+        if (bannerSlotHeight >= 0) return  /* already collapsed */
+        /* The ATTACHED view, not the placeholder. ensureBannerView() removes the
+           placeholder from the hierarchy and hands its LayoutParams to the ad
+           view, so collapsing the placeholder resized nothing the player could
+           see - and the strip stayed collapsed after a restore because nothing
+           ever asked the real parent to lay out again. */
+        val view = bannerAdView ?: bannerPlaceholder ?: return
+        val parent = view.parent as? android.view.ViewGroup ?: return
+        val lp = view.layoutParams ?: return
+        bannerSlotHeight = lp.height
+        lp.height = 0
+        view.layoutParams = lp
+        parent.requestLayout()
+    }
+
+    /** Puts the reserved row back for the screens that do show the strip. */
+    private fun restoreBannerSlot() {
+        if (bannerOverlay || bannerSlotHeight < 0) return
+        val view = bannerAdView ?: bannerPlaceholder ?: return
+        val parent = view.parent as? android.view.ViewGroup ?: return
+        val lp = view.layoutParams ?: return
+        lp.height = bannerSlotHeight
+        bannerSlotHeight = -1
+        view.layoutParams = lp
+        parent.requestLayout()
+    }
+
     fun showBanner() {
         if (destroyed) return
+        /* Restore FIRST, before anything that can return early. If the slot was
+           collapsed by a hide and this bailed out before putting it back, the
+           screen kept a zero-height container and the strip could never come
+           back - which is exactly "the banner is not there at all". */
+        restoreBannerSlot()
         val ad = ensureBannerView() ?: return
         // An overlay stays hidden until onAdLoaded, so the request can go out
         // without a blank bar appearing over the game.
@@ -601,11 +689,18 @@ class AdMobManager(private val activity: Activity) {
     }
 
     fun hideBanner() {
+        /* Collapse before the early return for the same reason: the container
+           has to go whether or not an ad has ever been created. */
+        collapseBannerSlot()
         val ad = bannerAdView ?: return
-        /* INVISIBLE, never GONE. GONE collapses the strip, which resizes the
-           WebView, which re-lays-out the game's canvas - so hiding an ad visibly
-           jolted the whole game. The space stays reserved and only the ad stops
-           being drawn. */
+        /* Collapse the slot, not just the ad.
+           Hiding the ad alone left the container standing: a reserved, painted
+           bar on every screen of the game, menus included, even though the game
+           only ever asked for it on the game screen. Collapsing it to nothing
+           means a screen that is not showing the strip has no container at all.
+           Games hide the strip on a screen CHANGE, not mid-play, so the strip
+           reappearing when play starts does not jolt a running canvas. */
+        collapseBannerSlot()
         ad.visibility = if (bannerOverlay) android.view.View.GONE
                         else android.view.View.INVISIBLE
     }

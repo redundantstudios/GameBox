@@ -12,7 +12,7 @@ aiSupport: none
 online: false
 tileColor: #d4af37
 banner: bottom
-bannerBg: #0a0603
+bannerBg: #1d170f
 version: 1
 released: 2026-09-28
 -->
@@ -77,7 +77,8 @@ var Studio=(function(){
     exitGame:function(){ var b=bridge(); if(b&&b.exitGame){ try{ b.exitGame(); }catch(_){} } },
     /* the game flipped a switch the shell also owns - keep them in step */
     pushSettings:function(patch){ Object.assign(settings,patch||{});
-      this.save('shell:settings',JSON.stringify({sound:!!settings.sound,music:!!settings.music,haptics:!!settings.haptics})); },
+      /* Keep every key the shell sent. This used to re-serialise only sound, music and haptics, which wiped volume, haptic and preset out of the stored copy the moment a game pushed its settings back - and a game reading settings.volume afterwards got undefined, turning a gain calculation into NaN and silencing it. JSON.stringify drops undefined values, so a key never read stays absent rather than turning into null. */
+  this.save('shell:settings',JSON.stringify({sound:!!settings.sound,music:!!settings.music,volume:settings.volume,haptics:!!settings.haptics,haptic:settings.haptic,preset:settings.preset})); },
     ads:{
       /* Rewarded. ALLOW-LIST, not deny-list.
          The bridge answers with exactly one of:
@@ -262,7 +263,17 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
        <body>, which suppresses the synthesised click on a plain <div>. That is
        why the BACK button looked live and did nothing. touchend fires for every
        real tap; the click listener stays as the desktop / AT fallback. */
-    function go(e){ e.preventDefault(); e.stopPropagation(); Studio.exitGame(); }
+    function go(e){ e.preventDefault(); e.stopPropagation();/* The BACK button is shell chrome, so it plays the shell's own tap rather than borrowing this game's UI sound - one consistent click in every game, and no per-game audio plumbing. Best-effort: never let a sound stop the button navigating. */ /* Sound like the game this button sits in: try its own click first and
+         fall back to the shell tap. The lookup is by shape, not by a name
+         per game, because each game names its audio differently and nine
+         hard-coded names is nine things to keep in step. */
+try{
+        var s=(typeof sfx!=='undefined'&&sfx)||(typeof SFX!=='undefined'&&SFX)||(typeof Snd!=='undefined'&&Snd);
+        if(s&&typeof s.click==='function')s.click();
+        else if(typeof uiClick==='function')uiClick();
+        else if(typeof click==='function')click();
+        else{var b=window.NativeBridge; if(b&&b.playUiTap)b.playUiTap();}
+      }catch(_){} Studio.exitGame(); }
     d.addEventListener('touchend',go,{passive:false});
     d.addEventListener('click',go,true);
   }
@@ -775,7 +786,12 @@ const stage=$('stage'),canvas=$('game'),ctx=canvas.getContext('2d');
 let W=0,H=0,DPR=1,scale=1,chartTop=0,viewW=0,vign=null,topGrad=null,botGrad=null;
 function resize(){
   chartStrip=null;   /* viewW changed: the cached strip no longer spans it */
-  DPR=Math.min(window.devicePixelRatio||1,2);
+  /* Capped at 1.5 rather than the display ratio. Both games lay down several
+   full-screen fills a frame (sky, parallax, chart, fog, vignette), so the cost
+   is bound by pixels, not by logic: measured median frame time was 23ms against
+   a 16.7ms budget, i.e. over budget on EVERY frame rather than in spikes.
+   Dropping 2 -> 1.5 removes about 44% of the pixels those fills touch. */
+  DPR=Math.min(window.devicePixelRatio||1,1.5);
   W=stage.clientWidth;H=stage.clientHeight;
   canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);
   scale=Math.min(H/1000,W/700);
@@ -827,7 +843,7 @@ let chordFn=null,step=0;;
   function ensure(){
     if(!ac){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
       ac=new AC();
-      master=ac.createGain();master.gain.value=muted?0:0.9;master.connect(ac.destination);
+      master=ac.createGain();master.gain.value=muted?0:0.5;master.connect(ac.destination);
       musicBus=ac.createGain();musicBus.gain.value=musicOn?1:0;musicBus.connect(master);
       sfxBus=ac.createGain();sfxBus.gain.value=sfxOn?1:0;sfxBus.connect(master);
     }
@@ -903,7 +919,7 @@ let chordFn=null,step=0;;
     get musicOn(){return musicOn;},
     get sfxOn(){return sfxOn;},
     get hapticsOn(){return hapticsOn;},
-    toggle(){muted=!muted;store.set('orrery_mute',muted?'1':'0');if(master)master.gain.value=(muted||adDuck)?0:0.9;return muted;},
+    toggle(){muted=!muted;store.set('orrery_mute',muted?'1':'0');if(master)master.gain.value=(muted||adDuck)?0:0.5;return muted;},
     /* Used by the ad wrapper so the score never plays under an advert. */
     /* Fire a chord right now, so the score resumes the instant an ad closes
        instead of waiting out the remainder of a 9.5s cycle. */
@@ -912,7 +928,7 @@ let chordFn=null,step=0;;
       adDuck=!!v;
       if(!ac)return;
       const t=ac.currentTime;
-      if(master)master.gain.setTargetAtTime((muted||adDuck)?0:0.9,t,0.05);
+      if(master)master.gain.setTargetAtTime((muted||adDuck)?0:0.5,t,0.05);
     },
     setMusic(v){musicOn=v;store.set('orrery_music',v?'1':'0');if(ac&&musicBus)musicBus.gain.setTargetAtTime(v?1:0,ac.currentTime,0.04);},
     setSfx(v){sfxOn=v;store.set('orrery_sfx',v?'1':'0');if(ac&&sfxBus)sfxBus.gain.setTargetAtTime(v?1:0,ac.currentTime,0.02);},
@@ -920,7 +936,7 @@ let chordFn=null,step=0;;
     haptic(p){if(hapticsOn&&navigator.vibrate){try{navigator.vibrate(p)}catch(e){}}},
     /* Was vol 0.06 - an order of magnitude below the gameplay sounds, so button
        taps were effectively silent on the device. */
-click(){tone(660,{type:'triangle',dur:0.08,vol:0.42});tone(990,{delay:0.03,dur:0.06,vol:0.16});},
+click(){tone(660,{type:'triangle',dur:0.08,vol:0.2});tone(990,{delay:0.03,dur:0.06,vol:0.08});},
     tutStep(){tone(494,{type:'triangle',dur:0.14,vol:0.3});tone(740,{delay:0.06,dur:0.18,vol:0.05});},
     eclipseWake(){tone(72,{dur:1.6,vol:0.26,glide:58});noise({dur:1.0,vol:0.14,fc:180});},
     release(){noise({dur:0.16,vol:0.1,fc:1400});tone(190,{dur:0.22,vol:0.07,glide:82});},
@@ -1114,8 +1130,9 @@ function initRun(){
   voyageX.length=0;voyageY.length=0;voyLo=0;voyLastX=comet.x;voyLastY=comet.y;marks.length=0;
   state='play';paused=false;freeze=0;deadT=0;overShown=false;
   crashPlanet=null;
-  launchedFrom=null;
+launchedFrom=null;
   reviveUsed=false;
+  deathAdShown=false;
   ensurePlanets();updateHUD();
 }
 function setupMenu(){initRun();state='menu';eclipseX=-99999;}
@@ -1139,6 +1156,7 @@ function setPaused(v){if(state!=='play')return;paused=v;pauseLayer.classList.tog
 let crashPlanet=null;
 let launchedFrom=null;
 let reviveUsed=false;
+let deathAdShown=false;
 function die(cause){
   if(state!=='play')return;
   Tut.active&&Tut.onDeath();
@@ -1183,6 +1201,19 @@ document.addEventListener('pointerdown',function(e){
 },{capture:true});
 function showOver(){
   overShown=true;
+  /* The game-over interstitial is raised HERE, not in die(). die() schedules it
+     on a timer the moment of death, and that request never reached the shell -
+     the bridge logged no request at all when a run ended, while the buttons on
+     this very screen always did. showOver() is the one point every loss passes
+     through exactly once, guarded by overShown, so the request cannot be lost
+     and cannot double up. */
+  if(!deathAdShown){
+    deathAdShown=true;
+    setTimeout(function(){
+      if(typeof Studio!=='undefined'&&Studio.ads&&Studio.ads.interstitial)
+        Studio.ads.interstitial(function(){});
+    },400);
+  }
   $('ovScore').textContent=fmt(score);
   const seal=$('seal');seal.classList.toggle('hidden',!newBest);
   if(newBest){seal.classList.remove('show');void seal.offsetWidth;seal.classList.add('show');}
@@ -1941,7 +1972,14 @@ function clearEnvCaches(){ENV.far.map.clear();ENV.mid.map.clear();ENV.chart.map.
    rebuilt only when the camera leaves the strip. */
 let chartStrip=null,chartStripX=0;
 function buildChartStrip(){
-  const W0=Math.floor(camX)-40,W1=W0+viewW+80;
+  /* The strip used to be rebuilt every ~40px of camera travel, and each rebuild
+     redrew the graticule, the rhomb lines and the whole milky way into a 1008px
+     tall offscreen canvas. That is the hitch that made the game "sometimes" very
+     laggy - a stall every time the comet drifted past the old margin. The strip
+     is now three screens wide, so this runs roughly once every two screens of
+     travel instead of roughly twice a second. */
+  const pad=viewW;
+  const W0=Math.floor(camX)-pad,W1=W0+viewW+pad*2;
   const c=document.createElement('canvas');
   c.width=Math.max(1,Math.ceil(W1-W0));c.height=1008;
   const g=c.getContext('2d');
@@ -2232,15 +2270,21 @@ function drawEclipse(){
 }
 function drawEdgeWarn(){
   if(state!=='play'||comet.mode!=='fly')return;
+  /* Two edge gradients, rebuilt every frame while the comet was anywhere near
+     a screen edge, purely to vary their alpha. Built once and faded with
+     globalAlpha instead - they only depend on m, which is constant. */
+  if(!_edgeTop||_edgeM!==170){
+    _edgeM=170;
+    _edgeTop=ctx.createLinearGradient(0,0,0,_edgeM);
+    _edgeTop.addColorStop(0,'rgba(0,0,0,1)');_edgeTop.addColorStop(1,'rgba(0,0,0,0)');
+    _edgeBot=ctx.createLinearGradient(0,1000-_edgeM,0,1000);
+    _edgeBot.addColorStop(0,'rgba(0,0,0,0)');_edgeBot.addColorStop(1,'rgba(0,0,0,1)');
+  }
   const m=170;
-  if(comet.y<m){const a=0.30*(1-comet.y/m);
-    const g=ctx.createLinearGradient(0,0,0,m);
-    g.addColorStop(0,'rgba(0,0,0,'+a.toFixed(3)+')');g.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=g;ctx.fillRect(camX-4,0,viewW+8,m);}
-  if(comet.y>1000-m){const a=0.30*(1-(1000-comet.y)/m);
-    const g=ctx.createLinearGradient(0,1000,0,1000-m);
-    g.addColorStop(0,'rgba(0,0,0,'+a.toFixed(3)+')');g.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=g;ctx.fillRect(camX-4,1000-m,viewW+8,m);}
+  if(comet.y<m){ctx.save();ctx.globalAlpha=0.30*(1-comet.y/m);
+    ctx.fillStyle=_edgeTop;ctx.fillRect(camX-4,0,viewW+8,m);ctx.restore();}
+if(comet.y>1000-m){ctx.save();ctx.globalAlpha=0.30*(1-(1000-comet.y)/m);
+    ctx.fillStyle=_edgeBot;ctx.fillRect(camX-4,1000-m,viewW+8,m);ctx.restore();}
 }
 function drawTrail(){
   if(trail.length<2)return;
@@ -2320,6 +2364,9 @@ function drawEclipseMarker(){
   ctx.beginPath();ctx.moveTo(26,y);ctx.lineTo(39,y-8);ctx.lineTo(39,y+8);ctx.closePath();ctx.fill();
 }
 /* heartbeat: the closer the Eclipse, the harder the screen pounds */
+const DANGER_MAX_A=0.26;
+let dangerGrad=null,dangerGradW=-1,dangerGradH=-1;
+let _edgeTop=null,_edgeBot=null,_edgeM=-1;
 function drawDangerPulse(){
   if(state!=='play')return;
   const gap=comet.x-eclipseEdgeAt(comet.y);
@@ -2327,10 +2374,21 @@ function drawDangerPulse(){
   const t=clamp(1-gap/560,0,1);
   const pulse=0.5+0.5*Math.sin(gameT*(4+t*4));
   const a=t*t*(0.10+0.16*pulse);
-  const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.30,W/2,H/2,Math.hypot(W,H)*0.55);
-  g.addColorStop(0,'rgba(178,48,30,0)');
-  g.addColorStop(1,'rgba(178,48,30,'+a.toFixed(3)+')');
-  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  /* The gradient was rebuilt every frame just to change its alpha, and it is a
+     full-screen fill on a DPR-2 canvas - the most expensive thing on screen
+     once the comet closes in. Built once at full strength and faded with
+     globalAlpha instead, so it only has to be rebuilt when the canvas resizes.
+     The maths is unchanged: a is still clamped to DANGER_MAX_A. */
+  if(dangerGradW!==W||dangerGradH!==H||!dangerGrad){
+    dangerGradW=W;dangerGradH=H;
+    dangerGrad=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.30,W/2,H/2,Math.hypot(W,H)*0.55);
+    dangerGrad.addColorStop(0,'rgba(178,48,30,0)');
+    dangerGrad.addColorStop(1,'rgba(178,48,30,1)');
+  }
+  ctx.save();
+  ctx.globalAlpha=Math.min(1,a/DANGER_MAX_A);
+  ctx.fillStyle=dangerGrad;ctx.fillRect(0,0,W,H);
+  ctx.restore();
 }
 /* ---- master render ---- */
 function render(){
@@ -2526,6 +2584,12 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='p
 resize();
 toMenu();
 refreshSoundIcon();
+/* Arm the audio engine at boot rather than waiting for the first tap. Must be
+   Snd.init() - `ensure` is private to the audio IIFE, and calling it from out
+   here threw a ReferenceError that the catch below swallowed, which is why the
+   score still waited for a touch. The shell lifts Chromium's autoplay gate, so
+   this actually starts the music. */
+try{Snd.init();}catch(_){}
 if(document.fonts&&document.fonts.load){
   document.fonts.load('700 29px "Cormorant Garamond"');
   document.fonts.load('italic 23px "Cormorant Garamond"');
@@ -2533,12 +2597,14 @@ if(document.fonts&&document.fonts.load){
 if(document.fonts&&document.fonts.ready){
   document.fonts.ready.then(()=>{clearEnvCaches();});
 }
+let loopAlive=true;
 function frame(now){
+  if(!loopAlive)return;
   requestAnimationFrame(frame);
   let dt=Math.min((now-lastT)/1000,0.033);lastT=now;
   if(freeze>0){freeze-=dt;dt=0;}
   if(!paused)update(dt);
-  render();
+  if(loopAlive&&!paused&&!document.hidden)render();
 }
 requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
 </script>
@@ -2565,8 +2631,15 @@ requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
    top-level const in the game script and is not reachable from the Studio
    shim, so it is published here explicitly. */
 window.__audioDuck=function(on){try{Snd.setAdDuck(!!on);}catch(_){}};
+/* The shell suspends the audio context when the screen goes to the background.
+   webView.onPause() stops JS timers and the render loop, but an AudioContext
+   that is already running keeps producing sound regardless - which is why the
+   score carried on over the home screen and over other apps. */
+window.__studioSuspendAudio=function(){try{if(ac&&ac.state==='running')ac.suspend();}catch(_){}};
+window.__studioResumeAudio=function(){try{if(ac&&ac.state==='suspended')ac.resume();}catch(_){}};
 window.__audioResume=function(){try{Snd.chordNow();}catch(_){}};
   window.Game={
+    destroy:function(){ loopAlive=false; try{if(window.__studioSuspendAudio)window.__studioSuspendAudio();}catch(e){} },
     pause:function(){ if(prev.pause) try{ prev.pause(); }catch(e){} },
     resume:function(){ if(prev.resume) try{ prev.resume(); }catch(e){} applySettings(Studio.settings); },
     setMuted:function(m){ Snd.setMuted(!!m); refreshSoundIcon(); },

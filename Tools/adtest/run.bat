@@ -3,7 +3,7 @@ rem Runs the REAL AdPolicy source on a plain JVM - no device, no Android runtime
 rem
 rem WHY THIS EXISTS
 rem The ad caps (1 revive per run, NO cap on cosmetics/themes/in-game rewards,
-rem 120s interstitial gap) are the entire point of the ad governor, and they are
+rem 90s interstitial gap) are the entire point of the ad governor, and they are
 rem pure decision logic.
 rem The first attempt at checking them was a JavaScript transcription of the
 rem Kotlin, which proves nothing: a transcription can pass while the shipped

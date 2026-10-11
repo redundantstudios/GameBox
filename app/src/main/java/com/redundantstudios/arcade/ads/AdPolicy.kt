@@ -45,16 +45,21 @@ object AdPolicy {
      * THE ONLY INTERSTIATIAL LIMIT. There used to be a hard "1 per app session"
      * cap on top of this, which meant that after a player's first interstitial
      * nothing else could ever show again until the app was closed and relaunched
-     * - so the 180s gap almost never got the chance to matter, and an interstitial
+     * - so the gap almost never got the chance to matter, and an interstitial
      * system effectively showed one ad per launch.
      *
-     * The cap is gone. Frequency is now the gap alone: once 180s have passed an
+     * The cap is gone. Frequency is now the gap alone: once 90s have passed an
      * ad is READY, and it waits there until the player taps a natural break
      * (Play Again / Home / Menu). The ad never fires on a timer by itself, so it
      * can never ambush someone mid-action - the player's own tap is what shows
      * it, which is why no separate count is needed.
+     *
+     * 90s, halved from 180s at the director's request once interstitials were
+     * added to every game's completion and pause buttons. The gap is what stops
+     * a mash-tap on a results card from stacking ads, and 90s still means a
+     * player cannot see two interstitials in one short round.
      */
-    const val INTERSTITIAL_GAP_MS = 180_000L
+    const val INTERSTITIAL_GAP_MS = 90_000L
 
     /**
      * How long into a brand-new player's FIRST session interstitials stay
@@ -66,7 +71,7 @@ object AdPolicy {
      * never see a single ad break, and clearing app data to test made it look
      * like the ad was broken. Three minutes protects the install moment - where
      * an unexpected ad is most likely to cost the install - and then gets out of
-     * the way. Every other gate (once per session, 180s gap, no ad on exit)
+     * the way. Every other gate (once per session, the interstitial gap, no ad on exit)
      * still applies exactly as before.
      */
     const val FIRST_SESSION_GRACE_MS = 180_000L
@@ -135,7 +140,7 @@ object AdPolicy {
     /**
      * The clock, indirected for the same reason as the logger.
      *
-     * The caps are time-based - a 180s interstitial gap and a 60s rewarded
+     * The caps are time-based - a 90s interstitial gap and a 60s rewarded
      * cooldown - so a test that cannot move time can only ever prove the
      * REFUSALS, never that the caps can actually be reached. Asking for 5
      * rewarded ads in a row against the real clock earns exactly 1, which
@@ -277,7 +282,7 @@ object AdPolicy {
 
     private var sessionStartedAt = 0L
     /* No interstitialsThisSession any more: the per-session cap is gone and the
-       180s gap is the only limit, so there is no count to keep. */
+       90s gap is the only limit, so there is no count to keep. */
     private var rewardedThisGame = 0
     private var revivesThisGame = 0
     private var lastRewardedAt = 0L
@@ -286,7 +291,7 @@ object AdPolicy {
     /**
      * The last interstitial is APP-WIDE, so it is persisted: a player who plays
      * game A, leaves, opens game B and taps Play Again must still be inside the
-     * 180s gap. An in-memory field would reset with each Activity and the cap
+     * 90s gap. An in-memory field would reset with each Activity and the cap
      * would do nothing across games - the exact bug this class exists to fix.
      */
     private var lastInterstitialAt = 0L
@@ -389,13 +394,25 @@ object AdPolicy {
      *                        deliberate restart is not one.
      *
      *     The interstitial clock is deliberately NOT reset: restarting a run
-     *     must not let a player out-run the app-wide 180s gap.
+     *     must not let a player out-run the app-wide 90s gap.
      */
     fun onRunStarted() {
         rewardedThisGame = 0
         revivesThisGame = 0
         lastRewardedAt = 0L
         log("New run - per-run caps and cooldown reset")
+    }
+
+    /**
+     * Reset the interstitial timer to zero. This allows the next interstitial
+     * request to be served immediately, bypassing the 90s gap.
+     *
+     * DEVELOPMENT ONLY: this is not intended for release builds. It is exposed
+     * for testing the ad flow without waiting the full interstitial gap.
+     */
+    fun resetInterstitialTimer() {
+        log("Interstitial timer reset by debug call")
+        lastInterstitialAt = 0L
     }
 
     /**

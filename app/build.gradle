@@ -122,4 +122,9 @@ dependencies {
 
     // Splash Screen
     implementation 'androidx.core:core-splashscreen:1.0.1'
+    // addDocumentStartJavaScript: runs a script BEFORE the page's own scripts,
+    // which evaluateJavascript at onPageStarted cannot guarantee (it can be
+    // discarded when the navigation commits, and it loses the race against a
+    // game that builds its AudioContext during boot).
+    implementation 'androidx.webkit:webkit:1.11.0'
 }

@@ -569,6 +569,10 @@ const CFG = {
   mutedKey: "chess:muted:v1",
   hapticsKey: "chess:haptics:v1",
   statsKey: "chess:stats:v1",
+  /* The free-puzzle allowance lives across launches. It was a plain variable
+     that started at 0 every session, so the five-free-puzzles gate reset
+     itself every time the app was opened. */
+  puzzleCountKey: "chess:puzzlecount:v1",
   /* ADS — director-supplied Google TEST unit ids. On device the GameBox shell
      serves real ads via NativeBridge; ids live here as the single source of
      truth for shell mapping + browser simulator. Swap for prod ids at launch. */
@@ -2050,6 +2054,9 @@ function openEnd(title,sub,pl,pf,sl,sf){
 }
 function chessOverSheet(){
   endIsChess=true;
+  /* The game is over - the natural break. This includes resign, which lands
+     here too. Only the buttons below asked for an ad before. */
+  try{ gameInterstitial(function(){}); }catch(e){}
   const rt=resultText(result);
   openEnd(rt.t, rt.s+(sans.length?(" — "+sans.length+" moves"):""),
     "REMATCH", function(){ newGame(); },
@@ -2351,6 +2358,8 @@ function parseUCI(line){
    solved sheet) goes through beginPuzzle, so the gate cannot be stepped
    around by picking a different button. */
 let pzSinceAd = 0;
+function loadPuzzleCount(){ try{ const raw=Studio.load(CFG.puzzleCountKey); pzSinceAd=raw?Math.max(0,parseInt(raw,10)||0):0; }catch(e){ pzSinceAd=0; } }
+function savePuzzleCount(){ try{ Studio.save(CFG.puzzleCountKey, String(pzSinceAd)); }catch(e){} }
 let pendingPuzzle = null;
 
 function beginPuzzle(entry, tier, daily){
@@ -2374,6 +2383,7 @@ function unlockPuzzles(){
   pendingPuzzle = null;
   if(!p) return;
   pzSinceAd = 0;
+  savePuzzleCount();
   startPuzzle(p.entry, p.tier, p.daily);
 }
 
@@ -2383,6 +2393,7 @@ function startPuzzle(entry,tier,daily){
   catch(e){ console.error("[chess] puzzle parse failed:",entry[0],e); return; }
   mode="puzzle";
   pzSinceAd++;
+  savePuzzleCount();
   gameSeq++;
   pz={p:entry, tier:tier, daily:!!daily, failed:false, idx:0, furthest:0,
       line:line, solver:0, solved:false};
@@ -2876,9 +2887,12 @@ function bindEvents(){
 
   pResume.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); });
   pNew.addEventListener("click",function(){
-    armConfirm(pNew,function(){ newGame(); closeModal(); });
+    /* Starting over and walking away from a live board both end this session.
+       Neither asked for an ad before. */
+    armConfirm(pNew,function(){ gameInterstitial(function(){ newGame(); closeModal(); }); });
   });
-  pMenu.addEventListener("click",function(){ AudioSys.play("tap"); closeModal(); showScreen("intro"); });
+  pMenu.addEventListener("click",function(){ AudioSys.play("tap"); closeModal();
+    gameInterstitial(function(){ showScreen("intro"); }); });
 
   /* interstitial ONLY on chess game end (never puzzles) */
   overPrimary.addEventListener("click",function(){
@@ -2913,7 +2927,10 @@ function bindEvents(){
   modeModal.addEventListener("click",function(e){ if(e.target===modeModal) closeModal(); });
   settingsSheet.addEventListener("click",function(e){ if(e.target===settingsSheet) closeModal(); });
   pauseSheet.addEventListener("click",function(e){ if(e.target===pauseSheet) closeModal(); });
-  overSheet.addEventListener("click",function(e){ if(e.target===overSheet) closeModal(); });
+  /* No backdrop tap-to-close on the end sheet. Dismissing it left the player
+     sitting on a finished board, and it skipped the sheet's own buttons -
+     which is where the ads are raised from. REMATCH or MAIN MENU, or nothing. */
+  overSheet.addEventListener("click",function(e){ e.stopPropagation(); });
   soonSheet.addEventListener("click",function(e){ if(e.target===soonSheet) closeModal(); });
   testAdEl.addEventListener("click",function(e){ /* test ad must not dismiss on backdrop */ });
 
@@ -2976,6 +2993,7 @@ function boot(){
   gameMuted=Studio.load(CFG.mutedKey)==="1";
   hapticsOn=Studio.load(CFG.hapticsKey)!=="0";
   loadStats();
+  loadPuzzleCount();
   const restored=restore();
   if(!restored){ Engine.reset(); flipped=false; }
   refreshLegal();

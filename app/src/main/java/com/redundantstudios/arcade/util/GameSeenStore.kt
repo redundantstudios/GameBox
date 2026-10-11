@@ -8,17 +8,22 @@ import android.content.SharedPreferences
  *
  * The window is a deliberate constant: [NEW_WINDOW_DAYS] days counted from the
  * moment the shell first scanned that game id. Every game bundled today reads as
- * new, because this store is created the first time this code runs — which is
+ * new, because this store is created the first time this code runs - which is
  * exactly the behaviour the user described ("currently every game is a new
  * game"). When a future game is added, it gets its own first-seen date and the
  * tag fades out on its own after the window; nothing to maintain.
  */
 object GameSeenStore {
 
-    private const val PREFS = "game_seen"
+    /* Versioned. Bumping this deliberately re-stamps EVERY game: isNew() records
+       the moment it is first called for a game, so a fresh prefs file means every
+       tile wears NEW again from today and gets the full window. That is how the
+       window was widened from 7 to 10 days and the existing catalogue reset in
+       one step, instead of deleting the store on a user's device. */
+    private const val PREFS = "game_seen_v2"
 
     /** How long a freshly added game wears the NEW tag. */
-    const val NEW_WINDOW_DAYS = 7L
+    const val NEW_WINDOW_DAYS = 10L
 
     private const val DAY_MS = 24L * 60L * 60L * 1000L
 

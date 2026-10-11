@@ -11,8 +11,6 @@ maxPlayers: 1
 aiSupport: none
 online: false
 tileColor: #ff8a3d
-banner: bottom
-bannerBg: #0a0618
 version: 1
 released: 2026-09-28
 -->
@@ -77,7 +75,8 @@ var Studio=(function(){
     exitGame:function(){ var b=bridge(); if(b&&b.exitGame){ try{ b.exitGame(); }catch(_){} } },
     /* the game flipped a switch the shell also owns - keep them in step */
     pushSettings:function(patch){ Object.assign(settings,patch||{});
-      this.save('shell:settings',JSON.stringify({sound:!!settings.sound,music:!!settings.music,haptics:!!settings.haptics})); },
+      /* Keep every key the shell sent. This used to re-serialise only sound, music and haptics, which wiped volume, haptic and preset out of the stored copy the moment a game pushed its settings back - and a game reading settings.volume afterwards got undefined, turning a gain calculation into NaN and silencing it. JSON.stringify drops undefined values, so a key never read stays absent rather than turning into null. */
+  this.save('shell:settings',JSON.stringify({sound:!!settings.sound,music:!!settings.music,volume:settings.volume,haptics:!!settings.haptics,haptic:settings.haptic,preset:settings.preset})); },
     ads:{
       /* Rewarded. ALLOW-LIST, not deny-list.
          The bridge answers with exactly one of:
@@ -248,7 +247,17 @@ return {"ACESFilmicToneMapping":nt,"AddEquation":M,"AddOperation":K,"AdditiveAni
        <body>, which suppresses the synthesised click on a plain <div>. That is
        why the BACK button looked live and did nothing. touchend fires for every
        real tap; the click listener stays as the desktop / AT fallback. */
-    function go(e){ e.preventDefault(); e.stopPropagation(); Studio.exitGame(); }
+    function go(e){ e.preventDefault(); e.stopPropagation();/* The BACK button is shell chrome, so it plays the shell's own tap rather than borrowing this game's UI sound - one consistent click in every game, and no per-game audio plumbing. Best-effort: never let a sound stop the button navigating. */ /* Sound like the game this button sits in: try its own click first and
+         fall back to the shell tap. The lookup is by shape, not by a name
+         per game, because each game names its audio differently and nine
+         hard-coded names is nine things to keep in step. */
+try{
+        var s=(typeof sfx!=='undefined'&&sfx)||(typeof SFX!=='undefined'&&SFX)||(typeof Snd!=='undefined'&&Snd);
+        if(s&&typeof s.click==='function')s.click();
+        else if(typeof uiClick==='function')uiClick();
+        else if(typeof click==='function')click();
+        else{var b=window.NativeBridge; if(b&&b.playUiTap)b.playUiTap();}
+      }catch(_){} Studio.exitGame(); }
     d.addEventListener('touchend',go,{passive:false});
     d.addEventListener('click',go,true);
   }
@@ -5172,17 +5181,6 @@ document.addEventListener('fullscreenchange',()=>{
   var prev=window.Game||{};
   var S=function(){ return window.__shellMO||{}; };
   try{ S().applySettings(Studio.settings); }catch(e){}
-  /* Banner: only while a run is actually being driven. Driven off `state` so a
-     transition cannot leave the strip up over the menu or the result screen.
-     'crashing' counts as playing - the run has not ended yet - but the strip
-     goes as soon as it does. The shell owns the edge (bottom, per this game's
-     manifest) and the strip's colour. */
-  var bannerOn=false;
-  setInterval(function(){
-    var want=(state==='playing'||state==='crashing')&&!paused;
-    if(want!==bannerOn){ bannerOn=want; try{ Studio.ads.banner(want); }catch(e){} }
-  },400);
-
   window.Game={
     pause:function(){ try{ S().pause(); }catch(e){} if(prev.pause) try{ prev.pause(); }catch(e){} },
     resume:function(){ if(prev.resume) try{ prev.resume(); }catch(e){} try{ S().resume(); S().applySettings(Studio.settings); }catch(e){} },

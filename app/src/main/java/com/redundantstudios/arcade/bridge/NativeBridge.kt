@@ -26,6 +26,29 @@ class NativeBridge(private val context: Context) {
         return value
     }
 
+    /**
+     * Play the shell's own UI tap.
+     *
+     * WHY THIS EXISTS
+     * The BACK button is shell chrome, but it lives inside the WebView, so it had
+     * no way to make the shell's click - every game left for the arcade in
+     * silence. Routing it through the bridge fixes it in one place for every
+     * game at once, and the sound is the same tap the shell's own buttons make,
+     * so the button sounds like shell rather than borrowing each game's UI
+     * sound.
+     *
+     * Best-effort by design: audio may not be ready, and a missing tap must
+     * never stop the BACK button navigating.
+     */
+    @JavascriptInterface
+    fun playUiTap() {
+        try {
+            com.redundantstudios.arcade.audio.ShellAudio.tap(context)
+        } catch (e: Exception) {
+            Log.w("NativeBridge", "UI tap failed: " + e.message)
+        }
+    }
+
     @JavascriptInterface
     fun haptic(ms: Int) {
         Log.d("NativeBridge", "Haptic request: ${ms}ms")
@@ -207,6 +230,23 @@ class NativeBridge(private val context: Context) {
     fun newRun() {
         Log.d("NativeBridge", "New run reported by the game")
         NativeBridgeContext.runHandler?.invoke()
+    }
+
+    /**
+     * DEVELOPMENT ONLY: reset the interstitial cooldown timer to zero.
+     *
+     * Call this from JavaScript during development to skip the 90s gap:
+     *   if(window.NativeBridge && window.NativeBridge.resetInterstitialTimer) {
+     *     window.NativeBridge.resetInterstitialTimer();
+     *   }
+     *
+     * This is useful for rapid ad testing without waiting. It has no effect in
+     * release builds (the user never ships this bridge call in production JS).
+     */
+    @JavascriptInterface
+    fun resetInterstitialTimer() {
+        Log.d("NativeBridge", "Interstitial timer reset requested by JS")
+        com.redundantstudios.arcade.ads.AdPolicy.resetInterstitialTimer()
     }
 }
 

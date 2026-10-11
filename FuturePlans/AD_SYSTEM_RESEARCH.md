@@ -146,7 +146,7 @@ Without these, the numbers above are just opinions:
 
 | Question | Decision |
 |---|---|
-| Interstitial gap | **180s** - confirmed sufficient |
+| Interstitial gap | **90s** - was 180s, halved 2026-10-08 at the director's request once every game gained a completion + pause-menu interstitial |
 | Rewarded cap | **per game**, not per session |
 | Revives | **one per game** - a second death is a loss |
 | "Reduce ads" tier | planned, not ready yet; lives with the coins economy |
@@ -182,7 +182,7 @@ catalogue. Games now ask *whether* they may show an ad; the shell decides *when*
 | Rewarded cap | 5 per game | `checkRewarded` |
 | Revive cap | 1 per game | `checkRewarded`, `RewardKind.REVIVE` |
 | Rewarded cooldown | 60s | `checkRewarded` |
-| Interstitial gap | 180s, app-wide | `checkInterstitial` |
+| Interstitial gap | 90s, app-wide | `checkInterstitial` |
 | Interstitials per session | 1 | `checkInterstitial` |
 | Interstitial on app exit | never | `checkInterstitial`, AdMob policy |
 | Interstitials on a first session | never | `checkInterstitial` |
