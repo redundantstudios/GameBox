@@ -79,6 +79,10 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
+    /** The banner strip's height in pixels for the current display. */
+    private fun bannerHeightPx(): Int =
+        (BANNER_HEIGHT_DP * resources.displayMetrics.density).toInt()
+
     /**
      * The colour the banner strip wears behind the ad.
      *
@@ -283,21 +287,28 @@ val bannerEdge = currentGame?.bannerEdge
             "banner: game=${currentGame?.id} edge=$bannerEdge bg=${currentGame?.bannerBg}"
         )
         if (bannerEdge != null) {
+            val bannerHeightPx =
+                // Multiply BEFORE truncating: density is fractional (2.625 on
+                // this device), so truncating it first turned 50dp into
+                // 50*2 = 100px instead of 131px and the strip came out short.
+                (BANNER_HEIGHT_DP * resources.displayMetrics.density).toInt()
             bannerPlaceholder = View(this).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    // Multiply BEFORE truncating: density is fractional (2.625 on
-                    // this device), so truncating it first turned 50dp into
-                    // 50*2 = 100px instead of 131px and the strip came out short.
-                    (BANNER_HEIGHT_DP * resources.displayMetrics.density).toInt()
+                    bannerHeightPx
                 )
-                setBackgroundColor(bannerBackdrop())
+                // An overlay shows the GAME through the strip until an ad
+                // actually arrives, so it must not paint a coloured box over the
+                // map. A reserved strip is a real area the game already gave up,
+                // so it wears the game's own colour.
+                if (!bannerEdge.isOverlay) setBackgroundColor(bannerBackdrop())
                 visibility = android.view.View.GONE
             }
             // TOP puts the strip first so it sits above the WebView; BOTTOM puts
             // it last so it sits below. The WebView carries weight=1 either way,
             // so it takes whatever is left and the canvas shrinks rather than
-            // being covered.
+            // being covered. An OVERLAY_TOP is added to contentHost instead, so
+            // it costs the game nothing.
             if (bannerEdge == BannerEdge.TOP) rootLayout.addView(bannerPlaceholder)
         }
 
@@ -399,6 +410,22 @@ val bannerEdge = currentGame?.bannerEdge
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
         )
+        /* An OVERLAY_TOP banner goes into this frame, ON TOP of the game, rather
+           than into rootLayout. The game keeps the whole viewport - nothing is
+           measured out of it - and the ad simply covers the top of the screen
+           while it is on. That is the trade: no shrink, but the ad does cover
+           the top of the world for as long as it is up. */
+        if (bannerEdge?.isOverlay == true && bannerPlaceholder != null) {
+            contentHost.addView(
+                bannerPlaceholder,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    bannerHeightPx(),
+                    android.view.Gravity.TOP
+                )
+            )
+            adMobManager.setBannerOverlay(true)
+        }
         setContentView(contentHost)
         gameRoot = rootLayout
         // The rotation was decided before the first frame (see setupOrientation), so

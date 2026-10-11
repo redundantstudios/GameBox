@@ -481,6 +481,21 @@ class AdMobManager(private val activity: Activity) {
     private var bannerPlaceholder: android.view.View? = null
 
     /**
+     * True when the strip floats OVER the game instead of reserving space.
+     *
+     * An overlay must not appear until there is something to show: it covers the
+     * game rather than sitting beside it, so an empty strip is a blank bar drawn
+     * on top of the world while the request is still in flight. So in overlay
+     * mode the view stays GONE through showBanner() and only becomes VISIBLE from
+     * onAdLoaded.
+     */
+    private var bannerOverlay = false
+
+    fun setBannerOverlay(overlay: Boolean) {
+        bannerOverlay = overlay
+    }
+
+    /**
      * The colour the strip wears where no ad artwork covers it.
      *
      * Supplied by GameActivity from the game's own palette, because a banner
@@ -545,6 +560,10 @@ class AdMobManager(private val activity: Activity) {
                     // The SDK has just built its container, so this is the first
                     // moment there is anything to recolour.
                     paintStrip(this@apply)
+                    // In overlay mode this is also the first moment there is
+                    // anything worth showing, so the strip appears here rather
+                    // than the instant it was asked for.
+                    if (bannerOverlay) this@apply.visibility = android.view.View.VISIBLE
                 }
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     Log.e(TAG, "Banner failed to load: code=${error.code} ${error.message}")
@@ -561,7 +580,11 @@ class AdMobManager(private val activity: Activity) {
     fun showBanner() {
         if (destroyed) return
         val ad = ensureBannerView() ?: return
-        if (ad.visibility != android.view.View.VISIBLE) ad.visibility = android.view.View.VISIBLE
+        // An overlay stays hidden until onAdLoaded, so the request can go out
+        // without a blank bar appearing over the game.
+        if (!bannerOverlay && ad.visibility != android.view.View.VISIBLE) {
+            ad.visibility = android.view.View.VISIBLE
+        }
         // Paint again on show too: a previous load may have left children behind.
         paintStrip(ad)
         ad.loadAd(request())

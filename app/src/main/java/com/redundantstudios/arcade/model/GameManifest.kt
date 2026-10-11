@@ -84,13 +84,29 @@ data class GameManifest(
     val released: ReleaseDate = ReleaseDate.UNKNOWN
 )
 
-/** The edge a game's banner strip is anchored to. */
-enum class BannerEdge { TOP, BOTTOM;
+/**
+ * Where a game's banner strip goes.
+ *
+ * TOP and BOTTOM take real layout space: the WebView is measured into what is
+ * left, so the game shrinks by the strip's height.
+ *
+ * OVERLAY_TOP takes none. The game keeps the whole viewport and the ad floats
+ * over the top of it. That is what a landscape game with a centred board or map
+ * wants - kiro's island sits in the middle of a wide screen, so a reserved
+ * strip pushes the map off-centre even before the player sees an ad.
+ */
+enum class BannerEdge {
+    TOP, BOTTOM, OVERLAY_TOP;
+
+    /** True when the strip costs the game none of its viewport. */
+    val isOverlay: Boolean get() = this == OVERLAY_TOP
+
     companion object {
         /** Parses a manifest's `banner:` value; anything unrecognised means off. */
         fun parse(raw: String?): BannerEdge? = when (raw?.trim()?.lowercase()) {
             "top" -> TOP
             "bottom" -> BOTTOM
+            "overlay", "overlaytop", "overlay_top" -> OVERLAY_TOP
             else -> null
         }
     }
