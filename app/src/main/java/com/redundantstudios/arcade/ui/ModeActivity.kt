@@ -122,7 +122,23 @@ class ModeActivity : ThemedActivity() {
          */
         fun fitsOnPage(game: GameManifest, pageCount: Int): Boolean {
             if (game.id in PARTY_GAME_IDS) return false
-            return game.minPlayers <= pageCount
+            /* Page X lists games that seat AT LEAST X people.
+             *
+             *   1 PLAYER page -> games seating 1, 2, 3, 4 or 5. Every game, because
+             *                     any of them can be played solo against bots.
+             *   2 PLAYER page -> games seating 2, 3, 4 or 5
+             *   3 PLAYER page -> games seating 3, 4 or 5
+             *   4 PLAYER page -> games seating 4 or 5
+             *   5 PLAYER page -> games seating 5
+             *
+             * Measured on the LARGEST seat count. Two earlier passes had this
+             * the other way round: one used the minimum, which put Chess on the
+             * 1 PLAYER page, and the next used max but pointing down, which hid
+             * everything multi-player from the 2 and 3 PLAYER pages.
+             *
+             * Party games never appear here - they are pass-the-phone, not a
+             * seat count. They live in the Party Games tile and in All Games. */
+            return game.maxPlayers >= pageCount
         }
 
         /** Kept so any caller still asking the old question compiles. */
