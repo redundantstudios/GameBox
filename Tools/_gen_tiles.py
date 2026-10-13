@@ -284,6 +284,38 @@ def render(color_hex, glyph, out_path, title=''):
     return os.path.getsize(out_path)
 
 
+RES_DIR = os.path.join(ROOT, 'app', 'src', 'main', 'res')
+TILE_EXTS = ('.png', '.jpg', '.jpeg', '.webp')
+
+
+def existing_elsewhere(base):
+    """A tile already present in some OTHER resource directory.
+
+    `base` is a full resource name from res_name(), i.e. already "tile_<id>" -
+    do NOT prepend "tile_" again.
+
+    Android resolves resources by name with the extension dropped, so
+    drawable-nodpi/tile_x.png and drawable/tile_x.jpg are one and the same
+    resource. nodpi wins over the unqualified drawable/, so writing the
+    generated file would replace hand-made art at runtime. Returns the path of
+    the file that already owns the name, or None.
+    """
+    want = base
+    try:
+        dirs = os.listdir(RES_DIR)
+    except OSError:
+        return None
+    for d in dirs:
+        full = os.path.join(RES_DIR, d)
+        if not os.path.isdir(full) or os.path.abspath(full) == os.path.abspath(OUTDIR):
+            continue
+        for e in TILE_EXTS:
+            p = os.path.join(full, want + e)
+            if os.path.exists(p):
+                return p
+    return None
+
+
 def targets(argv):
     files = [a for a in argv if not a.startswith('--')]
     if files:
@@ -319,12 +351,28 @@ def main(argv):
         # A tile imported as finished art (tile_x.jpg) is better than a generated
         # emblem, and a second file of the same name is a duplicate-resource build
         # error, so anything already in drawable-nodpi is left exactly as it is.
+        #
+        # That guard used to look ONLY inside drawable-nodpi, for another
+        # extension of the same base name. It had no idea hand-made art could be
+        # sitting in the sibling drawable/ directory - and Android drops the
+        # extension when it resolves a resource, so a generated
+        # drawable-nodpi/tile_x.png and a hand-made drawable/tile_x.jpg are the
+        # SAME resource name. nodpi outranks the unqualified drawable/, so the
+        # generated emblem silently shadowed the real artwork on every device.
+        # Running this bare over the catalogue lost the tile art for every game
+        # that had hand-made art. Search every resource dir by base name.
         if '--force' not in argv:
             keep = [e for e in ('.jpg', '.jpeg', '.webp')
                     if os.path.exists(out[:-4] + e)]
             if keep:
                 rows.append((gid, title, colour, glyph or '(%s)' % monogram(title),
                              'kept ' + keep[0][1:]))
+                continue
+            shadowed = existing_elsewhere(res_name(gid))
+            if shadowed:
+                rel = os.path.relpath(shadowed, ROOT).replace('\\', '/')
+                rows.append((gid, title, colour, glyph or '(%s)' % monogram(title),
+                             'kept ' + rel))
                 continue
         size = render(colour, glyph, out, title)
         rows.append((gid, title, colour, glyph or '(%s)' % monogram(title),

@@ -1,0 +1,12 @@
+'use strict';
+const fs = require('fs');
+const L = fs.readFileSync('app/src/main/assets/games/mimic/index.html', 'utf8').split(/\r?\n/);
+console.log('=== backBtn call sites ===');
+L.forEach((l, i) => { if (/backBtn\(/.test(l || '')) console.log(String(i + 1).padStart(5) + ' | ' + (l || '').trim().slice(0, 100)); });
+console.log('\n=== backBtn definition + geometry ===');
+const d = L.findIndex(l => /function backBtn\(g\)/.test(l || ''));
+for (let k = d; k < d + 22; k++) console.log(String(k + 1).padStart(5) + ' | ' + (L[k] || '').trim().slice(0, 110));
+console.log('\n=== where g.back is built ===');
+L.forEach((l, i) => { if (/back\s*:\s*\{/.test(l || '')) console.log(String(i + 1).padStart(5) + ' | ' + l.trim().slice(0, 120)); });
+console.log('\n=== settings / info buttons ===');
+L.forEach((l, i) => { if (/clayCircleBtn\(/.test(l || '')) console.log(String(i + 1).padStart(5) + ' | ' + l.trim().slice(0, 110)); });

@@ -1,0 +1,10 @@
+'use strict';
+const fs = require('fs');
+const s = fs.readFileSync('app/src/main/assets/games/knot-away/index.html', 'utf8');
+const guard = "if(name!=='game'){ try{ closePanels(); }catch(e){} }";
+console.log('showScreen guard present:', s.indexOf(guard) >= 0);
+console.log('amp occurrences        :', (s.match(/&amp;/g) || []).length);
+const re = /^(?![\s\S]*&amp;)/;
+console.log('no-amp regex instanceOf:', re instanceof RegExp);
+console.log('no-amp regex test      :', re.test(s));
+console.log('re.source              :', re.source);

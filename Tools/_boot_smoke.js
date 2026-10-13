@@ -33,6 +33,11 @@ for (const id of ids) {
     addEventListener: noop, removeEventListener: noop, appendChild: noop, append: noop,
     insertBefore: noop, setAttribute: noop, getAttribute: () => null, removeAttribute: noop,
     remove: noop, focus: noop, blur: noop, getContext: () => ctxStub(),
+    /* Bake-to-data-URL support, for games that pre-render a background
+       (Connect Four bakes its intro plank). Node has no canvas, so the 2d
+       context is a stub; the element itself still needs the method or the
+       smoke run dies on a harness gap rather than anything in the game. */
+    toDataURL: () => 'data:image/png;base64,',
     getBoundingClientRect: () => ({ left: 0, top: 0, right: 0, bottom: 0, width: 1080, height: 600, x: 0, y: 0 }),
     clientWidth: 1080, clientHeight: 600, offsetWidth: 100, offsetHeight: 40,
     scrollWidth: 1080, scrollHeight: 600, querySelector: () => null, querySelectorAll: () => [],

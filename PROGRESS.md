@@ -1,5 +1,278 @@
 # Project Progress
 
+## Mimic / Knot Away / Truth or Dare — final pass, all three LOCKED — 2026-10-13
+
+All three verified on device and frozen. Any further request becomes a numbered pass on top.
+
+### MIMIC — LOCKED
+- **The middle disc showed a player name instead of the stage.** In Last Standing and Own Pattern it
+  printed `p.name`, so it read `P5` while a pattern was showing, and `MIMI` when arriving straight
+  from MIMI mode (the name was left over from the previous mode). It now shows `WATCH` while the
+  pattern plays, and the player's own name during their turn. `WATCH` wears a fixed slate
+  (`#3F5570`) that is not in the player palette, so it can never be read as somebody's turn; the
+  name wears that player's colour. Solo is unchanged - it is your own marble, so it shows your name.
+- **ADD A TILE sat on top of the tiles, then on top of the bottom seat circle.** The seats are on a
+  ring of radius `R`, so the lowest is centred at `cy+R` and its edge reaches `cy+R+RP`; the pill was
+  placed at `cy+MR*2.35`, which lands inside that circle on a normal phone. It is now measured from the
+  real bottom of the board and clamped so a short screen cannot push it off the edge.
+- **The start-page back button was a filled triangle on a flat outlined circle** - and it was not even
+  `backBtn()`, which only serves the setup and how-to popups. `drawTitle()` drew its own. Both now use
+  the same `clayCircleBtn(CREAM, C_DARK)` as the settings gear and share one `drawBackArrow`.
+- **The arrow pointed right and sat off-centre.** First the apex was on the right; then the extents
+  ran `-0.8r` to `+1.5r`, leaving it visibly right of centre. Now symmetric at `-0.78r`..`+0.78r`.
+- **`SFX is not defined` on the mode-setup back button** — a previous pass added `SFX.tap()` to two
+  handlers, but MIMIC has no `SFX` object: its audio is `tapN()`/`clayTone()`/`toneAt()`. Both threw
+  mid-handler. Removed; `uiTick()` already plays the click.
+- **Volume.** Ticks were firing at 0.08–0.30 into a 0.95 master. One `SND_BOOST=1.45` on the peak gain
+  of each of the three tone helpers, clamped below 1 so layered voices cannot clip.
+- BEST SCORE moved from the top-right corner to centred under HOW TO PLAY, anchored to the title
+  geometry (`g.howY`/`g.btnH`) so it tracks the button at any screen size.
+
+### KNOT AWAY — LOCKED
+- **Hint/undo appeared to reset.** `restartLevel()` restored `G.undoSnap`/`G.hintSnap`, a snapshot taken
+  once when the level loaded and never updated, so a retry handed back the pre-use count. Both read live
+  from `save.undo`/`save.hint` now; snapshots deleted, and the save is flushed before leaving the game.
+- **The level-unlock ad never fired.** `rewarded()` is declared inside the shell integration IIFE, so it
+  is NOT global — calling it from the game block threw a `ReferenceError` and nothing happened on tap.
+  Now `window.__shellRewarded('knotaway.level_unlock', ...)`, the same door the hint/undo refill uses,
+  with a guard that toasts `AD NOT AVAILABLE` if the bridge is missing.
+- **Rewarded ad to open the next level for 30 minutes.** The offer sits on the first locked level — the
+  one whose predecessor is open — never on any other. Gold chip + pulsing ring, tap opens a confirm
+  sheet, then a toast naming the level. Three stars promotes the level to a permanent unlock; otherwise
+  it lapses after 30 minutes and expired grants are pruned on load.
+- **Live countdown on the tile, above the level number.** Absolute expiry is kept on the element as
+  `data-until`, so a reload mid-countdown resumes the right number instead of restarting from 30:00.
+  Gold, turning red in the last minute. Ticks once a second, tied to `showScreen` so it only runs
+  while the level list is open. Also shown on the in-game HUD chip for that level.
+- **`locked` class was applied to OPEN levels** — the condition read `unlocked&&!tmp`. Caught by a
+  runtime test, not by the syntax or boot checks: level 1 rendered dimmed with lock styling from the
+  first launch. Now `!unlocked&&!tmp`.
+
+### TRUTH OR DARE — LOCKED
+- **The back button was a `position:fixed` white circle containing a single `‹` character, floating
+  over the `<h1>`** — hence the title overlap. It is now a real `.icon-btn` using the game's own
+  `#i-back` sprite (added), living in the top row: `space-between` puts it on the far left, square with
+  help and gear on the right. The visibility toggle uses `grid`, not `block`, so the icon-btn grid
+  centring survives.
+- Footer now reads **REDUNDANT STUDIOS** (the `ARCADE PARTY` wordmark left the top row to make room).
+- **GIVE ME ANOTHER removed** — button and handler. The handler had to go too: `$('#plansBtn')
+  .onclick` would have dereferenced null and thrown, killing every binding below it in the block.
+  The plans overlay stays in the markup, unreachable.
+- How-to list renumbered after losing its redraw step.
+
+### Verification note
+- Parse + boot smoke is NOT sufficient here. It let through two real runtime bugs this session (an
+  inverted `locked` class, and a temporal dead zone that would have broken the level list entirely).
+  `Tools/_ka_runtime.js` / `_ka_runtime2.js` lift the real `renderLevels`/`lvlOpen`/`adEligible`/
+  `tempLevel`/`fmtRemain` out of the game IIFE and execute them against a stub DOM. Worth extending
+  to the other games before they ship.
+- Mid-session a regex in a patch script truncated `carroms/index.html` from 2669 lines to 1698. It was
+  recovered from the built APK and confirmed byte-identical by SHA-256 before the audio fix was
+  re-applied. Hash-check assets after any bulk text surgery.
+- Splices have repeatedly left orphan braces/`</section>`/`});` that parse cleanly only when they do
+  not. Several caught pre-build, but the pattern is worth eliminating.
+
+## Carroms — director pass 2: 5 issues, LOCKED — 2026-10-12
+- **LOCKED.** Treat `app/src/main/assets/games/carroms/index.html` as frozen: no drive-by edits. Any new
+  request becomes a numbered pass on top, recorded here.
+- **Back button disappeared from the start page — my own regression.** The previous pass gated it on
+   `__shellScreen==='home' && !Panels.isOpen()`, but the home page is ITSELF a panel (`.panel.home` shown
+  inside the overlay), so `Panels.isOpen()` is true there as well and the button was hidden everywhere.
+  The correct test is whether the panel on screen is `p-home`.
+- **The double tap sound was the back button itself.** It is a `<button>`, so the global pointerdown handler
+  played the click for it — and its own onclick played it again. Removed the second one; the global covers
+  it. (A `_clickClaimed` guard with a `setTimeout(...,0)` release could not have caught this: `click`
+  fires after `pointerup`, a separate task, so the flag had already cleared.)
+- **Panel transitions: the director wanted SMOOTHER and LONGER, which is the opposite of the last pass.**
+  `pop` is now .44s on a soft `cubic-bezier(.22,.75,.28,1)` with a three-keyframe fade-in, and the backdrop
+  eases in over .34s so the sheet is never sliding over a snapping backdrop.
+- **Seat 1 is always HUMAN.** Every seat offered a BOT/HUMAN toggle, so P1 could be a bot too — which is
+  how a bot-only game was reachable. P1 now renders a fixed, non-clickable HUMAN chip and the click handler
+  refuses to set index 0 to bot. Subtitle reworded from "PICK BOT OR HUMAN" to "PICK WHO PLAYS".
+- **How to Play had no way out.** The card steps (welcome, congratulations) offered only a forward button.
+  Added a quiet CANCEL under CONTINUE on the welcome card (clears tutorial state and returns to the start
+  page) and BACK on the congratulations card (returns to the aiming lesson).
+
+## Carroms — director pass: 6 issues — 2026-10-12
+- **Glitchy panel transitions.** `Panels.show()` toggled `showing` on every panel in one pass, so the
+  outgoing and incoming panels animated simultaneously while the backdrop was still fading. Now the
+  outgoing panel is unmounted first and the incoming one is mounted on the next frame, so the `pop`
+  keyframes cannot overlap the backdrop. The keyframe itself was also softened from `scale(.9)` + 16px
+  of travel to `scale(.965)` + 8px.
+- **One tap, two click sounds.** A global `pointerdown` listener played the click for any button, AND
+  several button handlers played it again themselves — so those buttons fired it twice. The global is
+  now the single owner and claims the sound once per press; the two handlers that duplicated it (theme
+  grid cell, profile cards) no longer call it.
+- **Theme unlock confirmation.** Tapping a locked theme went straight into the ad. There is now a
+  confirmation sheet: title, "Watch an ad to unlock <name> for 2 hours?", a swatch of the theme, a note
+  about it working offline, and WATCH AD & UNLOCK / NOT NOW. The ad only runs on an explicit YES.
+  NOTE: the panel had to be positioned with `position:fixed; inset:0; margin:auto` — as an overlay flex
+  item it rendered low in the sheet with its second button off the bottom while every other panel
+  centred fine, and `align-self`/`margin:auto 0` did not correct it. Fixed positioning also keeps the
+  shared `pop` keyframes from overriding its transform and making it jump on open.
+- **Game-over ad: it already had one** (`carroms.gameover`), but it fired BEFORE the panel was mounted.
+  Reordered to panel-first, ad immediately after, matching the Connect Four ordering.
+- **Back button.** Repainted in the game palette (cream/gold, Baloo 2, `:active` press) and driven by the
+   game's own poll with `!important` rules so the shell's inline display loses either way. It now shows
+   on the start page ONLY — a settings or theme sheet is an overlay on the start page rather than its own
+   screen, so `__shellScreen` stays 'home' while one is open and the button has to hide for those too.
+- **First tap / BGM.** `audioEnsure()` was only called from a `pointerdown` listener, so the graph was
+  built on the first touch: the game opened silent and that tap did nothing but arm audio. The shell
+  lifts the autoplay gate, so the graph and the BGM are built at load.
+
+## Connect Four — director pass 4: the lag, at any cost — 2026-10-12
+### Measured, full board, before -> after
+```
+                        before    after
+Janky frames            458 (71%)  53 (1.93%)
+50th percentile         14ms      11ms
+90th percentile         20ms      12ms
+99th percentile         25ms      18ms
+Slow issue draw cmds    458       53
+High input latency      12998     5103
+```
+- **The settled marbles were all being rotated.** `drawMarble()` rotates only when `spin` is truthy, and
+  settled marbles were passed their stale `m.spin` (`spinV` is 0 for them, but `spin` keeps whatever angle
+  the last bounce left). So every marble on the board did a save/translate/rotate/restore plus a
+  non-axis-aligned blit - 42 of them once it filled. **That is why it got worse with every turn and
+  fall, and it is the single biggest thing here.** They now draw unrotated.
+- **Audio node churn.** One drop built ~21 nodes: a four-oscillator clink per bounce plus a seven-node
+  first contact, all feeding one ConvolverNode. Bounces now use a two-tone clink with no noise burst and
+  no reverb send.
+- **The back button was being restyled 2.5x a second.** The shell poll assigned `style.display`
+  unconditionally, so during play it rewrote `display:'none'` onto a button already set to none - a
+  forced style invalidation in the WebView, forever. It only writes on change now. This was most of the
+  input-latency figure.
+- **The bot felt slow because it was.** ~2.0-2.3s of deliberate delay per move: a 0.9s watchdog before
+  `scheduleAI()` was even called, a 0.55-0.9s "thinking" pause, then 480ms before release. Now 0.3s /
+  0.26-0.40s / 240ms.
+- **Drop sound** lowered again per the director: `.032` sweep / `.028` body tone, band 760->1900Hz.
+
+## Connect Four — director pass 3: performance, and LOCKED — 2026-10-12
+- **Locked.** Treat `app/src/main/assets/games/connect-four/index.html` as frozen: no drive-by edits.
+  Any new request becomes a numbered pass on top, recorded here.
+### Performance — measured, not guessed
+- `adb shell dumpsys gfxinfo com.redundantstudios.arcade` BEFORE:
+  `Total frames 643 / Janky 458 (71%)`, `50th 14ms 90th 20ms 95th 22ms 99th 25ms`,
+  `Slow issue draw commands: 458`, `GPU 50th 2ms / 99th 4ms`.
+  The janky count matching "slow draw commands" exactly, with GPU time at 2-4ms, is the tell: the cost
+  is **CPU-side draw-command recording**, not the GPU. (Lesson: profile before optimising - two earlier
+  passes on this were aimed at the wrong layer.)
+- Cause: per frame the old code stroked two arcs for every filled cell and filled an ellipse for every
+  settled marble - ~250 path operations at a full board, redrawn 60x a second from data that never
+  changes. The arcs sit at fixed hole positions and the contact shadow is a soft blob, so both are now
+  baked into one overlay canvas (`buildOverlay()`) rebuilt only when the grid changes, and blitted.
+- `drawMarble()` also blitted three images per marble (shadow, body, gloss) - 126 on a full board -
+  when body and gloss never move relative to each other. They are pre-composed into `MSPR[p].full`,
+  so a marble is now 2 blits.
+- AFTER: `Total frames 2826 / Janky 66 (2.3%)`, `50th 10ms 90th 13ms 95th 18ms 99th 21ms`,
+  `Slow issue draw commands: 64`. Jank 71% -> 2.3%; p90 back inside the 16.7ms budget.
+### Regression I caused, and fixed
+- **The wooden start page went flat.** The pass-2 `resize()` guard replaced the single line
+  `buildTable();buildBoard();buildIntroBG();` with the guard plus `buildTable();buildBoard();` -
+  silently dropping the `buildIntroBG()` call, so the plank never painted and the start page fell back
+  to the flat CSS `#a57743`. **When replacing a line, verify the replacement covers every call on it.**
+### Drop sound
+- Softened one more step: sweep `1.5k->4.2k @ .10` (hissy) -> `820->2100 @ .05` -> `760->1900 @ .032`,
+  body tone `240->150 @ .045` -> `210->135 @ .028`.
+
+## Connect Four — director pass 2: 5 issues — 2026-10-12
+## Connect Four — director pass 2: 5 issues — 2026-10-12
+- **Intermittent lag: the bot search ran on the main thread.** Medium/hard negamax had a 220ms / 480ms
+  budget and executed synchronously, so *every bot turn* froze the whole game for up to nearly half a
+  second — exactly the reported "sometimes smooth, sometimes very laggy" (smooth while the marble moved,
+  hard-stuck on every bot move). `engine` was turned into a named `engineFactory` so its source can be
+  handed to a Web Worker (`const engine=(()=>{...})()` only kept `{choose}`, and `{}.toString()` is
+  `[object Object]`). The search now runs off-thread; `easyMove()` reads live state so it stays inline but
+  does no search. Falls back to the original synchronous path if the Worker cannot start.
+- **No input until the marble settles.** It used to allow a drop while one was still in the air and
+  queued the choice in `S.pending` to replay on landing. `canAct()` now also requires `!anyFalling()`,
+  which gates the aim drag, the drop and the keyboard together.
+- **Slow after an interstitial, two causes.** (a) A fullscreen ad stops rAF for its whole duration, so
+  on return the frame clock is stale, the particle backlog is old and the board textures are usually
+  gone from the GPU — `afterAd()` now resyncs all of it and is called on every ad return via `shellAd()`.
+  (b) Ad show/hide fires a burst of resize events and *each one* rebuilt a full-screen table canvas and
+  re-bored all 42 holes — `resize()` now early-returns when the geometry is unchanged.
+- **Back button glyph off-centre.** The shell poll writes `style.display` every 400ms, which discarded
+  the flex centring and pinned the chevron into the corner. The button is now styled with `!important`
+  rules in both directions and this game drives visibility with its own class poll.
+- **MENU on the win plaque now requests an interstitial.**
+- **Bonus fix found while testing MENU:** `showIntro()` never reset which pane was showing, so leaving
+  mid-game after PLAY returned you to the opponent/skill *setup*, not the start page. It now
+  `switchView('ipMain')`.
+
+## Connect Four — director pass: 6 issues — 2026-10-12
+## Connect Four — director pass: 6 issues — 2026-10-12
+### 1. Landing stutter (the biggest one)
+- **`navigator.vibrate()` fired on every bounce**, not once per drop. A single marble bounced up to four
+  times, so a landing did up to five IPC calls into the system vibrator service — at exactly the moment
+  the marble settled and the eye is on it. Now one buzz, on the first contact above a power threshold.
+- **Every bounce fired a full particle burst.** `impact()` ran the same spark + wood-dust + ring set on
+  each of the 4–5 impacts, so one drop sprayed five bursts and jolted the whole board five times.
+  Later bounces now scale to ~1/3, and the wood dust and shockwave ring are first-contact only.
+- Bounce count 4 → 3.
+### 4. Start-up animation
+- **`resize()` always ran `buildIntroBG()`, which ends in `toDataURL()` on a full-screen canvas.**
+  `closeIntro()` calls `resize()` 50ms after hiding the start page — so every time a match began, the
+  app was **PNG-encoding a 1080x2400 canvas**, hundreds of milliseconds of jank right as the board
+  appears. Now: skipped entirely while the start page is hidden, cached by size, and encoded as JPEG.
+### 3. Start back button
+- The shell injects a plain white circle sized for a generic light game. On this dark walnut board it
+  read as a sticker, and it exited silently while everything else made a sound. Repainted in the game's
+  own `.barbtn` wood gradient with the cream chevron and the `:active` press, and it now plays `SFX.tap()`.
+  It WRAPS the shell handler rather than replacing it, so it still exits.
+### 2 / 7. Home button and returning to the start page
+- `#btnHome` now requests an interstitial and returns to the start page once the ad closes.
+### 5. Win order
+- The ad was *wrapping the call that shows the plaque*: ad → wait 1050ms → panel. Reversed — the win
+  panel shows first, then the interstitial is requested the instant after. Same for a drawn game.
+### 6. Drop sound
+- `launch()` was a single narrow noise sweep, 1.5kHz up to 4.2kHz at vol .10 — thin and hissy, more like
+  static than a marble leaving your finger. Replaced with a quieter low-mid sweep plus a short body tone.
+- The 6.8kHz highpass tick over the landing clink was the harshest part; narrowed to 5.2kHz and pulled back.
+### Latent crash found and fixed while verifying
+- `resize()` returns early (retrying in 60ms) when the script runs before the WebView has laid out, so
+  for the first frames BOTH board sprites are null. An earlier fix guarded only `tableSprite`;
+  `boardSprite` was still passed straight to `drawImage`, which threw `TypeError: The provided value is
+  not of type (...)` on every frame until the retry landed. `loop()` now skips drawing until both exist.
+  (And `buildTable()` was sizing its sprite with a bare `vw*dpr` while `buildBoard()` clamped with
+  `Math.max(2,…)` — same root cause, one frame earlier.)
+- **Lesson: when patching a file by split/replace, verify the replacement line count.** A `splice(i, 3, …)`
+  intended to replace 5 lines ate `g.save()` and `const ie=S.introT;`, producing 1082
+  `ReferenceError: ie is not defined` per run. Recovery was to regenerate from source and reapply the
+  whole patch chain rather than hand-repair. A repair script also joined lines with the BOOLEAN `CRLF`
+  instead of the string `'\r\n'`, and `Array.join` coerced it into the literal text `true` between
+  every pair of lines — worth never repeating.
+
+## Connect Four — LOCKED, first integration pass — 2026-10-12
+- **File:** `app/src/main/assets/games/connect-four/index.html` (from `sources/Playable Games/ConnectFour.html`).
+- **Manifest** at the very top, before `<!DOCTYPE html>` — `id: connect-four` / `minPlayers: 1` /
+  `maxPlayers: 2` / `aiSupport: full` / `tileColor: #B0824B` / `bannerBg: #150C05`. 1–2 because it is
+  pass-and-play 2P *or* 1P against Oakley, the same shape as Chess.
+- **The volume slider did nothing to this game.** Every voice ran through one master gain pinned at
+  `.95`, so the shell's volume never reached it — the missing-master problem Bomb Relay had.
+  `SFX.setVolume()` now retunes that one node, and the in-game SOUND switch drives it too.
+- **Audio graph built at load, not on the first tap.** It was created from a `pointerdown` listener,
+  so the game opened silent and the first tap only armed audio instead of doing what it hit. The shell
+  lifts Chromium's autoplay gesture gate, so it is built on load; the listener stays as a retry.
+- **Storage moved onto the shell.** `kv()` wrapped `localStorage`, so the settings and the in-progress
+  board behind CONTINUE both died with a data clear. It now prefers `NativeBridge.save/load` and keeps
+  `localStorage` (then an in-memory map) as the fallback for a plain browser tab.
+- **Load-order bug worth remembering.** The game's own script block runs first and boots itself, so its
+  boot-time settings read happens BEFORE the shell block creates `window.Studio` — `Studio.settings`
+  does not exist yet and the call quietly no-ops. The shell block therefore pushes `Game.setSettings(settings)`
+  once at the end, after Studio is built. Without it the first frames play at the wrong level until
+  `GameActivity.onResume` happens to correct it.
+- **`window.Game` is layered, not replaced.** The game defines its own `setSettings` (it has to, to reach
+  its audio graph); the shell block keeps a reference and calls through, rather than overwriting it.
+- **Banner is game-page only.** The status plaque, HOW TO PLAY and SETTINGS are overlays drawn over that
+  same page, so each blocks the strip via `__shellBlock`; leaving the intro hides it entirely.
+- **Ads:** interstitial on a won match, a drawn match, PLAY AGAIN and RESTART. MENU and the shell back
+  button are exits and stay ad-free.
+- **Tile:** `tileGlyph: 4` in the manifest, generated by `Tools/_gen_tiles.py`.
+- **Smoke harness:** `_boot_smoke.js` had no `toDataURL` on its element stub, so the run died on a
+  harness gap (Connect Four bakes its intro plank to a data URL) rather than anything in the game. Added.
+
 ## Balloon Battle — LOCKED, next in queue — 2026-09-27
 - **Next game to lock.** Last Balloon is being taken to party-game status by Badri and will be handed
   over as a finished file, so Balloon Battle is the game in hand now.

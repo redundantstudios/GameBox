@@ -1,0 +1,11 @@
+'use strict';
+const fs = require('fs');
+const L = fs.readFileSync('app/src/main/assets/games/knot-away/index.html', 'utf8').split(/\r?\n/);
+console.log('=== __shellRewarded usage (working pattern?) ===');
+L.forEach((l, i) => { if (/__shellRewarded/.test(l || '')) console.log(String(i + 1).padStart(5) + ' | ' + (l || '').trim().slice(0, 118)); });
+console.log('\n=== how the hint/undo refill calls an ad ===');
+L.forEach((l, i) => { if (/showRewardedAd|kitGranted|btnHint|btnUndo|refill/.test(l || '')) console.log(String(i + 1).padStart(5) + ' | ' + (l || '').trim().slice(0, 118)); });
+console.log('\n=== script block boundaries ===');
+L.forEach((l, i) => { if (/<script|<\/script/.test(l || '')) console.log(String(i + 1).padStart(5) + ' | ' + (l || '').trim().slice(0, 60)); });
+console.log('\n=== IIFE wrappers ===');
+L.forEach((l, i) => { if (/^\(function\(\)\{\s*$/.test((l || '').trim())) console.log(String(i + 1).padStart(5) + ' | ' + l.trim().slice(0, 60)); });

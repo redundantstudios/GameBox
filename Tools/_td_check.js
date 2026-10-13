@@ -1,0 +1,10 @@
+'use strict';
+const fs = require('fs');
+const L = fs.readFileSync('app/src/main/assets/games/truth-or-dare/index.html', 'utf8').split(/\r?\n/);
+console.log('=== section open/close ===');
+L.forEach((l, i) => { if (/<section|<\/section>/.test(l || '')) console.log(String(i + 1).padStart(5) + ' | ' + (l || '').trim().slice(0, 96)); });
+console.log('\n=== start-screen tail ===');
+const i = L.findIndex(l => /foot-brand">REDUNDANT STUDIOS/.test(l || ''));
+for (let k = i - 6; k < i + 8; k++) console.log(String(k + 1).padStart(5) + ' | ' + (L[k] || '').trim().slice(0, 96));
+console.log('\n=== remaining GIVE ME ANOTHER / btnRedraw ===');
+L.forEach((l, j) => { if (/btnRedraw|GIVE ME ANOTHER/i.test(l || '')) console.log(String(j + 1).padStart(5) + ' | ' + l.trim().slice(0, 104)); });

@@ -1,0 +1,18 @@
+'use strict';
+const fs = require('fs');
+const g = n => fs.readFileSync('app/src/main/assets/games/' + n + '/index.html', 'utf8');
+const ka = g('knot-away'), mi = g('mimic'), td = g('truth-or-dare');
+const ck = (n, v) => console.log((v ? 'ok   ' : 'FAIL ') + n);
+ck('KA: __shellRewarded call', /__shellRewarded\('knotaway\.level_unlock'/.test(ka));
+ck('KA: no bare rewarded()', !/^\s*rewarded\('level_unlock'/m.test(ka));
+ck('KA: guarded when absent', /if\(!window\.__shellRewarded\)/.test(ka));
+ck('KA: 30-min window', /AD_UNLOCK_MS=30\*60\*1000/.test(ka));
+ck('KA: 3-star promotes', /st>=3 && save\.temp/.test(ka));
+ck('MI: arrow apex left', /lineTo\(x-s\*0\.8,y\)/.test(mi) && !/x\+s\*0\.8,y\)/.test(mi));
+ck('MI: shaft exits right', /moveTo\(x\+s\*1\.5,y\)/.test(mi));
+ck('MI: no SFX refs', !/SFX\./.test(mi));
+ck('TD: plansBtn fully gone', !/plansBtn/.test(td));
+ck('TD: sections balanced', (td.match(/<section/g) || []).length === (td.match(/<\/section>/g) || []).length);
+ck('TD: footer kept', /REDUNDANT STUDIOS/.test(td));
+ck('TD: back btn in top row', /id="tdBackBtn"/.test(td));
+ck('TD: uses i-back sprite', /href="#i-back"/.test(td) && /<symbol id="i-back"/.test(td));

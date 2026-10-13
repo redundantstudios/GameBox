@@ -1,31 +1,52 @@
 'use strict';
 const fs = require('fs');
+const G = id => fs.readFileSync('app/src/main/assets/games/' + id + '/index.html', 'utf8');
 
-const read = g => fs.readFileSync(`app/src/main/assets/games/${g}/index.html`, 'utf8');
-
-const lb = read('last-balloon');
-const lbChecks = {
-  'banner removed (no manifest lines)': !/^banner:/m.test(lb) && !/bannerBg:/m.test(lb),
-  'banner shim gone (no showBanner call)': !/b\.showBanner/.test(lb),
-  'game over ad': /if\(!gameOverAdDone\)\{[\s\S]{0,140}lastballoon\.gameover/.test(lb),
-  'flag declared': /var gameOverAdDone=false;/.test(lb),
-  'flag reset per round': /function startGame\(players\)\{\s*\n\s*gameOverAdDone=false;/.test(lb),
-  'LEAVE btn ad': /lastballoon\.quit\.leave/.test(lb),
-  'LEAVE wraps, does not double-fire': /quitToMenu\s*\n?\s*\}\s*\n?\s*\);/.test(lb) || /function\(\)\{withInterstitial\('lastballoon\.quit\.leave',quitToMenu\);\}/.test(lb),
-  'REMATCH ad kept': /lastballoon\.gameover\.rematch/.test(lb),
-  'HOME btn ad kept': /lastballoon\.gameover\.menu/.test(lb),
+let all = true;
+const T = (g, label, re) => {
+  const ok = re.test(G(g));
+  if (!ok) all = false;
+  console.log((ok ? 'PASS  ' : 'FAIL  ') + g.padEnd(14) + label);
 };
-console.log('--- last-balloon ---');
-Object.entries(lbChecks).forEach(([k, v]) => console.log((v ? 'OK   ' : 'MISS ') + k));
+const K = (label, fn) => { const ok = fn(); if (!ok) all = false; console.log((ok ? 'PASS  ' : 'FAIL  ') + 'shell'.padEnd(14) + label); };
 
-const bb = read('balloon-battle');
-const bbChecks = {
-  'banner removed (no manifest lines)': !/^banner:/m.test(bb) && !/bannerBg:/m.test(bb),
-  'game over ad on ENDING->RESULT': /showInterstitialOnce\('gameover'\)/.test(bb),
-  'pause RESTART ad kept': /playWithAd\(nPlayers,soloMode,'pause/.test(bb),
-  'pause MENU ad kept': /backToMenu\('pause/.test(bb),
-  'results PLAY AGAIN ad kept': /playWithAd\(nPlayers,soloMode,'gameover/.test(bb),
-  'results MENU ad kept': /backToMenu\(/.test(bb),
-};
-console.log('--- balloon-battle ---');
-Object.entries(bbChecks).forEach(([k, v]) => console.log((v ? 'OK   ' : 'MISS ') + k));
+console.log('--- knot away ---');
+T('knot-away', 'no visible code at top',  /^(?!<!DOCTYPE html>[\s\S]{0,90}New run: allow)/);
+T('knot-away', 'real rewarded ad',      /__shellRewarded\("knotaway\./);
+T('knot-away', 'level-complete ad',     /knotaway\.level\.complete/);
+T('knot-away', 'replay ad',             /knotaway\.complete\.replay/);
+T('knot-away', 'kit persists',          /kitGranted:false/);
+T('knot-away', 'no per-level refill',   /if\(!G\.kitGranted\)\{G\.undoLeft=G\.levelData\.uses/);
+T('knot-away', 'retry uses snapshot',   /G\.undoLeft=G\.undoSnap/);
+T('knot-away', 'banner bg = page',      /bannerBg: #DFC79C/);
+T('knot-away', 'banner hides on sheets',/__shellBlock\(true\)/);
+T('knot-away', 'audio at boot',         /SFX_MAKEUP=1\.9, MUS_MAKEUP=2\.2/);
+
+console.log('--- carroms ---');
+T('carroms', '2h unlock',       /UNLOCK_HOURS=2/);
+T('carroms', 'AD chip',         /class="adchip"/);
+T('carroms', 'theme needs ad',  /carroms\.theme\./);
+T('carroms', 'no amp bug',      /^(?![\s\S]*&amp;)/);
+T('carroms', '4 players',       /maxPlayers: 4/);
+T('carroms', 'back arrow hides',/&&!sheet/);
+T('carroms', 'volume up',       /MUS_VOL=1\.15, SFX_VOL=1\.3/);
+
+console.log('--- truth or dare ---');
+T('truth-or-dare', 'no visible code',   /^(?!<!DOCTYPE html>[\s\S]{0,90}New run: allow)/);
+T('truth-or-dare', 'real interstitial', /showInterstitial\(n,'truthordare\.break'\)/);
+T('truth-or-dare', 'real rewarded',     /showRewardedAd\(n,placement\|\|'truthordare\.unlock','UNLOCK'\)/);
+T('truth-or-dare', '1h mode unlock',    /TIER_MS=3600\*1000/);
+T('truth-or-dare', 'pList scrolls',     /#pList\{max-height:min\(34vh/);
+T('truth-or-dare', 'black banner',      /bannerBg: #000000/);
+T('truth-or-dare', '10 players',        /maxPlayers: 10/);
+
+console.log('--- mimic ---');
+T('mimic', 'adSeq scoped',       /var settings=\{ sound:true, haptics:true \};\r?\n  \/\* Counter/);
+T('mimic', 'score card clear of back', /rightEdge=gearX-gearR-gap/);
+T('mimic', 'score card clamped', /W-safe\.r-bpW-12/);
+
+console.log('--- shell ---');
+K('truth-or-dare is a party game', () => /truth-or-dare/.test(fs.readFileSync('app/src/main/java/com/redundantstudios/arcade/ui/ModeActivity.kt', 'utf8')));
+K('N-player grid capped at 5',     () => /MAX_N_PLAYER_TILE = 5/.test(fs.readFileSync('app/src/main/java/com/redundantstudios/arcade/MainActivity.kt', 'utf8')));
+
+console.log('\n' + (all ? 'ALL CHECKS PASS' : 'SOME CHECKS FAILED'));

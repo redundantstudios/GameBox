@@ -1,0 +1,11 @@
+'use strict';
+const fs = require('fs');
+const L = fs.readFileSync('app/src/main/assets/games/truth-or-dare/index.html', 'utf8').split(/\r?\n/);
+console.log('=== shell back / exit ===');
+L.forEach((l, i) => { if (/__shellBack|exitGame|__shellBtn|backBtn/i.test(l || '')) console.log(String(i + 1).padStart(5) + ' | ' + (l || '').trim().slice(0, 112)); });
+console.log('\n=== scrSetup head 333-345 ===');
+for (let k = 332; k < 346; k++) console.log(String(k + 1).padStart(5) + ' | ' + (L[k] || '').trim().slice(0, 112));
+console.log('\n=== scrGame head 373-382 ===');
+for (let k = 372; k < 382; k++) console.log(String(k + 1).padStart(5) + ' | ' + (L[k] || '').trim().slice(0, 112));
+console.log('\n=== .bar / topbar CSS ===');
+L.forEach((l, i) => { if (/^\.bar\{|^\.bar\.|\.topbar|^\.head\{/.test((l || '').trim())) console.log(String(i + 1).padStart(5) + ' | ' + l.trim().slice(0, 112)); });

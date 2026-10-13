@@ -1,0 +1,11 @@
+'use strict';
+const fs = require('fs');
+const s = fs.readFileSync('app/src/main/assets/games/carroms/index.html', 'utf8').split(/\r?\n/);
+const i = s.findIndex(l => l.indexOf('id="p-tut"') >= 0);
+console.log('--- p-tut markup ---');
+for (let k = i - 1; k < i + 9; k++) console.log(String(k + 1).padStart(5) + ' | ' + (s[k] || '').trim().slice(0, 100));
+const j = s.findIndex(l => /^ {2}finish\(\)\{/.test(l));
+console.log('--- finish ---');
+for (let k = j; k < j + 12; k++) console.log(String(k + 1).padStart(5) + ' | ' + (s[k] || '').trim().slice(0, 100));
+console.log('--- tut card style ---');
+s.forEach((l, n) => { if (/#tutBtn|#tutTitle|#tutText/.test(l || '') && /\{|btn/.test(l)) console.log(String(n + 1).padStart(5) + ' | ' + l.trim().slice(0, 100)); });

@@ -123,9 +123,14 @@ enum class BannerEdge {
  * Carroms integration is established, so listing it here hides the tag for good
  * rather than waiting out the time window. A newly integrated game is NOT
  * listed and keeps its tag automatically.
+ *
+ * `carroms` used to sit here as "re-added later with new gameplay", which is
+ * what stopped it wearing NEW. But it was re-integrated on 2026-10-11 with new
+ * artwork, new gameplay and a 4-player setup, and the director asked for it to
+ * read as a new game. It now lives in [NEW_GAME_IDS] instead, alongside the rest
+ * of the current cohort.
  */
 val ESTABLISHED_GAME_IDS: Set<String> = setOf(
-    "carroms",       // re-added later with new gameplay
     "checkers",
     "chess",
     "chicken-chaos",
@@ -166,5 +171,6 @@ val NEW_GAME_IDS: Set<String> = setOf(
     "midnight-overdrive",
     "magnet-pull",
     "kiro",
-    "root-io"
+    "root-io",
+    "carroms"        // re-integrated 2026-10-11: new art, new gameplay, now 4P
 )

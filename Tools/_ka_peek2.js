@@ -1,0 +1,13 @@
+'use strict';
+const fs = require('fs');
+const s = fs.readFileSync('app/src/main/assets/games/knot-away/index.html', 'utf8');
+const L = s.split(/\r?\n/);
+const i = L.findIndex(l => /class="panel"/.test(l || ''));
+console.log('=== a full panel block ===');
+for (let k = Math.max(0, i - 3); k < i + 16 && k < L.length; k++) console.log(String(k + 1).padStart(5) + ' | ' + (L[k] || '').trim().slice(0, 110));
+console.log('\n=== openPanel body ===');
+const j = L.findIndex(l => /function openPanel/.test(l || ''));
+for (let k = j; k < j + 10 && k < L.length; k++) console.log(String(k + 1).padStart(5) + ' | ' + (L[k] || '').trim().slice(0, 110));
+console.log('\n=== rewarded body ===');
+const r = L.findIndex(l => /function rewarded\(/.test(l || ''));
+for (let k = r; k < r + 14 && k < L.length; k++) console.log(String(k + 1).padStart(5) + ' | ' + (L[k] || '').trim().slice(0, 110));

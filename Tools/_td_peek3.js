@@ -1,0 +1,11 @@
+'use strict';
+const fs = require('fs');
+const L = fs.readFileSync('app/src/main/assets/games/truth-or-dare/index.html', 'utf8').split(/\r?\n/);
+console.log('=== svg sprite symbols ===');
+L.forEach((l, i) => { if (/<symbol/.test(l || '')) console.log(String(i + 1).padStart(5) + ' | ' + (l || '').trim().slice(0, 100)); });
+console.log('\n=== .brand / .top-row CSS ===');
+L.forEach((l, i) => { if (/^\.brand|^\.top-row|^\.hero\{/.test((l || '').trim())) console.log(String(i + 1).padStart(5) + ' | ' + l.trim().slice(0, 112)); });
+console.log('\n=== btnRedraw JS handler ===');
+L.forEach((l, i) => { if (/btnRedraw/.test(l || '')) console.log(String(i + 1).padStart(5) + ' | ' + l.trim().slice(0, 112)); });
+console.log('\n=== scrSetup tail (where a footer could go) ===');
+for (let k = 346; k < 374; k++) console.log(String(k + 1).padStart(5) + ' | ' + (L[k] || '').trim().slice(0, 112));

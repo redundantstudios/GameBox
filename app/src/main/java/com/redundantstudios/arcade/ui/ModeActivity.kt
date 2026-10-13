@@ -42,7 +42,7 @@ class ModeActivity : ThemedActivity() {
          * player count - they get their own tile and carry no "NP" tag (see
          * GameAdapter). Last Balloon is here for that reason.
          */
-        val PARTY_GAME_IDS = setOf("truthordare", "last-balloon")
+        val PARTY_GAME_IDS = setOf("truth-or-dare", "last-balloon")
 
         /**
          * DEPRECATED - superseded by the manifests' own `released:` date.

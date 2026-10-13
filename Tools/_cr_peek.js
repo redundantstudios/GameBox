@@ -1,0 +1,12 @@
+'use strict';
+const fs = require('fs');
+const s = fs.readFileSync('app/src/main/assets/games/carroms/index.html', 'utf8').split(/\r?\n/);
+console.log('--- p-theme markup ---');
+const i = s.findIndex(l => l.indexOf('id="p-theme"') >= 0);
+for (let k = i; k < i + 8; k++) console.log(String(k + 1).padStart(5) + ' | ' + (s[k] || '').trim().slice(0, 96));
+console.log('--- adcf handlers ---');
+const j = s.findIndex(l => l.indexOf("$('#adcfYes')") >= 0);
+for (let k = j; k < j + 16; k++) console.log(String(k + 1).padStart(5) + ' | ' + (s[k] || '').trim().slice(0, 96));
+console.log('--- generic .backbtn handler ---');
+const b = s.findIndex(l => l.indexOf(".backbtn')") >= 0);
+for (let k = b; k < b + 6; k++) console.log(String(k + 1).padStart(5) + ' | ' + (s[k] || '').trim().slice(0, 96));

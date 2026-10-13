@@ -27,6 +27,9 @@ import com.redundantstudios.arcade.util.SettingsManager
 
 class MainActivity : ThemedActivity() {
 
+    /** The N-player grid stops here. See deriveModes. */
+    private val MAX_N_PLAYER_TILE = 5
+
     private lateinit var allGames: List<GameManifest>
 
     /** Route pulled from a notification tap; consumed exactly once. */
@@ -241,7 +244,15 @@ class MainActivity : ThemedActivity() {
            rule structural: adding a party game can never repopulate the N-player
            grid again, whatever its manifest says. */
         val bucketed = games.filter { it.id !in ModeActivity.PARTY_GAME_IDS }
-        val counts = bucketed.flatMap { (it.minPlayers..it.maxPlayers).toList() }
+        /* The grid stops at five. A game declaring 6..10 players kept
+         * conjuring 6, 7, 8, 9 and 10 PLAYER tiles - categories for counts
+         * nothing in the catalogue offers, and the source of the stray "6
+         * PLAYER" card. Party-sized games belong under PARTY GAMES. */
+        val counts = bucketed.flatMap {
+            val lo = it.minPlayers.coerceAtLeast(1)
+            val hi = minOf(it.maxPlayers, MAX_N_PLAYER_TILE)
+            if (lo > hi) emptyList() else (lo..hi).toList()
+        }
         val supportedCounts = counts.distinct().sorted()
         // Design--ref palette: all saturated enough to carry white text
         val colors = listOf("#E53935", "#1E88E5", "#43A047", "#F9A825", "#8E24AA")
