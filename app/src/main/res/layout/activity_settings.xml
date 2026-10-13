@@ -402,20 +402,7 @@
                     android:layout_marginBottom="12dp"
                     android:background="@color/studio_muted" />
 
-                <TextView
-                    android:id="@+id/btnTestNotif"
-                    android:layout_width="match_parent"
-                    android:layout_height="44dp"
-                    android:layout_marginTop="14dp"
-                    android:background="@drawable/bg_small_button"
-                    android:gravity="center"
-                    android:letterSpacing="0.06"
-                    android:text="@string/btn_send_test"
-                    android:textAllCaps="true"
-                    android:textColor="@color/white"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:visibility="gone" />
+                
             </LinearLayout>
 
             <!-- ================= INTERFACE ================= -->
@@ -501,7 +488,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:gravity="center"
-                android:text="@string/footer_brand"
                 android:textColor="@color/studio_border"
                 android:textSize="12sp"
                 android:textStyle="bold" />

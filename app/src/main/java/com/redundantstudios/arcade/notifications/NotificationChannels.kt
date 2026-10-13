@@ -19,6 +19,7 @@ object NotificationChannels {
     const val CH_DAILY = "arcade_daily"
     const val CH_STREAK = "arcade_streak"
     const val CH_NEWS = "arcade_news"
+    const val CH_UPDATE = "arcade_update"
     const val CH_DEV = "arcade_dev"
 
     /** The custom "doorbell" — the shell's audible signature. */
@@ -58,6 +59,11 @@ object NotificationChannels {
         channel(CH_DAILY, "Daily challenge", NotificationManager.IMPORTANCE_HIGH, true)
         channel(CH_STREAK, "Come back and play", NotificationManager.IMPORTANCE_DEFAULT, true)
         channel(CH_NEWS, "New games & news", NotificationManager.IMPORTANCE_HIGH, true)
+        // Updates sit at DEFAULT rather than HIGH: a version notice is worth
+        // saying once, but it is not a daily-challenge class message and
+        // should not be able to barge over gameplay the way the others do.
+        // Separate channel so it can also be muted on its own in Settings.
+        channel(CH_UPDATE, "App updates", NotificationManager.IMPORTANCE_DEFAULT, true)
         channel(CH_DEV, "Developer tests", NotificationManager.IMPORTANCE_DEFAULT, true)
     }
 }

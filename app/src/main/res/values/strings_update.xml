@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ============================================================================
+   PLAYER FACING COPY. EDIT HERE. Nothing else.
+  ============================================================================
+
+   Copy approved by the director, 2026-10-13. Do not rewrite without asking.
+
+   A note on the restart wording, because it is easy to get wrong:
+   Play does NOT wait for the player to do anything. Once they tap Update now
+   and confirm, Google Play downloads, installs and RESTARTS THE APP ITSELF.
+   So the copy says the app restarts. It must never tell the player to close
+   or reopen the app - that would be asking them to do something the app
+   already handles for them.
+
+   ===========================================================================
+   WHERE EACH STRING APPEARS
+   ===========================================================================
+   update_title              Update available popup, headline
+   update_body               Update available popup, paragraph
+   update_now                Update available popup, confirm button
+   update_later              Update available popup, dismiss button
+
+   update_done_title         Update finished popup, headline
+   update_done_body          Update finished popup, paragraph
+   update_done_action        Update finished popup, button
+
+   notif_update_title        Notification, update available, title
+   notif_update_body         Notification, update available, body
+   notif_update_done_title   Notification, update finished, title
+   notif_update_done_body    Notification, update finished, body
+
+   notif_perm_title          Notification permission ask, headline
+   notif_perm_body           Notification permission ask, paragraph
+
+   ===========================================================================
+   THE TEN DAILY NOTIFICATIONS
+   ===========================================================================
+   daily_msg_titles          10 headlines, one per day, picked at random
+   daily_msg_bodies          10 bodies, matched to the titles BY POSITION
+
+   Rules the code enforces no matter what is written here:
+     * exactly 10 entries in each array. Keep them the same length, or add a
+       matching empty string to the shorter one so they stay aligned.
+     * no newlines. A notification body is one line.
+
+   ===========================================================================
+   SYNTAX NOTES
+   ===========================================================================
+   An apostrophe must be written as \'
+   The characters & < > must be escaped.
+   Use \n for an intentional line break inside update_body.
+  ===========================================================================
+-->
+
+<resources>
+
+    <!-- ================= update available ================= -->
+    <string name="update_title">An update is ready</string>
+    <string name="update_body">A new update is available. Update to get new games as they arrive; it runs in the background, then restarts the app to finish.</string>
+    <string name="update_now">Update now</string>
+    <string name="update_later">Not now</string>
+
+    <!-- ================= update finished ================= -->
+    <string name="update_done_title">Ready to play</string>
+    <string name="update_done_body">The update is finished. The app has restarted, and new games are waiting for you.</string>
+    <string name="update_done_action">See what\'s new</string>
+
+    <!-- ================= notifications ================= -->
+    <string name="notif_update_title">An update is ready</string>
+    <string name="notif_update_body">New games are on the way. Update the app to get them in the background, followed by a restart.</string>
+
+    <string name="notif_update_done_title">Update complete</string>
+    <string name="notif_update_done_body">App has restarted. Your update is complete, and new games are available.</string>
+
+    <!-- ================= permission ask ================= -->
+    <string name="notif_perm_title">Stay in the loop?</string>
+    <string name="notif_perm_body">One gentle nudge a day when a new game lands, and a heads up when an update is ready. Nothing else.</string>
+
+    <!-- =====================================================================
+         THE TEN DAILY NOTIFICATIONS
+         Titles and bodies are matched by position. Entry 1 title goes with
+         entry 1 body. One is picked at random per day.
+         ===================================================================== -->
+    <string-array name="daily_msg_titles">
+        <item>A little game break</item>
+        <item>Your next move</item>
+        <item>Take five</item>
+        <item>One round is enough</item>
+        <item>What will you play?</item>
+        <item>Tiny game, big fun</item>
+        <item>A moment to play</item>
+        <item>Fancy a challenge?</item>
+        <item>Pick and play</item>
+        <item>Play your way</item>
+    </string-array>
+
+    <string-array name="daily_msg_bodies">
+        <item>Pick a quick round and give yourself a playful pause.</item>
+        <item>A puzzle, a board game, or a little friendly chaos awaits.</item>
+        <item>Settle in with a short round at your own pace.</item>
+        <item>Choose a game, make a move, and enjoy the moment.</item>
+        <item>Try a puzzle or see where a quick game takes you.</item>
+        <item>Find a small challenge and see how it goes.</item>
+        <item>Unwind with a casual game whenever it suits you.</item>
+        <item>Test your thinking with a quick puzzle or a clever move.</item>
+        <item>Choose any game that catches your eye and jump right in.</item>
+        <item>Make room for a little fun with one short round.</item>
+    </string-array>
+
+</resources>

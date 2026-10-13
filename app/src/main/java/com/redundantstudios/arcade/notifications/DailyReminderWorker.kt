@@ -39,10 +39,10 @@ class DailyReminderWorker(
         val games = ManifestParser.scanGames(context)
         if (games.isEmpty()) return Result.success()
 
-        // 7. Pick today's challenge deterministically (stable per day), post it.
-        val dayIndex = SettingsManager.today().hashCode().let { if (it < 0) -it else it }
-        val game = games[dayIndex % games.size]
-        ArcadeNotifier.postDailyChallenge(context, game)
+        // 7. One of ten messages, picked at random once a day and stored, so a
+        //    retried worker re-posts the same text instead of reshuffling and
+        //    never repeats yesterday's pick.
+        ArcadeNotifier.postDailyNudge(context)
         return Result.success()
     }
 

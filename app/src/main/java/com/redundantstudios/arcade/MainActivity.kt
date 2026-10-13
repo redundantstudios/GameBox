@@ -11,6 +11,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.ads.MobileAds
+import com.redundantstudios.arcade.BuildConfig
 import com.redundantstudios.arcade.ads.UMPConsentManager
 import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.model.GameManifest
@@ -22,6 +23,7 @@ import com.redundantstudios.arcade.ui.ModeAdapter
 import com.redundantstudios.arcade.ui.ModeActivity
 import com.redundantstudios.arcade.ui.ShellTransition
 import com.redundantstudios.arcade.ui.ThemedActivity
+import com.redundantstudios.arcade.updates.UpdateCoordinator
 import com.redundantstudios.arcade.util.ManifestParser
 import com.redundantstudios.arcade.util.SettingsManager
 
@@ -31,6 +33,8 @@ class MainActivity : ThemedActivity() {
     private val MAX_N_PLAYER_TILE = 5
 
     private lateinit var allGames: List<GameManifest>
+    private var updateCoordinator: UpdateCoordinator? = null
+
 
     /** Route pulled from a notification tap; consumed exactly once. */
     private var pendingRoute: String? = null
@@ -42,6 +46,9 @@ class MainActivity : ThemedActivity() {
         applyShellBackground()
 
         NotificationChannels.ensure(this)
+        // Registers the Play update ActivityResult launcher, so it has to be
+        // built during onCreate rather than lazily.
+        updateCoordinator = UpdateCoordinator(this)
         ReminderScheduler.schedule(this)
         pendingRoute = intent?.getStringExtra(EXTRA_NOTIF_ROUTE)
 
@@ -105,6 +112,16 @@ class MainActivity : ThemedActivity() {
             }
         }
         bindHome()
+
+        // Update conversation, once the home screen exists: notice a
+        // completed upgrade, then offer a new one. Doing it here rather than
+        // in onResume means it cannot interrupt a game the player just left.
+        /* Footer reads the real package version, not a hardcoded string. */
+        findViewById<TextView>(R.id.footer)?.let {
+            it.text = getString(R.string.footer_brand, BuildConfig.VERSION_NAME)
+        }
+
+        updateCoordinator?.onHomeReady()
     }
 
     override fun onResume() {
@@ -127,6 +144,11 @@ class MainActivity : ThemedActivity() {
         }
 
         maybeAskNotificationPermission()
+
+        // Install any flexible update that finished downloading, and resume a
+        // flow that was interrupted. The Play docs require this on every
+        // entry point, not just at launch.
+        updateCoordinator?.onResume()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -183,14 +205,19 @@ class MainActivity : ThemedActivity() {
     }
 
     /**
-     * One-shot permission moment: asked AFTER the player has finished their
-     * first game and returned to the shell — a task-completion moment, never
-     * on first launch. Declined or dismissed, it never auto-asks again; the
-     * Settings row is the manual path.
+     * One-shot permission moment, asked on the FIRST launch.
+     *
+     * This used to wait until the player had finished their first game, on the
+     * theory that a task-completion moment converts better. The director asked
+     * for it at install instead, so the trigger moved - but the "once, ever"
+     * rule is unchanged: declined or dismissed, it never auto-asks again, and
+     * the Settings row remains the manual path.
+     *
+     * Asked a beat after the home screen settles rather than during onCreate,
+     * because an explainer over an empty layout looks like a crash.
      */
     private fun maybeAskNotificationPermission() {
         if (SettingsManager.notifPromptShown) return
-        if (SettingsManager.gamesLaunched < 1) return
         if (ArcadeNotifier.canPost(this)) {
             SettingsManager.notifPromptShown = true
             return
@@ -200,14 +227,18 @@ class MainActivity : ThemedActivity() {
             return
         }
         SettingsManager.notifPromptShown = true
-        AlertDialog.Builder(this)
-            .setTitle(R.string.notif_explainer_title)
-            .setMessage(R.string.notif_explainer_body)
-            .setPositiveButton(R.string.enable) { _, _ ->
-                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
-            }
-            .setNegativeButton(R.string.not_now, null)
-            .show()
+        val root = findViewById<View>(android.R.id.content)
+        root.postDelayed({
+            if (isFinishing || isDestroyed) return@postDelayed
+            AlertDialog.Builder(this)
+                .setTitle(R.string.notif_perm_title)
+                .setMessage(R.string.notif_perm_body)
+                .setPositiveButton(R.string.enable) { _, _ ->
+                    requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
+                }
+                .setNegativeButton(R.string.not_now, null)
+                .show()
+        }, 900)
     }
     companion object {
         const val EXTRA_NOTIF_ROUTE = "notif_route"

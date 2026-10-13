@@ -173,11 +173,6 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
   .setRow .lbl2{flex:1;font-size:14px;font-weight:800;letter-spacing:1px}
   .setFoot{margin-top:18px;font-size:11px;font-weight:700;letter-spacing:2px;
     color:var(--ink-dim);text-align:center}
-  #taKind{font-size:11px;letter-spacing:3px;color:var(--ink-dim);font-weight:800;text-align:center}
-  #taBody{margin:14px 0 6px;font-weight:800;font-size:16px;text-align:center}
-  #taUnit{font-size:10px;color:var(--ink-dim);word-break:break-all;text-align:center}
-  #taNote{font-size:10px;color:var(--ink-dim);text-align:center;margin-top:6px;line-height:1.5}
-  #taCount{font-size:30px;font-weight:800;margin:8px 0;text-align:center;color:var(--accent)}
   @keyframes bumpK{0%{transform:scale(1)}35%{transform:scale(1.12)}100%{transform:scale(1)}}
   .bump{animation:bumpK .2s ease-out}
 
@@ -455,16 +450,7 @@ changelog 0.2.x: UI shell. 0.1.x: engine + perft + compat fixes.
   </div>
 </div>
 
-<div id="testAd" class="modalWrap">
-  <div class="modalBox">
-    <div id="taKind">TEST AD</div>
-    <div id="taBody"></div>
-    <div id="taUnit"></div>
-    <div id="taNote"></div>
-    <div id="taCount">5</div>
-    <button id="taClose" class="btn primary sheetBtn" style="display:none">CONTINUE</button>
-  </div>
-</div>
+
 
 <div id="errBanner"></div>
 <div id="fatal"><div><h2>Something broke</h2><pre id="fatalMsg"></pre><button id="fatalReload">RELOAD</button></div></div>
@@ -1560,6 +1546,8 @@ function drawPieceInto(cnv,cssSize,type,col){
 }
 
 /* ═══ GAME UI STATE ═══ */
+/* The simulated TEST AD panel was development scaffolding and has been
+   removed; its element lookups went with it. */
 const $=id=>{ const el=document.getElementById(id); if(!el){throw new Error("missing element: "+id);} return el; };
 const app=$("app"), wrap=$("boardWrap"), boardShake=$("boardShake"),
       boardArea=$("boardArea"), bgCv=$("bg"), fgCv=$("fg"),
@@ -1588,9 +1576,7 @@ pzBack=$("pzBack"), streakNow=$("streakNow"), streakBest=$("streakBest"),
       overSheet=$("overSheet"), overTitle=$("overTitle"), overSub=$("overSub"),
       overPrimary=$("overPrimary"), overSecondary=$("overSecondary"),
       soonSheet=$("soonSheet"), soonTitle=$("soonTitle"), soonMsg=$("soonMsg"),
-      soonAlt=$("soonAlt"), soonOk=$("soonOk"),
-      testAdEl=$("testAd"), taKind=$("taKind"), taBody=$("taBody"),
-      taUnit=$("taUnit"), taNote=$("taNote"), taCount=$("taCount"), taClose=$("taClose");
+  soonOk=$("soonOk");
 
 const bgx=bgCv.getContext("2d"), fgx=fgCv.getContext("2d");
 let size=0, sq=0, frame=0, dpr=1;
@@ -1728,36 +1714,10 @@ function clearCinematics(){
 
 /* ═══ ADS — shell bridge (real AdMob on device) + labeled simulator (browser) ═══ */
 let taTimer=null;
-function showTestAd(kind,unitId,seconds,bodyText,onDone){
-  try{
-    taKind.textContent=(kind==="rewarded"?"TEST REWARDED AD":"TEST INTERSTITIAL")+" — SIMULATED";
-    taBody.textContent=bodyText||"";
-    taUnit.textContent="AdMob test unit: "+unitId;
-    taNote.textContent="No ad SDK in the browser preview — the GameBox shell serves the real ad via NativeBridge.";
-    taClose.style.display="none";
-    taCount.textContent=String(seconds);
-    openModal(testAdEl);
-    if(taTimer){ clearInterval(taTimer); taTimer=null; }
-    let left=seconds;
-    /* cosmetic chrome countdown only (PART 5 exception) */
-    taTimer=setInterval(function(){
-      left--;
-      if(left<=0){
-        clearInterval(taTimer); taTimer=null;
-        taCount.textContent="✓";
-        taClose.style.display="block";
-        taClose.onclick=function(){
-          closeModal();
-          if(onDone) onDone();
-        };
-      } else {
-        taCount.textContent=String(left);
-      }
-    },1000);
-  }catch(e){
-    if(onDone) onDone();
-  }
-}
+/* The simulated TEST AD panel was removed. It was development scaffolding:
+   the real ad fires through Studio.ads whenever the shell bridge is present,
+   and the only thing this fallback ever showed was a dialog reading
+   "TEST INTERSTITIAL - SIMULATED" - which had no business in a shipped game. */
 function setBanner(on){
   const show=!!on;
   /* No in-page ad strip: the shell renders the real AdMob banner at the bottom
@@ -1771,14 +1731,16 @@ function gameInterstitial(next){
   if(window.NativeBridge){
     try{ Studio.ads.interstitial(next||function(){}); return; }catch(e){}
   }
-  showTestAd("interstitial",CFG.ads.admobInterstitial,3,"Game over — thanks for playing!",next);
+  /* No shell bridge (browser preview): carry on without simulating an ad. */
+  if(typeof next==="function")try{ next(); }catch(e){}
 }
 function rewardedAd(placement,onGrant){
   console.log("[chess] rewarded:",placement);
   if(window.NativeBridge){
     try{ Studio.ads.rewarded(placement,onGrant); return; }catch(e){}
   }
-  showTestAd("rewarded",CFG.ads.admobRewarded,5,"Reward: +1 Streak Shield",onGrant);
+  /* No shell bridge (browser preview): no reward, no fake dialog. */
+  if(typeof onGrant==="function")try{ onGrant(); }catch(e){}
 }
 
 /* ═══ SCREENS + MODALS ═══ */
@@ -2932,7 +2894,6 @@ function bindEvents(){
      which is where the ads are raised from. REMATCH or MAIN MENU, or nothing. */
   overSheet.addEventListener("click",function(e){ e.stopPropagation(); });
   soonSheet.addEventListener("click",function(e){ if(e.target===soonSheet) closeModal(); });
-  testAdEl.addEventListener("click",function(e){ /* test ad must not dismiss on backdrop */ });
 
   errBanner.addEventListener("click",function(){
     errBanner.style.display="none";

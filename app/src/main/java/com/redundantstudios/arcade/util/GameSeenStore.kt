@@ -20,7 +20,7 @@ object GameSeenStore {
        tile wears NEW again from today and gets the full window. That is how the
        window was widened from 7 to 10 days and the existing catalogue reset in
        one step, instead of deleting the store on a user's device. */
-    private const val PREFS = "game_seen_v2"
+    private const val PREFS = "game_seen_v3"
 
     /** How long a freshly added game wears the NEW tag. */
     const val NEW_WINDOW_DAYS = 10L

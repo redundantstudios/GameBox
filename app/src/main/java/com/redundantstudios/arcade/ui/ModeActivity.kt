@@ -11,6 +11,7 @@ import com.redundantstudios.arcade.GameActivity
 import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.model.GameManifest
+import com.redundantstudios.arcade.model.NEW_GAME_IDS
 import com.redundantstudios.arcade.util.ManifestParser
 
 class ModeActivity : ThemedActivity() {
@@ -98,8 +99,8 @@ class ModeActivity : ThemedActivity() {
          */
         fun groupFor(game: GameManifest): Int = game.maxPlayers
 
-        /** True when the game can actually be opened with this many people. */
-        fun fitsPage(game: GameManifest, pageCount: Int): Boolean =
+        /** True when the game genuinely seats this many people. */
+        fun fitsExactly(game: GameManifest, pageCount: Int): Boolean =
             if (game.id in PARTY_GAME_IDS) {
                 // Party games are pass-the-phone, NOT a seat-count crowd. They
                 // must never appear in the 1/2/3/4 PLAYER tiles - a player
@@ -117,15 +118,39 @@ class ModeActivity : ThemedActivity() {
             }
 
         /**
-         * Order an N PLAYER page: tightest-fitting games first, then the ones
-         * that stretch to more people, and within each group the newest game
-         * first, then A-Z.
+         * True for a game that does not seat this many people but is close
+         * enough to be worth listing: within one seat of the page.
+         *
+         * The director asked for an N PLAYER page to show X+1 and X-1 games as
+         * well, because somebody browsing "2 PLAYER" does not want a wall of
+         * two-seat games and nothing else. Party games stay excluded for the
+         * reason given in [fitsExactly].
+         */
+        fun fitsNearby(game: GameManifest, pageCount: Int): Boolean {
+            if (game.id in PARTY_GAME_IDS) return false
+            return (game.minPlayers..game.maxPlayers).any { Math.abs(it - pageCount) == 1 }
+        }
+
+        /** Strict answer, for anything that wants exact-seat-only. */
+        fun fitsPage(game: GameManifest, pageCount: Int): Boolean = fitsExactly(game, pageCount)
+
+        /**
+         * Order an N PLAYER page: the NEW cohort first, then games that seat
+         * this many people exactly, then the near misses, then the ones that
+         * stretch to more people - and within each group the newest first, then
+         * A-Z.
          */
         @Suppress("DEPRECATION")
         fun orderForPage(games: List<GameManifest>, playerCount: Int): List<GameManifest> {
             val legacy = NEWEST_FIRST
             return games.sortedWith(
                 compareBy(
+                    /* NEW games pin to the very top of the page, whether they seat
+                       this many people exactly or are only a near miss. */
+                    { if (it.id in NEW_GAME_IDS) 0 else 1 },
+                    /* then exact fits, then the +/-1 ones, so the games that really
+                       do seat X are still the first thing you see. */
+                    { if (fitsExactly(it, playerCount)) 0 else 1 },
                     { groupFor(it) },
                     { it.minPlayers },
                     // Newest first: ReleaseDate is Comparable and descending
@@ -165,9 +190,12 @@ class ModeActivity : ThemedActivity() {
             )
         }
 
-        /** Single source of truth for which games belong to a player count. */
+        /**
+         * Games an N PLAYER page lists: everything that seats this many people
+         * exactly, plus the games one seat either side of it.
+         */
         fun filterGames(games: List<GameManifest>, playerCount: Int): List<GameManifest> =
-            games.filter { fitsPage(it, playerCount) }
+            games.filter { fitsExactly(it, playerCount) || fitsNearby(it, playerCount) }
 
         /**
          * Player count used when a game is opened from All Games or the 1

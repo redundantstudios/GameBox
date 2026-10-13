@@ -15,6 +15,7 @@ import com.redundantstudios.arcade.ui.ShellTransition
 import com.redundantstudios.arcade.ui.ThemeTransition
 import com.redundantstudios.arcade.ui.ThemedActivity
 import com.redundantstudios.arcade.util.Haptics
+import com.redundantstudios.arcade.BuildConfig
 import com.redundantstudios.arcade.util.SettingsManager
 
 /**
@@ -33,6 +34,11 @@ class SettingsActivity : ThemedActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
+
+        /* Footer reads the real package version, not a hardcoded string. */
+        findViewById<TextView>(R.id.footer)?.let {
+            it.text = getString(R.string.footer_brand, BuildConfig.VERSION_NAME)
+        }
         applyShellBackground()
 
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
@@ -50,7 +56,6 @@ class SettingsActivity : ThemedActivity() {
         val hapticGroup = findViewById<RadioGroup>(R.id.hapticGroup)
         val themeGroup = findViewById<RadioGroup>(R.id.themeGroup)
         val slotGroup = findViewById<RadioGroup>(R.id.slotGroup)
-        val btnTestNotif = findViewById<TextView>(R.id.btnTestNotif)
 
         // ---- push the saved state in BEFORE any listener is attached --------
         swSound.isChecked = SettingsManager.soundEnabled
@@ -169,10 +174,7 @@ class SettingsActivity : ThemedActivity() {
         }
 
         // ---- dev-only test ping ---------------------------------------------
-        btnTestNotif.setOnClickListener {
             ShellAudio.tap(this)
-            ArcadeNotifier.postDevTest(this)
-        }
     }
 
     /**

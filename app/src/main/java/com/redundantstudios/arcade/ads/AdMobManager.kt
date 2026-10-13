@@ -55,7 +55,7 @@ class AdMobManager(private val activity: Activity) {
 
     private val bannerUnitId =
         if (isDebug) "ca-app-pub-3940256099942544/6300978111"
-        else "ca-app-pub-9565881819222312/8702711494"
+        else "ca-app-pub-9565881819222312/7621425947"
 
     /**
      * Unit for a strip that stands on its END (the RIGHT edge).

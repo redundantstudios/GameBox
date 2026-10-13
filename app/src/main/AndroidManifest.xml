@@ -71,6 +71,19 @@
             android:screenOrientation="portrait"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard"
             android:theme="@style/Theme.Shell.Game" />
+
+        <!-- Fires when Play installs a new version, so the "update finished"
+             notification reaches the player without them having to reopen the
+             app first. The cold-start version comparison in UpdateCoordinator
+             is the backstop when this does not fire. -->
+        <receiver
+            android:name=".updates.PackageReplacedReceiver"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

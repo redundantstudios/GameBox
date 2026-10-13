@@ -14,6 +14,7 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.util.Log
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.redundantstudios.arcade.ads.AdMobManager
 import com.redundantstudios.arcade.ads.AdPolicy
@@ -462,6 +463,7 @@ val bannerEdge = currentGame?.bannerEdge
             }
 
             addJavascriptInterface(NativeBridge(this@GameActivity), "NativeBridge")
+        installBackBlock()
 
             val mode = intent.getStringExtra("mode")
             val skill = intent.getStringExtra("skill") ?: "medium"
@@ -922,8 +924,42 @@ val bannerEdge = currentGame?.bannerEdge
         NativeBridgeContext.bannerHandler = null
     }
 
-    override fun onBackPressed() {
-        exitGame()
+    /**
+     * Back is disabled while a game is on screen.
+     *
+     * The director asked for this so a player cannot drop out of a game by
+     * reflex mid-turn - they are meant to leave through the in-game pause
+     * menu like everything else. The in-game back button (NativeBridge
+     * .exitGame) is untouched, so every game still has a way out.
+     *
+     * NOT a dead end, though: a broken or half-loaded game could fail to show
+     * that menu and strand someone with no way home. So the first two presses
+     * are swallowed with a hint, and a third within a couple of seconds
+     * always gets out. A trap is worse than a reflex.
+     */
+    private var backPressCount = 0
+    private var lastBackPressAt = 0L
+
+    private fun installBackBlock() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() = onSystemBackPressed()
+        })
+    }
+
+    private fun onSystemBackPressed() {
+        val now = android.os.SystemClock.elapsedRealtime()
+        // a press more than 2.5s after the last one restarts the count
+        backPressCount = if (now - lastBackPressAt > 2500) 1 else backPressCount + 1
+        lastBackPressAt = now
+        if (backPressCount >= 3) {
+            exitGame()
+            return
+        }
+        try {
+            android.widget.Toast.makeText(this, R.string.game_back_hint, android.widget.Toast.LENGTH_SHORT).show()
+        } catch (_: Throwable) {
+            // never let a hint crash a game
+        }
     }
 
     /**

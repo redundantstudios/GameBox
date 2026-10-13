@@ -21,9 +21,12 @@ android {
         // Aug 2025, and this app is now on 36 so the newest behaviour changes
         // (edge-to-edge, predictive back) are what we actually test on device.
         targetSdk 36
-        // Fresh Play listing: the first upload is versionCode 1.
-        versionCode 1
-        versionName "1.0"
+// v1 was the first closed-test upload. v2 is the first release carrying the
+// in-app update system, so it is the first version a player can be *offered*
+// an update to. The completion popup compares against lastSeenVersion, which
+// starts null and is stamped on the first launch of any version.
+versionCode 2
+versionName "1.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -115,6 +118,10 @@ dependencies {
 
     // AdMob & UMP
     implementation 'com.google.android.gms:play-services-ads:23.6.0'
+// In-app updates. Latest published version; still the supported path.
+// Resolved from google() which is already declared in the repositories block.
+implementation 'com.google.android.play:app-update-ktx:2.1.0'
+implementation 'com.google.android.play:app-update:2.1.0'
     implementation 'com.google.android.ump:user-messaging-platform:3.1.0'
 
     // Local notifications (WorkManager scheduling)

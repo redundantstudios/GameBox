@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.redundantstudios.arcade.updates.UpdateCheckWorker
 import com.redundantstudios.arcade.util.SettingsManager
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
@@ -18,22 +19,50 @@ import java.util.concurrent.TimeUnit
 object ReminderScheduler {
 
     private const val UNIQUE_WORK = "arcade_daily_reminder"
+    private const val UNIQUE_UPDATE_WORK = "arcade_update_check"
 
     fun schedule(context: Context) {
         val wm = WorkManager.getInstance(context)
         if (!SettingsManager.remindersEnabled) {
             wm.cancelUniqueWork(UNIQUE_WORK)
-            return
+        } else {
+            val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(24, TimeUnit.HOURS)
+                .setInitialDelay(delayUntilSlot(), TimeUnit.MILLISECONDS)
+                .build()
+            wm.enqueueUniquePeriodicWork(UNIQUE_WORK, ExistingPeriodicWorkPolicy.UPDATE, request)
         }
-        val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(24, TimeUnit.HOURS)
-            .setInitialDelay(delayUntilSlot(context), TimeUnit.MILLISECONDS)
+        scheduleUpdateCheck(wm)
+    }
+
+    /**
+     * The update check runs on its own cadence, independent of the daily
+     * reminder: someone who has turned reminders off should still hear about
+     * a new version, because an update is not a nudge, it is news.
+     *
+     * Six hours is frequent enough to notice a rollout without hammering Play.
+     * The notification inside is deduped per versionCode, so frequency costs
+     * nothing visible.
+     */
+    private fun scheduleUpdateCheck(wm: WorkManager) {
+        val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(6, TimeUnit.HOURS)
+            .setInitialDelay(2, TimeUnit.HOURS)
             .build()
-        wm.enqueueUniquePeriodicWork(UNIQUE_WORK, ExistingPeriodicWorkPolicy.UPDATE, request)
+        wm.enqueueUniquePeriodicWork(
+            UNIQUE_UPDATE_WORK,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
     }
 
     /** Minutes until the next occurrence of the chosen reminder slot. */
-    private fun delayUntilSlot(context: Context): Long {
-        val slot = slotTime(context)
+    private fun delayUntilSlot(): Long {
+        val slot = SettingsManager.reminderSlot.let {
+            when (it) {
+                "Morning" -> 9 to 30
+                "Afternoon" -> 15 to 30
+                else -> 19 to 30
+            }
+        }
         val now = Calendar.getInstance()
         val target = now.clone() as Calendar
         target.set(Calendar.HOUR_OF_DAY, slot.first)
@@ -43,7 +72,7 @@ object ReminderScheduler {
         return target.timeInMillis - now.timeInMillis
     }
 
-    fun slotTime(context: Context): Pair<Int, Int> = when (SettingsManager.reminderSlot) {
+    fun slotTime(): Pair<Int, Int> = when (SettingsManager.reminderSlot) {
         "Morning" -> 9 to 30
         "Afternoon" -> 15 to 30
         else -> 19 to 30

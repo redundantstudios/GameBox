@@ -23,6 +23,37 @@ import com.redundantstudios.arcade.util.SettingsManager
  */
 object ArcadeNotifier {
 
+    // ------------------------------------------------------------------
+    // App updates
+    // ------------------------------------------------------------------
+
+    /**
+     * "A quick update is ready". Deliberately the same promises as the in-app
+     * dialog: new games are coming, Play downloads in the background, and the
+     * app restarts once to finish. Deduped per offered versionCode so a
+     * six-hourly check cannot turn into a repeated nudge.
+     */
+    fun postUpdateAvailable(context: Context, force: Boolean = false) {
+        if (!force && SettingsManager.updateNotifiedVersion != 0) return
+        post(
+            context,
+            NotificationChannels.CH_UPDATE,
+            context.getString(com.redundantstudios.arcade.R.string.notif_update_title),
+            context.getString(com.redundantstudios.arcade.R.string.notif_update_body),
+            "home"
+        )
+    }
+
+    fun postUpdateComplete(context: Context) {
+        post(
+            context,
+            NotificationChannels.CH_UPDATE,
+            context.getString(com.redundantstudios.arcade.R.string.notif_update_done_title),
+            context.getString(com.redundantstudios.arcade.R.string.notif_update_done_body),
+            "home"
+        )
+    }
+
     private var nextId = 1000
 
     /** True when the OS will actually let us post (API 33 runtime permission). */
@@ -38,14 +69,19 @@ object ArcadeNotifier {
     // Re-engagement (max 1/day - stamped by the worker)
     // ------------------------------------------------------------------
 
-    fun postDailyChallenge(context: Context, game: GameManifest) {
-        post(
-            context,
-            NotificationChannels.CH_DAILY,
-            "Today's ${game.title} challenge is ready",
-            "One board, a few minutes. Beat your best run!",
-            "game:${game.id}"
-        )
+    /**
+     * The daily nudge. One of [DailyMessages]' ten variants, chosen at random
+     * once per day and stored, so a retried worker cannot reshuffle the text
+     * mid-day and never repeats yesterday's pick.
+     *
+     * Replaces the old fixed "today's <game> challenge" card, which named a
+     * game the player may not have opened in months.
+     */
+    fun postDailyNudge(context: Context) {
+        val list = DailyMessages.all(context)
+        if (list.isEmpty()) return
+        val msg = list[SettingsManager.todayDailyMessageIndex(list.size)]
+        post(context, NotificationChannels.CH_DAILY, msg.title, msg.body, msg.route)
         SettingsManager.lastNotifDay = SettingsManager.today()
     }
 

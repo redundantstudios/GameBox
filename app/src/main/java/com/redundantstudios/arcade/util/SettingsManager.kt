@@ -32,6 +32,16 @@ object SettingsManager {
     private const val KEY_GAMES_LAUNCHED = "games_launched"
     private const val KEY_NOTIF_PROMPT_SHOWN = "notif_prompt_shown"
 
+// In-app updates
+private const val KEY_LAST_SEEN_VERSION = "last_seen_version"
+private const val KEY_UPDATE_PROMPTED_VERSION = "update_prompted_version"
+private const val KEY_UPDATE_COMPLETED_SHOWN = "update_completed_shown"
+private const val KEY_UPDATE_NOTIFIED_VERSION = "update_notified_version"
+
+// Daily notification rotation
+private const val KEY_DAILY_MSG_INDEX = "daily_msg_index"
+private const val KEY_DAILY_MSG_DAY = "daily_msg_day"
+
     private lateinit var prefs: SharedPreferences
 
     fun init(context: Context) {
@@ -120,6 +130,86 @@ object SettingsManager {
     var notifPromptShown: Boolean
         get() = prefs.getBoolean(KEY_NOTIF_PROMPT_SHOWN, false)
         set(value) = prefs.edit().putBoolean(KEY_NOTIF_PROMPT_SHOWN, value).apply()
+
+    // ------------------------------------------------------------------
+    // In-app updates
+    // ------------------------------------------------------------------
+
+    /**
+     * versionCode of the last app version this install actually ran.
+     * Null until the first cold start stamps it. A null here means "fresh
+     * install", never "upgraded" - important, or a new install would claim an
+     * update happened and show the completion popup to someone who never
+     * updated anything.
+     */
+    var lastSeenVersion: Int?
+        get() = if (prefs.contains(KEY_LAST_SEEN_VERSION)) prefs.getInt(KEY_LAST_SEEN_VERSION, 0) else null
+        set(value) = prefs.edit().putInt(KEY_LAST_SEEN_VERSION, value ?: 0).apply()
+
+    /**
+     * versionCode we have already put the "update ready" popup in front of the
+     * player. Compared against the offered versionCode so a release is asked
+     * about once, no matter how many times the app is opened.
+     */
+    var updatePromptedVersion: Int
+        get() = prefs.getInt(KEY_UPDATE_PROMPTED_VERSION, 0)
+        set(value) = prefs.edit().putInt(KEY_UPDATE_PROMPTED_VERSION, value).apply()
+
+    /** True once the "you're up to date" popup has been shown for this upgrade. */
+    var updateCompletedShown: Boolean
+        get() = prefs.getBoolean(KEY_UPDATE_COMPLETED_SHOWN, false)
+        set(value) = prefs.edit().putBoolean(KEY_UPDATE_COMPLETED_SHOWN, value).apply()
+
+    /** yyyy-MM-dd the "update finished" notification last fired, for dedupe. */
+    var updateNotifiedVersion: Int
+        get() = prefs.getInt(KEY_UPDATE_NOTIFIED_VERSION, 0)
+        set(value) = prefs.edit().putInt(KEY_UPDATE_NOTIFIED_VERSION, value).apply()
+
+    // ------------------------------------------------------------------
+    // Daily notification rotation
+    // ------------------------------------------------------------------
+
+    /**
+     * Index into [com.redundantstudios.arcade.notifications.DailyMessages] for
+     * today, and the day it was picked for. Chosen once a day and then reused,
+     * so a retried worker posts the same text instead of reshuffling.
+     */
+    var dailyMessageIndex: Int
+        get() = prefs.getInt(KEY_DAILY_MSG_INDEX, -1)
+        set(value) = prefs.edit().putInt(KEY_DAILY_MSG_INDEX, value).apply()
+
+    var dailyMessageDay: String?
+        get() = prefs.getString(KEY_DAILY_MSG_DAY, null)
+        set(value) = prefs.edit().putString(KEY_DAILY_MSG_DAY, value).apply()
+
+    /**
+     * Today's daily message index, picking one at random the first time a day
+     * asks for it. Never repeats yesterday's pick when there is a choice.
+     */
+    fun todayDailyMessageIndex(size: Int): Int {
+        if (size <= 0) return 0
+        val today = today()
+        val stored = dailyMessageIndex
+        if (dailyMessageDay == today && stored in 0 until size) return stored
+        val previous = if (dailyMessageDay == yesterday()) stored else -1
+        var pick = (java.util.Random().nextInt(size))
+        if (size > 1 && pick == previous) pick = (pick + 1) % size
+        dailyMessageIndex = pick
+        dailyMessageDay = today
+        return pick
+    }
+
+    fun yesterday(): String {
+        val cal = java.util.Calendar.getInstance().apply {
+            add(java.util.Calendar.DAY_OF_MONTH, -1)
+        }
+        return String.format(
+            "%04d-%02d-%02d",
+            cal.get(java.util.Calendar.YEAR),
+            cal.get(java.util.Calendar.MONTH) + 1,
+            cal.get(java.util.Calendar.DAY_OF_MONTH)
+        )
+    }
 
     fun markOpenedToday() {
         lastOpenDay = today()
