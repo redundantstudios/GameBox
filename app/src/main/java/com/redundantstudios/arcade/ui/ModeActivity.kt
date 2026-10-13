@@ -128,6 +128,10 @@ class ModeActivity : ThemedActivity() {
          */
         fun fitsNearby(game: GameManifest, pageCount: Int): Boolean {
             if (game.id in PARTY_GAME_IDS) return false
+            // NEW cohort only. Relaxing it for every game put 1-player games on
+            // the 2 PLAYER page and 2-player games on the 3 PLAYER page, which
+            // is not what an N PLAYER page is meant to mean.
+            if (game.id !in NEW_GAME_IDS) return false
             return (game.minPlayers..game.maxPlayers).any { Math.abs(it - pageCount) == 1 }
         }
 
@@ -191,8 +195,13 @@ class ModeActivity : ThemedActivity() {
         }
 
         /**
-         * Games an N PLAYER page lists: everything that seats this many people
-         * exactly, plus the games one seat either side of it.
+         * Games an N PLAYER page lists.
+         *
+         * Established games appear only when they seat this many people exactly.
+         * The NEW cohort is also allowed one seat either side, because a new
+         * game is not always an exact match for every page and would otherwise
+         * be invisible on most of them - which defeats the point of pinning it
+         * to the top in the first place.
          */
         fun filterGames(games: List<GameManifest>, playerCount: Int): List<GameManifest> =
             games.filter { fitsExactly(it, playerCount) || fitsNearby(it, playerCount) }
@@ -234,6 +243,9 @@ class ModeActivity : ThemedActivity() {
 
         val allGames = ManifestParser.scanGames(this)
         Log.d(TAG, "Total games scanned: ${allGames.size}")
+
+                // Two columns on a phone, more once there is room for them.
+        ResponsiveGrid.apply(findViewById(R.id.gamesRecyclerView))
 
         val filteredGames = when {
             // ALL GAMES and PARTY GAMES: newest integration first. These pages

@@ -20,7 +20,7 @@ import android.util.Log
  * So the policy lives here, in the shell, in front of the bridge. A game asks
  * *whether* it may show an ad; this decides *when*. The numbers come from
  * FuturePlans/AD_SYSTEM_RESEARCH.md and were agreed by the director, then revised
- * at the director's request: a 120s interstitial gap, revives limited to one per
+ * at the director's request: a 180s interstitial gap, revives limited to one per
  * run, and NO cap on cosmetics, themes or other in-game rewards - those are
  * uncapped, because a player watching an ad TO GET something is not being abused
  * by being offered a second one.
@@ -48,7 +48,7 @@ object AdPolicy {
      * - so the gap almost never got the chance to matter, and an interstitial
      * system effectively showed one ad per launch.
      *
-     * The cap is gone. Frequency is now the gap alone: once 90s have passed an
+     * The cap is gone. Frequency is now the gap alone: once 3 minutes have passed an
      * ad is READY, and it waits there until the player taps a natural break
      * (Play Again / Home / Menu). The ad never fires on a timer by itself, so it
      * can never ambush someone mid-action - the player's own tap is what shows
@@ -59,7 +59,7 @@ object AdPolicy {
      * a mash-tap on a results card from stacking ads, and 90s still means a
      * player cannot see two interstitials in one short round.
      */
-    const val INTERSTITIAL_GAP_MS = 90_000L
+    const val INTERSTITIAL_GAP_MS = 180_000L
 
     /**
      * How long into a brand-new player's FIRST session interstitials stay

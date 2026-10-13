@@ -11,7 +11,11 @@ maxPlayers: 1
 aiSupport: none
 online: false
 tileColor: #ff8a3d
-banner: bottom
+<!-- banner: removed. This game lags and the strip was being redrawn every
+     frame; smoothness matters more than the impression here. The shell only
+     builds a banner slot for a game whose manifest declares one, so deleting
+     that line is the whole fix - the game can still call showBanner() and the
+     shell simply never gives it a slot. -->
 bannerBg: #05070c
 version: 1
 released: 2026-09-28

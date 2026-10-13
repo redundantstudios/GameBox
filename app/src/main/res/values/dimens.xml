@@ -34,4 +34,6 @@
     <!-- Elevation -->
     <dimen name="elevation_card">8dp</dimen>
     <dimen name="elevation_button">3dp</dimen>
+    <!-- Phone value: no cap, the screen is the column. -->
+    <dimen name="content_max_width">0dp</dimen>
 </resources>

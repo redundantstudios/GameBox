@@ -50,6 +50,8 @@
         android:layout_marginStart="@dimen/screen_margin"
         android:layout_marginEnd="@dimen/screen_margin"
         android:layout_width="0dp"
+        android:maxWidth="@dimen/content_max_width"
+        android:layout_gravity="center_horizontal"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
         android:clipToPadding="false"

@@ -19,6 +19,7 @@ import com.redundantstudios.arcade.model.GameMode
 import com.redundantstudios.arcade.notifications.ArcadeNotifier
 import com.redundantstudios.arcade.notifications.NotificationChannels
 import com.redundantstudios.arcade.notifications.ReminderScheduler
+import com.redundantstudios.arcade.ui.ResponsiveGrid
 import com.redundantstudios.arcade.ui.ModeAdapter
 import com.redundantstudios.arcade.ui.ModeActivity
 import com.redundantstudios.arcade.ui.ShellTransition
@@ -90,6 +91,8 @@ class MainActivity : ThemedActivity() {
 
         val modeRecyclerView = findViewById<RecyclerView>(R.id.modeRecyclerView)
         modeRecyclerView.layoutManager = GridLayoutManager(this, 2)
+    // Two columns on a phone, more once there is room for them.
+    ResponsiveGrid.apply(modeRecyclerView)
 
         allGames = ManifestParser.scanGames(this)
 

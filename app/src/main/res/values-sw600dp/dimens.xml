@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tablet: hold the content to a comfortable reading column and centre
+         it, rather than stretching every button across 1200px. -->
+    <dimen name="content_max_width">840dp</dimen>
+</resources>
