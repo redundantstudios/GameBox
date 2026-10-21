@@ -19,7 +19,13 @@ the shell owner; two other developers each own a set of games.
 
 ## Your scope
 
-Your games are listed in the ownership table in `AI-CONTEXT.md` section 4.
+**The games you own are the ones the human names in their message to you.**
+They will list them. That list is the truth.
+
+The ownership table in `AI-CONTEXT.md` section 4 is a *proposal* the three
+developers have not agreed yet — treat it as a draft, and let the human's
+message override it.
+
 **Everything inside your own game folders is yours.** A game lives at
 `app/src/main/assets/games/<game>/index.html` and is one self-contained file.
 
