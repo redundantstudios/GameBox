@@ -1,5 +1,14 @@
 # Agent Protocol - Redundant Arcade
 
+## READ THESE FIRST
+
+- **`AI-CONTEXT.md`** — the shared briefing. The map of the repo, the
+  ownership rules for working with the other two developers, the commands,
+  and the mistakes that have already cost this project time. Any AI picking
+  up this repo should read it before touching anything.
+- **`AI-BRIEF-BOBBY.md` / `AI-BRIEF-BADRI.md`** — the per-developer brief.
+  Each names the games that developer owns and the boundaries around them.
+
 ## THE STANDING RULE — Feedback → Change → Build → Install → Test
 This rule is permanent and applies to EVERY chat, EVERY task, EVERY turn. It
 overrides any instinct to stop at "the change looks right".
