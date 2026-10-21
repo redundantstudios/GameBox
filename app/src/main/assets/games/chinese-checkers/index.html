@@ -17,6 +17,7 @@ released: 2026-10-11
 
 <html lang="en">
 <head>
+<script src="../../shell/shell-boot.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#170e08">
@@ -112,6 +113,14 @@ button{font-family:var(--serif)}
  #rail.many .tc{width:26px;height:26px}#rail.many .tc .dot{width:11px;height:11px}}
 #endWrap{position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));left:0;right:0;z-index:8;display:flex;flex-direction:column;
  align-items:center;gap:4px;transition:opacity .2s,visibility .2s}
+      /* THE END-TURN BUTTON SITS ON THE PLAYER'S OWN SIDE OF THE BOARD.
+         A board like this is six triangles, three along the top and three along
+         the bottom. Reaching for a button that is always at the bottom of the
+         screen means reaching across the board, and on a phone held in two
+         hands the button should be under the thumb of whoever is playing - so
+         it follows the player whose turn it is, and moves to the other side
+         when the turn moves to the other half. */
+      #endWrap.atTop{top:calc(14px + env(safe-area-inset-top));bottom:auto}
 #endWrap small{font-size:10px;letter-spacing:.18em;opacity:.7;text-shadow:0 1px 2px #000}
 .overlay{z-index:30;background:rgba(8,4,2,.45)}
 .tutpanel{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);
@@ -323,7 +332,7 @@ const ROWS=[1,2,3,4,13,12,11,10,9,10,11,12,13,4,3,2,1];
 const K=(r,c)=>r*32+c;
 const CELL=[],HOLES={},ROWIDX=[];
 {let i=0;for(let r=0;r<17;r++){ROWIDX[r]=[];const n=ROWS[r];
- for(let j=0;j<n;j++){const c=12-(n-1)+2*j,h={i:i,r:r,c:c,x:(c-12)/2,y:(r-8)*0.8660254};
+ for(let j=0;j<n;j++){const c=12-(n-1)+2*j,h={i:i,r:r,c:c,x:(c-12)/2,y:(8-r)*0.8660254};
   HOLES[K(r,c)]=h;CELL.push(h);ROWIDX[r].push(i);i++;}}}
 const NH=CELL.length; /* 121 */
 const DIRS=[[0,-2],[0,2],[-1,-1],[-1,1],[1,-1],[1,1]];
@@ -645,10 +654,39 @@ function endTurn(){
   let n=G.cur;
   for(let k=0;k<G.players.length;k++){n=(n+1)%G.players.length;if(!G.players[n].done)break}
   G.cur=n;G.phase='idle';updateHUD();saveGame();SFX.turn();
+  /* BLOCKED PLAYERS.
+
+     The game had a rule for a player with no legal move: the turn passed.
+     But it passed, and passed, and passed - the opponent kept moving, the
+     blocked player kept having nothing to do, and the game never ended.
+     Blocking the last marble on the board was supposed to end the game and
+     did not.
+
+     The rule now is the ordinary one. A player who has no legal move is
+     given a turn to be freed. If the OPPONENT then moves and the player
+     STILL has no legal move, the marbles blocking them are still where they
+     were, nothing is going to change, and the player has lost.
+
+     'Still has no legal move' is the important half. A player hemmed in for
+     one turn is not lost - the opponent might move away and free them - and
+     this rule does not say they are. Only a player who is still stuck after
+     a full turn has gone by is out of the game, which is what being blocked
+     actually means. */
+  if(!hasAnyMove(n)){
+  if(G.stuck[n]){
+  /* Still stuck after the opponent has had their turn. */
+  if(G.team){
+  const lostTeam=G.players[n].team,other=(G.players[0].team===lostTeam)?1:0;
+  finishGame({type:'t',id:other,lost:true});
+  }else{finishGame({type:'p',id:n,lost:true});}
+  return;}
+  G.stuck[n]=true;
+  toast(G.players[n].name+' HAS NO MOVES - TURN PASSES');
+  passTimer=setTimeout(()=>{if(G&&G.cur===n&&G.phase==='idle')endTurn()},1100);
+  return;}
+  G.stuck[n]=false;
   if(G.players[n].bot){G.phase='bot';botTimer=setTimeout(botTurn,680)}
-  else if(!hasAnyMove(n)){toast('NO LEGAL MOVES — TURN PASSES');
-    passTimer=setTimeout(()=>{if(G&&G.cur===n&&G.phase==='idle')endTurn()},1100)}
-}
+  }
 
 /* ---------------- bot AI ---------------- */
 function isoCount(pid){let c=0;
@@ -719,11 +757,19 @@ function botTurn(){
 }
 function initializeGame(c,restore){
   window.__ccOverAdDone=false;
+  /* The resets the original had. Without them a new game inherits the old
+     one's pending flights, sparks and TIMERS - and the timers matter here:
+     the blocked-player rule schedules a pass, and a stale pass firing into a
+     game that has already moved on would end somebody's turn for them. */
+  clearTimeout(botTimer);clearTimeout(passTimer);fly.length=0;sparks.length=0;
+  for(const k in bounce)delete bounce[k];
+  winnerColors=new Set();
   cfg=c;
   G={cfg:c,mode:c.mode,team:!!c.team,diff:c.diff|0,
      players:restore?restore.players:setupPlayers(c),
      board:restore?Int8Array.from(restore.board):new Int8Array(NH).fill(-1),
-     cur:restore?restore.cur:0,phase:'idle',paused:false,selected:-1,dests:null,winner:null};
+     cur:restore?restore.cur:0,phase:'idle',paused:false,selected:-1,dests:null,winner:null,
+     stuck:(restore&&restore.stuck)?restore.stuck:[]};
   if(!restore)G.players.forEach(P=>CAMPS[P.camp].forEach(h=>G.board[h]=P.idx));
   hide($('ovWin'));hide($('ovPause'));hide($('scrHome'));hide($('scrSetup'));
   buildSeats();showGame();updateHUD();saveGame();
@@ -732,7 +778,7 @@ function initializeGame(c,restore){
 function restartGame(){if(G)initializeGame(G.cfg)}
 function saveGame(){
   if(!G||G.phase==='over'){LS.del('cc_save');return}
-  LS.set('cc_save',{cfg:G.cfg,board:Array.from(G.board),players:G.players,cur:G.cur});
+  LS.set('cc_save',{cfg:G.cfg,board:Array.from(G.board),players:G.players,cur:G.cur,stuck:G.stuck});
 }
 function loadGame(){
   const s=LS.get('cc_save',null);
@@ -746,8 +792,13 @@ function finishGame(w){
   G.phase='over';G.winner=w;G.selected=-1;G.dests=null;hideEnd();
   clearTimeout(botTimer);updateSeats();saveGame();
   stats.games++;
+  /* WAS IT THE HUMAN WHO GOT STUCK?
+     A loss is the opposite of a win, so the question is asked the other way
+     round: the player named in the result is the one who was BLOCKED, so if
+     that is the human, the human did not win. */
   const humanWon=G.mode==='friends'?true:
-    (w.type==='p'?!G.players[w.id].bot:G.players.some(q=>q.team===w.id&&q.idx===0));
+  (w.type==='p'?(w.lost?!G.players[w.id].bot:G.players[w.id].bot)
+  :G.players.some(q=>q.team===w.id&&q.idx===0));
   if(humanWon){stats.wins++;SFX.win();buzz([40,60,40,60,140])}
   else{SFX.lose();buzz([60,40,60])}
   saveStats();
@@ -762,10 +813,24 @@ function showWin(){
   try{window.__ccSyncBanner()}catch(e){}
   const w=G.winner;let title,names;
   if(w.type==='p'){const P=G.players[w.id];
-    title=G.mode==='bot'&&P.bot?'DEFEAT':'CHAMPION';
-    names=[P];}
+  if(w.lost){
+  /* The player named here is the one who was BLOCKED. */
+  if(G.mode==='bot'&&P.bot){
+  /* The computer was the blocked one, so the human won. */
+  const H=G.players.find(q=>!q.bot);
+  title='CHAMPION';names=H?[H]:[P];
+  }else{title='DEFEAT';names=[P];}
+  }else{
+  title=G.mode==='bot'&&P.bot?'DEFEAT':'CHAMPION';
+  names=[P];}
+  }
   else{const mem=G.players.filter(q=>q.team===w.id);
+  if(w.lost){
+  /* The team named here WON - the other one was the one that was blocked. */
+  title=mem.some(q=>q.idx===0)?'TEAM '+ABC[w.id]+' WINS':'DEFEAT';
+  }else{
     title=(G.mode==='bot'&&!mem.some(q=>q.idx===0))?'DEFEAT':'TEAM '+ABC[w.id]+' WINS';
+  }
     names=mem;}
   $('winTitle').textContent=title;
   $('winMarble').innerHTML=names.length===1?'<span class="dot bigdot mc'+names[0].color+'"></span>':
@@ -778,7 +843,24 @@ function showWin(){
 /* ---------------- HUD / player tokens / screens ---------------- */
 function updateHUD(){
   if(!G)return;
-  updateChip();updateSeats();
+  updateChip();updateSeats();updateEndTurnSide();
+}
+/* THE END-TURN BUTTON GOES WHERE THE PLAYER IS.
+
+   The board is six triangles: three along the top and three along the
+   bottom. The button used to be pinned to the bottom of the screen no
+   matter whose turn it was, so a player sitting at the top of the board had
+   to reach across it to end their turn. It now sits on the side the player
+   is playing from, and moves when the turn does.
+
+   The camp a player plays from says which half they are on. The cell rows
+   are drawn bottom-up now, so a camp whose centre sits BELOW the middle of
+   the board is a bottom-half camp, and its button goes at the bottom. */
+function updateEndTurnSide(){
+  const w=$('endWrap');if(!w||!G)return;
+  const p=G.players[G.cur];if(!p)return;
+  const side=CENT[p.camp];
+  w.classList.toggle('atTop',!!side&&side.y<0);
 }
 function updateChip(){const P=G.players[G.cur];
   $('hDot').className='dot mc'+P.color;$('hText').textContent=homeOwn(G.cur)+'/10'}
@@ -1034,7 +1116,7 @@ requestAnimationFrame(loop);
     try{return JSON.parse(v)}catch(e){return d}
   };
   LS.set=function(k,v){var j=JSON.stringify(v);try{if(B&&B.save)B.save(k,j);else _set(k,v)}catch(e){}};
-  LS.del=function(k){try{if(B&&B.del)B.del(k);else _del(k)}catch(e){}};
+  LS.del=function(k){try{if(B&&B.del)B.del(k)}catch(e){}try{_del(k)}catch(e){}};
 
   /* INTERSTITIAL. showInterstitial takes (callbackName, placement) - two
      arguments, matched by arity - so the name has to exist on window or the

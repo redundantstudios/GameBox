@@ -21,6 +21,7 @@ released: 2026-10-12
 -->
 <html lang="en">
 <head>
+<script src="../../shell/shell-boot.js"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
 <meta name="theme-color" content="#1a0f07"/>
@@ -1022,7 +1023,109 @@ const engineFactory=()=>{
     }
     return{col:bestCol};
   }
-  return{choose};
+  /* THE SAME SEARCH, ONE DEPTH AT A TIME.
+
+     This is what runs when the Web Worker could not be started - which inside
+     the shell is the normal case, not the exception. The game page is loaded
+     from file:///android_asset, that origin is opaque, and Chromium refuses to
+     construct a Worker from a blob: URL on it, so `new Worker(url)` throws,
+     `_aiWorkerDead` latches, and every one of those turns fell through to the
+     plain synchronous call above.
+
+     That search runs for 220ms (easy) to 480ms (hard) as ONE unbroken block on
+     the page's main thread. On a phone that is a third of a second to half a
+     second in which nothing on the board moves: the marbles hang, the glow
+     freezes, the screen locks up. It happens only when it is the computer's
+     turn to play, which is exactly why it read as "laggy sometimes" and never
+     looked like a drawing problem - connect-four issues about sixty canvas
+     calls a frame, so the canvas was never the problem.
+
+     Iterative deepening already produces a perfectly good move at every depth,
+     so there is nothing to lose by yielding between them. This runs the same
+     search over the same depths against the same budget, and hands the
+     animation loop a frame back between each one. The board keeps breathing
+     while the opponent thinks. */
+  function chooseStep(gg,level){
+    load(gg);
+    let count=0;for(let i=0;i<42;i++)if(grid[i])count++;
+    const p=count%2===0?1:2;
+    const budget=level==='hard'?480:220,maxD=level==='hard'?12:5;
+    const valid=[];
+    for(let i=0;i<7;i++){const c=ORDER[i];if(ht[c]<TOP)valid.push(c);}
+    if(!valid.length)return{done:true,col:3};
+    for(const c of ORDER)if(ht[c]<TOP&&winAt(c,p))return{done:true,col:c};
+    deadline=Date.now()+budget;aborted=false;nodes=0;
+  /* One slice of searching, in milliseconds. This - not the search's own
+     budget - is the number that governs how the game FEELS. The 220/480ms
+     budget says how much thinking the engine wants, not how long it is allowed
+     to stand the screen still. One depth of a hard search measures well over a
+     hundred milliseconds on its own, so yielding between depths was not enough
+     on its own; the slice has to bound a single pass too. */
+    /* THE SLICE HAS TO FIT IN A FRAME.
+
+     It was 26ms, and the device log showed what that costs. The governor
+     was measuring a median of 33ms while the computer was thinking - about
+     30fps for the whole of the AI's turn, which reads as the game being
+     laggy. A 26ms slice does not fit inside a 16.7ms frame, so every frame
+     the computer was thinking was a dropped frame.
+
+     At 8ms the slice fits inside a frame on a 60Hz phone and inside one on
+     a 120Hz phone as well, and the search still spends the same total
+     budget: the budget counts SEARCH time, not frames, so the engine does
+     exactly the same amount of work over a few more frames. Nothing about
+     the move it chooses changes - the same search, the same depths, the
+     same budget - but the board keeps moving while the opponent thinks.
+
+     A depth that cannot finish inside one slice is not thrown away: it is
+     retried on the next frame, and the search keeps the move from the last
+     COMPLETED depth until then, which is the whole point of iterative
+     deepening. */
+  const SLICE=level==='hard'?8:7;
+  let bestCol=valid[0],d=2,spent=0;
+  return{
+    done:false,col:-1,
+    /* null means "give the thread back, call me again next frame".
+       An object means "this is the move". */
+    step:function(){
+      /* The budget counts SEARCH time, not wall-clock.
+
+         Handing the thread back spends wall-clock the blocking version never
+         spent - a frame is around 17ms - so budgeting against the wall clock
+         would quietly give the opponent far less thinking than it used to get,
+         and the difficulty would drop as a side effect of the fix. So the
+         clock that matters is the time actually spent searching. */
+      const t0=Date.now();
+      deadline=t0+SLICE;
+      aborted=false;
+      let cur=-INF,cols=[],alpha=-INF;
+      for(const c of valid){
+        const r=ht[c];grid[r*7+c]=p;ht[c]++;
+        const v=-negamax(3-p,d-1,-INF,-alpha,1);
+        ht[c]--;grid[ht[c]*7+c]=0;
+        if(aborted)break;
+        if(v>cur){cur=v;cols=[c];}else if(v===cur)cols.push(c);
+        if(v>alpha)alpha=v;
+      }
+      spent+=Date.now()-t0;
+      /* Only a depth that ran to completion gets to say the move.
+
+         A depth the slice cut short produced a partial list of columns, and
+         trusting that would move the AI to whatever happened to be examined
+         first. The last COMPLETED depth's move is already sitting in bestCol
+         and is already good - that is the entire point of iterative deepening
+         - so an abandoned depth leaves it alone and is retried next frame. */
+      if(!aborted&&cols.length){
+        bestCol=cols[(Math.random()*cols.length)|0];
+        if(cur>WIN-100){this.done=true;this.col=bestCol;return this;}
+        d++;
+      }
+      if(d<=maxD&&spent<budget)return null;
+      this.done=true;this.col=bestCol;
+      return this;
+    }
+  };
+  }
+  return{choose,chooseStep};
 };
 const engine=engineFactory();
 function findWin(c0,r0,p){
@@ -1124,8 +1227,20 @@ function scheduleAI(){
     if(S.diff==='easy'){ let c=-1; try{c=easyMove();}catch(e){} commit(c); return; }
     const w=aiWorker();
     if(!w){
-      let c=-1; try{c=engine.choose(Array.from(S.grid),S.diff).col;}catch(e){}
-      commit(c); return;
+      /* No Worker available (see chooseStep) - search one depth per frame, so
+         the board keeps animating instead of locking up for half a second. */
+      let search=null;
+      try{ search=engine.chooseStep(Array.from(S.grid),S.diff); }catch(e){}
+      if(!search){ commit(-1); return; }
+      const pump=function(){
+        if(id!==aiId||S.phase!=='play'||S.locked)return;
+        let r=null;
+        try{ r=search.step(); }catch(e){ r={col:-1}; }
+        if(r){ commit(r.col); return; }
+        requestAnimationFrame(pump);
+      };
+      requestAnimationFrame(pump);
+      return;
     }
     const grid=Array.from(S.grid),level=S.diff;
     const onMsg=function(ev){

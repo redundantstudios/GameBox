@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../../shell/shell-boot.js"></script>
 <!--
 STUDIO_GAME_MANIFEST
 id: ember
@@ -1514,46 +1515,94 @@ function updateDying(dt){
 }
 
 /* ================= render ================= */
+/* THE GATE IS PRE-RENDERED ONCE.
+
+   A gate is scenery that only ever SCROLLS. Its spine, its per-point widths,
+   its twigs and its thorns are all fixed the moment makeBranch finishes it, and
+   the only thing that changes from frame to frame is where it sits on screen.
+
+   It was nevertheless rebuilt from scratch sixty times a second, out of forty
+   separately-stroked segments - each needing its own lineWidth, so none of them
+   could share a path - drawn twice over for the warm glow behind the dark limb.
+   That is around 180 canvas calls a frame for background scenery, and it was
+   roughly seventy percent of this game's entire frame.
+
+   So it is rendered once into its own canvas and stamped after that: one
+   drawImage. The drawing code below is the ORIGINAL stroke code, unchanged -
+   which is the point. Inside a function that runs once per gate instead of
+   sixty times a second, its cost does not matter, so there was no reason to
+   restyle it and every reason to leave it alone.
+
+   Only the pulsing glow spots stay live, because those genuinely animate. */
+function gateSprite(b){
+  if(b._sp)return b._sp;
+  const pad=4*S;
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  const scan=p=>{for(const q of p){const rx=q.x-b.x;if(rx<x0)x0=rx;if(rx>x1)x1=rx;if(q.y<y0)y0=q.y;if(q.y>y1)y1=q.y;}};
+  scan(b.pts);
+  for(const t of b.twigs)scan(t.pts);
+  for(const th of b.thorns){
+    const rx=th.x-b.x,r=th.s*1.4;
+    if(rx-r<x0)x0=rx-r;if(rx+r>x1)x1=rx+r;
+    if(th.y-r<y0)y0=th.y-r;if(th.y+r>y1)y1=th.y+r;
+  }
+  if(!(x1>x0)){x0=-10;x1=10;}
+  if(!(y1>y0)){y0=-10;y1=10;}
+  x0-=pad;x1+=pad;y0-=pad;y1+=pad;
+  const w=x1-x0,h=y1-y0;
+  /* 1.5 matches the DPR this game already caps itself to, so the stamp lands
+     roughly 1:1 on screen and nothing is lost to resampling. */
+  const k=1.5;
+  const c=document.createElement('canvas');
+  c.width=Math.max(1,Math.ceil(w*k));c.height=Math.max(1,Math.ceil(h*k));
+  const g=c.getContext('2d');
+  g.scale(k,k);g.translate(-x0,-y0);
+  g.lineCap='round';
+  g.strokeStyle='rgba(255,128,60,0.30)';
+  for(let i=0;i<b.pts.length-1;i++){
+    g.lineWidth=b.w[i]+2.6*S;
+    g.beginPath();
+    g.moveTo(b.pts[i].x-b.x,b.pts[i].y-2.6*S);
+    g.lineTo(b.pts[i+1].x-b.x,b.pts[i+1].y-2.6*S);
+    g.stroke();}
+  for(const tw of b.twigs){
+    for(let i=0;i<tw.pts.length-1;i++){
+      g.lineWidth=Math.max(1,tw.w*(1-i/tw.pts.length)+1.8*S);
+      g.beginPath();
+      g.moveTo(tw.pts[i].x-b.x,tw.pts[i].y-2.2*S);
+      g.lineTo(tw.pts[i+1].x-b.x,tw.pts[i+1].y-2.2*S);
+      g.stroke();}}
+  g.strokeStyle='#0a0708';
+  for(let i=0;i<b.pts.length-1;i++){
+    g.lineWidth=b.w[i];
+    g.beginPath();
+    g.moveTo(b.pts[i].x-b.x,b.pts[i].y);
+    g.lineTo(b.pts[i+1].x-b.x,b.pts[i+1].y);
+    g.stroke();}
+  for(const tw of b.twigs){
+    for(let i=0;i<tw.pts.length-1;i++){
+      g.lineWidth=Math.max(1,tw.w*(1-i/tw.pts.length));
+      g.beginPath();
+      g.moveTo(tw.pts[i].x-b.x,tw.pts[i].y);
+      g.lineTo(tw.pts[i+1].x-b.x,tw.pts[i+1].y);
+      g.stroke();}}
+  g.fillStyle='#0a0708';
+  for(const th of b.thorns){const lx=th.x-b.x;
+    g.beginPath();
+    g.moveTo(lx+Math.cos(th.a)*th.s,th.y+Math.sin(th.a)*th.s);
+    g.lineTo(lx+Math.cos(th.a+2.5)*th.s*0.36,th.y+Math.sin(th.a+2.5)*th.s*0.36);
+    g.lineTo(lx+Math.cos(th.a-2.5)*th.s*0.36,th.y+Math.sin(th.a-2.5)*th.s*0.36);
+    g.closePath();g.fill();}
+  for(const th of b.thorns){const lx=th.x-b.x;
+    g.fillStyle='rgba(255,158,80,0.55)';
+    g.beginPath();g.arc(lx+Math.cos(th.a)*th.s,th.y+Math.sin(th.a)*th.s,1.6*S,0,TAU);g.fill();}
+  b._sp=c;b._sx=x0;b._sy=y0;b._sw=w;b._sh=h;
+  return c;
+}
 function drawGate(b,sx){
-  ctx.save();ctx.translate(sx,0);ctx.lineCap='round';
-  ctx.strokeStyle='rgba(255,128,60,0.30)';
-  for(let i=0;i<b.pts.length-1;i++){
-    ctx.lineWidth=b.w[i]+2.6*S;
-    ctx.beginPath();
-    ctx.moveTo(b.pts[i].x-b.x,b.pts[i].y-2.6*S);
-    ctx.lineTo(b.pts[i+1].x-b.x,b.pts[i+1].y-2.6*S);
-    ctx.stroke();}
-  for(const tw of b.twigs){
-    for(let i=0;i<tw.pts.length-1;i++){
-      ctx.lineWidth=Math.max(1,tw.w*(1-i/tw.pts.length)+1.8*S);
-      ctx.beginPath();
-      ctx.moveTo(tw.pts[i].x-b.x,tw.pts[i].y-2.2*S);
-      ctx.lineTo(tw.pts[i+1].x-b.x,tw.pts[i+1].y-2.2*S);
-      ctx.stroke();}}
-  ctx.strokeStyle='#0a0708';
-  for(let i=0;i<b.pts.length-1;i++){
-    ctx.lineWidth=b.w[i];
-    ctx.beginPath();
-    ctx.moveTo(b.pts[i].x-b.x,b.pts[i].y);
-    ctx.lineTo(b.pts[i+1].x-b.x,b.pts[i+1].y);
-    ctx.stroke();}
-  for(const tw of b.twigs){
-    for(let i=0;i<tw.pts.length-1;i++){
-      ctx.lineWidth=Math.max(1,tw.w*(1-i/tw.pts.length));
-      ctx.beginPath();
-      ctx.moveTo(tw.pts[i].x-b.x,tw.pts[i].y);
-      ctx.lineTo(tw.pts[i+1].x-b.x,tw.pts[i+1].y);
-      ctx.stroke();}}
-  ctx.fillStyle='#0a0708';
-  for(const th of b.thorns){const lx=th.x-b.x;
-    ctx.beginPath();
-    ctx.moveTo(lx+Math.cos(th.a)*th.s,th.y+Math.sin(th.a)*th.s);
-    ctx.lineTo(lx+Math.cos(th.a+2.5)*th.s*0.36,th.y+Math.sin(th.a+2.5)*th.s*0.36);
-    ctx.lineTo(lx+Math.cos(th.a-2.5)*th.s*0.36,th.y+Math.sin(th.a-2.5)*th.s*0.36);
-    ctx.closePath();ctx.fill();}
-  for(const th of b.thorns){const lx=th.x-b.x;
-    ctx.fillStyle='rgba(255,158,80,0.55)';
-    ctx.beginPath();ctx.arc(lx+Math.cos(th.a)*th.s,th.y+Math.sin(th.a)*th.s,1.6*S,0,TAU);ctx.fill();}
+  ctx.save();ctx.translate(sx,0);
+  ctx.drawImage(gateSprite(b),b._sx,b._sy,b._sw,b._sh);
+  /* The glow spots pulse with the world clock, so they cannot be baked. */
   for(const sp of b.spots){
     const pu=0.5+0.5*Math.sin(G.t*2.4+sp.ph);
     const lx=sp.x-b.x;

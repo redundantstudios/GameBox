@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../../shell/shell-boot.js"></script>
 <!--
 STUDIO_GAME_MANIFEST
 id: root-io
@@ -2839,22 +2840,36 @@ function drawRootPath(p,r,i0,i1){
   const taperStart=Math.max(start+2,Math.floor(start+(end-start)*.34));
 
   const step = count>500 ? 5 : count>360 ? 4 : count>220 ? 3 : 2;
-  function strokeRange(i0,i1,w,style){
-    if(i1-i0<1)return;
-    ctx.strokeStyle=style;ctx.lineWidth=w;
+  /* The path and the stroke, split apart.
+     A range is stroked twice - once dark and wide for the bark shadow, once
+     warm and narrow for the wood - and the two are the SAME shape. Building
+     the path once and stroking it twice is the same picture for half the
+     work, and on a long root that path is dozens of points. */
+  function rangePath(i0,i1){
+    if(i1-i0<1)return false;
     ctx.beginPath();ctx.moveTo(p[i0].x,p[i0].y);
     let last=i0;
     for(let i=i0+step;i<=i1;i+=step){ctx.lineTo(p[i].x,p[i].y);last=i;}
     if(last!==i1)ctx.lineTo(p[i1].x,p[i1].y);
+    return true;
+  }
+  function strokeRange(i0,i1,w,style){
+    if(!rangePath(i0,i1))return;
+    ctx.strokeStyle=style;ctx.lineWidth=w;
     ctx.stroke();
+  }
+  /* The dark-and-warm pair over one range, from one path. */
+  function strokeRange2(i0,i1,wDark,wBody,styleDark,styleBody){
+    if(!rangePath(i0,i1))return;
+    ctx.strokeStyle=styleDark;ctx.lineWidth=wDark;ctx.stroke();
+    ctx.strokeStyle=styleBody;ctx.lineWidth=wBody;ctx.stroke();
   }
 
   // Dark bark + warm inner wood on the main crown/body.
   // Respect the camera-clipped render window. Drawing to n-1 here
   // ignored the LOD slice and re-rendered the entire long root, which caused
   // the spaghetti-looking overlap/glitch and made large roots expensive.
-  strokeRange(taperStart,end,ROOT_THICKNESS+3.2,r.darkC);
-  strokeRange(taperStart,end,ROOT_THICKNESS,r.body);
+  strokeRange2(taperStart,end,ROOT_THICKNESS+3.2,ROOT_THICKNESS,r.darkC,r.body);
 
   // Four continuous tapered sections make the tail become a real root tip.
   const bands=[
@@ -2864,8 +2879,7 @@ function drawRootPath(p,r,i0,i1){
     const a=Math.max(start,Math.floor(start+bands[i][0]*(end-start)));
     const b=Math.min(taperStart,Math.max(a+1,Math.floor(start+bands[i][1]*(end-start))));
     const w=bands[i][2];
-    strokeRange(a,b,w+2.2,r.darkC);
-    strokeRange(a,b,w,r.body);
+    strokeRange2(a,b,w+2.2,w,r.darkC,r.body);
   }
 
   // Sparse bark marks instead of a mark on nearly every segment.
@@ -2893,10 +2907,17 @@ function drawBranchCurve(r,q,baseAng,len,w,seed,depth){
   const ex=q.x+Math.cos(ang)*len;
   const ey=q.y+Math.sin(ang)*len;
   ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
-  ctx.strokeStyle=r.darkC;ctx.lineWidth=w+1.7;
-  ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.quadraticCurveTo(c1x,c1y,c2x,c2y);ctx.quadraticCurveTo(c2x,c2y,ex,ey);ctx.stroke();
-  ctx.strokeStyle=r.body;ctx.lineWidth=w;
-  ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.quadraticCurveTo(c1x,c1y,c2x,c2y);ctx.quadraticCurveTo(c2x,c2y,ex,ey);ctx.stroke();
+  /* ONE PATH, TWO STROKES.
+     The dark outline and the warm body are the same curve - only the colour
+     and the width differ - and the path was being built twice for every
+     branch. A long root draws forty of them and each has two children of its
+     own, so that was the single biggest cost in the game.
+     The picture is identical: same points, same order, same styles, same
+     widths. A stroke does not clear the path, so the second stroke reuses
+     exactly the curve the first one used. */
+  ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.quadraticCurveTo(c1x,c1y,c2x,c2y);ctx.quadraticCurveTo(c2x,c2y,ex,ey);
+  ctx.strokeStyle=r.darkC;ctx.lineWidth=w+1.7;ctx.stroke();
+  ctx.strokeStyle=r.body;ctx.lineWidth=w;ctx.stroke();
   if(depth>0 && len>11){
     for(let j=0;j<2;j++){
       const tt=.52+j*.18;

@@ -25,8 +25,8 @@ android {
 // in-app update system, so it is the first version a player can be *offered*
 // an update to. The completion popup compares against lastSeenVersion, which
 // starts null and is stamped on the first launch of any version.
-versionCode 2
-versionName "1.1.0"
+versionCode 3
+versionName "1.2.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 

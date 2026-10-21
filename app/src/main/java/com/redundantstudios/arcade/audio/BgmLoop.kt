@@ -45,6 +45,13 @@ internal class BgmLoop(context: Context, private val resId: Int) {
         /** Fade speed: full scale in this many milliseconds. */
         const val FADE_MS = 2200f
 
+        /**
+         * Fade speed when the app is LEAVING the foreground. Short enough that
+         * the music is gone before the home screen settles, long enough that the
+         * AudioTrack still ramps and cannot click.
+         */
+        const val FAST_FADE_MS = 160f
+
         /** Below this the loop counts as silent and the track is parked. */
         const val SILENT = 0.0005f
     }
@@ -151,6 +158,25 @@ internal class BgmLoop(context: Context, private val resId: Int) {
      */
     fun setTarget(level: Float) {
         target = level.coerceIn(0f, 1f)
+    }
+
+    /**
+     * Whether the ramp towards [target] should be the full [FADE_MS] or the short
+     * one.
+     *
+     * The long ramp exists so that changing the volume, or opening and closing
+     * the music setting, never clicks - you hear the change finish. That is
+     * wrong for one case: leaving the foreground. Music that takes 2.2 seconds
+     * to fall silent is music the player can still hear over their home screen
+     * after they have left the app, which is exactly what must not happen.
+     *
+     * The short ramp is still a ramp, so the AudioTrack never takes a step in
+     * its waveform and cannot click - it just arrives sooner.
+     */
+    @Volatile private var fastRamp = false
+
+    fun setFastRamp(on: Boolean) {
+        fastRamp = on
     }
 
     fun release() {
@@ -406,8 +432,10 @@ internal class BgmLoop(context: Context, private val resId: Int) {
         }
 
         val chunk = ShortArray(CHUNK_FRAMES * channels)
-        // Per-sample ramp step: full scale takes FADE_MS.
-        val step = 1f / (sampleRate * FADE_MS / 1000f)
+        // Per-sample ramp step: full scale takes FADE_MS. FAST_FADE_MS is the
+        // short version used when the app is leaving the foreground.
+        val normalStep = 1f / (sampleRate * FADE_MS / 1000f)
+        val fastStep = 1f / (sampleRate * FAST_FADE_MS / 1000f)
 
         var pos = 0
         /* Half a second of audio before the first sample: enough that the track
@@ -490,6 +518,10 @@ internal class BgmLoop(context: Context, private val resId: Int) {
 
             var i = 0
             val stop = minOf(end, pos + chunk.size)
+            /* Read fresh each pass: the ramp rate is allowed to change while the
+               loop is running, which is what lets leaving the foreground be
+               faster than a volume change. */
+            val step = if (fastRamp) fastStep else normalStep
             while (i < chunk.size && pos < stop) {
                 if (gain < target) gain = (gain + step).coerceAtMost(target)
                 else if (gain > target) gain = (gain - step).coerceAtLeast(target)

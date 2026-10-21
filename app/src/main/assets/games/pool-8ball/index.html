@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../../shell/shell-boot.js"></script>
 <!--
 STUDIO_GAME_MANIFEST
 id: pool-8ball
@@ -949,6 +950,9 @@ function applyTheme(i){
    GAME CORE
 ============================================================ */
 const PW=960,PH=420,R=12,CUSH=18,FRAME=26;
+ /* The scale the table is currently drawn at, sampled once per frame by
+    stripeBandPath (see the note there). 1 means "not sampled yet". */
+ let _ballScale=1;
 const TOTW=PW+2*(CUSH+FRAME),TOTH=PH+2*(CUSH+FRAME);
 const POCKETS=[
  {x:-8,y:-8,cap:33,hr:30},{x:PW/2,y:-9,cap:24,hr:23},{x:PW+8,y:-8,cap:33,hr:30},
@@ -1501,7 +1505,26 @@ function renderTable(){
      and filled as a polygon; curves and wraps correctly.
 ============================================================ */
 function stripeBandPath(c,R,sax,say,saz,h){
- const N=44,D=TAU/N,OV=.58*D;
+ /* Band resolution follows the ball's real size on screen.
+
+     A ball is R=12 world units in a table 1048 units across, so on a phone it
+     lands at roughly thirteen device pixels across. Forty-four angular bands
+     put a band edge about every single pixel - finer than the silhouette can
+     show - at five canvas calls each, which is over two hundred draw calls to
+     stripe one ball. Seven striped balls is most of this game's entire frame.
+
+     Sixteen bands on a thirteen-pixel ball is still smoother than the outline.
+     The bands deliberately overlap by 58% of a step, so their edges are hidden
+     either way.
+
+     The count is derived from the scale the context is already drawing at,
+     rather than being a fixed guess, so a zoomed table or a tablet simply gains
+     resolution instead of going faceted. */
+  let sc=_ballScale;
+  if(sc===1){try{const m=c.getTransform();sc=m.a||1;}catch(e){sc=1;}_ballScale=sc;}
+  const px=R*sc;
+  const N=px>40?44:px>20?28:px>11?16:12;
+  const D=TAU/N,OV=.58*D;
  const n2=Math.hypot(sax,say);
  c.beginPath();
  if(n2<1e-4){ /* stripe axis points at the viewer: band = rim annulus */
@@ -1781,7 +1804,37 @@ function renderGame(){
  }
  const shown=tubeStack.slice(-10);
  for(let i=0;i<shown.length;i++)
-  paintBall(c,tg.cx,tg.bot-tg.miniR-3-i*tg.slotH,tg.miniR,shown[i]);
+  blitBallSprite(c,shown[i],tg.miniR,tg.cx,tg.bot-tg.miniR-3-i*tg.slotH);
+}
+
+/* THE TUBED BALLS ARE SPRITES.
+
+   `paintBall(c,x,y,r,id)` with no orientation argument always draws the SAME
+   ball the SAME way - and that is exactly what the ten balls in the side tube
+   were doing, once for each of them, sixty times a second.
+
+   It matters most for the striped ones. stripeBandPath builds up to 44 band
+   quads, five canvas calls each, to put bands on a ball about a dozen pixels
+   across sitting in a rack. Ten of those is over a thousand draw calls a frame
+   for scenery in the corner.
+
+   Identical every frame means it can be drawn once and stamped. The balls on
+   the table are NOT cached - they carry their live orientation so the stripes
+   and the number roll with the ball - and neither is a returning ball, which
+   shrinks and spins into the tube. */
+const _tubeSprites=new Map();
+function blitBallSprite(c,id,r,x,y){
+ const key=id+'@'+r;
+ let s=_tubeSprites.get(key);
+ if(!s){
+  const pad=Math.ceil(r*0.35)+3, size=Math.ceil((r+pad)*2);
+  const cv=document.createElement('canvas');
+  cv.width=size;cv.height=size;
+  paintBall(cv.getContext('2d'),size/2,size/2,r,id);
+  s={c:cv,off:size/2};
+  _tubeSprites.set(key,s);
+ }
+ c.drawImage(s.c,x-s.off,y-s.off);
 }
 
 /* ---------- update ---------- */

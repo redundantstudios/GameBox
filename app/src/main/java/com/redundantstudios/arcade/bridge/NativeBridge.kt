@@ -27,6 +27,39 @@ class NativeBridge(private val context: Context) {
     }
 
     /**
+     * Removes a saved value.
+     *
+     * WHY THIS EXISTS
+     *
+     * The games' save helpers are rewritten to read and write through this
+     * bridge, so that progress survives a data clear. The DELETE half of that
+     * rewrite had no counterpart here, and it made the two halves disagree
+     * about where a value lives:
+     *
+     *     LS.del = function(k){ try{ if(B && B.del) B.del(k); else _del(k); }catch(e){} }
+     *     LS.get = function(k,d){ try{ v = (B && B.load) ? B.load(k) : _get(k,null); } ... }
+     *
+     * With no `del` on the bridge, a delete fell through to the localStorage
+     * copy - while every read came from the bridge's store. The value was
+     * therefore never really gone: it was deleted from one place and read from
+     * another.
+     *
+     * Chinese Checkers showed it. Finishing a game deletes the save, and the
+     * home screen then decided there was still a game in progress and offered
+     * RESUME - for a game that had already been played to the end. Every other
+     * game that clears a save has the same latent problem.
+     *
+     * The delete is applied immediately rather than with `apply()`, because
+     * the reading side is synchronous: a value that is still there when the
+     * next line asks for it is a value that is still there.
+     */
+    @JavascriptInterface
+    fun del(key: String) {
+        prefs.edit().remove(key).commit()
+        Log.d("NativeBridge", "Deleted: $key")
+    }
+
+    /**
      * Play the shell's own UI tap.
      *
      * WHY THIS EXISTS

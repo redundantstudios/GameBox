@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../../shell/shell-boot.js"></script>
 <!--
 STUDIO_GAME_MANIFEST
 id: sheepdog-trials
@@ -1875,11 +1876,84 @@ function bakeSign(g, x, y) {
   g.fillText('SHEEP', 0, 1);
   g.restore();
 }
-function bakeBG() {
-  bg = document.createElement('canvas'); bg.width = W.w; bg.height = W.h;
-  const g = bg.getContext('2d'), rng = mulberry32(cur * 77 + 5);
+/* THE MEADOW IS BAKEN IN TWO LAYERS.
+
+   This used to be ONE pass, and it ran every single time a level started (from
+   inside the level tile's click handler) and again on every resize that moved
+   the world width - about 5,500 canvas draw calls each time. On a phone that is
+   a very long block on the WebView's one thread, so the tap froze the page
+   before anything could be painted, and on a slow device the renderer got
+   killed outright - which is what left the player staring at a black field
+   after clicking a level.
+
+   ~3,900 of those calls are grass texture that is identical on every single
+   level. So it is baked ONCE into `terrain`, keyed only on world size, and each
+   later bake just stamps that one image down and draws the per-level scenery
+   over it - roughly a fifth of the work, and nothing to re-bake on a rotation.
+
+   Neither canvas is reallocated any more. The old code made a brand new
+   1777x800 surface (~5.7 MB) on every call and left the old one waiting for a
+   GC that a WebView renderer rarely runs in time; now each is created once and
+   cleared. */
+let terrain = null, terrainW = 0, terrainH = 0;
+  /* THE CACHED LAYERS HAVE TO BE ABLE TO COME BACK.
+
+     terrain and bg are 1280x800 each - roughly 8MB of backing store between
+     them, which makes this the heaviest canvas in the shell by a wide margin,
+     and it is why Sheepdog is the one game that kept breaking while Orrery and
+     the smaller ones stopped. Under that much pressure Chromium discards a 2D
+     canvas backing store; the shell cancels the event so it is restored, but a
+     restored layer comes back BLANK.
+
+     Two things then go wrong, and together they are exactly the reported
+     symptom - a dark screen with no sheep and no dog on it, while the game
+     keeps running:
+
+       - bakeTerrain only ever checked its DIMENSIONS, so a blank-but-correctly-
+         sized layer looked baked and was never rebuilt;
+       - render() blits bg unguarded, so if the drawImage throws on a layer
+         that has not come back properly, the frame dies part way through and
+         everything after that line - every sheep, the dog, the pen - is never
+         drawn. All that survives is the dark base fill this function starts
+         with.
+
+     Re-baking is safe to do at any time here because the meadow is generated
+     from a FIXED seed: a rebuilt layer is the same layer it replaces, so this
+     costs time on one frame and changes nothing you can see. */
+  let terrainStale = false, layersDirty = false;
+  function watchLayer(cv2, which) {
+    cv2.addEventListener('contextlost', function (e) { try { e.preventDefault(); } catch (_) { } });
+    cv2.addEventListener('contextrestored', function () {
+      layersDirty = true;
+      if (which === 'terrain') terrainStale = true;
+      console.log('sheepdog: ' + which + ' layer was discarded and restored, re-baking');
+    });
+  }
+  function refreshLayers() {
+    if (!layersDirty && (!bg || (bg.width === W.w && bg.height === W.h))) return;
+    layersDirty = false;
+    try { bakeBG(); }
+    catch (err) { console.log('sheepdog: layer re-bake failed: ' + err); }
+  }
+
+/* Everything that does NOT move between levels: the ground itself, the mow
+   stripes, the grass, the clover, the flowers, the pebbles - plus the two broad
+   sunlight gradients, which are world-space and static, and were costing two
+   full-screen gradient fills EVERY FRAME before they were folded in here. */
+function bakeTerrain() {
+  if (!(W.w > 0) || !(W.h > 0) || !isFinite(W.w) || !isFinite(W.h)) return;
+    if (!terrainStale && terrain && terrain.width > 0 && terrainW === W.w && terrainH === W.h) return;
+    terrainStale = false;
+  terrainW = W.w; terrainH = W.h;
+  if (!terrain) terrain = document.createElement('canvas');
+  terrain.width = W.w; terrain.height = W.h;
+  const g = terrain.getContext('2d');
+    watchLayer(terrain, 'terrain');
+  /* A FIXED seed: the meadow is the same field whichever trial is running, so
+     this layer is built once and never varies. */
+  const rng = mulberry32(9001);
   // rich dark-green meadow — deeper, more attractive gameplay grass
-  const base = g.createRadialGradient(W.w * 0.38, W.h * 0.28, 70, W.w * 0.5, W.h * 0.5, Math.max(W.w, W.h) * 0.9);
+  const base = g.createRadialGradient(W.w * 0.38, W.h * 0.28, 70, W.w * 0.5, W.h / 2, Math.max(W.w, W.h) * 0.9);
   base.addColorStop(0, '#4F9135');
   base.addColorStop(0.35, '#43802E');
   base.addColorStop(0.65, '#377226');
@@ -1903,33 +1977,11 @@ function bakeBG() {
     g.stroke();
   }
   g.restore();
-  // sheep trail removed.
-  // pen bedding removed: keep the arena grass clean without yellow glow shapes.
-  // vivid turquoise pond
-  for (const o of pond) { g.fillStyle = '#F0DDA8'; g.beginPath(); g.arc(o.x, o.y, o.r + 9, 0, TAU); g.fill(); }
-  for (const o of pond) { g.fillStyle = '#2E86A0'; g.beginPath(); g.arc(o.x, o.y, o.r + 3, 0, TAU); g.fill(); }
-  for (const o of pond) { g.fillStyle = '#41B2D4'; g.beginPath(); g.arc(o.x, o.y, o.r, 0, TAU); g.fill(); }
-  for (const o of pond) {
-    const sh = g.createRadialGradient(o.x - o.r * 0.25, o.y - o.r * 0.28, 2, o.x, o.y, o.r);
-    sh.addColorStop(0, 'rgba(200,245,255,0.65)');
-    sh.addColorStop(0.5, 'rgba(110,200,225,0.32)');
-    sh.addColorStop(1, 'rgba(46,134,160,0.2)');
-    g.fillStyle = sh;
-    g.beginPath(); g.arc(o.x, o.y, o.r * 0.92, 0, TAU); g.fill();
-  }
-  if (pond.length) {
-    for (let i = 0; i < 5; i++) {
-      const a = rng() * TAU, rr = pond[0].r * (0.2 + rng() * 0.55);
-      const x = pond[0].x + Math.cos(a) * rr, y = pond[0].y + Math.sin(a) * rr, lr = 6 + rng() * 5;
-      g.fillStyle = '#54BE58';
-      g.beginPath(); g.arc(x, y, lr, 0.4, TAU - 0.35); g.lineTo(x, y); g.closePath(); g.fill();
-      g.fillStyle = 'rgba(255,255,255,0.3)';
-      g.beginPath(); g.arc(x - lr * 0.25, y - lr * 0.25, lr * 0.45, 0, TAU); g.fill();
-      if (rng() < 0.5) { g.fillStyle = '#FFF7F0'; g.beginPath(); g.arc(x + 2, y - 2, 2.2, 0, TAU); g.fill(); g.fillStyle = '#FFD84D'; g.beginPath(); g.arc(x + 2, y - 2, 1, 0, TAU); g.fill(); }
-    }
-  }
-  // attractive darker grass tufts with a few fresh highlights
-  const cols = ['#356F32', '#427F36', '#4E8C3D', '#6FA84B', '#86B85A'];
+  // attractive darker grass tufts with a few fresh highlights.
+  // Three bands instead of five, at the same 340 blades each: at the scale the
+  // world is actually played at a blade is barely two screen pixels, so the two
+  // dropped bands cost nothing anyone can see and save 680 draw calls.
+  const cols = ['#356F32', '#4E8C3D', '#6FA84B'];
   for (let c = 0; c < cols.length; c++) {
     g.strokeStyle = cols[c]; g.lineWidth = 1.3; g.beginPath();
     for (let i = 0; i < 340; i++) {
@@ -1945,11 +1997,12 @@ function bakeBG() {
     g.fillStyle = 'rgba(58,150,48,0.55)';
     for (let k = 0; k < 9; k++) { g.beginPath(); g.arc(x + (rng() - 0.5) * 34, y + (rng() - 0.5) * 22, 3 + rng() * 4, 0, TAU); g.fill(); }
   }
-  // vivid flowers + daisies
+  // vivid flowers + daisies. The pond/rock skip went away with the split: the
+  // pond paints its own sand ring over anything underneath it, so flowers that
+  // quietly end up near water are covered instead of leaving a bald patch.
   for (let i = 0; i < 46; i++) {
     const x = 45 + rng() * (W.w - 320), y = 45 + rng() * (W.h - 90);
     if (Math.hypot(x - pen.x, y - W.h / 2) < 235) continue;
-    if ([...pond, ...rocks].some(o => Math.hypot(x - o.x, y - o.y) < o.r + 8)) continue;
     const col = ['#FFFDF2', '#FFD84D', '#FF9EB5'][(rng() * 3) | 0];
     g.fillStyle = col;
     for (let k = 0, nn = 3 + rng() * 3; k < nn; k++) { g.beginPath(); g.arc(x + (rng() - 0.5) * 12, y + (rng() - 0.5) * 12, 1.6, 0, TAU); g.fill(); }
@@ -1975,6 +2028,51 @@ function bakeBG() {
     if (Math.hypot(x - pen.x, y - W.h / 2) < 250) continue;
     g.fillStyle = 'rgba(155,152,138,0.55)';
     g.beginPath(); g.ellipse(x, y, 2 + rng() * 3, 1.4 + rng() * 2, rng() * TAU, 0, TAU); g.fill();
+  }
+  /* Sunlight and its warm shade, folded in here. Both are broad world-space
+     radial gradients that never change, and drawSunlight() was re-filling the
+     whole world with both of them on every single frame. */
+  buildGradients();
+  g.fillStyle = _sunG; g.fillRect(0, 0, W.w, W.h);
+  g.fillStyle = _shadeG; g.fillRect(0, 0, W.w, W.h);
+}
+
+/* Everything that DOES move between levels: the pond, the trough, the hay and
+   bushes, the rocks, the tree shadows and the fences. */
+function bakeBG() {
+  /* Same world check as bakeTerrain: `bg` is sized off W too, and a canvas sized
+     to Infinity collapses to zero and poisons everything drawn from it. */
+  if (!(W.w > 0) || !(W.h > 0) || !isFinite(W.w) || !isFinite(W.h)) return;
+  bakeTerrain();
+  if (!bg) bg = document.createElement('canvas');
+  bg.width = W.w; bg.height = W.h;
+  const g = bg.getContext('2d');
+    watchLayer(bg, 'bg');
+  g.clearRect(0, 0, W.w, W.h);
+  g.drawImage(terrain, 0, 0);
+  const rng = mulberry32(cur * 77 + 5);
+  // vivid turquoise pond
+  for (const o of pond) { g.fillStyle = '#F0DDA8'; g.beginPath(); g.arc(o.x, o.y, o.r + 9, 0, TAU); g.fill(); }
+  for (const o of pond) { g.fillStyle = '#2E86A0'; g.beginPath(); g.arc(o.x, o.y, o.r + 3, 0, TAU); g.fill(); }
+  for (const o of pond) { g.fillStyle = '#41B2D4'; g.beginPath(); g.arc(o.x, o.y, o.r, 0, TAU); g.fill(); }
+  for (const o of pond) {
+    const sh = g.createRadialGradient(o.x - o.r * 0.25, o.y - o.r * 0.28, 2, o.x, o.y, o.r);
+    sh.addColorStop(0, 'rgba(200,245,255,0.65)');
+    sh.addColorStop(0.5, 'rgba(110,200,225,0.32)');
+    sh.addColorStop(1, 'rgba(46,134,160,0.2)');
+    g.fillStyle = sh;
+    g.beginPath(); g.arc(o.x, o.y, o.r * 0.92, 0, TAU); g.fill();
+  }
+  if (pond.length) {
+    for (let i = 0; i < 5; i++) {
+      const a = rng() * TAU, rr = pond[0].r * (0.2 + rng() * 0.55);
+      const x = pond[0].x + Math.cos(a) * rr, y = pond[0].y + Math.sin(a) * rr, lr = 6 + rng() * 5;
+      g.fillStyle = '#54BE58';
+      g.beginPath(); g.arc(x, y, lr, 0.4, TAU - 0.35); g.lineTo(x, y); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(255,255,255,0.3)';
+      g.beginPath(); g.arc(x - lr * 0.25, y - lr * 0.25, lr * 0.45, 0, TAU); g.fill();
+      if (rng() < 0.5) { g.fillStyle = '#FFF7F0'; g.beginPath(); g.arc(x + 2, y - 2, 2.2, 0, TAU); g.fill(); g.fillStyle = '#FFD84D'; g.beginPath(); g.arc(x + 2, y - 2, 1, 0, TAU); g.fill(); }
+    }
   }
   // larger, easier-to-see goal marker / trough
   const tx = pen.x - 74, ty = W.h / 2 + pen.gap / 2 + 66;
@@ -2096,8 +2194,7 @@ function updateSheep(s, dt) {
   const max = (30 + 165 * p) * s.spd * 1.20 * (s.ram ? 0.92 : 1);
   const sp = Math.hypot(s.vx, s.vy);
   if (sp > max) { s.vx *= max / sp; s.vy *= max / sp; }
-  s.x += s.vx * dt; s.y += s.vy * dt;
-  collideWorld(s, 10);
+  moveWithCollision(s, dt, 10);
   if (sp > 12) s.heading = lerpAngle(s.heading, Math.atan2(s.vy, s.vx), Math.min(1, dt * 8));
 
   if (sp > 55) {
@@ -2178,6 +2275,42 @@ function puffGate() {
 }
 
 // ---------- dog movement ----------
+/* PHYSICS IS SUBSTEPPED, AND THAT IS WHY THE DOG STOPS GOING THROUGH FENCES.
+
+   A collision test can only catch a body that is still within one radius of the
+   surface it should be hitting. Everything here integrated with ONE
+   `x += vx * dt` per frame, and `dt` is capped at 50ms so that a stalled frame
+   could not run the simulation away.
+
+   At 265 px/s - 313 sprinting - 50ms is 15.6px of travel, against a dog radius
+   of 12. The dog simply stepped from one side of a fence to the other, and on
+   the far side the test correctly saw nothing to hit. Sheep are worse: up to
+   ~257 px/s plus a 300 impulse when they bolt, against a radius of 10.
+
+   That is also why it only happened "sometimes", and why it seemed worst on the
+   phone that was already lagging: a dropped frame IS the long step. The two
+   reports were one bug.
+
+   So the integration is split until nothing moves more than about a third of
+   its own radius between two collision tests, which makes tunnelling
+   impossible rather than merely unlikely. Only the number of steps changes -
+   the distance travelled and the speed felt are identical. */
+function moveWithCollision(e, dt, radius) {
+  const travel = Math.hypot(e.vx, e.vy) * dt;
+  const maxStep = Math.max(0.5, radius * 0.34);
+  const n = Math.min(16, Math.max(1, Math.ceil(travel / maxStep)));
+  if (n === 1) {
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    collideWorld(e, radius);
+    return;
+  }
+  const sub = dt / n;
+  for (let k = 0; k < n; k++) {
+    e.x += e.vx * sub;
+    e.y += e.vy * sub;
+    collideWorld(e, radius);
+  }
+}
 function updateDog(dt, d, ambient) {
   let tvx = 0, tvy = 0;
   if (ambient) {
@@ -2191,8 +2324,7 @@ function updateDog(dt, d, ambient) {
   }
   const ax = tvx - d.vx, ay = tvy - d.vy, am = Math.hypot(ax, ay), acc = 2400 * dt;
   if (am > acc) { d.vx += ax / am * acc; d.vy += ay / am * acc; } else { d.vx = tvx; d.vy = tvy; }
-  d.x += d.vx * dt; d.y += d.vy * dt;
-  collideWorld(d, 12);
+  moveWithCollision(d, dt, 12);
   const dsp = Math.hypot(d.vx, d.vy);
   if (dsp > 18) d.heading = lerpAngle(d.heading, Math.atan2(d.vy, d.vx), Math.min(1, dt * 10));
   const prevPh = d.phase;
@@ -2320,6 +2452,16 @@ function update(dt) {
 function addFloat(x, y, txt, col, size) { floats.push({ x, y, txt, col, size, life: 1.3 }); }
 
 // ---------- rendering ----------
+/* THE FLEECE IS CACHED.
+
+   Nine lobes, painted twice - a darker ring and the wool on top of it. That is
+   20 arcs and 2 fills per sheep per frame, and the shape NEVER changes: it is a
+   fixed set of circles in the sheep's own local space. So it is drawn once into
+   a small offscreen canvas and stamped down after that, which is the same pixels
+   for one draw call instead of twenty-two.
+
+   This is the whole point: the art is untouched, only the repetition is gone. */
+
 function drawSheep(s) {
   const VISUAL_SHEEP_SCALE = 2.115;
   const spd = Math.hypot(s.vx, s.vy), sf = Math.min(1, spd / 170), scl = (s.ram ? 1.22 : 1) * VISUAL_SHEEP_SCALE;
@@ -2390,25 +2532,34 @@ function drawDog(d) {
   ctx.restore();
   ctx.fillStyle = C.dark;
   const l1 = Math.sin(d.phase) * 6 * sf, l2 = Math.sin(d.phase + Math.PI) * 6 * sf;
+  ctx.beginPath();
   for (const [lx, ly, sw] of [[8, -5.5, l2], [8, 5.5, l1], [-7, -5.5, l1], [-7, 5.5, l2]]) {
-    ctx.beginPath(); ctx.ellipse(lx + sw, ly, 3.6, 2.2, 0, 0, TAU); ctx.fill();
+    ctx.ellipse(lx + sw, ly, 3.6, 2.2, 0, 0, TAU);
   }
+  ctx.fill();
   ctx.fillStyle = C.coat; ctx.beginPath(); ctx.ellipse(0, 0, 14, 8.2, 0, 0, TAU); ctx.fill();
   ctx.fillStyle = C.light; ctx.beginPath(); ctx.ellipse(7.5, 0, 5.4, 7.4, 0, 0, TAU); ctx.fill();
   ctx.save(); ctx.translate(15, 0);
   ctx.fillStyle = C.dark;
+  /* Both ears in one path - the same floppy shape as before. The path survives
+     save/restore, so the two ears can share a single fill. */
+  ctx.beginPath();
   for (const sd of [-1, 1]) {
     ctx.save(); ctx.translate(-1, 5.4 * sd); ctx.rotate(sd * 0.5);
-    ctx.beginPath(); ctx.moveTo(-3, -2.6); ctx.quadraticCurveTo(3, -4, 4.4, 1.4); ctx.quadraticCurveTo(1, 3.4, -3, 2.6);
-    ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.moveTo(-3, -2.6); ctx.quadraticCurveTo(3, -4, 4.4, 1.4); ctx.quadraticCurveTo(1, 3.4, -3, 2.6);
+    ctx.closePath();
+    ctx.restore();
   }
+  ctx.fill();
   ctx.fillStyle = C.coat; ctx.beginPath(); ctx.ellipse(0, 0, 6.4, 5.6, 0, 0, TAU); ctx.fill();
   ctx.fillStyle = C.light; ctx.beginPath(); ctx.ellipse(3.4, 0, 4.6, 1.7, 0, 0, TAU); ctx.fill();
   ctx.fillStyle = C.coat; ctx.beginPath(); ctx.ellipse(6.4, 0, 4.2, 3.1, 0, 0, TAU); ctx.fill();
   ctx.fillStyle = C.light; ctx.beginPath(); ctx.ellipse(7, 0, 3, 1.1, 0, 0, TAU); ctx.fill();
   ctx.fillStyle = '#17130F'; ctx.beginPath(); ctx.arc(9.6, 0, 1.5, 0, TAU); ctx.fill();
   ctx.fillStyle = '#F6F2E8';
-  for (const sd of [-1, 1]) { ctx.beginPath(); ctx.arc(1.8, 2.6 * sd, 1, 0, TAU); ctx.fill(); }
+  ctx.beginPath();
+  for (const sd of [-1, 1]) ctx.arc(1.8, 2.6 * sd, 1, 0, TAU);
+  ctx.fill();
   if (sf > 0.75) { ctx.fillStyle = '#E27D86'; ctx.beginPath(); ctx.ellipse(9.2, 1.8, 1.6, 0.9, 0.4, 0, TAU); ctx.fill(); }
   ctx.restore();
   ctx.restore();
@@ -2438,22 +2589,28 @@ function drawTag(d) {
 function drawTree(tr) {
   const sway = Math.sin(animT * 0.9 + tr.ph) * 2.2 + windX * 4;
   ctx.save(); ctx.translate(tr.x, tr.y);
+  /* Each colour band is ONE path filled once. It was one path per blob - nine
+     blobs across three bands, so twenty-seven calls to paint what is a single
+     flat shape, twenty times a second. */
   ctx.fillStyle = '#7A5533'; ctx.beginPath(); ctx.arc(0, 0, tr.tr, 0, TAU); ctx.fill();
   ctx.fillStyle = '#8A6440'; ctx.beginPath(); ctx.arc(-1.5, -1.5, tr.tr * 0.6, 0, TAU); ctx.fill();
   ctx.translate(sway, -30);
   const R = tr.cr;
-  ctx.fillStyle = '#3E8F2E';
+  ctx.fillStyle = '#3E8F2E'; ctx.beginPath();
   for (const c of [[0, 0, R], [-R * 0.55, R * 0.28, R * 0.66], [R * 0.55, R * 0.28, R * 0.66], [0, -R * 0.5, R * 0.6]]) {
-    ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, TAU); ctx.fill();
+    ctx.arc(c[0], c[1], c[2], 0, TAU);
   }
-  ctx.fillStyle = '#4FA83C';
+  ctx.fill();
+  ctx.fillStyle = '#4FA83C'; ctx.beginPath();
   for (const c of [[-R * 0.18, -R * 0.16, R * 0.72], [R * 0.42, R * 0.14, R * 0.42], [-R * 0.5, R * 0.3, R * 0.4]]) {
-    ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, TAU); ctx.fill();
+    ctx.arc(c[0], c[1], c[2], 0, TAU);
   }
-  ctx.fillStyle = '#68C24E';
+  ctx.fill();
+  ctx.fillStyle = '#68C24E'; ctx.beginPath();
   for (const c of [[-R * 0.3, -R * 0.3, R * 0.4], [R * 0.15, -R * 0.1, R * 0.34]]) {
-    ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, TAU); ctx.fill();
+    ctx.arc(c[0], c[1], c[2], 0, TAU);
   }
+  ctx.fill();
   ctx.fillStyle = 'rgba(180,255,140,0.4)';
   ctx.beginPath(); ctx.arc(-R * 0.36, -R * 0.36, R * 0.14, 0, TAU); ctx.fill();
   ctx.restore();
@@ -2542,17 +2699,20 @@ function drawWaves() {
 
 function drawGrassClumps() {
   ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(66,138,46,0.95)';
+  ctx.lineWidth = 2;
+  /* Every blade of every clump in one path, stroked once. It was a separate
+     beginPath/stroke per blade. */
+  ctx.beginPath();
   for (const g of swayGrass) {
     const sw = Math.sin(animT * 1.6 + g.ph) * 3 + windX * 6;
-    ctx.strokeStyle = 'rgba(66,138,46,0.95)';
-    ctx.lineWidth = 2;
     for (let i = 0; i < g.n; i++) {
       const bx = g.x + (i - g.n / 2) * 4.5, tipx = bx + sw + (i - g.n / 2) * 1.5, tipy = g.y - g.h - (i % 2) * 4;
-      ctx.beginPath(); ctx.moveTo(bx, g.y);
+      ctx.moveTo(bx, g.y);
       ctx.quadraticCurveTo(bx + sw * 0.4, g.y - g.h * 0.6, tipx, tipy);
-      ctx.stroke();
     }
   }
+  ctx.stroke();
 }
 function drawButterflies() {
   for (const b of butterflies) {
@@ -2591,6 +2751,7 @@ function drawBirdShadow() {
    pure functions of the world size, so they are built once and thrown away when
    the world resizes - which is the only time they can actually change. */
 let _sunG = null, _shadeG = null, _vigG = null, _gradW = -1, _gradH = -1;
+let _items = [];
 function buildGradients() {
   if (_gradW === W.w && _gradH === W.h && _sunG) return;
   _gradW = W.w; _gradH = W.h;
@@ -2610,8 +2771,11 @@ function buildGradients() {
 }
 function drawSunlight() {
  buildGradients();
- ctx.fillStyle = _sunG; ctx.fillRect(0, 0, W.w, W.h);
- ctx.fillStyle = _shadeG; ctx.fillRect(0, 0, W.w, W.h);
+ /* Only the vignette is painted here now. The warm sun bloom and the shade gradient are
+     world-space and never change, so they are baked into the terrain once (see
+     bakeTerrain) rather than re-filling the whole world with two full-screen
+     gradients on every frame of the 60fps loop. */
+ ctx.fillStyle = _vigG; ctx.fillRect(0, 0, W.w, W.h);
 }
 
 function render() {
@@ -2621,31 +2785,49 @@ function render() {
   ctx.save();
   ctx.beginPath(); ctx.rect(0, 0, W.w, W.h); ctx.clip();
 
-  if (bg) ctx.drawImage(bg, 0, 0, W.w, W.h);
+  refreshLayers();
+    if (bg) { try { ctx.drawImage(bg, 0, 0, W.w, W.h); } catch (err) { console.log('sheepdog: bg blit failed: ' + err); } }
   drawPondShimmer();
   drawRipples();
   drawGate();
-  drawBirdShadow();
-  drawGrassClumps();
-  drawReeds();
+  if (DETAIL.decor < 2) drawBirdShadow();
+  /* Scenery only - never a sheep, a dog, a tree, a rock or the pen. See the
+     DETAIL note by governDetail for why these and nothing else are shed. */
+  if (DETAIL.decor < 2) drawGrassClumps();
+  if (DETAIL.decor < 3) drawReeds();
 
-  const items = [];
-  for (const s of sheep) items.push({ y: s.y, f: drawSheep.bind(null, s) });
-  for (const d of dogs) items.push({ y: d.y, f: drawDog.bind(null, d) });
-  for (const tr of trees) items.push({ y: tr.y, f: drawTree.bind(null, tr) });
+  /* Depth sort, without allocating a new object AND a new bound function for
+     every animal on every frame. The draw functions are memoised on the entity
+     itself, so a 26-sheep field stopped churning 52 throwaway closures a frame
+     into the collector. The sort itself is unavoidable - it is what lets a dog
+     walk behind a tree. */
+  let items = _items;
+  items.length = 0;
+  for (const s of sheep) { if (!s._draw) s._draw = drawSheep.bind(null, s); items.push(s); }
+  for (const d of dogs) { if (!d._draw) d._draw = drawDog.bind(null, d); items.push(d); }
+  for (const tr of trees) { if (!tr._draw) tr._draw = drawTree.bind(null, tr); items.push(tr); }
   items.sort((a, b) => a.y - b.y);
-  for (const it of items) it.f();
+  for (const it of items) it._draw();
+  items.length = 0;
 
   if (mode !== 'solo' && state === 'play') for (const d of dogs) drawTag(d);
 
   drawWaves();
-  drawPollen();
-  drawButterflies();
+  if (DETAIL.decor < 1) drawPollen();
+  if (DETAIL.decor < 1) drawButterflies();
 
   for (const c of clouds) {
-    const g = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
-    g.addColorStop(0, 'rgba(25,45,15,' + c.a + ')'); g.addColorStop(1, 'rgba(25,45,15,0)');
-    ctx.fillStyle = g;
+    /* Built once per cloud, not once per frame. A canvas gradient object is a
+       GPU-side resource, and making five of them on every one of sixty frames a
+       second was the single most expensive thing in this loop. `clouds` is
+       rebuilt from scratch by every buildLevel(), so the cached gradient can
+       never outlive the level it belongs to. */
+    if (!c._g) {
+      const g = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
+      g.addColorStop(0, 'rgba(25,45,15,' + c.a + ')'); g.addColorStop(1, 'rgba(25,45,15,0)');
+      c._g = g;
+    }
+    ctx.fillStyle = c._g;
     ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, TAU); ctx.fill();
   }
   drawSunlight();
@@ -2673,11 +2855,63 @@ buildGradients();
   ctx.restore();
 }
 
+/* ADAPTIVE DETAIL - the game measures the phone it is actually on.
+
+   Nothing in the shell knows what GPU a given handset has, and it cannot be
+   assumed: the same build has to hold 60fps on a flagship and stay playable on
+   a budget phone from three years ago, where a screen is smaller but the driver
+   is much slower at retiring canvas calls. So rather than hard-code a guess,
+   the loop watches its OWN frame times and sheds decoration until it is
+   comfortable.
+
+   What gets shed is only ever the scenery nobody plays against - pollen,
+   butterflies, the swaying grass clumps, the pond shimmer, the reeds. Sheep,
+   dogs, trees, rocks and the pen are never touched: they are the game.
+
+   The step is deliberately coarse and the thresholds are far apart, because a
+   governor that flickers between two quality levels is worse than one that
+   settles. It also re-checks constantly, so a phone that is fine stays at full
+   detail and only genuinely struggling hardware loses anything. */
+const DETAIL = { tier: 0, decor: 0, at: 0, fastRuns: 0, slowRuns: 0, reported: -1 };
+const DETAIL_NAME = ['full', 'no-pollen', 'no-sway', 'reduced-resolution'];
+function applyDetail() {
+  DETAIL.decor = DETAIL.tier;
+  const want = DETAIL.tier >= 3 ? 0.78 : 1;
+  if (DETAIL.at !== want) {
+    DETAIL.at = want;
+    /* The render scale is folded into the pixel budget in resize(); forcing it
+       here re-measures the backing store without touching the world size. */
+    detailScale = want;
+    resize();
+  }
+  if (DETAIL.reported !== DETAIL.tier) {
+    DETAIL.reported = DETAIL.tier;
+    try { console.log('[detail] tier=' + DETAIL.tier + ' ' + DETAIL_NAME[DETAIL.tier]); } catch (e) { }
+  }
+}
+let detailScale = 1;
+function governDetail(frameMs) {
+  if (frameMs > 26) { DETAIL.slowRuns++; DETAIL.fastRuns = 0; }
+  else if (frameMs < 15) { DETAIL.fastRuns++; DETAIL.slowRuns = 0; }
+  else { DETAIL.slowRuns = 0; DETAIL.fastRuns = 0; }
+  if (DETAIL.slowRuns > 45 && DETAIL.tier < 3) {
+    DETAIL.tier++; DETAIL.slowRuns = 0; applyDetail();
+  } else if (DETAIL.fastRuns > 260 && DETAIL.tier > 0) {
+    DETAIL.tier--; DETAIL.fastRuns = 0; applyDetail();
+  }
+}
+
 // ---------- main loop ----------
 let last = performance.now();
+let frameAvg = 16.7;
 function loop(now) {
   requestAnimationFrame(loop);
-  const rdt = Math.min(0.05, (now - last) / 1000); last = now;
+  const rawMs = now - last;
+  /* A rolling average, not the instantaneous frame: one slow frame is noise,
+     a run of them is the machine telling us something. */
+  frameAvg += (Math.min(250, rawMs) - frameAvg) * 0.06;
+  governDetail(frameAvg);
+  const rdt = Math.min(0.04, rawMs / 1000); last = now;
   animT += rdt;
   if (state === 'play' || state === 'menu' || state === 'select' || state === 'how' || state === 'win') {
     update(rdt * timeScale);
@@ -2693,21 +2927,28 @@ function loop(now) {
 }
 
 // ---------- fullscreen / mobile viewport ----------
+/* THE SHELL OWNS FULLSCREEN AND ROTATION - this game must not ask for either.
+
+   It used to `await document.documentElement.requestFullscreen()` and
+   `await screen.orientation.lock('landscape')` when PLAY was tapped. Two
+   things make that a trap inside an Android WebView:
+
+   - There is no WebChromeClient on the game WebView, so nothing services a
+     fullscreen request. Depending on the System WebView version the request is
+     denied, or accepted into a half-finished state.
+   - Both calls are AWAITED. If either never settles, the `await` never
+     returns, and the code after it - `setState('menu'); show(ovMode);` - never
+     runs at all. The game is left exactly where it was, under a dark overlay,
+     appearing frozen.
+
+   GameActivity already locks this game's landscape orientation from its
+   manifest and already runs it edge-to-edge and immersive, so all that is
+   actually needed here is to re-measure the canvas. */
 let fullscreenRequested = false;
-async function enterGameFullscreen() {
-  if (document.fullscreenElement) { resize(); return true; }
-  if (!document.documentElement.requestFullscreen) { resize(); return false; }
-  try {
-    await document.documentElement.requestFullscreen({ navigationUI: 'hide' });
-    fullscreenRequested = true;
-  } catch (e) {
-    fullscreenRequested = false;
-  }
-  try {
-    if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
-  } catch (e) {}
-  setTimeout(resize, 80);
-  return !!document.fullscreenElement;
+function enterGameFullscreen() {
+  fullscreenRequested = false;
+  resize();
+  return Promise.resolve(false);
 }
 document.addEventListener('fullscreenchange', () => { fullscreenRequested = !!document.fullscreenElement; setTimeout(resize, 80); });
 
@@ -3273,7 +3514,11 @@ function layoutTouch() {
 barkBtn.addEventListener('pointerdown', e => { e.preventDefault(); doBark(dogs[0]); });
  $('btnPause').addEventListener('click', () => { Sfx.click(); pauseGame(); });
  $('btnMute').addEventListener('click', () => { save.muted = !save.muted; persist(); Sfx.setMute(save.muted); syncSettings(); });
- $('btnPlay').addEventListener('click', async () => { Sfx.click(); await enterGameFullscreen(); setState('menu'); show(ovMode); });
+ /* No await here any more. enterGameFullscreen() used to wrap a fullscreen
+     request the WebView never answered, so this handler could stop dead
+     half-way and leave the game on its opening overlay with nothing behind it -
+     the "black screen, stuck" report. It is now a plain re-measure. */
+  $('btnPlay').addEventListener('click', () => { Sfx.click(); enterGameFullscreen(); setState('menu'); show(ovMode); });
  $('btnModeSolo').addEventListener('click', () => { Sfx.click(); mode = 'solo'; openSelect('play'); });
  $('btnModeFriends').addEventListener('click', () => { Sfx.click(); openCount(); });
  $('btnModeBack').addEventListener('click', () => { Sfx.click(); show(ovMenu); });
@@ -3322,7 +3567,33 @@ window.addEventListener('pagehide', () => { persist(); Sfx.stopRun(); });
 
 // ---------- resize / landscape ----------
 function resize() {
-  dpr = Math.min(2, window.devicePixelRatio || 1);
+  /* A WEBVIEW IN FLIGHT HAS NO SIZE YET.
+   *
+     A WebView that has not finished laying out reports a zero viewport, and
+     one that is being torn down can report one again. `innerWidth/innerHeight`
+     is then Infinity or NaN, and that used to be multiplied straight into the
+     world width: W.w became Infinity, every canvas sized off it collapsed to
+     zero, and createRadialGradient threw on a non-finite radius. The throw
+     aborted the bake and unwound resize() itself, so W.w stayed Infinity for
+     every frame afterwards and the game drew its dark base fill over nothing -
+     the "no sheep, no dog, no field" screen, with the game still running.
+
+     Nothing is resized while the viewport is not a real pair of numbers. The
+     next resize event arrives as soon as the layout settles and does the work. */
+  const vw = window.innerWidth, vh = window.innerHeight;
+  if (!(vw > 0) || !(vh > 0) || !isFinite(vw) || !isFinite(vh)) return;
+  /* Backing-store scale, capped by a PIXEL BUDGET rather than a flat 2.
+     devicePixelRatio is often 2.75 or 3, and at 2 the canvas already holds
+     millions of pixels that the base fill, the vignette and every entity are
+     shaded into sixty times a second. Past the budget the extra pixels buy
+     almost nothing you can see and cost a whole lot on a modest GPU, so the
+     scale is pulled down until the frame fits. Small phones feel this most. */
+  const rawDpr = window.devicePixelRatio || 1;
+  let want = Math.min(2, rawDpr) * detailScale;
+  const cssPx = Math.max(1, innerWidth * innerHeight);
+  const BUDGET = 1.6e6;
+  if (cssPx * want * want > BUDGET) want = Math.max(1, Math.sqrt(BUDGET / cssPx));
+  dpr = want;
   const aspect = innerWidth / innerHeight;
   const nw = Math.round(Math.max(900, W.h * aspect));
   const changed = Math.abs(nw - W.w) > 40;

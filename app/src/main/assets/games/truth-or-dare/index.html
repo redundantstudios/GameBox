@@ -16,6 +16,7 @@ released: 2026-10-11
 -->
 <html lang="en">
 <head>
+<script src="../../shell/shell-boot.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0B0E14" id="metaTheme">
@@ -116,6 +117,20 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
 .icon-btn{width:42px;height:42px;display:grid;place-items:center;background:var(--panel);
   border:2px solid var(--line);border-radius:12px;color:var(--dim);transition:transform .07s}
 .icon-btn:active{transform:scale(.88)}
+  /* BACK TO THE ARCADE.
+
+     The class was on the button from the start and nothing ever styled it, so
+     the one back control this game had rendered as a plain grey icon - and the
+     sync loop hides it the moment play starts, which left the game screen with
+     only an X. X means "end the round, then confirm, then leave": three taps to
+     get home. Back is one tap, top-left, and says what it does.
+
+     Cyan, because that is what this game uses for anything the player can act
+     on; the shape, size and press animation are inherited from .icon-btn so it
+     does not read as a control borrowed from another game. */
+  .td-back{color:var(--cyan);border-color:#1E4257;background:var(--panel2)}
+  .td-back:active{color:var(--cyan);background:var(--spotCyan);transform:scale(.88)}
+  .td-row-right{display:flex;gap:8px;align-items:center}
 
 /* ============ SETUP ============ */
 /* Top bar stays above ALL overlays so gear/help/quit are always reachable */
@@ -376,11 +391,18 @@ body[data-theme="light"] .ovl{background:rgba(19,26,42,.35)}
 
   <!-- ============ GAME ============ -->
   <section id="scrGame" class="screen">
-    <div class="top-row">
+  <div class="top-row">
+    <!-- BACK TO THE ARCADE. See the .td-back note in the stylesheet: the class was
+         here from the start with no rule to style it, and the sync loop hides this
+         control the moment play begins - which left the game screen with only an X,
+         and three taps to get home. One tap, top-left, labelled. -->
+    <button class="icon-btn td-back" id="tdGameBack" aria-label="Back to arcade"><svg class="ic"><use href="#i-back"/></svg></button>
+    <span class="chip" id="roundChip">LEVEL 1</span>
+    <div class="td-row-right">
       <button class="icon-btn" id="quitBtn" aria-label="End game"><svg class="ic"><use href="#i-x"/></svg></button>
-      <span class="chip" id="roundChip">LEVEL 1</span>
       <button class="icon-btn gearBtn" aria-label="Settings"><svg class="ic"><use href="#i-gear"/></svg></button>
     </div>
+  </div>
 
     <div id="zone">
       <div id="sectorLines"></div>
@@ -1517,6 +1539,16 @@ function cleanupToSetup(){
 
 /* --- quit (stacked: RESUME returns to whatever popup was open) --- */
  $('#quitBtn').onclick=()=>{ S.tap(); openOnTop('ovQuit'); };
+/* Back, as distinct from the X above it.
+
+   The X opens a confirm overlay: end the round, then choose Stay or Leave. That
+   is the right control for "I am done playing" and it is kept. Back is for "I
+   just want to go home", which was three taps away and is now one.
+
+   It calls the same exit the shell hands games through `Studio.exit`, so it
+   leaves the way the framework expects and the shell's own state stays
+   consistent - the same path the setup screen's back button already used. */
+$('#tdGameBack').onclick=()=>{ S.tap(); try{ Studio.exit(); }catch(e){} };
  $('#btnStay').onclick=()=>{ S.tap(); closeTop('ovQuit'); };
  $('#btnLeave').onclick=()=>{
   S.tap(); closeAll();

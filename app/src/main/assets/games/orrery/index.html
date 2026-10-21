@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../../shell/shell-boot.js"></script>
 <!--
 STUDIO_GAME_MANIFEST
 id: orrery
@@ -2230,15 +2231,25 @@ function drawHazards(){
 function drawEclipse(){
   if(eclipseX>camX+viewW+260||eclipseX<camX-2600)return;
   const ex=y=>eclipseEdgeAt(y);
-  const edgePath=d=>{
-    ctx.beginPath();ctx.moveTo(ex(0)+d,-6);
-    for(let y=0;y<=1000;y+=40)ctx.lineTo(ex(y)+d,y);
-    ctx.lineTo(ex(1000)+d,1006);ctx.lineTo(camX-4000,1006);ctx.lineTo(camX-4000,-6);ctx.closePath();
-  };
-  ctx.fillStyle='rgba(0,0,0,0.05)';edgePath(150);ctx.fill();
-  ctx.fillStyle='rgba(0,0,0,0.09)';edgePath(84);ctx.fill();
-  ctx.fillStyle='rgba(0,0,0,0.42)';edgePath(34);ctx.fill();
-  ctx.fillStyle='#0a0603';edgePath(0);ctx.fill();
+  /* THE FOUR SHADOW BANDS ARE ONE SHAPE AT FOUR OFFSETS.
+
+     They used to be rebuilt from scratch four times, and each build walks the
+     eclipse edge down a thousand pixels in 40px steps - around thirty-two
+     canvas calls - so one eclipse was a hundred and twenty-eight calls a frame
+     for what is fundamentally one silhouette with four different opacities.
+
+     Building it once into a Path2D and filling it four times, translating for
+     each band, is the identical image for about sixteen calls. A Path2D can be
+     filled any number of times, and it is not tied to the current path, so the
+     translate between fills is safe. */
+  const edge=new Path2D();
+  edge.moveTo(ex(0),-6);
+  for(let y=0;y<=1000;y+=40)edge.lineTo(ex(y),y);
+  edge.lineTo(ex(1000),1006);edge.lineTo(camX-4000,1006);edge.lineTo(camX-4000,-6);edge.closePath();
+  ctx.fillStyle='rgba(0,0,0,0.05)';ctx.save();ctx.translate(150,0);ctx.fill(edge);ctx.restore();
+  ctx.fillStyle='rgba(0,0,0,0.09)';ctx.save();ctx.translate(84,0);ctx.fill(edge);ctx.restore();
+  ctx.fillStyle='rgba(0,0,0,0.42)';ctx.save();ctx.translate(34,0);ctx.fill(edge);ctx.restore();
+  ctx.fillStyle='#0a0603';ctx.fill(edge);
   for(let k=0;k<14;k++){
     const y=18+k*73+18*Math.sin(k*2.3);
     const bx=ex(y)-12+16*Math.sin(gameT*0.55+k*1.9);
@@ -2292,12 +2303,33 @@ if(comet.y>1000-m){ctx.save();ctx.globalAlpha=0.30*(1-(1000-comet.y)/m);
 }
 function drawTrail(){
   if(trail.length<2)return;
-  ctx.lineCap='round';
-  for(let i=1;i<trail.length;i++){const a=trail[i-1],b=trail[i];
-    const f=1-b.t/TRAIL_LIFE;if(f<=0)continue;
-    ctx.strokeStyle='rgba(230,216,182,'+(f*0.5).toFixed(3)+')';
-    ctx.lineWidth=0.5+f*2;
-    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+  /* The comet's tail was stroked one segment at a time, and because every
+     segment carries its own width AND its own opacity - that is the fade - none
+     of them could share a path, so a full-length tail cost four canvas calls
+     per segment, every frame.
+
+     It is now a single tapered ribbon, outlined once and filled once with a
+     gradient running from the hot head to the transparent tail. The taper and
+     the fade are both still there and still smooth; they are just produced by
+     one fill instead of by re-stroking the whole tail sixty times a second. */
+  const n=trail.length;
+  const head=trail[n-1],tail=trail[0];
+  ctx.beginPath();
+  for(let i=0;i<n;i++){
+    const p=trail[i],f=1-p.t/TRAIL_LIFE;
+    const nx=0,hw=Math.max(0.25,(0.5+f*2)*0.5);
+    if(i===0)ctx.moveTo(p.x,p.y-hw);else ctx.lineTo(p.x,p.y-hw);
+  }
+  for(let i=n-1;i>=0;i--){
+    const p=trail[i],f=1-p.t/TRAIL_LIFE;
+    const hw=Math.max(0.25,(0.5+f*2)*0.5);
+    ctx.lineTo(p.x,p.y+hw);
+  }
+  ctx.closePath();
+  const g=ctx.createLinearGradient(tail.x,tail.y,head.x,head.y);
+  g.addColorStop(0,'rgba(230,216,182,0)');
+  g.addColorStop(1,'rgba(230,216,182,0.5)');
+  ctx.fillStyle=g;ctx.fill();
 }
 function drawComet(){
   const c=comet;

@@ -360,6 +360,36 @@ object AdPolicy {
         return store.sessionsEverSeen()
     }
 
+    /**
+     * THE APP CAME TO THE FOREGROUND. This is where the ad clock starts.
+     *
+     * WHY THIS EXISTS
+     *
+     * The interstitial gap is measured from the last ad. With nothing recorded
+     * - a fresh install, or the first session - there was no gap at all, so the
+     * very first ad was ALLOWED the instant the player lost their first game.
+     * That is the worst possible moment for it: the player has just lost, they
+     * were about to tap Retry, and a full-screen ad came up instead.
+     *
+     * The first-session grace only covered a brand-new install, so everyone
+     * else got the ambush.
+     *
+     * So the clock is anchored to the app instead. The moment the app is
+     * opened, the gap starts running, and the first ad cannot appear until it
+     * has expired. The player gets their time; the ad still comes eventually,
+     * which is the point - it just arrives when it is least unwelcome.
+     *
+     * Re-entering the foreground restarts the clock too, and that is deliberate:
+     * a player who left the app and came back should not be met with an ad
+     * either.
+     */
+    fun onAppOpened(context: Context?) {
+        if (store !is PrefsStore && context != null) store = PrefsStore(context)
+        onShellHomeShown(context)
+        lastInterstitialAt = now()
+        log("App opened - interstitial clock started")
+    }
+
     /** A new game screen opened: reset the per-game caps, keep the app-wide ones. */
     fun onGameOpened(context: Context?) {
         onShellHomeShown(context)

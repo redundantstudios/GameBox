@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="../../shell/shell-boot.js"></script>
 <!--
 STUDIO_GAME_MANIFEST
 id: colour-rush
@@ -2103,7 +2104,22 @@ function render(){
 /* Opposite sides per player: 0 left, 1 right, 2 left, 3 right. The old
    bl/tl/br/tr mapping gave players 0 AND 1 the left edge, so in a 2-player game
    both thumbs landed on the same side and fought each other. */
-function stickCorner(id){return id%2===0?'bl':'br';}
+/* ONE STICK PER CORNER.
+
+   This used to be `id%2===0?'bl':'br'` - only two corners, ever. That was
+   the right fix for a 2-player game, where mapping four corners onto two
+   players had put both thumbs on the same side and made them fight each
+   other. But it meant that in a 3- or 4-player game players 0 and 2 were
+   given the SAME corner and players 1 and 3 the same other one, so their
+   joysticks sat exactly on top of each other and could not both be used.
+
+   The corner is chosen by the HUMAN's position in the list, not by the
+   player's id, so every human gets a corner of their own. The order starts
+   bottom-left and bottom-right - where a 2-player game has always had them,
+   so that game is unchanged - and then takes the top corners for the third
+   and fourth. */
+var STICK_CORNERS=['bl','br','tl','tr'];
+function stickCorner(h){return STICK_CORNERS[Math.min(h,STICK_CORNERS.length-1)];}
 function buildSticks(){
  mctlEl.innerHTML='';
  if(!touchSeen){return;}
@@ -2113,7 +2129,7 @@ function buildSticks(){
  for(var h=0;h<hs.length;h++){
   (function(p){
    var el=document.createElement('div');
-   el.className='stick '+stickCorner(p.id);
+   el.className='stick '+stickCorner(h);
    el.innerHTML='<div class="stick-base"><div class="stick-knob"></div></div>';
    var base=el.querySelector('.stick-base'),knob=el.querySelector('.stick-knob');
    base.style.borderColor=p.col;

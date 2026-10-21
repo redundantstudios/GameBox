@@ -11,6 +11,10 @@ import android.view.View
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebChromeClient
+import android.webkit.ConsoleMessage
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.util.Log
@@ -65,6 +69,41 @@ class GameActivity : AppCompatActivity() {
 
     /** True once the game canvas has been revealed to the player. */
     private var canvasShown = false
+
+    /** True once the WebView's renderer process has died and been replaced. */
+    private var rendererDied = false
+
+    /** The URL this screen loaded, kept so a dead renderer can be replaced. */
+        private var gameUrl: String? = null
+
+    /**
+     * Puts the same game back on screen after its renderer was killed.
+     *
+     * The new page boots from scratch, so the readiness flags have to be reset
+     * too - otherwise the shell still believes the old page painted, reveals the
+     * canvas early, and the player watches an empty surface while the new one
+     * loads.
+     */
+    private fun reloadGame() {
+        val url = gameUrl ?: return
+        if (closing) return
+        Log.d(TAG_TIME, "reloading game after renderer loss")
+        pageReady = false
+        paintSeen = false
+        canvasShown = false
+        revealScheduled = false
+        rendererDied = false
+        try {
+            webView.postDelayed({
+                if (closing || rendererDied) return@postDelayed
+                webView.loadUrl(url)
+                // The safety net still applies to the replacement page.
+                gameRoot.postDelayed({ revealCanvas(force = true) }, REVEAL_FALLBACK_MS)
+            }, 220)
+        } catch (e: Throwable) {
+            Log.w(TAG_TIME, "reload failed: ${e.message}")
+        }
+    }
 
     /**
      * The colour that takes over as the canvas backdrop once the game's page has
@@ -155,9 +194,13 @@ class GameActivity : AppCompatActivity() {
     /** Grace before telling a game its rotation finished (WebView relayout). */
     private val orientationSettleMs = 180L
 
+    /** The same grace, for the chrome layer's own re-measure. */
+    private val ORIENTATION_SETTLE_MS = 180L
+
     private companion object {
         /** Transition timing traces (see sinceLaunch). */
         const val TAG_TIME = "GameTransition"
+
 
         /**
          * Height of the banner strip. 50dp is the AdMob BANNER unit's own
@@ -189,6 +232,17 @@ class GameActivity : AppCompatActivity() {
          */
         @Volatile
         private var bridgeOwner: GameActivity? = null
+
+        /**
+         * A screen whose surface is still inside its exit delay.
+         *
+         * The delay exists so the leaving animation paints its last frame, but
+         * it also means a fast open/close/open leaves several WebViews alive at
+         * once. The next game to start claims this and frees it immediately -
+         * see the top of `onCreate`.
+         */
+        @Volatile
+        private var pendingTeardown: GameActivity? = null
 
         /** Fallback canvas backdrop when a game has no tile colour. */
         const val DEFAULT_BACKDROP = 0xFF101014.toInt()
@@ -222,8 +276,32 @@ class GameActivity : AppCompatActivity() {
         const val JS_GAME_DESTROY = "window.Game && Game.destroy && Game.destroy();"
     }
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
+        /* A game opened while the PREVIOUS one is still tearing down: free that
+           surface right now instead of letting it sit for the rest of the exit
+           delay (see SURFACE_RELEASE_MS).
+
+           Every live WebView is a separate renderer process holding a JS heap
+           and the game's own canvases - for Sheepdog Trials that is a ~5.7MB
+           baked background plus its terrain layer plus a full-screen drawing
+           buffer. Leave four of those alive by opening and leaving the game
+           quickly four times and the phone is under real memory pressure, and
+           the next renderer to ask for a canvas is the one that loses: the game
+           opens showing its bare page background with the HUD drawn over
+           nothing. That is exactly the "no sheep, no dog, no field, just a dark
+           screen" report, and it only ever happened after several fast cycles.
+
+           Safe to do synchronously here because the new screen is already on
+           top and opaque - the outgoing one is behind it, so there is no
+           visible frame for this to interrupt. */
+        pendingTeardown?.let { prev ->
+            if (prev !== this) {
+                Log.d(TAG_TIME, "freeing previous game surface immediately")
+                prev.releaseSurface()
+            }
+        }
+        pendingTeardown = null
+
         // Layer 1 of the portrait lock: the manifest pins GameActivity to portrait
         // (android:screenOrientation="portrait"), so the activity is CREATED portrait
         // no matter what the caller, the sensor or a previous landscape game left
@@ -389,7 +467,61 @@ val bannerEdge = currentGame?.bannerEdge
                 textZoom = 100
             }
 
+            /* There was NO WebChromeClient at all here, which cost the shell the
+               one thing that makes a broken game diagnosable: its console. Every
+               `console.log`/`console.error` a game emits is now in logcat under
+               GameJS, tagged with file and line.
+
+               It also had no `onShowCustomView`, so a game calling
+               `documentElement.requestFullscreen()` had nobody to answer it. An
+               unanswered requestFullscreen is NOT simply ignored - the page
+               `await`s a promise nothing will ever settle, so whatever the game
+               queued after that await never runs, and the game sits frozen on
+               whatever screen it was on. Sheepdog Trials did exactly this on its
+               PLAY button. `jsFullscreenStub` below closes that hole for every
+               game at once. */
+            webChromeClient = object : WebChromeClient() {
+                override fun onHideCustomView() {
+                    webView.post { GameWindow.goImmersive(window) }
+                }
+
+                override fun onConsoleMessage(msg: ConsoleMessage): Boolean {
+                    Log.d("GameJS", "${msg.message()} @${msg.sourceId()}:${msg.lineNumber()}")
+                    return true
+                }
+            }
+
             webViewClient = object : WebViewClient() {
+
+                /**
+                 * SERVES THE GAME WITH THE SHELL'S SCRIPTS ALREADY IN IT.
+                 *
+                 * The game is a single HTML file in the APK's assets. This
+                 * intercepts the request for it and returns the same document
+                 * with the shell's four scripts spliced in above everything the
+                 * game ships with.
+                 *
+                 * The reason is order. `evaluateJavascript` at onPageStarted is
+                 * posted to the renderer and lands at the next script
+                 * checkpoint, which RACES a game that builds its AudioContext
+                 * or sizes its canvas while booting. The device log caught both
+                 * sides of it: Connect Four's canvas came out 1027 pixels wide
+                 * on one launch and 822 on the next, and the difference was
+                 * whether the resolution cap had won the race. The audio
+                 * tracker lost it too, which left the game unable to be
+                 * silenced at all - the music following the player onto the
+                 * home screen.
+                 *
+                 * A script that is PART OF THE DOCUMENT cannot lose a race with
+                 * the document. The browser parses the top of the file, runs
+                 * the shell's scripts, and only then reaches the game's code.
+                 *
+                 * If this interception does not fire - a platform that does not
+                 * consult the client for file:// requests - the page simply
+                 * loads as before, and the racy injection in onPageStarted is
+                 * still there as a second chance. Every script guards itself
+                 * behind a window flag, so running twice is harmless.
+                 */
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                     super.onPageStarted(view, url, favicon)
                     /* Installed at page start so it wraps AudioContext before the
@@ -411,36 +543,51 @@ val bannerEdge = currentGame?.bannerEdge
                         )
                     } catch (e: Throwable) { false }
                     Log.d(TAG_TIME, "documentStartScript supported=$supported")
+                    
+
+                    /* THE FALLBACK INJECTION, FOR THE CASE WHERE THE SCRIPT TAG IS NOT THERE.
+
+                       Every game now carries a plain
+                       `<script src="../../shell/shell-boot.js">` at the top of
+                       its <head>. That is a CLASSIC script: the parser stops
+                       there, fetches it, runs it to completion, and only then
+                       carries on. The browser cannot reach a line of the
+                       game's own code before it, because the shell's code is
+                       part of the document, above the game's code. That is
+                       what finally made the resolution cap and the audio
+                       tracker land every single time instead of winning a
+                       race.
+
+                       The injection below is for a page that somehow has no
+                       script tag - a game added later, or one whose head was
+                       edited. It is a race and it is known to be one; that is
+                       exactly why it is the fallback and not the mechanism.
+
+                       Every script guards itself behind a window flag, so
+                       running twice is a no-op rather than a double-patch. */
                     if (supported) {
-                        /* file:///android_asset pages have an opaque origin, so the
-                           rule list has to name the scheme as well as the wildcard.
-                           With only "*" the script was silently never run - which is
-                           why the tracker produced no logs and no contexts were
-                           ever captured. */
                         try {
-                            androidx.webkit.WebViewCompat.addDocumentStartJavaScript(
-                                v, jsAudioTracker, setOf("file://", "file://*", "*")
-                            )
+                            for (js in shellScriptSources()) {
+                                androidx.webkit.WebViewCompat.addDocumentStartJavaScript(
+                                    v, js, setOf("file://")
+                                )
+                            }
                         } catch (e: Exception) {
-                            Log.w(TAG_TIME, "document-start script failed: ${e.message}")
+                            Log.w(TAG_TIME, "document-start REJECTED - hand injection covers it", e)
                         }
-                    } else {
-                        v.evaluateJavascript(jsAudioTracker, null)
                     }
-                    /* Belt and braces: a document-start script covers the common
-                       case, but if the page somehow loaded before it landed, a
-                       retry at commit time still gets a tracker in place - and an
-                       already-created context is picked up by the patched
-                       constructor on the next context the game makes. */
-                    v.postDelayed({
-                        try { v.evaluateJavascript(jsAudioTracker, null) } catch (_: Exception) {}
-                    }, 400)
+                    injectShellScripts(v)
                     Log.d(TAG_TIME, "page started +${sinceLaunch()}ms")
                 }
 
                 /** The first paint is only REMEMBERED, never shown (see revealCanvas). */
                 override fun onPageCommitVisible(view: WebView?, url: String?) {
                     super.onPageCommitVisible(view, url)
+                    /* Second chance for the shell scripts. The page-start injection can
+                       land against a document that is about to be replaced; this one
+                       lands against the document that is actually on screen. Re-running
+                       is a no-op for any script that already applied itself. */
+                    view?.let { injectShellScripts(it) }
                     paintSeen = true
                     Log.d(TAG_TIME, "first paint +${sinceLaunch()}ms")
                     maybeReveal()
@@ -456,9 +603,50 @@ val bannerEdge = currentGame?.bannerEdge
                  */
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
+                    /* Third and last chance. Covers a page whose own scripts ran before
+                       either earlier injection could attach - which, with no document-start
+                       path on a file:// page, is the normal case and not the rare one. */
+                    view?.let { injectShellScripts(it) }
                     Log.d(TAG_TIME, "page loaded +${sinceLaunch()}ms")
                     pageReady = true
                     maybeReveal()
+                }
+
+                /**
+                 * THE RENDERER DIED. Handled, not fatal.
+                 *
+                 * Left to the default, a dead renderer CRASHES the app. That is
+                 * the platform's honest answer: the WebView is a view onto
+                 * another process, and when that process goes the view is a
+                 * corpse. But "crash" is a terrible answer for a game that was
+                 * closed and reopened a few times too quickly, because the
+                 * renderer dies for the most ordinary reason there is - the
+                 * system reclaimed it under memory pressure - and the player
+                 * did nothing wrong.
+                 *
+                 * So the renderer is treated as recoverable: the WebView is
+                 * detached from the corpse, and the same URL is loaded again.
+                 * A game is stateless at this point (nothing is carried across
+                 * a close, because a close destroys the page), so reloading
+                 * loses nothing the player can see.
+                 */
+                override fun onRenderProcessGone(
+                    view: WebView?,
+                    detail: android.webkit.RenderProcessGoneDetail?
+                ): Boolean {
+                    Log.e(TAG_TIME, "renderer gone: crashed=${detail?.didCrash()} prio=${detail?.rendererPriorityAtExit()}")
+                    rendererDied = true
+                    // Never call into this WebView again - the object it wraps
+                    // no longer exists, and touching it throws.
+                    surfaceReleased = true
+                    try {
+                        (view?.parent as? android.view.ViewGroup)?.removeView(view)
+                        view?.destroy()
+                    } catch (e: Throwable) {
+                        Log.w(TAG_TIME, "renderer cleanup failed: ${e.message}")
+                    }
+                    reloadGame()
+                    return true
                 }
             }
 
@@ -485,7 +673,8 @@ val bannerEdge = currentGame?.bannerEdge
             // chosen; otherwise the game opens its own normal menu.
             val preselect =
                 if (mode != null && players > 0) "&mode=$mode&skill=$skill&players=$players" else ""
-            loadUrl("file:///android_asset/games/$gameId/index.html?$settingsQuery$preselect")
+            gameUrl = "file:///android_asset/games/$gameId/index.html?$settingsQuery$preselect"
+            loadUrl(gameUrl!!)
         }
 
         rootLayout.addView(webView)
@@ -763,80 +952,217 @@ val bannerEdge = currentGame?.bannerEdge
        apps. Doing this per game meant only the games that had opted in went
        quiet, so the contexts are wrapped here instead and the whole page is
        covered at once. Runs before the game's own scripts. */
-    private val jsAudioTracker = """
-        (function(){
-          /* The tracker is injected more than once (page start, then a beat
-             later because an injection at onPageStarted can be thrown away when
-             the navigation commits). A second run used to build its OWN empty
-             context list and overwrite the global suspend helper with it, so the
-             contexts the first run had captured were suspended by a tracker
-             holding nothing - logged as "suspend 0 ctx" while the game kept
-             playing. The registry lives on window so every run shares one list,
-             and a run that finds the constructor already wrapped leaves the
-             existing helper alone. */
-          var store=window.__studioAudioStore;
-          if(!store){store=window.__studioAudioStore={live:[],held:false,wrapped:false};}
-          var live=store.live;
-          function log(m){ try{console.log('AudioTrack: '+m);}catch(e){} }
-          if(store.wrapped){log('already wrapped, '+live.length+' ctx');return;}
-          function suspendAll(on){
-            store.held=!!on;
-            log((on?'suspend ':'resume ')+live.length+' ctx');
-            live.forEach(function(c){
-              try{ on?(c.__realSuspend?c.__realSuspend():c.suspend())
-                      :(c.__realResume?c.__realResume():c.resume()); }catch(e){}
-            });
-          }
-          window.__studioSuspendAudioAll=suspendAll;
-          ['AudioContext','webkitAudioContext'].forEach(function(name){
-            var Orig=window[name]; if(!Orig)return;
-            var Wrapped=function(){
-              var ctx=new (Function.prototype.bind.apply(Orig,[null].concat([].slice.call(arguments))))();
-              if(live.indexOf(ctx)<0)live.push(ctx);
-              ctx.__realResume=ctx.resume.bind(ctx);
-              ctx.__realSuspend=ctx.suspend.bind(ctx);
-              /* Games call resume() from their own audio paths, which undid a
-                 suspend issued a moment earlier. While the screen is backgrounded
-                 resume() is a no-op, so only suspendAll can restart it. */
-              ctx.resume=function(){ if(store.held)return Promise.resolve();
-                                    return ctx.__realResume(); };
-              log('captured ('+live.length+')');
-              return ctx;
-            };
-            Wrapped.prototype=Orig.prototype;
-            window[name]=Wrapped;
-          });
-          store.wrapped=true;
-          document.addEventListener('visibilitychange',function(){
-            suspendAll(document.hidden);
-          });
-          log('installed');
-        })();
-    """.trimIndent()
+
+    /* THE SHELL ALREADY OWNS THE VIEWPORT - a game must never be able to hang
+       on a fullscreen request.
+
+       GameActivity runs every game edge-to-edge and immersive ([GameWindow]),
+       and the activity's own `requestedOrientation` decides portrait vs
+       landscape. A game asking for `requestFullscreen()` is therefore asking
+       for something it already has.
+
+       The reason this matters is not the feature, it is the PROMISE. A page that
+       does `await documentElement.requestFullscreen()` waits on a promise that
+       is only settled by the host through WebChromeClient.onShowCustomView.
+       This WebView sets no WebChromeClient fullscreen path, so nothing settles
+       it: the await never returns and every line after it silently never runs.
+       Sheepdog Trials called it on its PLAY button, so the game could sit on its
+       opening overlay looking frozen - the exact "black background, stuck"
+       report.
+
+       Replacing the call with one that resolves IMMEDIATELY (and dispatches the
+       resize a real fullscreen would have caused, which is all a canvas game
+       actually wants from it) means a game can never be left waiting on the
+       host. In a plain browser tab this script is simply absent and the real API
+       is used unchanged. */
+    /**
+     * Injects the shell's four page scripts - DPR cap, fullscreen stub,
+     * canvas-loss watcher, audio tracker - into [v].
+     *
+     * WHY NOT DOCUMENT-START INJECTION
+     *
+     * `addDocumentStartJavaScript` reports the feature supported, accepts every
+     * registration without complaint, and then never executes any of them. Logged
+     * on a real launch:
+     *
+     *     16:29:04.756  Launching game sheepdog-trials
+     *     16:29:04.983  document-start registered 8 of 8
+     *     16:29:05.407  AudioTrack: installed      <- +424ms: the hand-injected
+     *                                                      fallback, not the above
+     *
+     * Two origin rules were tried - the file scheme and the catch-all - and not
+     * one `DPR:` or `CW:` line was ever produced. It is not a rule that can be
+     * fixed: a page loaded from `file:///android_asset` has an opaque origin, and
+     * there is nothing there to match against, so the injection is accepted and
+     * discarded. Registration succeeding was never evidence that anything ran,
+     * and for the entire life of this feature that was simply assumed - which is
+     * why the audio tracker was the only one of the four that had ever worked.
+     * It went in by hand, here, the whole time.
+     *
+     * So all four go in by hand now.
+     *
+     * WHY IT IS INJECTED THREE TIMES
+     *
+     * The DPR cap is the one that needs to arrive early - a game reads
+     * `devicePixelRatio` once, at startup - and there is no longer any way to
+     * guarantee beating it to that read. Injecting at page start gives the best
+     * chance; injecting again at commit and after load catches a document that
+     * replaced itself in between. Every script sets a window flag on its first
+     * run and returns immediately on later ones, so the repeats are no-ops.
+     *
+     * Each script announces itself on its first successful run, which is what
+     * makes this knowable instead of assumed - and if a game still reports an
+     * uncapped DPR, the log says so rather than leaving it to be guessed at.
+     */
+
+    /**
+     * The shell's page scripts, as one inline block for splicing into the
+     * game's document.
+     *
+     * They live in the APK's assets as real .js files rather than as Kotlin
+     * raw strings. That is not a style preference: a raw string full of
+     * JavaScript is a brace hazard for anything that tries to find its end,
+     * and the scripts are JavaScript and deserve to be linted and tested as
+     * JavaScript.
+     *
+     * Reading them here also means the very same text is used for the
+     * document injection and for the fallback injection, so the two can never
+     * drift apart.
+     */
+    private fun shellScriptBlock(): String {
+        val sb = StringBuilder()
+        for (name in listOf("dpr.js", "fullscreen.js", "canvaswatch.js", "audiotracker.js")) {
+            val js = try {
+                assets.open("shell/$name").use { it.readBytes().toString(Charsets.UTF_8) }
+            } catch (e: Throwable) {
+                Log.w(TAG_TIME, "shell script missing: $name")
+                continue
+            }
+            // A script tag cannot contain the sequence that closes one.
+            val safe = js.replace("</script", "<" + "/script")
+            sb.append("<script>\n").append(safe).append("\n</script>\n")
+        }
+        return sb.toString()
+    }
+
+    /**
+     * The shell's page scripts, as raw JavaScript, for the fallback path.
+     */
+    private fun shellScriptSources(): List<String> =
+        listOf("dpr.js", "fullscreen.js", "canvaswatch.js", "audiotracker.js").map { name ->
+            try {
+                assets.open("shell/$name").use { it.readBytes().toString(Charsets.UTF_8) }
+            } catch (e: Throwable) {
+                Log.w(TAG_TIME, "shell script missing: $name")
+                ""
+            }
+        }
+
+    private fun injectShellScripts(v: WebView) {
+        val ordered = shellScriptSources()
+        for (js in ordered) {
+            try {
+                v.evaluateJavascript(js, null)
+            } catch (e: Throwable) {
+                // A renderer that has gone away throws here. reloadGame() owns
+                // that case; there is nothing useful to do about it twice.
+                Log.w(TAG_TIME, "shell script injection failed: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Puts the shell's scripts at the very top of the game's document.
+     *
+     * They go after the <head> tag when there is one, and at the very start of
+     * the file when there is not, so that they are above every script the game
+     * ships with. Nothing the game does can happen before them.
+     */
+    private fun injectShellScript(html: String): String {
+        val block = shellScriptBlock()
+        val headAt = html.indexOf("<head")
+        if (headAt >= 0) {
+            val headEnd = html.indexOf('>', headAt)
+            if (headEnd >= 0) {
+                return html.substring(0, headEnd + 1) + block + html.substring(headEnd + 1)
+            }
+        }
+        val doctype = html.indexOf("<!DOCTYPE")
+        if (doctype >= 0) {
+            val end = html.indexOf('>', doctype)
+            if (end >= 0) return html.substring(0, end + 1) + block + html.substring(end + 1)
+        }
+        return block + html
+    }
+
+
+    /* THE BACKING STORE IS CAPPED, ONCE, FOR EVERY GAME.
+
+   Almost every canvas game sizes its backing store off `devicePixelRatio`. Most
+   cap it; the ones that do not, and the two that cap at 2.5, hand the GPU a
+   surface several times larger than the screen. On a 2.75-density phone that is
+   about six device pixels for every CSS pixel, and every one of those pixels is
+   paid again by each full-screen fill, each background blit and each vignette -
+   sixty times a second.
+
+   That is also why a LARGER phone could be the laggy one: a bigger screen is a
+   bigger backing store, so the same number of draw calls is being asked to cover
+   more pixels. Frame cost here tracks area, not just call count.
+
+   Capping what the page SEES is the cheapest correct lever available, because
+   it reaches every bundled game at once and touches none of their drawing code
+   or their art. The cap is 2, which is past the point where extra density stops
+   being visible on a phone and still leaves text crisp.
+
+   Not additive with a game's own cap - a game that clamps to 1.5 keeps 1.5.
+   Only the ones that would have gone higher are pulled down. */
+
 
     override fun onPause() {
         super.onPause()
         /* Put the ad strip away with the screen. Left up, it kept its slot in
            the layout and drew over whatever the player opened next. */
         adMobManager.hideBanner()
-        /* webView.onPause() stops JS timers and the render loop, but an
-           AudioContext that is ALREADY running ignores all of that and keeps
-           making sound - which is how the music followed the player onto the
-           home screen and into other apps. The game has to suspend its own
-           context; resume() below starts it again on the way back. */
+        /* WHY THE WEBVIEW IS NOT STOPPED HERE.
+
+           `webView.onPause()` is deferred to `onStop()` below, and that move is
+           the fix.
+
+           A game queues its music in chunks, armed from a timer, so stopping JS
+           only stops the QUEUE - whatever chunk is already scheduled plays out
+           to the end before silence, which is where the "the music keeps
+           playing for forty seconds after I leave" report came from. The only
+           thing that cuts it short is suspending the AudioContext itself.
+
+           Suspending it is a job for the page, and `evaluateJavascript` is how
+           the page is reached. That call is asynchronous: it queues, the page
+           runs it later. Calling `webView.onPause()` on the following line can
+           reach the renderer first, and a renderer that has been told to stop
+           sits on the queued call instead of running it - so the suspend that
+           was supposed to prevent the forty seconds is itself the thing that
+           never happens.
+
+           So this method only ASKS the page to be quiet, and the WebView is not
+           stopped until `onStop()`, by which point the renderer has had the
+           whole of the pause transition to run the request. `onStop()` still
+           arrives promptly - it is the very next callback - so nothing is left
+           running behind the shell for longer than it was before. */
         webView.evaluateJavascript(
             "window.__studioSuspendAudioAll && window.__studioSuspendAudioAll(true);", null)
         webView.evaluateJavascript("window.Game && Game.pause && Game.pause();", null)
-        /* Stop the WebView itself while this screen is not in front.
-           `Game.pause()` only tells the game's own loop to stop simulating - the
-           page kept calling requestAnimationFrame and repainting a full-screen
-           canvas at 60fps behind the shell, so every game kept burning CPU (and
-           making the shell feel sluggish) for as long as it stayed on the back
-           stack. `onPause()` suspends JS timers and the render loop outright. */
         /* Stop the debug countdown with the screen: it is a singleton, so leaving
            it running would keep a Handler ticking over a dead Activity. */
         com.redundantstudios.arcade.ads.AdDebugBadge.detach()
-        webView.onPause()
+    }
+
+    /**
+     * The activity is off screen. Stop the WebView now - not in [onPause] - so
+     * that the audio suspend issued there has actually run first. See the note
+     * in [onPause].
+     */
+    override fun onStop() {
+        super.onStop()
+        if (::webView.isInitialized) webView.onPause()
     }
 
     override fun onResume() {
@@ -893,7 +1219,11 @@ val bannerEdge = currentGame?.bannerEdge
         clearBridgeHandlers()
 
         // Everything else waits out the exit slide (see SURFACE_RELEASE_MS).
-        teardownHandler.postDelayed({ releaseSurface() }, SURFACE_RELEASE_MS)
+        pendingTeardown = this
+        teardownHandler.postDelayed({
+            releaseSurface()
+            if (pendingTeardown === this) pendingTeardown = null
+        }, SURFACE_RELEASE_MS)
         super.onDestroy()
     }
 
@@ -907,6 +1237,18 @@ val bannerEdge = currentGame?.bannerEdge
         if (::adMobManager.isInitialized) adMobManager.destroy()
         if (!::webView.isInitialized) return
         (webView.parent as? android.view.ViewGroup)?.removeView(webView)
+        /* Point the WebView at an empty page and let it go. Destroying it while
+           it is mid-document leaves the renderer to unwind a live page with a
+           canvas and an animation loop on it; about:blank gives it nothing to
+           hold on to, which is the difference between the memory coming back
+           now and coming back whenever the collector next runs. */
+        try {
+            webView.stopLoading()
+            webView.loadUrl("about:blank")
+        } catch (e: Throwable) {
+            Log.w(TAG_TIME, "pre-destroy unload failed: ${e.message}")
+        }
+        webView.removeJavascriptInterface("NativeBridge")
         webView.destroy()
     }
 
