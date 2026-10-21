@@ -4713,6 +4713,28 @@ function startGame(){
 }
 let moReviveUsed=false;
 let moCrashSnap=null;
+/* Director's report: after a rewarded video the run used to resume by itself.
+   Now the grant only WARMS the revive; the player must tap the button once to
+   actually continue. The button never charges a second ad for that tap. */
+let moReviveGranted=false;
+function armRevive(){
+  moReviveGranted=true;
+  const b=$('continueBtn');
+  if(!b) return;
+  const chip=b.querySelector('.adChip'), txt=b.querySelector('.adText');
+  if(chip) chip.style.display='none';
+  if(txt) txt.textContent='TAP TO RESUME';
+  const hint=$('oRetryHint');
+  if(hint) hint.textContent='Revive ready - tap the button to continue.';
+}
+function showAdOfferState(){
+  moReviveGranted=false;
+  const b=$('continueBtn');
+  if(!b) return;
+  const chip=b.querySelector('.adChip'), txt=b.querySelector('.adText');
+  if(chip) chip.style.display='';
+  if(txt) txt.textContent='Continue';
+}
 function continueFromAd(){
   const s=moCrashSnap; moCrashSnap=null; moReviveUsed=true;
   window.__continueInvulnUntil=performance.now()+1500;
@@ -4759,6 +4781,7 @@ function gameOver(){
     score:P.score,combo:P.combo,comboT:P.comboT,nearMisses:P.nearMisses,
     driftTotal:P.driftTotal,topSpeed:P.topSpeed,dist:dist};
   $('continueBtn').classList.toggle('hidden',moReviveUsed);
+  showAdOfferState();
   MUSIC.stop();
   /* The fail sting waits for the ad callback below rather than playing here.
      failTune() runs ~2s and used to start at the exact moment an interstitial
@@ -4991,6 +5014,7 @@ function setSfx(){ AU.setSfx(!AU.sfxOn); refreshToggles(); if(AU.sfxOn) AU.uiCli
    }
  }
 $('continueBtn').addEventListener('click',e=>{ e.stopPropagation();
+    if(moReviveGranted){ moReviveGranted=false; continueFromAd(); return; }
     if(moReviveUsed)return;
     const hint=$('oRetryHint');
     if(hint)hint.textContent='LOADING AD…';
@@ -5000,7 +5024,7 @@ $('continueBtn').addEventListener('click',e=>{ e.stopPropagation();
        back in - see the grant path below. */
     AU.adMute(true);
     Studio.ads.rewarded('continue',
-     function(){ try{ AU.adMute(false); }catch(e){} continueFromAd(); },
+     function(){ try{ AU.adMute(false); }catch(e){} armRevive(); },
      function(reason){
        try{ AU.adMute(false); }catch(e){}
        AU.uiClick();
@@ -5042,6 +5066,22 @@ addEventListener('keydown',e=>{ if(['ArrowUp','ArrowDown',' '].includes(e.key)) 
 
 /* ================= auto quality ================= */
 let perfAcc=0,perfN=0,perfSlow=0;
+/* Director wants hard numbers for the "why is it slower on my phone" report:
+   every ~2 s of gameplay, one GameJS line with fps, WebGL draw calls, shaded
+   triangles and the current internal render scale. This is diagnostics only -
+   it changes nothing about rendering. Remove once the lag question is settled. */
+let moFpsAcc=0,moFpsN=0;
+function moPerfLog(rdt){
+  moFpsAcc+=rdt; moFpsN++;
+  if(moFpsN>=120){
+    const i=renderer.info.render;
+    console.log('[MO] fps='+Math.round(moFpsN/moFpsAcc)+' calls='+i.calls+
+      ' tris='+i.triangles+' dpr='+renderer.getPixelRatio().toFixed(2)+
+      ' dpscale='+(typeof __studioDprScale==='function'?__studioDprScale():'?')+
+      ' state='+state);
+    moFpsAcc=0; moFpsN=0;
+  }
+}
 function perfWatch(rdt){
   perfAcc+=rdt; perfN++;
   if(perfN>=50){
@@ -5061,6 +5101,7 @@ function tick(){
   const rdt=Math.min(clock.getDelta(),.05);
   realT+=rdt;
   perfWatch(rdt);
+  moPerfLog(rdt);
   if(paused){ renderer.render(scene,camera); return; }
   slowmoT-=rdt;
   const tsT=state==='crashing'?.35:(slowmoT>0?.55:1);
