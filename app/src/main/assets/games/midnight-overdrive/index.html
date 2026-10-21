@@ -3558,6 +3558,13 @@ const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.1,1400);
 addEventListener('resize',()=>{
   camera.aspect=innerWidth/innerHeight;
   camera.updateProjectionMatrix();
+  /* The shell's dpr governor lowers window.devicePixelRatio when the device
+     can't hold the frame, and signals it with this same resize event. Re-read
+     the DPR here and apply the LOWER of it and our own stepped ratio: the
+     shell's step-down is honoured, our internal auto-quality never gets
+     pushed back up (no pumping between two scales), and the shaft of
+     sharpness we start at is exactly as before. */
+  renderer.setPixelRatio(Math.min(renderer.getPixelRatio(),devicePixelRatio||1));
   renderer.setSize(innerWidth,innerHeight);
 });
 
@@ -3582,7 +3589,12 @@ scene.add(new THREE.HemisphereLight(0x4a3f78,0x140d1a,.65));
 const moonLight=new THREE.DirectionalLight(0xa79ae0,.65);
 moonLight.position.set(60,90,-80);
 moonLight.castShadow=true;
-moonLight.shadow.mapSize.set(2048,2048);
+/* Perf: 2048x2048 PCFSoft re-rendered every frame was the dominant cost on a
+   weak GPU (the whole dynamic scene re-renders into it each frame, since the
+   world treadmill keeps everything moving). 1024 is 4x cheaper in the shadow
+   pass and reads virtually the same on this low-poly scene; the director
+   verifies shadow appearance on-device and this can be reverted to 2048. */
+moonLight.shadow.mapSize.set(1024,1024);
 moonLight.shadow.camera.left=-50; moonLight.shadow.camera.right=50;
 moonLight.shadow.camera.top=60;   moonLight.shadow.camera.bottom=-60;
 moonLight.shadow.camera.near=10;  moonLight.shadow.camera.far=300;
@@ -4701,6 +4713,28 @@ function startGame(){
 }
 let moReviveUsed=false;
 let moCrashSnap=null;
+/* Director's report: after a rewarded video the run used to resume by itself.
+   Now the grant only WARMS the revive; the player must tap the button once to
+   actually continue. The button never charges a second ad for that tap. */
+let moReviveGranted=false;
+function armRevive(){
+  moReviveGranted=true;
+  const b=$('continueBtn');
+  if(!b) return;
+  const chip=b.querySelector('.adChip'), txt=b.querySelector('.adText');
+  if(chip) chip.style.display='none';
+  if(txt) txt.textContent='TAP TO RESUME';
+  const hint=$('oRetryHint');
+  if(hint) hint.textContent='Revive ready - tap the button to continue.';
+}
+function showAdOfferState(){
+  moReviveGranted=false;
+  const b=$('continueBtn');
+  if(!b) return;
+  const chip=b.querySelector('.adChip'), txt=b.querySelector('.adText');
+  if(chip) chip.style.display='';
+  if(txt) txt.textContent='Continue';
+}
 function continueFromAd(){
   const s=moCrashSnap; moCrashSnap=null; moReviveUsed=true;
   window.__continueInvulnUntil=performance.now()+1500;
@@ -4747,6 +4781,7 @@ function gameOver(){
     score:P.score,combo:P.combo,comboT:P.comboT,nearMisses:P.nearMisses,
     driftTotal:P.driftTotal,topSpeed:P.topSpeed,dist:dist};
   $('continueBtn').classList.toggle('hidden',moReviveUsed);
+  showAdOfferState();
   MUSIC.stop();
   /* The fail sting waits for the ad callback below rather than playing here.
      failTune() runs ~2s and used to start at the exact moment an interstitial
@@ -4868,29 +4903,43 @@ function updateWorld(dt){
 /* ================= HUD & audio per-frame ================= */
 const GEAR_COLS=['#2fe6c8','#2fe6c8','#ffcf3f','#ffcf3f','#ff8a3d','#ff4f9a','#ff5340'];
 const COMBO_COLS=['#2fe6c8','#2fe6c8','#ffcf3f','#ffcf3f','#ff8a3d','#ff8a3d','#ff4f9a','#ff4f9a'];
+/* Perf: updateHUD runs every frame. It used to do a $('gaugeNeedle') DOM lookup
+   and unconditional text/style/attribute writes every frame even when the value
+   had not changed - each one invalidates layout. Now the needle is resolved once
+   and every write is gated on the value it would produce, so a frame that shows
+   the same numbers touches no DOM at all. Output is pixel-identical. */
+const NI=$(('gaugeNeedle'));
+const H=[-1,null,null,-999,null,null,null,null,null,null,null];
+function same(i,v){return v===H[i];}
+function put(i,v){H[i]=v;return v;}
 function updateHUD(){
   const kmh=P.speed*3.6, sf=clamp(kmh/280,0,1);
-  UI.speedVal.textContent=Math.round(kmh);
+  if(!same(0,Math.round(kmh))) UI.speedVal.textContent=put(0,Math.round(kmh));
   const g=P.speed<.6?0:gearOf(P.speed).gear;
-  UI.gearVal.textContent=g===0?'N':g;
-  UI.gearVal.style.color=g===0?'#9da5b0':'#ffad43';
-  const needle=$('gaugeNeedle');
-  if(needle){
-    const deg=-132 + sf*264;
-    needle.setAttribute('transform',`rotate(${deg} 110 110)`);
-  }
-  UI.scoreVal.textContent=fmt(P.score);
-  UI.distVal.textContent=(dist/1000).toFixed(2)+' km';
+  const gt=g===0?'N':g;
+  if(!same(1,gt)) UI.gearVal.textContent=put(1,gt);
+  const gc=g===0?'#9da5b0':'#ffad43';
+  if(!same(2,gc)) UI.gearVal.style.color=put(2,gc);
+  const deg=Math.round((-132+sf*264)*2)/2;
+  if(NI && !same(3,deg)) NI.setAttribute('transform',put(3,`rotate(${deg} 110 110)`));
+  const sc=fmt(P.score);
+  if(!same(4,sc)) UI.scoreVal.textContent=put(4,sc);
+  const dv=(dist/1000).toFixed(2)+' km';
+  if(!same(5,dv)) UI.distVal.textContent=put(5,dv);
   if(P.combo>=2){
     UI.comboRow.classList.add('on');
-    UI.comboMul.textContent='×'+P.combo;
-    UI.comboRow.style.background=COMBO_COLS[P.combo-2];
-    UI.comboFill.style.width=(clamp(P.comboT,0,4)/4*100)+'%';
+    if(!same(6,'×'+P.combo)) UI.comboMul.textContent=put(6,'×'+P.combo);
+    const cbg=COMBO_COLS[P.combo-2];
+    if(!same(7,cbg)) UI.comboRow.style.background=put(7,cbg);
+    const cbw=(clamp(P.comboT,0,4)/4*100).toFixed(1)+'%';
+    if(!same(8,cbw)) UI.comboFill.style.width=put(8,cbw);
   }else UI.comboRow.classList.remove('on');
   UI.oncomingEl.classList.toggle('on',P.oncoming&&state==='playing');
   UI.driftChip.classList.toggle('on',P.driftBank>0&&state==='playing');
-  UI.driftPts.textContent=fmt(P.driftBank);
-  UI.vignette.style.opacity=.45+sf*.32;
+  const dp=fmt(P.driftBank);
+  if(!same(9,dp)) UI.driftPts.textContent=put(9,dp);
+  const vo=(.45+sf*.32).toFixed(2)*1;
+  if(!same(10,vo)) UI.vignette.style.opacity=put(10,vo);
 }
 function updateAudio(){
   if(!AU.ready) return;
@@ -4965,6 +5014,7 @@ function setSfx(){ AU.setSfx(!AU.sfxOn); refreshToggles(); if(AU.sfxOn) AU.uiCli
    }
  }
 $('continueBtn').addEventListener('click',e=>{ e.stopPropagation();
+    if(moReviveGranted){ moReviveGranted=false; continueFromAd(); return; }
     if(moReviveUsed)return;
     const hint=$('oRetryHint');
     if(hint)hint.textContent='LOADING AD…';
@@ -4974,7 +5024,7 @@ $('continueBtn').addEventListener('click',e=>{ e.stopPropagation();
        back in - see the grant path below. */
     AU.adMute(true);
     Studio.ads.rewarded('continue',
-     function(){ try{ AU.adMute(false); }catch(e){} continueFromAd(); },
+     function(){ try{ AU.adMute(false); }catch(e){} armRevive(); },
      function(reason){
        try{ AU.adMute(false); }catch(e){}
        AU.uiClick();
@@ -5016,6 +5066,22 @@ addEventListener('keydown',e=>{ if(['ArrowUp','ArrowDown',' '].includes(e.key)) 
 
 /* ================= auto quality ================= */
 let perfAcc=0,perfN=0,perfSlow=0;
+/* Director wants hard numbers for the "why is it slower on my phone" report:
+   every ~2 s of gameplay, one GameJS line with fps, WebGL draw calls, shaded
+   triangles and the current internal render scale. This is diagnostics only -
+   it changes nothing about rendering. Remove once the lag question is settled. */
+let moFpsAcc=0,moFpsN=0;
+function moPerfLog(rdt){
+  moFpsAcc+=rdt; moFpsN++;
+  if(moFpsN>=120){
+    const i=renderer.info.render;
+    console.log('[MO] fps='+Math.round(moFpsN/moFpsAcc)+' calls='+i.calls+
+      ' tris='+i.triangles+' dpr='+renderer.getPixelRatio().toFixed(2)+
+      ' dpscale='+(typeof __studioDprScale==='function'?__studioDprScale():'?')+
+      ' state='+state);
+    moFpsAcc=0; moFpsN=0;
+  }
+}
 function perfWatch(rdt){
   perfAcc+=rdt; perfN++;
   if(perfN>=50){
@@ -5035,6 +5101,7 @@ function tick(){
   const rdt=Math.min(clock.getDelta(),.05);
   realT+=rdt;
   perfWatch(rdt);
+  moPerfLog(rdt);
   if(paused){ renderer.render(scene,camera); return; }
   slowmoT-=rdt;
   const tsT=state==='crashing'?.35:(slowmoT>0?.55:1);
