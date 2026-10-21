@@ -998,6 +998,17 @@ function updateZone(rdt){
 
 let worldX=0,dust=[],streaks=[],beacons=[];
 let bgGrad=null,railGT=null,railGB=null,fogT=null,fogB=null;
+/* Per-frame object-churn caches. Creating CanvasGradient objects inside the
+   draw loop shows up on Android as GC pauses (intermittent lag), so the
+   gradients below are built once and reused; the screen sprites of the
+   obstacles are cached by size instead of rebuilt per obstacle instance.
+   Cached items depend only on the game's own scale factor, so buildWorld
+   invalidates them on resize. Coordinates stay identical: every cache below
+   reproduces exactly the object the old per-frame code created. */
+let railFadeG=[null,null];
+let ballGrad={top:null,bottom:null};
+let hubGrad=null;
+let obstacleSpr={};
 let noiseCv=null,stripeRed=null,stripeAm=null,stripeVio=null;
 let padTop=null,padBot=null,bladeCv=null,podCv=null;
 
@@ -1187,6 +1198,12 @@ function buildWorld(){
   railGB.addColorStop(0,'#0d1522');railGB.addColorStop(.5,'#1e2c42');railGB.addColorStop(1,'#141e30');
   if(!noiseCv)buildNoise();
   buildStripes();
+  /* the cached draw-loop gradients are positioned in screen units that just
+     changed - drop them so the next frame rebuilds them from the new values */
+  railFadeG[0]=railFadeG[1]=null;
+  ballGrad={top:null,bottom:null};
+  hubGrad=null;
+  obstacleSpr={};
   padTop=makePad(C_TOP);padBot=makePad(C_BOT);
   bladeCv=makeBlade();podCv=makePod();
   artA=artB=ensureZoneArt(0);
@@ -1302,9 +1319,17 @@ function drawZoneBanner(){
 /* ============ 7. RAILS ============ */
 let arcPulse=0;const railFlash={top:0,bottom:0};
 function drawRailSide(y,C,isActive,flash,isTop){
-  const gg=isTop?ctx.createLinearGradient(0,y,0,y+80*vf):ctx.createLinearGradient(0,y,0,y-80*vf);
-  gg.addColorStop(0,rgba(C,.12*(1+flash*1.5)));gg.addColorStop(1,rgba(C,0));
-  ctx.fillStyle=gg;
+  if(!railFadeG[isTop?0:1]){
+    const gg0=isTop?ctx.createLinearGradient(0,y,0,y+80*vf):ctx.createLinearGradient(0,y,0,y-80*vf);
+    gg0.addColorStop(0,rgba(C,.12));gg0.addColorStop(1,rgba(C,0));
+    railFadeG[isTop?0:1]=gg0;
+  }
+  if(flash>0){
+    /* identical to the old per-frame build: both stops scale by (1+flash*1.5) */
+    const gg=isTop?ctx.createLinearGradient(0,y,0,y+80*vf):ctx.createLinearGradient(0,y,0,y-80*vf);
+    gg.addColorStop(0,rgba(C,.12*(1+flash*1.5)));gg.addColorStop(1,rgba(C,0));
+    ctx.fillStyle=gg;
+  }else ctx.fillStyle=railFadeG[isTop?0:1];
   ctx.fillRect(0,isTop?y:y-80*vf,W,80*vf);
   ctx.fillStyle=isTop?railGT:railGB;
   ctx.fillRect(0,y-railH,W,railH*2);
@@ -1420,11 +1445,15 @@ function drawPlayer(){
   ctx.save();
   ctx.translate(p.x,p.y+wob);
   ctx.rotate(p.velAng);ctx.scale(1+p.stretch*.2,1-p.stretch*.14);ctx.rotate(-p.velAng);
-  const gr=ctx.createRadialGradient(-ballR*.35,-ballR*.42,ballR*.1,0,0,ballR);
-  gr.addColorStop(0,shade(C,1.6));
-  gr.addColorStop(.4,shade(C,1.05));
-  gr.addColorStop(.78,shade(C,.55));
-  gr.addColorStop(1,'rgba(8,12,20,.95)');
+  if(!ballGrad[p.pol]){
+    const gr=ctx.createRadialGradient(-ballR*.35,-ballR*.42,ballR*.1,0,0,ballR);
+    gr.addColorStop(0,shade(C,1.6));
+    gr.addColorStop(.4,shade(C,1.05));
+    gr.addColorStop(.78,shade(C,.55));
+    gr.addColorStop(1,'rgba(8,12,20,.95)');
+    ballGrad[p.pol]=gr;
+  }
+  const gr=ballGrad[p.pol];
   ctx.beginPath();ctx.arc(0,0,ballR,0,7);ctx.fillStyle=gr;ctx.fill();
   ctx.lineWidth=5;ctx.strokeStyle=rgba(C,.22);ctx.stroke();
   ctx.lineWidth=1.7;ctx.strokeStyle=rgba(C,.95);ctx.stroke();
@@ -1446,26 +1475,35 @@ function drawObstacle(o){
   if(o.type==='bar'){
     if(!o._cv){
       const w=Math.round(o.w),h=Math.round(o.len);
-      o._cv=makeLayer(w,h);
-      const g=o._cv.getContext('2d');
-      const gg=g.createLinearGradient(0,0,w,0);
-      gg.addColorStop(0,'#232f45');gg.addColorStop(.15,'#31435e');gg.addColorStop(.5,'#1b2739');
-      gg.addColorStop(.85,'#101a2a');gg.addColorStop(1,'#0a111c');
-      g.fillStyle=gg;g.fillRect(0,0,w,h);
-      g.fillStyle='rgba(180,215,245,.18)';g.fillRect(1,0,1,h);
-      g.fillStyle='rgba(0,0,0,.5)';g.fillRect(w-2,0,2,h);
-      for(let yy=26;yy<h-16;yy+=58){
-        g.fillStyle='rgba(0,0,0,.35)';g.fillRect(2,yy,w-4,1);
-        g.fillStyle='rgba(180,215,245,.12)';g.fillRect(3,yy+1,w-6,1);
-        g.fillStyle='rgba(190,220,250,.22)';g.fillRect(4,yy+6,2,2);g.fillRect(w-7,yy+6,2,2);
+      /* the band position depends on o.from, so it is part of the cache key */
+      const sk='bar:'+o.from+':'+w+'x'+h;
+      if(!obstacleSpr[sk]){
+        const cv=makeLayer(w,h);
+        const g=cv.getContext('2d');
+        const gg=g.createLinearGradient(0,0,w,0);
+        gg.addColorStop(0,'#232f45');gg.addColorStop(.15,'#31435e');gg.addColorStop(.5,'#1b2739');
+        gg.addColorStop(.85,'#101a2a');gg.addColorStop(1,'#0a111c');
+        g.fillStyle=gg;g.fillRect(0,0,w,h);
+        g.fillStyle='rgba(180,215,245,.18)';g.fillRect(1,0,1,h);
+        g.fillStyle='rgba(0,0,0,.5)';g.fillRect(w-2,0,2,h);
+        for(let yy=26;yy<h-16;yy+=58){
+          g.fillStyle='rgba(0,0,0,.35)';g.fillRect(2,yy,w-4,1);
+          g.fillStyle='rgba(180,215,245,.12)';g.fillRect(3,yy+1,w-6,1);
+          g.fillStyle='rgba(190,220,250,.22)';g.fillRect(4,yy+6,2,2);g.fillRect(w-7,yy+6,2,2);
+        }
+        const band=12,pat=g.createPattern(stripeRed,'repeat');
+        g.fillStyle=pat;
+        if(o.from==='top')g.fillRect(0,h-band,w,band);
+        else g.fillRect(0,0,w,band);
+        g.fillStyle='rgba(0,0,0,.4)';
+        if(o.from==='top')g.fillRect(0,h-band,w,2);
+        else g.fillRect(0,band-2,w,2);
+        obstacleSpr[sk]=cv;
+        /* bounded reuse: identical sprites stay, the oldest entry goes */
+        const ks=Object.keys(obstacleSpr);
+        if(ks.length>32)delete obstacleSpr[ks[0]];
       }
-      const band=12,pat=g.createPattern(stripeRed,'repeat');
-      g.fillStyle=pat;
-      if(o.from==='top')g.fillRect(0,h-band,w,band);
-      else g.fillRect(0,0,w,band);
-      g.fillStyle='rgba(0,0,0,.4)';
-      if(o.from==='top')g.fillRect(0,h-band,w,2);
-      else g.fillRect(0,band-2,w,2);
+      o._cv=obstacleSpr[sk];
     }
     ctx.drawImage(o._cv,o.x,o.from==='top'?railT-2:railB-o.len);
     const ey=o.from==='top'?railT-2+o.len:railB-o.len;
@@ -1505,20 +1543,27 @@ function drawObstacle(o){
     }else{
       glowLine(bx2,wallY,bx2,headBack,rgba(C_VIO,pl*.6),0,2);
     }
-    /* ram head skin (cached) */
+    /* ram head skin (cached by size - the head dims are constant per game) */
     if(!o._cv){
       const w=Math.round(o.w),h=Math.round(o.headH);
-      o._cv=makeLayer(w,h);
-      const g=o._cv.getContext('2d');
-      const gg=g.createLinearGradient(0,0,w,0);
-      gg.addColorStop(0,'#232f45');gg.addColorStop(.2,'#31435e');gg.addColorStop(.55,'#1b2739');gg.addColorStop(1,'#0a111c');
-      g.fillStyle=gg;g.fillRect(0,0,w,h);
-      g.fillStyle='rgba(180,215,245,.2)';g.fillRect(0,0,1,h);
-      g.fillStyle='rgba(0,0,0,.5)';g.fillRect(w-2,0,2,h);
-      g.fillStyle='rgba(0,0,0,.35)';g.fillRect(3,h*.4,w-6,1);
-      g.fillStyle=g.createPattern(stripeVio,'repeat');
-      g.fillRect(0,h-9,w,9);
-      g.fillStyle='rgba(0,0,0,.35)';g.fillRect(0,h-9,w,1);
+      const sk='pist:'+w+'x'+h;
+      if(!obstacleSpr[sk]){
+        const cv=makeLayer(w,h);
+        const g=cv.getContext('2d');
+        const gg=g.createLinearGradient(0,0,w,0);
+        gg.addColorStop(0,'#232f45');gg.addColorStop(.2,'#31435e');gg.addColorStop(.55,'#1b2739');gg.addColorStop(1,'#0a111c');
+        g.fillStyle=gg;g.fillRect(0,0,w,h);
+        g.fillStyle='rgba(180,215,245,.2)';g.fillRect(0,0,1,h);
+        g.fillStyle='rgba(0,0,0,.5)';g.fillRect(w-2,0,2,h);
+        g.fillStyle='rgba(0,0,0,.35)';g.fillRect(3,h*.4,w-6,1);
+        g.fillStyle=g.createPattern(stripeVio,'repeat');
+        g.fillRect(0,h-9,w,9);
+        g.fillStyle='rgba(0,0,0,.35)';g.fillRect(0,h-9,w,1);
+        obstacleSpr[sk]=cv;
+        const ks=Object.keys(obstacleSpr);
+        if(ks.length>32)delete obstacleSpr[ks[0]];
+      }
+      o._cv=obstacleSpr[sk];
     }
     if(isTop) ctx.drawImage(o._cv,o.x,top);
     else{
@@ -1579,12 +1624,18 @@ function drawObstacle(o){
       ctx.fillStyle='#ffe6b0';ctx.fill();
     }
     const hr=12*sf;
-    const hg=ctx.createRadialGradient(cx-4,o.cy-4,2,cx,o.cy,hr);
-    hg.addColorStop(0,'#33465f');hg.addColorStop(.7,'#1a2638');hg.addColorStop(1,'#0c1422');
-    ctx.beginPath();ctx.arc(cx,o.cy,hr,0,7);ctx.fillStyle=hg;ctx.fill();
+    if(!hubGrad){
+      /* gradient coordinates are the player-relative translation of
+         (cx-4,o.cy-4)/(cx,o.cy) — same stop list the old per-frame build made */
+      hubGrad=ctx.createRadialGradient(-4,-4,2,0,0,hr);
+      hubGrad.addColorStop(0,'#33465f');hubGrad.addColorStop(.7,'#1a2638');hubGrad.addColorStop(1,'#0c1422');
+    }
+    ctx.save();ctx.translate(cx,o.cy);
+    ctx.beginPath();ctx.arc(0,0,hr,0,7);ctx.fillStyle=hubGrad;ctx.fill();
     ctx.strokeStyle='#3a4a63';ctx.lineWidth=1.5;ctx.stroke();
-    ctx.beginPath();ctx.arc(cx,o.cy,2.6,0,7);
+    ctx.beginPath();ctx.arc(0,0,2.6,0,7);
     ctx.fillStyle=rgba(C_GOLD,.95);ctx.fill();
+    ctx.restore();
   }
 }
 function laserOn(o){return (o.t%2.6)>=1.55;}
