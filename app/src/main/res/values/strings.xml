@@ -45,7 +45,7 @@
     <string name="notif_explainer_body">A gentle nudge when today\u2019s challenge or a new game is ready. No spam, ever.</string>
     <string name="enable">Enable</string>
     <string name="not_now">Not now</string>
-<string name="row_volume">Volume</string>
+<string name="row_volume">Music volume</string>
     <string name="row_vibration">Vibration</string>
     <string name="row_haptic_feel">Haptic feel</string>
     <string name="row_haptic_feel_hint">How strong the buzz feels in games</string>

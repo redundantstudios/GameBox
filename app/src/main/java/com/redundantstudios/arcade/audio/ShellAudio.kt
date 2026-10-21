@@ -16,8 +16,12 @@ import com.redundantstudios.arcade.util.SettingsManager
  * sounds like one instrument instead of stock Android clicks.
  *
  * Rules:
- *  - Music and sound effects are separately switchable in Settings, and both
- *    follow the master volume.
+ *  - Music and sound effects are separately switchable in Settings.
+ *  - The volume slider is the MUSIC volume. It brings the ambient loop up and
+ *    down and nothing else - the UI blips have their own level, so turning
+ *    the music down does not take the shell's taps with it. See [sfxLevel].
+ *  - The games are given the same slider as their own master, and 21 of the 25
+ *    have no volume control of their own, so it has to keep doing that.
  *  - The loop belongs to the SHELL screens. Host counting (not plain
  *    resume/pause) decides when it plays: with recreate(), the NEW activity
  *    resumes before the OLD one pauses, so a naive handler stops the music
@@ -68,7 +72,7 @@ object ShellAudio {
      */
     private var visibleCount = 0
 
-    /** How loud the ambient loop sits under the UI, relative to the master volume. */
+    /** How loud the ambient loop sits under the UI, relative to the music volume. */
     private const val BGM_GAIN = 0.224f
 
     /**
@@ -144,15 +148,30 @@ object ShellAudio {
         tickId = soundPool!!.load(app, R.raw.sfx_tick, 1)
     }
 
-    /** 0 when SFX are off; otherwise the master volume from Settings, 0..1. */
+    /**
+     * How loud the shell's UI blips are.
+     *
+     * NOT the volume slider. That slider is the MUSIC volume - it is there to
+     * bring the ambient loop down under the games, and nothing else.
+     *
+     * It used to scale the taps as well, which meant the same slider that
+     * quieted the music also quieted the feedback for touching things. The
+     * worst of it was the slider's own tick: dragging the volume down made
+     * the tick fade away with it, so the control you were using to set the
+     * level went quiet as you lowered it. A UI that stops answering when you
+     * turn it down feels broken, and a tap you can no longer hear is a tap
+     * that is not doing its job.
+     *
+     * So the blips have their own level - the one they were authored at - and
+     * the Sound switch is what turns them off. The per-sound gains below
+     * (tap, select, back, tick) are relative to this.
+     */
     private fun sfxLevel(): Float {
         if (appContext == null) return 0f
-        return if (SettingsManager.soundEnabled) {
-            (SettingsManager.soundVolume / 100f).coerceIn(0f, 1f)
-        } else 0f
+        return if (SettingsManager.soundEnabled) 1f else 0f
     }
 
-    /** 0 when the music switch is off; otherwise the master volume, 0..1. */
+    /** 0 when the music switch is off; otherwise the music volume from Settings, 0..1. */
     private fun musicLevel(): Float {
         if (appContext == null) return 0f
         return if (SettingsManager.musicEnabled) {
