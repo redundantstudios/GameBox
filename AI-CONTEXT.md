@@ -29,6 +29,7 @@ section 4.
 app/src/main/assets/games/<game>/index.html    the game - ONE self-contained file
 app/src/main/assets/shell/*.js                the shell's four page scripts - SHARED
 app/src/main/java/com/redundantstudios/arcade/ the shell (Kotlin) - SHARED
+app/src/main/res/raw/*.ogg                    the shell's sounds - COMMITTED, do not regenerate
 app/src/main/assets/shell/dpr.js                 resolution cap + adaptive governor
 app/src/main/assets/shell/fullscreen.js         fullscreen stub
 app/src/main/assets/shell/canvaswatch.js        canvas-loss watcher (logs as "CW:")
@@ -39,6 +40,15 @@ sources/                                     the ORIGINAL of every game - the sp
 **A game is one file.** 23 of the 25 are a single `index.html`; `checkers`
 and `chess` have one extra data file each. The games share no code with each
 other. That is what makes parallel work on different games safe.
+
+**The shell's sounds are committed.** `app/src/main/res/raw/*.ogg` is in git,
+so every clone ships the same audio and the app runs immediately. The
+generators in `Tools/_gen_audio.py` and `Tools/_gen_bgm.py` are for
+*changing* a sound deliberately and they now **refuse to overwrite a
+committed file** unless you pass `--force`. Do not regenerate them to "fix" a
+sound — that is precisely how three developers ended up with three different
+apps. The games' own sounds are not in `res/raw` at all: they are base64
+embedded in each game's `index.html` and travel with the game file.
 
 **The original is in `sources/`.** It is the reference for *art and gameplay* —
 not a thing to edit, and not necessarily what shipped. The shipped file in

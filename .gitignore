@@ -36,13 +36,24 @@ _*.txt
 __pycache__/
 *.pyc
 
-# Generated audio assets - NOT in git on purpose (keeps the repo text-only).
-# They are produced from the committed generator scripts; run both before building:
-#     python Tools/_gen_audio.py   (sfx_tap / sfx_select / sfx_back / sfx_tick + bgm take 1)
-#     python Tools/_gen_bgm.py     (bgm_shell, seamless loop - overwrites the take-1 bgm)
-# Requires ffmpeg with libvorbis on PATH. See BUILD.md, Audio Assets section.
-# notif_chime.ogg has NO committed generator yet - see the note in BUILD.md.
-app/src/main/res/raw/*.ogg
+# THE SHELL'S AUDIO IS COMMITTED.
+#
+# It used to be generated, and that was a mistake. Every developer had to
+# install ffmpeg and numpy and run two scripts, each one produced a slightly
+# different file, and a fresh clone had NO audio at all - so the app a new
+# developer built was not the app anyone else was testing. The files are
+# 1.3 MB in total, which is nothing, and committing them is what makes every
+# clone identical.
+#
+# The generators are still here, but they are for CHANGING a sound, not for
+# building. They refuse to overwrite a committed file unless you pass
+# --force, so nobody can regenerate the audio by accident and ship a
+# different one.
+#
+#     python Tools/_gen_audio.py --force   (sfx_tap / sfx_select / sfx_back / sfx_tick)
+#     python Tools/_gen_bgm.py --force     (bgm_shell, seamless loop)
+#
+# The .wav intermediates are still ignored - they are scratch.
 app/src/main/res/raw/*.wav
 
 # Raw puzzle source dump (2.7 MB Lichess export). The runtime asset

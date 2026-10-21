@@ -14,14 +14,38 @@ Pure-numpy synthesis, encoded with ffmpeg to OGG Vorbis.
 import os
 import shutil
 import subprocess
+import sys
 import wave
 
 import numpy as np
 
 SR = 44100
-ROOT = os.path.dirname(os.path.abspath(__file__))
+# THE REPO ROOT IS ONE LEVEL ABOVE Tools/, NOT Tools/ ITSELF.
+# This used to be a single dirname, so the script created and wrote to
+# Tools/app/src/main/res/raw/ - a junk tree that is not the app - and the
+# sounds the app actually ships were never updated. _gen_bgm.py has always
+# done this correctly.
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'app', 'src', 'main', 'res', 'raw')
 os.makedirs(OUT, exist_ok=True)
+
+# THE SHIPPED SOUNDS ARE COMMITTED TO GIT.
+#
+# Every developer has to end up with the SAME audio, and the only way to
+# guarantee that is for the files themselves to be in the repository. This
+# script is for CHANGING a sound, not for building the app, and it will not
+# silently replace a committed one.
+if '--force' not in sys.argv:
+    committed = [f for f in sorted(os.listdir(OUT))
+                 if f.endswith('.ogg') and os.path.isfile(os.path.join(OUT, f))]
+    if committed:
+        print('refusing to overwrite the committed sounds in\n  ' + OUT)
+        print('they are: ' + ', '.join(committed))
+        print('')
+        print('They are in git so that every clone ships identical audio.')
+        print('Pass --force if you are deliberately replacing one:')
+        print('    python Tools/_gen_audio.py --force')
+        raise SystemExit(1)
 
 NOTE = {
     'C4': 261.63, 'G3': 196.00, 'G4': 392.00, 'B4': 493.88,

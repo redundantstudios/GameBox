@@ -33,6 +33,7 @@ Verify any take with:  python _check_loop.py
 import os
 import shutil
 import subprocess
+import sys
 import wave
 
 import numpy as np
@@ -46,6 +47,20 @@ SR = 44100
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WAV = os.path.join(ROOT, '_bgm_render.wav')
 OUT = os.path.join(ROOT, 'app', 'src', 'main', 'res', 'raw', 'bgm_shell.ogg')
+
+# THE SHIPPED MUSIC IS COMMITTED TO GIT.
+#
+# Every developer has to end up with the SAME audio, and the only way to
+# guarantee that is for the file itself to be in the repository. This script is
+# for CHANGING the music, not for building the app, and it will not silently
+# replace a committed one.
+if '--force' not in sys.argv and os.path.exists(OUT):
+    print('refusing to overwrite the committed music\n  ' + OUT)
+    print('')
+    print('It is in git so that every clone ships identical audio.')
+    print('Pass --force if you are deliberately replacing it:')
+    print('    python Tools/_gen_bgm.py --force')
+    raise SystemExit(1)
 
 # Funk vamp: E9 - E9 - A9 (three-bar cycle, 6 times per loop).
 # 9th chords + syncopation = funk. Tones chosen for tiny phone speakers.
