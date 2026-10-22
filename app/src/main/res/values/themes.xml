@@ -26,8 +26,19 @@
         <item name="colorControlActivated">@color/studio_primary</item>
         <item name="android:statusBarColor">@color/studio_background</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowBackground">@color/studio_background</item>
-        <item name="android:windowAnimationStyle">@style/NavWindowAnim</item>
+    <item name="android:windowBackground">@color/studio_background</item>
+    <item name="android:windowAnimationStyle">@style/NavWindowAnim</item>
+    <!-- THE DISPLAY CUTOUT, ON THE SHELL'S OWN SCREENS TOO.
+         The launcher's theme carried no cutout declaration, so the platform
+         kept its default: in PORTRAIT it LETTERBOXES the content in the camera
+         hole, and the hole is painted by the system - a black strip across the
+         top of the arcade grid on a punch-hole phone. The game screens have
+         declared `always` since the cutout work; the launcher needs it as well,
+         so the shell is full screen on every phone, all the time. -->
+    <item name="android:windowLayoutInDisplayCutoutMode">always</item>
+    <!-- And the same edge-to-edge promise the game screens make: the content
+         spans the whole display instead of being shrunk to fit inside it. -->
+    <item name="android:windowOptOutEdgeToEdgeEnforcement">false</item>
     </style>
 
     <!-- Game windows are OPAQUE, and their background is the SHELL'S own colour.
