@@ -52,6 +52,10 @@ button{font-family:var(--serif)}
 .woodbtn:active{transform:translateY(2px);filter:brightness(.95);box-shadow:inset 0 2px 7px rgba(20,8,0,.5),0 1px 3px rgba(0,0,0,.4)}
 .woodbtn.primary{font-size:16px}
 .woodbtn.opt{width:100%;margin:.4em 0;padding:.65em 1.2em}
+ /* The dev control is deliberately quieter than the real choices: it is a
+    test affordance, and it should not look like a way to play. */
+ .woodbtn.opt.dev{margin-top:1.1em;opacity:.72;border-style:dashed}
+ .woodbtn.opt.dev b{color:#FFB020}
 .woodbtn.danger{color:#f3c8a8}
 .iconbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--edge);cursor:pointer;display:flex;align-items:center;
  justify-content:center;color:#f0ddba;background:linear-gradient(175deg,rgba(255,232,190,.16),rgba(0,0,0,0) 50%),linear-gradient(#7c4f27,#54331a);
@@ -123,7 +127,7 @@ button{font-family:var(--serif)}
          hands the button should be under the thumb of whoever is playing - so
          it follows the player whose turn it is, and moves to the other side
          when the turn moves to the other half. */
-      #endWrap.atTop{top:calc(14px + env(safe-area-inset-top));bottom:auto}
+      #endWrap.atTop{top:calc(14px + env(safe-area-inset-top) + var(--railH,0px) + 12px);bottom:auto}
 #endWrap small{font-size:10px;letter-spacing:.18em;opacity:.7;text-shadow:0 1px 2px #000}
 .overlay{z-index:30;background:rgba(8,4,2,.45)}
 .tutpanel{position:absolute;left:50%;bottom:calc(10px + env(safe-area-inset-bottom));transform:translateX(-50%);
@@ -147,9 +151,16 @@ button{font-family:var(--serif)}
 #winSub .row{display:flex;align-items:center;gap:8px}
 #winSub .dot{width:14px;height:14px}
 #winStats{font-size:11px;letter-spacing:.26em;opacity:.7;margin-bottom:14px}
-#toast{position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(8px);z-index:40;
- padding:9px 18px;font-size:11px;letter-spacing:.14em;font-weight:700;opacity:0;transition:opacity .25s,transform .25s;
- pointer-events:none;white-space:nowrap;max-width:94vw;overflow:hidden;text-overflow:ellipsis}
+/* THE GAME'S WARNING VOICE.
+   It says "that is not your marble" and "you have no legal move", so it is
+   sized like a message that matters rather than a caption. The wooden plaque
+   is inherited from .plaque; this only sets the scale. */
+ #toast{position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(8px);z-index:40;
+ padding:15px 26px;font-size:16px;line-height:1.28;letter-spacing:.06em;font-weight:800;
+ color:#FFF3DC;text-shadow:0 2px 3px rgba(0,0,0,.55);text-align:center;
+ border-width:2px;box-shadow:0 12px 30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,235,200,.18);
+ opacity:0;transition:opacity .25s,transform .25s;
+ pointer-events:none;white-space:normal;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 @media (max-height:430px){.panel{padding:12px 16px 10px}.tutpanel{padding:9px 14px 8px}#tutText{min-height:2.2em}
  #homeChip{padding:5px 7px}.tok .tc{width:30px;height:30px}.tok .tc .dot{width:13px;height:13px}}
@@ -538,7 +549,7 @@ function spawnSparks(x,y,col){
 }
 function loop(ts){
   requestAnimationFrame(loop);
-  const dt=Math.min(48,ts-(lastT||ts));lastT=ts;T=ts/1000;
+  const dt=Math.min(48,ts-(lastT||ts))*SPEED;lastT=ts;T=ts/1000;
   ctx.clearRect(0,0,W,H);
   if(!staticCv)return;
   ctx.drawImage(staticCv,0,0,W,H);
@@ -551,12 +562,24 @@ function loop(ts){
 let G=null,homeBoard=new Int8Array(NH).fill(-1),botTimer=0,passTimer=0;
 CAMPS.forEach((a,c)=>a.forEach(i=>homeBoard[i]=c));
 let cfg=null,seatEls=[];
+/* THE DEV SPEED.
+
+   1 is normal play. The dev button sets it to 10, which is what makes a
+   self-playing game finish in a fraction of the time. Every timer in the game
+   goes through ms() so there is one number to reason about, and the frame
+   delta is scaled to match. */
+let SPEED=1;
+const ms=n=>Math.max(1,Math.round(n/SPEED));
 
 function setupPlayers(c){
   const seats=SEATS[c.count],pal=PALS[c.count];
   return seats.map((camp,i)=>({idx:i,camp:camp,dest:OPP(camp),color:pal[i],
-    bot:c.mode==='bot'&&i>0,
-    name:c.mode==='bot'?(i===0?'YOU':'BOT '+(i+1)):'PLAYER '+(i+1),
+    /* allAI is the dev switch: every seat is played by the computer, so a
+       game can be watched through to the end without anyone touching it. */
+    bot:(c.mode==='bot'&&i>0)||!!c.allAI,
+    /* Named by the colour of their marbles, not by seat number. CNAME is
+       indexed by palette, which is what decides the marble's colour. */
+    name:CNAME[pal[i]],
     team:c.team?(c.count===4?i%2:i%3):i,done:false}));
 }
 function destLegal(pid,from,to){
@@ -685,10 +708,10 @@ function endTurn(){
   return;}
   G.stuck[n]=true;
   toast(G.players[n].name+' HAS NO MOVES - TURN PASSES');
-  passTimer=setTimeout(()=>{if(G&&G.cur===n&&G.phase==='idle')endTurn()},1100);
+  passTimer=setTimeout(()=>{if(G&&G.cur===n&&G.phase==='idle')endTurn()},ms(1100));
   return;}
   G.stuck[n]=false;
-  if(G.players[n].bot){G.phase='bot';botTimer=setTimeout(botTurn,680)}
+  if(G.players[n].bot){G.phase='bot';botTimer=setTimeout(botTurn,ms(680))}
   }
 
 /* ---------------- bot AI ---------------- */
@@ -743,9 +766,9 @@ function scoreCand(m,pid,set){
 }
 function botTurn(){
   if(!G||G.phase==='over')return;
-  if(G.paused){botTimer=setTimeout(botTurn,400);return}
+  if(G.paused){botTimer=setTimeout(botTurn,ms(400));return}
   const pid=G.cur,cands=botCandidates(pid);
-  if(!cands.length){toast(G.players[pid].name+' HAS NO MOVES');botTimer=setTimeout(endTurn,500);return}
+  if(!cands.length){toast(G.players[pid].name+' HAS NO MOVES');botTimer=setTimeout(endTurn,ms(500));return}
   const set=G.diff===2?threatSet(pid):null;
   let best=null,bs=-1e9;
   for(const m of cands){const s=scoreCand(m,pid,set);if(s>bs){bs=s;best=m}}
@@ -760,6 +783,10 @@ function botTurn(){
 }
 function initializeGame(c,restore){
   window.__ccOverAdDone=false;
+  /* The dev speed belongs to THIS game, not to the session. Setting it at the
+     button would leave every game after it running at ten times the speed
+     with nothing on screen to say why. */
+  SPEED=(c&&c.dev)?10:1;
   /* The resets the original had. Without them a new game inherits the old
      one's pending flights, sparks and TIMERS - and the timers matter here:
      the blocked-player rule schedules a pass, and a stale pass firing into a
@@ -776,7 +803,7 @@ function initializeGame(c,restore){
   if(!restore)G.players.forEach(P=>CAMPS[P.camp].forEach(h=>G.board[h]=P.idx));
   hide($('ovWin'));hide($('ovPause'));hide($('scrHome'));hide($('scrSetup'));
   buildSeats();showGame();updateHUD();saveGame();
-  if(G.players[G.cur].bot){G.phase='bot';botTimer=setTimeout(botTurn,750)}
+  if(G.players[G.cur].bot){G.phase='bot';botTimer=setTimeout(botTurn,ms(750))}
 }
 function restartGame(){if(G)initializeGame(G.cfg)}
 function saveGame(){
@@ -809,7 +836,7 @@ function finishGame(w){
     G.players.filter(q=>q.team===w.id).map(q=>q.color));
   const camps=w.type==='p'?[G.players[w.id].camp]:G.players.filter(q=>q.team===w.id).map(q=>q.camp);
   camps.forEach(c=>spawnSparks(cx0+CENT[c].x*S,cy0+CENT[c].y*S,winnerColors.values().next().value));
-  setTimeout(showWin,1500);try{window.__ccSyncBanner()}catch(e){}
+  setTimeout(showWin,ms(1500));try{window.__ccSyncBanner()}catch(e){}
 }
 function showWin(){
   if(!G||!G.winner)return;
@@ -863,11 +890,20 @@ function updateEndTurnSide(){
   const w=$('endWrap');if(!w||!G)return;
   const p=G.players[G.cur];if(!p)return;
   const side=CENT[p.camp];
-  w.classList.toggle('atTop',!!side&&side.y<0);
+  const top=!!side&&side.y<0;
+  w.classList.toggle('atTop',top);
+  if(top){
+  /* The token rail is top-centre and so is this button, so the button has to
+     sit BELOW the rail rather than on top of it. The rail's height changes
+     with the player count, so it is measured rather than guessed. */
+  const rail=$('rail');
+  const h=rail?Math.ceil(rail.getBoundingClientRect().height):0;
+  w.style.setProperty('--railH',h+'px');
+  }else w.style.removeProperty('--railH');
 }
 function updateChip(){const P=G.players[G.cur];
   $('hDot').className='dot mc'+P.color;$('hText').textContent=homeOwn(G.cur)+'/10'}
-function shortName(P){return G.mode==='bot'?(P.idx===0?'YOU':'BOT'):'P'+(P.idx+1)}
+function shortName(P){return CNAME[P.color]}
 function buildSeats(){
   const el=$('rail');el.innerHTML='';seatEls=[];
   if(!G)return;
@@ -900,7 +936,7 @@ function refreshHome(){
 }
 function pauseGame(){if(!G||G.phase==='over')return;G.paused=true;SFX.pause();show($('ovPause'));try{window.__ccSyncBanner()}catch(e){}}
 function resumeGame(){if(!G)return;G.paused=false;hide($('ovPause'));try{window.__ccSyncBanner()}catch(e){}
-  if(G.players[G.cur].bot&&G.phase!=='over'){G.phase='bot';clearTimeout(botTimer);botTimer=setTimeout(botTurn,600)}}
+  if(G.players[G.cur].bot&&G.phase!=='over'){G.phase='bot';clearTimeout(botTimer);botTimer=setTimeout(botTurn,ms(600))}}
 
 /* ---------------- input ---------------- */
 cv.addEventListener('pointerdown',e=>{
@@ -934,7 +970,7 @@ function handleTap(h){
 }
 
 /* ---------------- setup screens ---------------- */
-function openSetup(){cfg={mode:null,team:null,count:null,diff:null};setupStep('mode');show($('scrSetup'))}
+function openSetup(){cfg={mode:null,team:null,count:null,diff:null,dev:false};setupStep('mode');show($('scrSetup'))}
 function setupStep(step){
   const o=$('setupOpts');o.innerHTML='';
   const T2=$('setupTitle'),N2=$('setupNote');
@@ -944,6 +980,19 @@ function setupStep(step){
   if(step==='mode'){T2.textContent='SELECT MODE';N2.textContent='CHINESE CHECKERS';
     mk('VS BOT','play against the computer',()=>{cfg.mode='bot';setupStep('type')});
     mk('VS FRIENDS','local pass-and-play',()=>{cfg.mode='friends';setupStep('type')});
+    /* THE DEV BUTTON.
+       Every seat played by the computer, ten times the speed, so a whole game
+       resolves in a fraction of the time. It exists to test the RULES - the
+       blocked-loss rule, the win detection, a team game playing itself out -
+       rather than to be played, and it is marked as a test control so it is
+       never mistaken for one of the real choices. */
+    const dev=document.createElement('button');
+    dev.className='woodbtn opt dev';
+    dev.innerHTML='<b>DEV: ALL AI</b><small>every player is a computer - 10x speed</small>';
+    dev.onclick=()=>{SFX.click();
+    cfg.mode='bot';cfg.team=false;cfg.count=4;cfg.allAI=true;cfg.dev=true;
+    hide($('scrSetup'));initializeGame(cfg);};
+    o.appendChild(dev);
     $('setupBack').onclick=()=>{SFX.click();hide($('scrSetup'));show($('scrHome'))};}
   else if(step==='type'){T2.textContent='SELECT GAME TYPE';N2.textContent='PARTNERS SIT OPPOSITE EACH OTHER';
     mk('INDIVIDUAL','every player for themselves',()=>{cfg.team=false;setupStep('count')});
@@ -1064,7 +1113,7 @@ function closeTut(){tut.on=false;tut.M={};tut.fly=null;tut.hl=[];hide($('ovTut')
  $('btnSetBack').onclick=()=>{SFX.click();hide($('ovSettings'))};
  $('btnResume').onclick=()=>{SFX.click();
   if(G){showGame();updateHUD();
-    if(G.players[G.cur].bot&&G.phase!=='over'){G.phase='bot';clearTimeout(botTimer);botTimer=setTimeout(botTurn,700)}}
+    if(G.players[G.cur].bot&&G.phase!=='over'){G.phase='bot';clearTimeout(botTimer);botTimer=setTimeout(botTurn,ms(700))}}
   else loadGame()};
  $('btnPause').onclick=()=>{SFX.click();pauseGame()};
  $('btnResumeG').onclick=()=>{SFX.click();resumeGame()};
