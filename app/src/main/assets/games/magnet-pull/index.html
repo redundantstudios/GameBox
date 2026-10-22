@@ -43,14 +43,18 @@ width:76px;height:38px;border-radius:19px;display:none;align-items:center;justif
 background:rgba(8,10,14,.72);border:1px solid rgba(255,255,255,.3);color:#fff;
 font:800 12px/1 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;letter-spacing:.16em;
 cursor:pointer;-webkit-tap-highlight-color:transparent;
-/* NO BLUR. A backdrop-filter blurs the LIVE canvas behind it, and the
-   compositor has to do that again for every frame the canvas moves.
-   Measured on this phone with the blur on: 11 frame stalls over 60ms in
-   one session, two of them 194ms and 259ms - on the MENU, and on every
-   transition into and out of it. With the blur off: 3 stalls, and the
-   menu buttons go from an 84ms hitch to nothing at all.
-   The same change is in Midnight Overdrive, for the same reason. */
-box-shadow:0 4px 14px rgba(0,0,0,.35)}
+/* THE BLUR IS KEEPING COMPANY - ON A PHONE THAT CAN AFFORD IT.
+   A backdrop-filter blurs the LIVE canvas behind it, and the compositor
+   has to do that again for every frame the canvas moves. Measured on this
+   phone with the blur on: 11 frame stalls over 60ms in one session, two
+   of them 194ms and 259ms - on the MENU, and on every transition into and
+   out of it. With the blur off: 3 stalls, and the menu buttons go from an
+   84ms hitch to nothing at all.
+   So the frosted glass is a LUXURY, and a 4GB phone cannot pay for it.
+   The shell's launcher announces one with lowmem=1 on the game's URL,
+   and the rules under this one take the blur away on those phones ONLY.
+   See html.molow below. */
+backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(0,0,0,.35)}
 #studioBack.show{display:flex}
 #studioBack:active{transform:scale(.96)}
 /* per-game theme, substituted by the integrator: the button wears the game own
@@ -329,11 +333,17 @@ try{
   .orientation-text{font-size:10px;letter-spacing:.2em;color:var(--dim);line-height:1.7}
 
   .screen{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;
-    /* NO BLUR - see the note on #studioBack above. The panel is 62% opaque
-   dark anyway, so the frosted look was costing a frame budget the game
-   cannot spare, and the panel still reads as a panel without it. */
-background:rgba(4,8,14,.62); saturate(1.15);
-    transition:opacity .3s ease;opacity:1}
+  background:rgba(4,8,14,.62);backdrop-filter:blur(5px) saturate(1.15);-webkit-backdrop-filter:blur(5px) saturate(1.15);
+  transition:opacity .3s ease;opacity:1}
+  /* LOW-RAM DEVICE: THE BLUR GOES, THE DIM STAYS.
+     The shell's launcher measures the phone once and announces a low-RAM one
+     with lowmem=1 on the game's URL. A backdrop-filter over the live canvas
+     is a per-frame compositor cost, and it is the one thing this game cannot
+     afford on a 4GB phone: measured there, the blur alone was 8 of the 11
+     frame stalls in a session. Everything stays legible - the panels keep
+     their translucent fill - and only the frosting goes. */
+  html.molow .screen{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+  html.molow #studioBack{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
   .screen.off{opacity:0;pointer-events:none}
   #s-menu{background:rgba(4,8,14,.35)}
   .screen::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
@@ -587,6 +597,15 @@ background:rgba(4,8,14,.62); saturate(1.15);
 const canvas=document.getElementById('game');
 const ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
+/* LOW-RAM DEVICE, ANNOUNCED BY THE SHELL.
+   GameActivity measures the phone once, before the page exists, and appends
+   lowmem=1 to the game's URL when it is a low-RAM one - the 4GB tier, where
+   the WebView renderer, the JS heap and the canvas all want the same memory.
+   A 6GB device does not get the flag and renders exactly as before.
+   The frosted-glass panels are the one thing this game drops on those
+   phones - see the html.molow rules in the CSS. */
+const LOW=/(?:^|[?&])lowmem=1/.test(location.search||'');
+if(LOW)document.documentElement.classList.add('molow');
 
 /* ============ MOBILE PORTRAIT MODE ============ */
 const orientationGuard=$('mobile-orientation');

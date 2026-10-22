@@ -30,9 +30,12 @@ becomes a numbered pass on top.
   again for every frame the canvas moves. Measured on this phone in one session:
   **11 frame stalls over 60ms with the blur on** - two of them 194ms and 259ms, on
   the MENU and on the transitions into and out of it - and **3 with it off**. The
-  menu buttons went from an 84ms hitch to none at all. The blur is off on the panel
-  and on the BACK chip; the panel is 62% opaque dark anyway, so it still reads as a
-  panel without it. The same change is in Midnight Overdrive, for the same reason.
+  menu buttons went from an 84ms hitch to none at all. The frosted glass is a
+  LUXURY, so it is kept on a phone that can pay for it and dropped on one that
+  cannot: the shell announces a low-RAM phone with `lowmem=1` on the game's URL,
+  and the game marks the document `molow`, which takes the blur off the panel and
+  the BACK chip and leaves the dim in place. Midnight Overdrive and Orrery do the
+  same thing, so all three now agree on when the frosting goes.
 - **A second ad request could wipe out the first one's callback, leaving a dead
   button.** The interstitial callback was registered under a FIXED name, so a second
   request overwrote the first - and the first request's action then never ran. That
