@@ -14,7 +14,7 @@ minPlayers: 1
 maxPlayers: 1
 aiSupport: none
 online: false
-tileColor: #3de0c7
+tileColor: #070a12
 banner: bottom
 bannerBg: #070a12
 version: 1
@@ -58,6 +58,7 @@ backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 14p
    file:// on its own.
    ============================================================ */
 var __studioAdSeq=0;
+var __studioInterSeq=0;
 var Studio=(function(){
   var bridge=function(){ return window.NativeBridge||null; };
   var ls={get k(){ try{return window.localStorage;}catch(_){return null;} }};
@@ -135,10 +136,18 @@ var Studio=(function(){
       interstitial:function(onDone,placement){
         var b=bridge();
         if(b&&b.showInterstitial){
-          window.__studioInterCb=function(){ if(onDone) onDone(); };
-          try{ b.showInterstitial('__studioInterCb', placement||''); return; }
+          /* A callback name of its OWN for every request. The name used to be
+             the fixed "__studioInterCb", so a second request (the game-over
+             break asks for one too) OVERWROTE the first request's callback -
+             and the first request's action then never ran, leaving the button
+             that asked for it dead. The shell calls back by whatever name it
+             is given, so a unique name is all it takes. */
+          var cb='__studioInterCb'+(++__studioInterSeq);
+          window[cb]=function(){ try{ delete window[cb]; }catch(_){} if(onDone) onDone(); };
+          try{ b.showInterstitial(cb, placement||''); return; }
           catch(err){
             try{ console.error('[Studio] interstitial bridge call failed: '+((err&&err.message)||err)); }catch(_){}
+            try{ delete window[cb]; }catch(_){}
           }
         }
         if(onDone) onDone();
@@ -1002,7 +1011,11 @@ function rebuildEnv(){
 }
 function resetZone(){
   zFrom=0;zTo=0;zMix=1;
-  zoneCache={};
+  /* No cache wipe. Zone 0's art is almost always already built at exactly
+     these dims (boot built it), so wiping meant every boot and every RETRY
+     tap paid a synchronous zone-art build right inside the click - part of
+     the "buttons take too long" feel. viewport-size changes rebuild through
+     buildWorld(), which clears the cache itself. */
   artA=artB=ensureZoneArt(0);
   rebuildEnv();
 }
@@ -1901,16 +1914,37 @@ function requestRewardedAd(){
   $('btn-watch-ad').style.display='none';
   gameplayStop();
   adInProgress=true;
+  /* WATCHDOG. adInProgress gates EVERY button in the game (startGame and
+     toMenu both return early while it is set), so an ad request whose
+     callback never arrives does not just lose a reward - it turns the whole
+     screen into dead buttons, which is exactly what players reported as
+     "the buttons take time to do their job". The shell answers with
+     granted/closed/unavailable, but an ad that never loads can leave the
+     callback uncalled for good, so the game releases itself if nothing comes
+     back. */
+  let settled=false;
+  const guard=setTimeout(function(){
+    if(settled)return;
+    settled=true;
+    adInProgress=false;
+    rewardedUsed=false;
+    refreshWatchAdBtn();
+    gameplayStart();
+  },15000);
   try{
     window.CrazyGames.SDK.ad.requestAd('rewarded',{
       adStarted:()=>{adInProgress=true;setCrazyMute(true);},
       adFinished:()=>{
+        if(settled)return;
+        settled=true;clearTimeout(guard);
         adInProgress=false;
         setCrazyMute(!!window.CrazyGames.SDK.game.settings.muteAudio);
         continueAfterReward();
       },
       adError:(error,errorData)=>{
         console.warn('[CrazyGames] rewarded ad error',error,errorData);
+        if(settled)return;
+        settled=true;clearTimeout(guard);
         adInProgress=false;
         setCrazyMute(!!window.CrazyGames.SDK.game.settings.muteAudio);
         /* Not earned, so the offer comes back - but only while the run still
@@ -1922,6 +1956,7 @@ function requestRewardedAd(){
     });
   }catch(e){
     console.warn('[CrazyGames] rewarded ad request failed',e);
+    settled=true;clearTimeout(guard);
     adInProgress=false;rewardedUsed=false;refreshWatchAdBtn();gameplayStart();
   }
 }
@@ -1931,18 +1966,25 @@ function requestRewardedAd(){
    callback, so the ad plays and the button then does nothing.
    adInProgress is raised for the duration so a mash-tap cannot queue two, and
    released before the action runs so startGame()'s own guard lets it through. */
-/* ==== TEMP probes for the game-over button latency report - remove when done ==== */
 function withInterstitial(placement,fn){
   if(adInProgress)return;
   adInProgress=true;
   gameplayStop();
+  /* Same watchdog as the rewarded path: adInProgress gates every button, so a
+     request whose callback never arrives must not strand the action that
+     asked for it. The shell always answers - this is only the net under
+     that promise. */
+  let settled=false;
   const done=()=>{
+    if(settled)return;
+    settled=true;clearTimeout(guard);
     adInProgress=false;
     const s=window.CrazyGames&&window.CrazyGames.SDK&&window.CrazyGames.SDK.game
       &&window.CrazyGames.SDK.game.settings;
     setCrazyMute(!!(s&&s.muteAudio));
     fn();
   };
+  const guard=setTimeout(done,10000);
   try{Studio.ads.interstitial(done,placement);}
   catch(e){done();}
 }
@@ -2101,7 +2143,12 @@ function setScoreDom(){
   }
 }
 function bind(id,fn){
-  $(id).addEventListener('click',e=>{SFX.click();e.currentTarget.blur();fn();});
+  /* The action runs BEFORE the click sound: the sound path can build the
+     AudioContext the first time it is touched, and on this device that cost
+     sat between the tap and the action it asked for. With the shell's
+     autoplay gate off the context is warmed at boot instead, so the sound is
+     also already live when the action runs - order no longer matters. */
+  $(id).addEventListener('click',e=>{e.currentTarget.blur();fn();SFX.click();});
 }
 bind('btn-play',startGame);
 bind('btn-how',()=>showScreen(sHow,'how'));
@@ -2291,7 +2338,7 @@ function render(){
   if(flashA>0){ctx.fillStyle='rgba(255,238,238,'+(flashA*.65)+')';ctx.fillRect(0,0,W,H);}
 }
 
-let lastT=performance.now();
+let lastT=performance.now(),menuAcc=0;
 function frame(now){
   requestAnimationFrame(frame);
   /* Viewport self-heal: compare against the live window every frame. The
@@ -2300,11 +2347,38 @@ function frame(now){
      dimensions land and swap the world over. The compare per frame is free;
      resize() only runs when something actually moved. */
   const iw=window.innerWidth, ih=window.innerHeight;
-  if(!booted)boot();
+  if(!booted)return;
   if(iw>=50&&ih>=50&&(iw!==W||ih!==H))resize();
   let rdt=(now-lastT)/1000;lastT=now;
   if(rdt>.1)rdt=.1;if(rdt<0)rdt=0;
   tGlobal+=rdt;
+
+  /* Modal screens (how-to-play, settings, pause, game over) sit as flat DOM
+     panels over the canvas. The world behind them is fully static - nothing
+     is meant to read through - so updating and rendering 60 times a second
+     there only kept the renderer's main thread busy while the player was
+     tapping the panel's buttons. On a cold WebView those frame jobs ran
+     three figures wide and tap dispatch queued behind them, which read as
+     "buttons take too long". Freeze the canvas while a modal is up: it keeps
+     its last frame underneath the panel, the loop only runs the how-to-play
+     demo (it owns a separate canvas), and the main thread goes idle so taps
+     are processed immediately. */
+  if(screenName==='how'||screenName==='set'||screenName==='pause'||screenName==='over'){
+    SFX.hum();
+    if(screenName==='how')Demo.step(rdt);
+    return;
+  }
+  /* The menu shows the attract world behind a translucent, blurred panel. At
+     a cold start the first-seconds frames are the expensive ones, and they
+     were being spent on a backdrop the blur makes nearly illegible. Halve the
+     attract rate (30fps) by accumulating time between runs; the World clock
+     uses the accumulated rdt so motion speed is unchanged. On a genuinely
+     slow 30fps renderer every frame still runs. */
+  if(state!=='play'&&screenName==='menu'){
+    menuAcc+=rdt;
+    if(menuAcc<1/30)return;
+    rdt=Math.min(menuAcc,.1);menuAcc=0;
+  }
 
   timeScale+=(tsTarget-timeScale)*Math.min(1,rdt*6);
   const dt=rdt*timeScale;
@@ -2348,37 +2422,51 @@ function frame(now){
   SFX.hum();
 
   render();
-  if(screenName==='how')Demo.step(rdt);
 }
 
 /* ---- boot ---- */
 window.addEventListener('error',e=>{try{console.error('[PGERR]',e.message,'@',e.filename,e.lineno);}catch(_){}});
 window.addEventListener('unhandledrejection',e=>{try{console.error('[PGREJ]',e.reason&&e.reason.message||e.reason);}catch(_){}});
 
-/* Boot runs as the script parses. This device used to run the page's scripts
-   while the WebView was still 0x0 (window.innerWidth=0, logged on real
-   launches): building at that size produced zero-size zone art and repeated
-   boot-time callers (Demo.init's createPattern, toMenu's ensureZoneArt) threw
-   on the missing sprites and killed boot before the menu ever showed - the
-   player stared at a flat empty screen until they killed the game. resize()
-   now always builds (a provisional portrait world on a 0x0 viewport, real
-   world otherwise) and rebuilds when the real dimensions land, so the menu
-   paints on the first frame instead of seconds later. */
+/* Boot runs as the script parses, but its two halves are split so the very
+   first frame Chromium commits already carries the menu. This device can run
+   the page's scripts while the WebView is still 0x0, and the shell shows the
+   web content over its own tile-colour backdrop from frame one. That backdrop
+   IS this game's tileColor (the manifest header at the top of this file), and
+   it used to be the bright mint #3de0c7 - a full screen of blue-green that
+   players reported as a "blue blank screen" every time the game opened. The
+   tile colour is now the game's own near-black page background, so the shell
+   paints the same dark the game paints and the wall is invisible. The old
+   single synchronous boot also delayed the page's first committed frame by
+   the whole world build, and until toMenu() ran nothing covered that wall.
+   Stage one below is DOM-only: the menu screen is visible in the first
+   commit. Stage two - canvas art, demo, warm audio - runs one task later,
+   after the first paint has had its chance; a couple of frames of
+   transparent canvas behind the menu's dimmed backdrop are invisible. */
 let booted=false;
 function boot(){
-  resize();                /* builds the world at whatever the viewport is */
   updateMobileOrientation();
   requestPortraitLock();
-  Demo.init();
-  initCrazyGames();
-  toMenu();
-  booted=true;
+  /* Stage 1 - DOM only. */
+  showScreen(sMenu,'menu');
+  $('best-menu').textContent=best;
+  updateHudVis();
+  /* Stage 2 - the world. setTimeout hands the thread back to the compositor
+     first, so the menu commit is not queued behind canvas builds. */
+  setTimeout(function(){
+    resize();                /* builds the world at whatever the viewport is */
+    Demo.init();
+    initCrazyGames();
+    toMenu();
+    try{initAudio();}catch(e){}
+    booted=true;
+  },0);
 }
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,80));
-/* Boot runs unconditionally as the script parses: resize() is safe at any
-   viewport size now (provisional world on a 0x0 boot, real world otherwise),
-   and the frame loop's `if(!booted)` guard stays as a belt-and-braces net. */
+/* Boot is unconditional: resize() is safe at any viewport size (provisional
+   world on a 0x0 boot, real world otherwise) and the frame loop's booted
+   gate stays as a belt-and-braces net. */
 boot();
 requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
 </script>
