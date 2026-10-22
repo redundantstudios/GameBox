@@ -160,7 +160,7 @@ button{font-family:var(--serif)}
  color:#FFF3DC;text-shadow:0 2px 3px rgba(0,0,0,.55);text-align:center;
  border-width:2px;box-shadow:0 12px 30px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,235,200,.18);
  opacity:0;transition:opacity .25s,transform .25s;
- pointer-events:none;white-space:normal;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
+ pointer-events:none;white-space:normal;width:max-content;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 @media (max-height:430px){.panel{padding:12px 16px 10px}.tutpanel{padding:9px 14px 8px}#tutText{min-height:2.2em}
  #homeChip{padding:5px 7px}.tok .tc{width:30px;height:30px}.tok .tc .dot{width:13px;height:13px}}
@@ -574,12 +574,13 @@ const ms=n=>Math.max(1,Math.round(n/SPEED));
 function setupPlayers(c){
   const seats=SEATS[c.count],pal=PALS[c.count];
   return seats.map((camp,i)=>({idx:i,camp:camp,dest:OPP(camp),color:pal[i],
-    /* allAI is the dev switch: every seat is played by the computer, so a
-       game can be watched through to the end without anyone touching it. */
-    bot:(c.mode==='bot'&&i>0)||!!c.allAI,
+    bot:c.mode==='bot'&&i>0,
     /* Named by the colour of their marbles, not by seat number. CNAME is
        indexed by palette, which is what decides the marble's colour. */
-    name:CNAME[pal[i]],
+    /* The computer is marked in a normal game so the two can be told apart at
+       a glance. In the dev game there is nothing to tell apart - every seat is
+       a player - so nobody is marked. */
+    name:(c.dev||!(c.mode==='bot'&&i>0))?CNAME[pal[i]]:CNAME[pal[i]]+' (Bot)',
     team:c.team?(c.count===4?i%2:i%3):i,done:false}));
 }
 function destLegal(pid,from,to){
@@ -845,13 +846,18 @@ function showWin(){
   if(w.type==='p'){const P=G.players[w.id];
   if(w.lost){
   /* The player named here is the one who was BLOCKED. */
-  if(G.mode==='bot'&&P.bot){
+  if(cfg&&cfg.dev){
+  /* The dev game is about the rules, so the panel says what HAPPENED rather
+     than who won - which is the whole point of watching for a block. */
+  title=P.name+' WAS BLOCKED';names=[P];
+  }else if(G.mode==='bot'&&P.bot){
   /* The computer was the blocked one, so the human won. */
   const H=G.players.find(q=>!q.bot);
   title='CHAMPION';names=H?[H]:[P];
   }else{title='DEFEAT';names=[P];}
   }else{
-  title=G.mode==='bot'&&P.bot?'DEFEAT':'CHAMPION';
+  /* In the dev game the point is WHO won, not that the tester lost. */
+  title=(cfg&&cfg.dev)?P.name+' WINS':(G.mode==='bot'&&P.bot?'DEFEAT':'CHAMPION');
   names=[P];}
   }
   else{const mem=G.players.filter(q=>q.team===w.id);
@@ -966,7 +972,9 @@ function handleTap(h){
     else performStep(G.cur,from,h);
     return;}
   SFX.bad();buzz([30,40,30]);
-  if(b>=0&&b!==G.cur)toast('THAT IS '+G.players[b].name+"'S MARBLE");
+  /* Whose go it is, not whose marble it is: that is the question the player
+     actually has when a tap does nothing. */
+  if(b>=0&&b!==G.cur)toast("IT IS "+G.players[b].name+"'S TURN");
 }
 
 /* ---------------- setup screens ---------------- */
@@ -990,7 +998,7 @@ function setupStep(step){
     dev.className='woodbtn opt dev';
     dev.innerHTML='<b>DEV: ALL AI</b><small>every player is a computer - 10x speed</small>';
     dev.onclick=()=>{SFX.click();
-    cfg.mode='bot';cfg.team=false;cfg.count=4;cfg.allAI=true;cfg.dev=true;
+    cfg.mode='bot';cfg.team=false;cfg.count=4;cfg.dev=true;
     hide($('scrSetup'));initializeGame(cfg);};
     o.appendChild(dev);
     $('setupBack').onclick=()=>{SFX.click();hide($('scrSetup'));show($('scrHome'))};}
