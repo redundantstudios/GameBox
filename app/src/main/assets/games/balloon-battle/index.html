@@ -41,18 +41,27 @@ html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#
 /* ================= CONFIG ================= */
 const CFG={
   START_BALLOONS:3,
-  PLAYER_RADIUS:24, PLAYER_MAX_SPEED:255, PLAYER_ACCEL:1550, PLAYER_FRICTION:0.90,
-  BALLOON_RADIUS:19,
-  BALLOON_ATTACH_D:[20,29,38],
-  BALLOON_ATTACH_H:[18,26,32],
-  BALLOON_ATTACH_S:[-18,0,18],
-  BALLOON_MAX_DIST:55,
+  /* CHARACTER SIZE.
+     The characters were a 24-unit body in a 1000-unit-tall world, which
+     lands at about 10 CSS px on a phone - the balloon-people read as little
+     dots on the screen, and the balloons they carry were smaller still.
+     Everything that belongs to a character is now about a third bigger: the
+     body, the balloons it carries, where they hang, how far they trail and
+     the reach of the attack. The physics (speed, acceleration, friction,
+     dash) are untouched - the characters are simply bigger in the world, so
+     the bump and the hit still match what the player sees. */
+  PLAYER_RADIUS:32, PLAYER_MAX_SPEED:255, PLAYER_ACCEL:1550, PLAYER_FRICTION:0.90,
+  BALLOON_RADIUS:26,
+  BALLOON_ATTACH_D:[27,39,51],
+  BALLOON_ATTACH_H:[24,35,43],
+  BALLOON_ATTACH_S:[-24,0,24],
+  BALLOON_MAX_DIST:74,
   BALLOON_FOLLOW_SPRING:40,
   BALLOON_FOLLOW_DAMPING:0.70,
   BALLOON_DASH_SPRING_MULT:1.8,
   BALLOON_FOLLOW_FF:1.0,
   BALLOON_BOB_SPEED:2.2, BALLOON_BOB_AMP:2.8,
-  ATTACK_RADIUS:55, ATTACK_COOLDOWN:0.22,
+  ATTACK_RADIUS:74, ATTACK_COOLDOWN:0.22,
   DASH_SPEED:650, DASH_DURATION:0.18, DASH_COOLDOWN:1.35, BUMP_FORCE:110,
   POWERUP_INTERVAL:7, POWERUP_MAX:2, POWERUP_RADIUS:20,
   SPEED_BOOST_DURATION:4, SPEED_BOOST_MULT:1.45,
@@ -1805,7 +1814,14 @@ function drawMiniBalloon(g,x,y,C,on){
 }
 function drawHUD(){
   const ss=Math.min(cssW,cssH);
-  const r=clamp(ss*0.032,14,20);
+  /* BIGGER HUD BUTTONS. The pause and sound buttons are the only things a
+     player can press mid-bout, and they were sized for a mouse: on a phone
+     in landscape the radius came out at its floor of 14px - a 28px target
+     for a thumb, with the two of them almost touching. They are now a
+     proper thumb target (44px across at the floor, up to 60px), the gap
+     between them grows with them, and the tap target follows the drawn
+     size because it is measured from the same radius. */
+  const r=clamp(ss*0.045,22,30);
   const gy=clamp(ss*0.03,10,18)+r+safeT;
   const gap=r*0.6;
   const cx=cssW/2;
