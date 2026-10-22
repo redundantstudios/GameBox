@@ -176,9 +176,27 @@ object GameWindow {
             val lp = window.attributes
             lp.width = dw
             lp.height = dh
-            // The platform centres a window that is bigger than its parent
-            // bounds, so the offset that puts the edge on the screen is half
-            // the reserved strip.
+            /* WHERE THE WINDOW LANDS IS PLATFORM-DEPENDENT, SO IT IS CORRECTED
+               AFTERWARDS RATHER THAN GUESSED HERE.
+               This used to be a fixed half-band shift (lp.x = -band/2), on the
+               reasoning that "the platform centres a window that is bigger
+               than its parent bounds, so the offset that puts the edge on the
+               screen is half the reserved strip". That is true on the OPPO
+               (ColorOS centres it) and FALSE on the ZTE, where the frame
+               landed exactly at lp.x:
+                   mAttrs={(-40,0)(1612x720) ... layoutInDisplayCutoutMode=always}
+               On the ZTE the half-band shift cost the game 40px of its LEFT
+               edge (the left-hand player's joystick ran off-screen) and left
+               the 40px at the other end of the display uncovered by the
+               window - the black band beside the game, with the right-hand
+               player's DASH button clipped in half by it.
+
+               So the guess is kept as the starting point and the real
+               position is measured afterwards (see applyCutoutModeToView):
+               wherever the view landed, it is moved so its edge sits on the
+               display's edge. That is the whole point of the cutout
+               workaround - the game covers the screen - and it no longer
+               depends on what the platform does with an oversized window. */
             lp.x = -Math.round(bandW / 2f)
             lp.y = -Math.round(bandH / 2f)
             window.attributes = lp
@@ -220,6 +238,40 @@ object GameWindow {
                 android.util.Log.i("GameJS", "[cutout] pushed mode=" + mode)
                 val act = root.context as? android.app.Activity
                 if (act != null) fitWindowToDisplay(act.window)
+                /* PUT THE VIEW'S EDGE ON THE DISPLAY'S EDGE, WHEREVER THE
+                   PLATFORM PUT IT. The window is the size of the display, but
+                   an oversized window is not placed the same way on every ROM:
+                   the OPPO (ColorOS) centres one that is bigger than its
+                   parent bounds, the ZTE puts it exactly where lp.x says. The
+                   guess in fitWindowToDisplay can only be a guess, so the
+                   real position is measured here - once the layout has
+                   happened - and the window is shifted by the difference.
+
+                   Without this, one of the two devices always ends up with a
+                   band of the display that the app does not cover: on the ZTE
+                   the game lost 40px of its left edge and the black band sat
+                   at the right, clipping the dash button in half. */
+                root.post {
+                    try {
+                        val loc = IntArray(2)
+                        root.getLocationOnScreen(loc)
+                        val dx = -loc[0]
+                        val dy = -loc[1]
+                        if (dx != 0 || dy != 0) {
+                            val lp2 = root.layoutParams as? WindowManager.LayoutParams
+                            if (lp2 != null) {
+                                lp2.x += dx
+                                lp2.y += dy
+                                wm.updateViewLayout(root, lp2)
+                                android.util.Log.i("GameJS",
+                                    "[cutout] corrected from " + loc[0] + "," + loc[1] +
+                                    " by " + dx + "," + dy)
+                            }
+                        }
+                    } catch (e: Throwable) {
+                        android.util.Log.i("GameJS", "[cutout] correction failed: " + e)
+                    }
+                }
             }
         } catch (e: Throwable) {
             android.util.Log.i("GameJS", "[cutout] push failed: " + e)
