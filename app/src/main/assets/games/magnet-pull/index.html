@@ -14,7 +14,7 @@ minPlayers: 1
 maxPlayers: 1
 aiSupport: none
 online: false
-tileColor: #3de0c7
+tileColor: #070a12
 banner: bottom
 bannerBg: #070a12
 version: 1
@@ -58,6 +58,7 @@ backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 14p
    file:// on its own.
    ============================================================ */
 var __studioAdSeq=0;
+var __studioInterSeq=0;
 var Studio=(function(){
   var bridge=function(){ return window.NativeBridge||null; };
   var ls={get k(){ try{return window.localStorage;}catch(_){return null;} }};
@@ -135,10 +136,18 @@ var Studio=(function(){
       interstitial:function(onDone,placement){
         var b=bridge();
         if(b&&b.showInterstitial){
-          window.__studioInterCb=function(){ if(onDone) onDone(); };
-          try{ b.showInterstitial('__studioInterCb', placement||''); return; }
+          /* A callback name of its OWN for every request. The name used to be
+             the fixed "__studioInterCb", so a second request (the game-over
+             break asks for one too) OVERWROTE the first request's callback -
+             and the first request's action then never ran, leaving the button
+             that asked for it dead. The shell calls back by whatever name it
+             is given, so a unique name is all it takes. */
+          var cb='__studioInterCb'+(++__studioInterSeq);
+          window[cb]=function(){ try{ delete window[cb]; }catch(_){} if(onDone) onDone(); };
+          try{ b.showInterstitial(cb, placement||''); return; }
           catch(err){
             try{ console.error('[Studio] interstitial bridge call failed: '+((err&&err.message)||err)); }catch(_){}
+            try{ delete window[cb]; }catch(_){}
           }
         }
         if(onDone) onDone();
@@ -287,7 +296,7 @@ try{
   html,body{height:100%;overflow:hidden;background:var(--bg)}
   body{font-family:var(--mono);color:var(--ink);-webkit-user-select:none;user-select:none;
     touch-action:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
-  canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+  canvas#game{position:fixed;left:0;top:50%;transform:translateY(-50%);width:100%;display:block;cursor:crosshair}
 
   /* Portrait-only on touch/mobile devices. Never shown on normal PC/desktop. */
   /* The shell's GameActivity locks the activity to the manifest orientation,
@@ -620,20 +629,57 @@ window.addEventListener('touchstart',requestPortraitLock,{passive:true,once:true
 const DISP_FONT="'Bahnschrift','Franklin Gothic Medium','Trebuchet MS','Segoe UI',sans-serif";
 
 let W=0,H=0,DPR=1,sf=1,vf=1;
+/* True once the world has been built at the REAL viewport size. A world
+   built for a provisional size is never drawn: the environment would be
+   drawn at one size and then shift when the real size landed. */
+let worldLive=false;
 let railT=0,railB=0,railH=10,ballR=14,playH=0;
 let vig=null,glowTop=null,glowBot=null,goldGlow=null,podGlow=null;
 let speedNow=300;
 
-const K={speedMin:300,speedMax:680,crossT0:.42,crossT1:.26};
+/* The run's speed band. The number that matters to the player is how long a
+   bar takes to reach the ball: the ball sits at 28% of the width and bars
+   spawn just past the right edge, and because both the width and the speed
+   scale with sf, that crossing time comes out device-invariant at
+   828/speedK seconds. 300 (the original) was a 2.76s reach, the first bump
+   to 430 still left 1.93s and players called it "too slow at the start".
+   690 gives a 1.20s first bar, and 990 caps the ramp at a 0.84s crossing so
+   the 75s speed ramp keeps its headroom. Streaks (drawn above speed 380) are
+   on from the first seconds, which reads as pace rather than a mode switch. */
+const K={speedMin:690,speedMax:990,crossT0:.42,crossT1:.26};
 
 const C_TOP=[61,224,199], C_BOT=[255,158,60], C_RED=[255,77,109],
       C_VIO=[172,120,255], C_GOLD=[255,205,110];
 const polRGB=p=>p==='top'?C_TOP:C_BOT;
 
+/* The playfield's shape: how tall it is per unit of width. The height is
+   derived from the WIDTH so that no viewport change can move the world -
+   see resize(). A screen too short for that shape gets the height it has
+   (there the world has to follow the viewport after all). */
+const WORLD_AR=1.98;
+function worldHeight(rw,rh){
+  const byW=Math.round(rw*WORLD_AR);
+  return byW<=rh?byW:rh;
+}
+
 function resize(){
+  /* The world's SHAPE follows the WIDTH, never the viewport height. This
+     device hands the page its height in stages - 948 while the system bars
+     are still on screen, 890 once they are gone, 840 once the shell reserves
+     the banner strip - and a world whose height followed the viewport had to
+     be rebuilt at every stage, which moved the environment under the player
+     (the little glitch at startup: the world went up and came back). With
+     the height tied to the width the world is built once and never moves;
+     the canvas is centred in the viewport, so a taller viewport simply adds
+     a little dark space above and below the game. */
+  const rw=window.innerWidth, rh=window.innerHeight;
+  const valid=rw>=50&&rh>=50;
+  worldLive=valid;
   DPR=Math.min(window.devicePixelRatio||1,2);
-  W=window.innerWidth; H=window.innerHeight;
+  W=valid?rw:423;
+  H=valid?worldHeight(rw,rh):880;
   canvas.width=W*DPR; canvas.height=H*DPR;
+  canvas.style.height=H+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
   sf=clamp(Math.min(W/1150,H/760),.55,1.5);
   vf=clamp(H/800,.6,1.6);
@@ -746,6 +792,11 @@ function initAudio(){
   const hf=actx.createBiquadFilter(); hf.type='lowpass'; hf.frequency.value=230;
   humGain=actx.createGain(); humGain.gain.value=0;
   humOsc.connect(hf); hf.connect(humGain); humGain.connect(master); humOsc.start();
+  /* The crash SFX samples a shared noise buffer. It used to be built on the
+     first crash - a half-second of samples generated exactly on the impact
+     frame, the one a player is watching hardest. Build it once, here, where
+     half a millisecond cannot be felt. */
+  try{getNoise();}catch(e){}
 }
 function sfxGuard(){
   if(!actx)initAudio();
@@ -903,11 +954,21 @@ function burst(x,y,n,color,spd,grav){
 }
 function explosion(x,y){
   const cols=[[255,255,255],C_TOP,C_BOT];
-  for(let i=0;i<46;i++){
-    const a=Math.random()*6.283,v=rnd(80,640)*vf,c=cols[(Math.random()*3)|0];
-    pSpawn({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rnd(.4,1),
-      size:rnd(1.8,3.6)*vf,color:c,drag:1.6,
-      grav:Math.random()<.35?rnd(300,700):0,line:v>360*vf});
+  /* The crash used to put all 46 sparks on ONE frame. That frame cost more
+     than 100ms on this device - a visible freeze on the exact frame the
+     player is watching hardest - because 46 additive draws plus the ring and
+     the flash all landed together. The sparks now arrive over three frames:
+     the crash looks the same and no single frame goes over budget. */
+  for(let f=0;f<3;f++){
+    setTimeout(function(){
+      if(state!=='dying'&&state!=='over')return;
+      for(let i=0;i<16;i++){
+        const a=Math.random()*6.283,v=rnd(80,640)*vf,c=cols[(Math.random()*3)|0];
+        pSpawn({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rnd(.4,1),
+          size:rnd(1.8,3.6)*vf,color:c,drag:1.6,
+          grav:Math.random()<.35?rnd(300,700):0,line:v>360*vf});
+      }
+    },f*20);
   }
 }
 const rings=[];for(let i=0;i<20;i++)rings.push({on:false});
@@ -977,7 +1038,11 @@ function rebuildEnv(){
 }
 function resetZone(){
   zFrom=0;zTo=0;zMix=1;
-  zoneCache={};
+  /* No cache wipe. Zone 0's art is almost always already built at exactly
+     these dims (boot built it), so wiping meant every boot and every RETRY
+     tap paid a synchronous zone-art build right inside the click - part of
+     the "buttons take too long" feel. viewport-size changes rebuild through
+     buildWorld(), which clears the cache itself. */
   artA=artB=ensureZoneArt(0);
   rebuildEnv();
 }
@@ -1204,9 +1269,15 @@ function buildWorld(){
   ballGrad={top:null,bottom:null};
   hubGrad=null;
   obstacleSpr={};
+  /* Zone layers are painted against the CURRENT viewport dims. On a
+     provisional-size boot the art was built at 423x880; without this clear,
+     the later real-size rebuild would hit the cache and keep stretching
+     layers painted for the wrong viewport. */
+  zoneCache={};
+  artA=artB=ensureZoneArt(0);
   padTop=makePad(C_TOP);padBot=makePad(C_BOT);
   bladeCv=makeBlade();podCv=makePod();
-  artA=artB=ensureZoneArt(0);
+  queuePrewarm();
   dust=[];for(let i=0;i<34;i++)dust.push({x:Math.random()*W,y:rnd(railT,railB),s:rnd(1,2.2),a:rnd(.05,.16),p:rnd(.2,.7)});
   streaks=[];for(let i=0;i<12;i++)streaks.push({x:Math.random()*W,y:0,len:rnd(60,140)*sf,ok:false});
   rebuildEnv();
@@ -1471,41 +1542,71 @@ function drawPlayer(){
 
 /* ============ 9. OBSTACLES ============ */
 let obstacles=[];
+/* The bar panel. One sprite per (side, length) - the length ramp is
+   continuous, so the height is quantised to 8px and the sprite is stretched
+   to the exact length on draw. Built here rather than inside the draw call
+   because a sprite that is built DURING a run costs a texture upload in the
+   middle of play, which on this device shows up as a ~150ms stall right at
+   the start of the first run. */
+function barSprite(from,w,h){
+  const sk='bar:'+from+':'+w+'x'+h;
+  if(obstacleSpr[sk])return obstacleSpr[sk];
+  const cv=makeLayer(w,h);
+  const g=cv.getContext('2d');
+  const gg=g.createLinearGradient(0,0,w,0);
+  gg.addColorStop(0,'#232f45');gg.addColorStop(.15,'#31435e');gg.addColorStop(.5,'#1b2739');
+  gg.addColorStop(.85,'#101a2a');gg.addColorStop(1,'#0a111c');
+  g.fillStyle=gg;g.fillRect(0,0,w,h);
+  g.fillStyle='rgba(180,215,245,.18)';g.fillRect(1,0,1,h);
+  g.fillStyle='rgba(0,0,0,.5)';g.fillRect(w-2,0,2,h);
+  for(let yy=26;yy<h-16;yy+=58){
+    g.fillStyle='rgba(0,0,0,.35)';g.fillRect(2,yy,w-4,1);
+    g.fillStyle='rgba(180,215,245,.12)';g.fillRect(3,yy+1,w-6,1);
+    g.fillStyle='rgba(190,220,250,.22)';g.fillRect(4,yy+6,2,2);g.fillRect(w-7,yy+6,2,2);
+  }
+  const band=12,pat=g.createPattern(stripeRed,'repeat');
+  g.fillStyle=pat;
+  if(from==='top')g.fillRect(0,h-band,w,band);
+  else g.fillRect(0,0,w,band);
+  g.fillStyle='rgba(0,0,0,.4)';
+  if(from==='top')g.fillRect(0,h-band,w,2);
+  else g.fillRect(0,band-2,w,2);
+  obstacleSpr[sk]=cv;
+  /* bounded reuse: identical sprites stay, the oldest entry goes. The cap
+     is above the number of bar lengths the game can ever produce (two sides
+     times the length ramp), so a pre-warmed sprite is never evicted by the
+     pre-warm itself. */
+  const ks=Object.keys(obstacleSpr);
+  if(ks.length>72)delete obstacleSpr[ks[0]];
+  return cv;
+}
+/* Pre-warm queue: the bar lengths a run can use are known in advance (the
+   length ramp runs from 55% to 68% of the play height), so they are built
+   one per frame while the menu is up - frames the game has spare - and no
+   run ever builds one in front of the player. */
+let prewarm=null,prewarmAt=0;
+function queuePrewarm(){
+  const w=Math.round(clamp(46*sf,34,60));
+  const lo=Math.round(playH*.50/8)*8, hi=Math.round(playH*.72/8)*8;
+  prewarm=[];
+  for(const from of ['top','bottom'])
+    for(let h=lo;h<=hi;h+=8) prewarm.push({from:from,w:w,h:h});
+  prewarmAt=0;
+}
+function stepPrewarm(){
+  if(!prewarm||prewarmAt>=prewarm.length)return;
+  const p=prewarm[prewarmAt++];
+  barSprite(p.from,p.w,p.h);
+}
 function drawObstacle(o){
   if(o.type==='bar'){
     if(!o._cv){
-      const w=Math.round(o.w),h=Math.round(o.len);
+      const w=Math.round(o.w);
       /* the band position depends on o.from, so it is part of the cache key */
-      const sk='bar:'+o.from+':'+w+'x'+h;
-      if(!obstacleSpr[sk]){
-        const cv=makeLayer(w,h);
-        const g=cv.getContext('2d');
-        const gg=g.createLinearGradient(0,0,w,0);
-        gg.addColorStop(0,'#232f45');gg.addColorStop(.15,'#31435e');gg.addColorStop(.5,'#1b2739');
-        gg.addColorStop(.85,'#101a2a');gg.addColorStop(1,'#0a111c');
-        g.fillStyle=gg;g.fillRect(0,0,w,h);
-        g.fillStyle='rgba(180,215,245,.18)';g.fillRect(1,0,1,h);
-        g.fillStyle='rgba(0,0,0,.5)';g.fillRect(w-2,0,2,h);
-        for(let yy=26;yy<h-16;yy+=58){
-          g.fillStyle='rgba(0,0,0,.35)';g.fillRect(2,yy,w-4,1);
-          g.fillStyle='rgba(180,215,245,.12)';g.fillRect(3,yy+1,w-6,1);
-          g.fillStyle='rgba(190,220,250,.22)';g.fillRect(4,yy+6,2,2);g.fillRect(w-7,yy+6,2,2);
-        }
-        const band=12,pat=g.createPattern(stripeRed,'repeat');
-        g.fillStyle=pat;
-        if(o.from==='top')g.fillRect(0,h-band,w,band);
-        else g.fillRect(0,0,w,band);
-        g.fillStyle='rgba(0,0,0,.4)';
-        if(o.from==='top')g.fillRect(0,h-band,w,2);
-        else g.fillRect(0,band-2,w,2);
-        obstacleSpr[sk]=cv;
-        /* bounded reuse: identical sprites stay, the oldest entry goes */
-        const ks=Object.keys(obstacleSpr);
-        if(ks.length>32)delete obstacleSpr[ks[0]];
-      }
-      o._cv=obstacleSpr[sk];
+      const h=Math.round(o.len/8)*8;
+      o._cv=barSprite(o.from,w,h);
     }
-    ctx.drawImage(o._cv,o.x,o.from==='top'?railT-2:railB-o.len);
+    ctx.drawImage(o._cv,o.x,o.from==='top'?railT-2:railB-o.len,o.w,o.len);
     const ey=o.from==='top'?railT-2+o.len:railB-o.len;
     glowLine(o.x,ey,o.x+o.w,ey,'rgba(220,242,255,.95)',0,2);
     ctx.fillStyle='rgba(160,215,245,.07)';
@@ -1779,7 +1880,10 @@ function checkPass(){
       score++;
       if(score>best){
         best=score; beatBest=true;
-        lsSet('magnet.best',best);
+        /* No localStorage here: this runs on EVERY pass once the record is
+           broken, and each synchronous write can hitch the frame right as the
+           bar passes the ball. The record is persisted once at run end in
+           showOver(). */
         $('best-hud').textContent='BEST '+best;
         $('best-hud').classList.add('beat');
         SFX.record();
@@ -1861,16 +1965,37 @@ function requestRewardedAd(){
   $('btn-watch-ad').style.display='none';
   gameplayStop();
   adInProgress=true;
+  /* WATCHDOG. adInProgress gates EVERY button in the game (startGame and
+     toMenu both return early while it is set), so an ad request whose
+     callback never arrives does not just lose a reward - it turns the whole
+     screen into dead buttons, which is exactly what players reported as
+     "the buttons take time to do their job". The shell answers with
+     granted/closed/unavailable, but an ad that never loads can leave the
+     callback uncalled for good, so the game releases itself if nothing comes
+     back. */
+  let settled=false;
+  const guard=setTimeout(function(){
+    if(settled)return;
+    settled=true;
+    adInProgress=false;
+    rewardedUsed=false;
+    refreshWatchAdBtn();
+    gameplayStart();
+  },15000);
   try{
     window.CrazyGames.SDK.ad.requestAd('rewarded',{
       adStarted:()=>{adInProgress=true;setCrazyMute(true);},
       adFinished:()=>{
+        if(settled)return;
+        settled=true;clearTimeout(guard);
         adInProgress=false;
         setCrazyMute(!!window.CrazyGames.SDK.game.settings.muteAudio);
         continueAfterReward();
       },
       adError:(error,errorData)=>{
         console.warn('[CrazyGames] rewarded ad error',error,errorData);
+        if(settled)return;
+        settled=true;clearTimeout(guard);
         adInProgress=false;
         setCrazyMute(!!window.CrazyGames.SDK.game.settings.muteAudio);
         /* Not earned, so the offer comes back - but only while the run still
@@ -1882,6 +2007,7 @@ function requestRewardedAd(){
     });
   }catch(e){
     console.warn('[CrazyGames] rewarded ad request failed',e);
+    settled=true;clearTimeout(guard);
     adInProgress=false;rewardedUsed=false;refreshWatchAdBtn();gameplayStart();
   }
 }
@@ -1895,13 +2021,21 @@ function withInterstitial(placement,fn){
   if(adInProgress)return;
   adInProgress=true;
   gameplayStop();
+  /* Same watchdog as the rewarded path: adInProgress gates every button, so a
+     request whose callback never arrives must not strand the action that
+     asked for it. The shell always answers - this is only the net under
+     that promise. */
+  let settled=false;
   const done=()=>{
+    if(settled)return;
+    settled=true;clearTimeout(guard);
     adInProgress=false;
     const s=window.CrazyGames&&window.CrazyGames.SDK&&window.CrazyGames.SDK.game
       &&window.CrazyGames.SDK.game.settings;
     setCrazyMute(!!(s&&s.muteAudio));
     fn();
   };
+  const guard=setTimeout(done,10000);
   try{Studio.ads.interstitial(done,placement);}
   catch(e){done();}
 }
@@ -1940,6 +2074,9 @@ function startGame(){
   score=0;elapsed=0;spawnCount=0;beatBest=false;setScoreDom();
   $('best-hud').textContent='BEST '+best;
   $('best-hud').classList.remove('beat');
+  /* speedNow still carries the menu demo's pace here; seed the band so the
+     very first spawn distance/frame timing uses the run's real speed. */
+  speedNow=K.speedMin*sf;
   spawnDist=speedNow*1.6;lastType='';
   timeScale=1;tsTarget=1;deathT=0;flashA=0;shakeMag=0;
   state='play';
@@ -1947,7 +2084,11 @@ function startGame(){
   SFX.start();
 }
 function die(){
-  player.alive=false;state='dying';deathT=0;tsTarget=.13;
+  /* The world used to drop to 13% speed for the whole death animation
+     (tsTarget=.13) and players read that crawl as the game lagging. The
+     crash now plays at the normal clock and the hold before the result
+     screen is shorter (0.85s vs 1.35s): same effects, less dead time. */
+  player.alive=false;state='dying';deathT=0;
   shake(15*sf);flashA=.85;
   explosion(player.x,player.y);
   ring(player.x,player.y,'rgba(255,120,120,1)',620*vf,.6,3);
@@ -2008,7 +2149,13 @@ function showOver(){
      moment the run ends, not a second one on the way out of it.
      The callback is empty on purpose: nothing on this screen waits on the ad,
      and the shell's governor still decides whether one is actually due. */
-  try{ Studio.ads.interstitial(function(){},'magnet.gameover'); }catch(e){}
+  /* Deferred a beat so the ad request does not land on the same frames as the
+     game-over transition - the crash-to-result handoff is where players
+     reported jank. Skipped entirely if the screen has already moved on. */
+  setTimeout(function(){
+    if(state!=='over')return;
+    try{ Studio.ads.interstitial(function(){},'magnet.gameover'); }catch(e){}
+  },300);
 }
 /* The only place that decides whether CONTINUE is offered: an ad that has not
    been spent yet, on a run where the SDK is up. Called from showOver() and
@@ -2035,19 +2182,43 @@ function updatePolChip(){
 }
 function setScoreDom(){
   elScore.textContent=score;
-  elScore.classList.remove('pop');void elScore.offsetWidth;elScore.classList.add('pop');
+  /* The score used to restart its CSS animation with the remove-class /
+     void offsetWidth / add-class trick, and the forced reflow hitched the
+     frame at exactly the moment a bar passed the ball. The Web Animations
+     API restarts a transform pop cleanly with no layout work. */
+  if(elScore.animate){
+    elScore.animate(
+      [{transform:'scale(1.4)'},{transform:'scale(1)'}],
+      {duration:180,easing:'ease-out'}
+    );
+  }
 }
 function bind(id,fn){
-  $(id).addEventListener('click',e=>{SFX.click();e.currentTarget.blur();fn();});
+  /* The action runs BEFORE the click sound: the sound path can build the
+     AudioContext the first time it is touched, and on this device that cost
+     sat between the tap and the action it asked for. With the shell's
+     autoplay gate off the context is warmed at boot instead, so the sound is
+     also already live when the action runs - order no longer matters. */
+  $(id).addEventListener('click',e=>{e.currentTarget.blur();fn();SFX.click();});
 }
 bind('btn-play',startGame);
 bind('btn-how',()=>showScreen(sHow,'how'));
 bind('btn-set',()=>showScreen(sSet,'set'));
 bind('btn-how-back',uiBack);
 bind('btn-set-back',uiBack);
-bind('btn-retry',()=>withInterstitial('magnet.gameover.retry',startGame));
+/* The game-over buttons fire their action directly, with no interstitial
+   before it. On-device measurement (performance.now() in the click handlers)
+   showed the click itself runs in ~1ms and the shell answers suppressed
+   requests in ~15ms - the whole wait players reported came from the ads these
+   two buttons used to request whenever the app-wide 3-minute interstitial gap
+   had elapsed: the shell opens the ad a beat after the tap and the action only
+   runs once the player closes it, which read as "the buttons take too long to
+   react". The break that covers this screen is the game-over interstitial in
+   showOver() below, governed by the same gap; the pause-screen buttons keep
+   their own calls. */
+bind('btn-retry',startGame);
 bind('btn-watch-ad',requestRewardedAd);
-bind('btn-over-menu',()=>withInterstitial('magnet.gameover.menu',toMenu));
+bind('btn-over-menu',toMenu);
 bind('btn-pause',pauseGame);
 bind('btn-resume',resumeGame);
 bind('btn-restart',()=>withInterstitial('magnet.pause.restart',startGame));
@@ -2076,7 +2247,13 @@ const Demo={
     this.bars=[];
     for(let i=0;i<2;i++)this.bars.push({x:280+i*250,from:i===0?'top':'bottom',len:80,passed:true});
     this.rp=[];for(let i=0;i<6;i++)this.rp.push({on:false});
-    this.pat=this.x.createPattern(stripeRed,'repeat');
+    /* Boot can still be at a 0x0 viewport here (the shell's own logs show
+       window.innerWidth=0 while the WebView is being laid out), so the stripe
+       sprites used by buildStripes() may not exist yet. The pattern is built
+       lazily on first use in step() once the sprites exist, instead of throwing
+       inside boot and aborting everything after it - the menu never showed and
+       the player stared at a flat empty screen. */
+    this.pat=null;
   },
   ring(x,y,C){
     for(const r of this.rp)if(!r.on){Object.assign(r,{on:true,x,y,r:6,vr:95,life:.35,tl:.35,C});return;}
@@ -2090,6 +2267,9 @@ const Demo={
   },
   step(rdt){
     const dt=Math.min(rdt,.033),x=this.x,b=this.b,rest=9;
+    /* Lazy pattern build: by the time the HOW screen opens, a real viewport
+       exists and buildStripes() has run inside resize(). */
+    if(!this.pat&&stripeRed)this.pat=x.createPattern(stripeRed,'repeat');
     this.t+=dt;
     for(const bar of this.bars){
       bar.x-=95*dt;
@@ -2209,12 +2389,68 @@ function render(){
   if(flashA>0){ctx.fillStyle='rgba(255,238,238,'+(flashA*.65)+')';ctx.fillRect(0,0,W,H);}
 }
 
-let lastT=performance.now();
+let lastT=performance.now(),menuAcc=0,provT=0,liveLogged=false;
 function frame(now){
   requestAnimationFrame(frame);
+  /* Viewport self-heal: compare against the live window every frame. The
+     world is always built - at a provisional size on a 0x0 boot, real size
+     otherwise - so this compare only exists to catch the moment the real
+     dimensions land and swap the world over. The compare per frame is free;
+     resize() only runs when something actually moved. */
+  const iw=window.innerWidth, ih=window.innerHeight;
+  if(!booted)return;
+  /* The world's size is watched, not the viewport's. The world is as tall as
+     its width says it should be, so the viewport's own height changes (the
+     system bars coming and going, the shell reserving the banner strip)
+     never move the environment: the world is built once and stays put. */
+  if(iw>=50&&ih>=50){
+    const nh=worldHeight(iw,ih);
+    if(iw!==W||nh!==H)resize();
+    worldLive=true;
+    if(!liveLogged){liveLogged=true;try{console.warn('[BOOT] world live '+W+'x'+H+' t='+Math.round(performance.now()));}catch(e){}}
+  }else{
+    /* No layout at all: the provisional world is the only thing there is.
+       Show it anyway after a moment, because a slightly wrong world beats
+       no world at all. */
+    worldLive=false;
+    if(!provT)provT=now;
+    if(now-provT>2500){resize();worldLive=true;}
+  }
+  if(!worldLive){lastT=now;return;}
   let rdt=(now-lastT)/1000;lastT=now;
   if(rdt>.1)rdt=.1;if(rdt<0)rdt=0;
   tGlobal+=rdt;
+
+  /* Modal screens (how-to-play, settings, pause, game over) sit as flat DOM
+     panels over the canvas. The world behind them is fully static - nothing
+     is meant to read through - so updating and rendering 60 times a second
+     there only kept the renderer's main thread busy while the player was
+     tapping the panel's buttons. On a cold WebView those frame jobs ran
+     three figures wide and tap dispatch queued behind them, which read as
+     "buttons take too long". Freeze the canvas while a modal is up: it keeps
+     its last frame underneath the panel, the loop only runs the how-to-play
+     demo (it owns a separate canvas), and the main thread goes idle so taps
+     are processed immediately. */
+  if(screenName==='how'||screenName==='set'||screenName==='pause'||screenName==='over'){
+    SFX.hum();
+    if(screenName==='how')Demo.step(rdt);
+    return;
+  }
+  /* The menu shows the attract world behind a translucent, blurred panel. At
+     a cold start the first-seconds frames are the expensive ones, and they
+     were being spent on a backdrop the blur makes nearly illegible. Halve the
+     attract rate (30fps) by accumulating time between runs; the World clock
+     uses the accumulated rdt so motion speed is unchanged. On a genuinely
+     slow 30fps renderer every frame still runs. */
+  if(state!=='play'&&screenName==='menu'){
+    menuAcc+=rdt;
+    if(menuAcc<1/30)return;
+    rdt=Math.min(menuAcc,.1);menuAcc=0;
+    /* The menu's frames are the game's spare frames: the bar sprites are
+       built here, one per frame, so the first run does not have to build
+       any of them in front of the player. */
+    stepPrewarm();
+  }
 
   timeScale+=(tsTarget-timeScale)*Math.min(1,rdt*6);
   const dt=rdt*timeScale;
@@ -2247,7 +2483,7 @@ function frame(now){
     updateObstacles(dt);
     updateZone(rdt);
     deathT+=rdt;
-    if(deathT>1.35)showOver();
+    if(deathT>.85)showOver();
   }
 
   if(state!=='pause'){
@@ -2258,18 +2494,52 @@ function frame(now){
   SFX.hum();
 
   render();
-  if(screenName==='how')Demo.step(rdt);
 }
 
 /* ---- boot ---- */
+window.addEventListener('error',e=>{try{console.error('[PGERR]',e.message,'@',e.filename,e.lineno);}catch(_){}});
+window.addEventListener('unhandledrejection',e=>{try{console.error('[PGREJ]',e.reason&&e.reason.message||e.reason);}catch(_){}});
+
+/* Boot runs as the script parses, but its two halves are split so the very
+   first frame Chromium commits already carries the menu. This device can run
+   the page's scripts while the WebView is still 0x0, and the shell shows the
+   web content over its own tile-colour backdrop from frame one. That backdrop
+   IS this game's tileColor (the manifest header at the top of this file), and
+   it used to be the bright mint #3de0c7 - a full screen of blue-green that
+   players reported as a "blue blank screen" every time the game opened. The
+   tile colour is now the game's own near-black page background, so the shell
+   paints the same dark the game paints and the wall is invisible. The old
+   single synchronous boot also delayed the page's first committed frame by
+   the whole world build, and until toMenu() ran nothing covered that wall.
+   Stage one below is DOM-only: the menu screen is visible in the first
+   commit. Stage two - canvas art, demo, warm audio - runs one task later,
+   after the first paint has had its chance; a couple of frames of
+   transparent canvas behind the menu's dimmed backdrop are invisible. */
+let booted=false;
+function boot(){
+  updateMobileOrientation();
+  requestPortraitLock();
+  /* Stage 1 - DOM only. */
+  showScreen(sMenu,'menu');
+  $('best-menu').textContent=best;
+  updateHudVis();
+  /* Stage 2 - the world. setTimeout hands the thread back to the compositor
+     first, so the menu commit is not queued behind canvas builds. */
+  setTimeout(function(){
+    resize();                /* builds the world at whatever the viewport is */
+    Demo.init();
+    initCrazyGames();
+    toMenu();
+    try{initAudio();}catch(e){}
+    booted=true;
+  },0);
+}
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,80));
-resize();
-updateMobileOrientation();
-requestPortraitLock();
-Demo.init();
-initCrazyGames();
-toMenu();
+/* Boot is unconditional: resize() is safe at any viewport size (provisional
+   world on a 0x0 boot, real world otherwise) and the frame loop's booted
+   gate stays as a belt-and-braces net. */
+boot();
 requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
 </script>
 <script>
@@ -2297,11 +2567,16 @@ requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
      than sprinkled through startGame/pauseGame/die so a transition that is
      missed cannot leave the strip up over a menu. The shell owns the edge
      (this game's manifest asks for bottom) and the strip's colour. */
-  var bannerOn=false;
-  setInterval(function(){
-    var want=(state==='play');
-    if(want!==bannerOn){ bannerOn=want; try{ Studio.ads.banner(want); }catch(e){} }
-  },400);
+  /* BANNER: asked for ONCE, and left up.
+     The strip is reserved for the life of the screen (the shell reserves it
+     and never resizes the game for it), so showing and hiding the ad around
+     every run bought nothing and cost a great deal: each show or hide makes
+     the shell attach or detach the ad's own view, and on this device that
+     is a ~180ms stall on the UI thread - right at the start of a run, when
+     the game is still warming up and the player is watching. The ad is now
+     requested while the menu is still up (so it has time to load before the
+     first run) and it stays up from then on. */
+  try{ Studio.ads.banner(true); }catch(e){}
 
   window.Game={
     pause:function(){ try{ if(state==='play') pauseGame(); }catch(e){} if(prev.pause) try{ prev.pause(); }catch(e){} },
