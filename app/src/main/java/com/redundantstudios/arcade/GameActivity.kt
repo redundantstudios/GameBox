@@ -1,6 +1,7 @@
 package com.redundantstudios.arcade
 
 import android.content.Intent
+import android.app.ActivityManager
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.os.Build
@@ -110,22 +111,25 @@ class GameActivity : AppCompatActivity() {
      * painted - and, just before that, the colour that flashes while the game
      * loads.
      *
-     * It used to be the tile colour, which is LAUNCHER artwork. Carrom's tile is
-     * a bright green and the game itself sits on near-black soil, so opening it
-     * flashed green before the brown arrived - the flash was advertising the
-     * wrong thing.
+     * Two manifest values can supply it, and a game declares whichever one
+     * describes its own paint:
      *
-     * The page background is the right answer for both jobs, and the manifest
-     * already carries it: `bannerBg:` is documented as the game's own page
-     * background, for the same reason - the strip has to read as part of the
-     * game rather than as a launcher tile.
+     *   viewportBg: the game's own VIEWPORT colour - what it actually paints
+     *               with. It wins: a game that leaves part of its viewport
+     *               unpainted should still show its own palette, not the
+     *               launcher's.
+     *   bannerBg:   the game's own PAGE background. It drives the flash and
+     *               the strip, so the strip reads as part of the game rather
+     *               than as launcher artwork (a bright tile colour flashing
+     *               before the game arrives advertises the wrong thing).
      *
-     * So the same value is used for the flash and the strip, and a game that
-     * declares its page background gets both right. The tile colour is still
-     * the fallback, so a game that has not declared one behaves as before.
+     * The tile colour is the fallback, so a game that declares neither
+     * behaves as before.
      */
     private fun backdropColor(): Int {
-        val hex = currentGame?.bannerBg?.takeIf { it.isNotBlank() } ?: currentGame?.tileColor
+        val hex = currentGame?.viewportBg?.takeIf { it.isNotBlank() }
+            ?: currentGame?.bannerBg?.takeIf { it.isNotBlank() }
+            ?: currentGame?.tileColor
         return try {
             if (hex.isNullOrBlank()) DEFAULT_BACKDROP else android.graphics.Color.parseColor(hex)
         } catch (e: IllegalArgumentException) {
@@ -173,6 +177,50 @@ class GameActivity : AppCompatActivity() {
         val caps = cm.getNetworkCapabilities(net) ?: return false
         return caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
             caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    }
+
+    /**
+     * TRUE ON A LOW-POWER PHONE, DECIDED ONCE AT LAUNCH.
+     *
+     * The game that launched is told about it with `lowmem=1` on its URL, so it
+     * can trim what it spends - render scale, antialiasing, shadows - before the
+     * first frame rather than discovering the same fact the hard way, a stutter
+     * at a time.
+     *
+     * WHY RAM COUNTING ISN'T ENOUGH ANY MORE (measured on device CPH2219)
+     * OPPO's "RAM Expansion" puts storage-side virtual memory into MemTotal:
+     * the 4GB A55 reports ~5.6GB, sailed past the old totalMem<5GB check, and
+     * every trim stayed switched off on the one phone that needed them. So the
+     * decision now reads three independent tells, cheapest wins first:
+     *   - isLowRamDevice(), the framework's own verdict for genuinely small
+     *     phones (2GB tier), cheap and authoritative;
+     *   - ro.soc.model (SM4250 = Snapdragon 460 etc.): the SoC tier is what
+     *     actually set the frame budget - on this device gameplay measured
+     *     ~200 draw calls at a median 49ms frame with render scale held at 1,
+     *     i.e. the bottleneck is CPU/driver overhead, not pixels - and the
+     *     model string is visible through getprop without any permission;
+     *   - a tiny per-app heap class (<128MB) as a last round-out.
+     * Games lacking a lowmem path simply ignore the flag; the game-side
+     * runtime probe (which measures real frame times and engages the same
+     * trims) covers any device all of these tell the wrong story about.
+     */
+    private fun isLowRamDevice(): Boolean {
+        val am = getSystemService(ActivityManager::class.java)
+        if (am != null) {
+            if (am.isLowRamDevice) return true
+            if (am.memoryClass in 1..127) return true
+        }
+        val soc = try {
+            val p = Runtime.getRuntime().exec(arrayOf("getprop", "ro.soc.model"))
+            p.inputStream.bufferedReader().readText().trim()
+        } catch (e: Throwable) { "" }
+        if (soc.isNotBlank()) {
+            val s = soc.lowercase()
+            if (s.startsWith("sm42") || s.startsWith("sd46")) return true
+        }
+        val mi = ActivityManager.MemoryInfo()
+        am?.getMemoryInfo(mi)
+        return mi.totalMem > 0 && mi.totalMem < LOW_RAM_TOTAL_BYTES
     }
 
     /**
@@ -262,6 +310,13 @@ class GameActivity : AppCompatActivity() {
         const val DEFAULT_BACKDROP = 0xFF101014.toInt()
 
         /**
+         * Devices reporting less total RAM than this are treated as low-RAM
+         * for the `lowmem=1` launch flag (see [isLowRamDevice]). 5 GiB splits
+         * a 4GB phone (which reports under ~3.7 GiB) from a 6GB one (~5.6 GiB).
+         */
+        const val LOW_RAM_TOTAL_BYTES = 5L * 1024L * 1024L * 1024L
+
+        /**
          * If a game has not finished loading within this long, show it anyway:
          * waiting for a load that never comes would leave the player on the
          * artwork for ever.
@@ -326,6 +381,17 @@ class GameActivity : AppCompatActivity() {
         // a LANDSCAPE configuration before the selected game's manifest is read -
         // the portrait game that briefly appeared sideways and then turned.
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+
+        /* THE DISPLAY CUTOUT, BEFORE super.onCreate().
+           This is the line that makes the game truly full screen on a phone
+           with a corner camera hole (the OPPO A55 / CPH2219, where the player
+           saw the game running beside a dead band with the camera in it).
+           The window exists from attach() onward, so the declaration can be
+           made here - and it HAS to be made here: AppCompatActivity creates
+           the decor during super.onCreate(), which is when the platform adds
+           the window to the window manager and decides how much of the
+           display the app may use. */
+        GameWindow.applyCutoutMode(window)
 
         super.onCreate(savedInstanceState)
 
@@ -687,7 +753,11 @@ val bannerEdge = currentGame?.bannerEdge
             // chosen; otherwise the game opens its own normal menu.
             val preselect =
                 if (mode != null && players > 0) "&mode=$mode&skill=$skill&players=$players" else ""
-            gameUrl = "file:///android_asset/games/$gameId/index.html?$settingsQuery$preselect"
+            /* A low-RAM phone announces itself: the game can trim itself to fit
+               from frame one instead of learning it through stutters. Games
+               without a lowmem path simply ignore the flag. */
+            val lowmem = if (isLowRamDevice()) "&lowmem=1" else ""
+            gameUrl = "file:///android_asset/games/$gameId/index.html?$settingsQuery$lowmem$preselect"
             loadUrl(gameUrl!!)
         }
 
@@ -756,6 +826,17 @@ val bannerEdge = currentGame?.bannerEdge
            in the open, so it is the right moment to spend it. */
         if (bannerEdge != null) adMobManager.preloadBanner()
         setContentView(contentHost)
+        /* The display-cutout declaration has to be pushed into the view root
+           once the hierarchy is on screen - that is where the frame is
+           computed (see GameWindow.applyCutoutModeToView). */
+        webView.post { GameWindow.applyCutoutModeToView(webView.rootView) }
+        webView.post { GameWindow.fitWindowToDisplay(window) }
+        webView.postDelayed({ GameWindow.fitWindowToDisplay(window) }, 600)
+        // The decor exists now, so the cutout declaration sticks. Before this
+        // point the platform re-applied the theme's window attributes when it
+        // created the decor, which is what silently put the game back into the
+        // letterboxed band around the camera hole.
+        GameWindow.applyCutoutMode(window)
         gameRoot = rootLayout
         // The rotation was decided before the first frame (see setupOrientation), so
         // there is nothing left to turn once the entry animation starts.
@@ -949,6 +1030,11 @@ val bannerEdge = currentGame?.bannerEdge
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         Log.d(TAG_TIME, "config change +${sinceLaunch()}ms (${newConfig.orientation})")
+        /* The rotation re-lays the window out, and the cutout declaration has
+           to be re-pushed into the view root afterwards - the frame is
+           computed there (see GameWindow.applyCutoutModeToView). */
+        webView.post { GameWindow.applyCutoutModeToView(webView.rootView) }
+        webView.post { GameWindow.fitWindowToDisplay(window) }
         // Rotation can restore the system bars — drop them again.
         GameWindow.goImmersive(window)
         // Games normally reflow via the WebView's own resize event; this hook is

@@ -77,6 +77,24 @@ data class GameManifest(
      */
     val bannerBg: String? = null,
     /**
+     * The colour the game's own VIEWPORT backdrop wears, from the manifest's
+     * `viewportBg:` line.
+     *
+     * WHY THIS EXISTS AND WHY NOT tileColor
+     * The WebView is painted with this colour before (and underneath) the page's
+     * WebGL canvas. tileColor is LAUNCHER artwork, not the game's viewport: a
+     * menu colour like Midnight Overdrive's orange `#ff8a3d` put a full-screen
+     * orange wall behind a near-black night game, and the wall flashed through
+     * during the portrait->landscape turn - the turn resizes the WebView, the
+     * resized canvas re-allocates and re-clears, and the backdrop shows in that
+     * gap, a colour the game never chose for its viewport.
+     *
+     * Null falls back to tileColor, so every existing game keeps its current
+     * behaviour; a game opts in with a `viewportBg:` line only when its tile
+     * colour is NOT what the viewport should show behind its canvas.
+     */
+    val viewportBg: String? = null,
+    /**
      * When the game was integrated, read from the manifest's `released:`
      * line. [ReleaseDate.UNKNOWN] when absent - which sorts last, so a
      * game is never hidden or silently promoted by a missing field.

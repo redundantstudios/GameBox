@@ -2,7 +2,15 @@
           try {
             if (window.__studioDpr) return;
             var raw = window.devicePixelRatio || 1;
-            var start = Math.min(raw, 2);
+            /* A low-RAM phone is announced by the shell's launcher with
+               lowmem=1 on the game's URL (GameActivity measures total RAM
+               once, before the page exists). Its governor starts one step
+               lower so the first seconds of play are not the experiment that
+               proves the phone slow - the trims the game itself applies in
+               lowmem sit on top of this. */
+            var start = /(?:^|[?&])lowmem=1/.test(location.search || '')
+              ? Math.min(raw, 1.5)
+              : Math.min(raw, 2);
             var cur = start;
             window.__studioDpr = start;
             window.__studioDprScale = function(){ return cur; };
