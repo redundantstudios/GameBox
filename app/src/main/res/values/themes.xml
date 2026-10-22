@@ -52,6 +52,18 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:enforceStatusBarContrast">false</item>
         <item name="android:enforceNavigationBarContrast">false</item>
+        <!-- THE DISPLAY CUTOUT. The camera hole of the phone is a CORNER cutout,
+             so in landscape it lands on a LONG edge and the platform then
+             letterboxes the game away from it - a dead band with the camera in
+             it, which the player reported as "the game is not full screen".
+             Measured on the OPPO A55 (CPH2219, ColorOS): the window frame sat
+             at [115,0][2400,1080] - exactly the cutout width - with an
+             "EffectLayer (Letterbox - left)" beside it. "always" lets the game
+             run under the hole; the system still draws the hole itself.
+             This has to live in the THEME: the window attributes are re-applied
+             from the theme when the decor is created (setContentView), which
+             silently discarded the value set programmatically before that. -->
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
     </style>
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">

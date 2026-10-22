@@ -15,6 +15,7 @@ maxPlayers: 1
 aiSupport: none
 online: false
 tileColor: #ff8a3d
+viewportBg: #0a0613
 version: 1
 released: 2026-09-28
 -->
@@ -3043,6 +3044,18 @@ html,body{
 
 </style>
 <style>
+/* ===== LOW-MEM COMPOSITOR OVERRIDE =====
+   See the JS note at the body class: backdrop-filter blurs the LIVE frame
+   behind it, every frame. On a weak GPU the blur itself becomes the frame
+   budget. The frosted-glass effect is dropped wholesale on html.molow; the
+   translucent fills under each panel stay and everything stays legible on
+   the night scene. */
+html.molow,html.molow *{
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+</style>
+<style>
 /* ===== FINAL GAME-OVER BUTTON FIT ===== */
 #over .overButtons{
   width:100%;
@@ -3102,6 +3115,210 @@ html,body{
   #over .overButtons .fbtn{
     width:100% !important;
   }
+}
+</style>
+<style>
+/* ===== BUTTON + PANEL SHAPE (player report, 2026-10-22) =====
+   The home buttons were long pills (360px x 38px - nine widths to one
+   height) and the settings panel was a 520x406 slab. The player asked for
+   SQUARE: reduce button width, give them height, and square up the
+   settings panel and its switches. This sheet loads LAST so every value
+   here wins over the earlier passes without hunting them down. */
+#menu .homeButtons{
+  width:max-content!important;
+  min-width:0!important;
+  gap:clamp(10px,2.2vh,18px)!important;
+}
+#menu .homeButtons .fbtn{
+  /* Player tuning, round 5: from 189x55, width +3%, font +5% (~15.4px).
+     The height stays where round 4 put it. */
+  width:min(195px,26vw)!important;
+  min-height:min(59px,13dvh)!important;
+  padding:10px 14px!important;
+  border-radius:16px!important;
+  font-size:clamp(12px,1.63vw,17px)!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+}
+/* SETTINGS: the panel goes square; the on/off switches go square. */
+#settingsPanel .settingsModal{
+  width:min(420px,94vw)!important;
+  height:min(420px,calc(100dvh - 20px))!important;
+  border-radius:18px!important;
+}
+#settingsPanel .settingRow{
+  min-height:clamp(56px,12dvh,74px)!important;
+  border-radius:14px!important;
+}
+#settingsPanel .settingIcon{
+  width:40px!important;height:40px!important;
+  border-radius:12px!important;
+}
+#settingsPanel .settingName{
+  font-size:12px!important;
+}
+#settingsPanel .switch{
+  width:56px!important;
+  min-width:56px!important;
+  height:56px!important;
+  padding:0!important;
+  border-radius:14px!important;
+  font-size:13px!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+}
+</style>
+<style>
+/* ===== TOUCH CONTROLS: BIGGER, AND WITH ROOM AROUND THEM =====
+   Player report (2026-10-22, round 2): the on-screen controls (left,
+   right, brake) are STILL too small for thumbs, they sit too close to the
+   screen edges, and they sit too close to the bottom edge.
+
+   Round 1 made them 30% bigger (62 -> 80px here, 72 -> 94px on a taller
+   screen). Round 2 adds another 20% on top of that, and moves every
+   control further in from the edges: 64px from the left and right edges,
+   40px from the bottom.
+
+   The sizes below replace the layers that were fighting over them: the
+   base rule (80px), the coarse-pointer landscape rule (72px) and the
+   short-landscape rule (62px - this phone's 941x423 viewport). This sheet
+   loads last, so it wins over all of them. The base block comes first so
+   that the media blocks below can still raise the size on a taller screen. */
+#touchUI #btnL,
+#touchUI #btnR,
+#touchUI #btnHorn,
+#touchUI #btnBrake{
+  width:96px!important;
+  height:96px!important;
+  min-width:96px!important;
+  min-height:96px!important;
+  max-width:96px!important;
+  max-height:96px!important;
+}
+#touchUI #btnL{left:64px!important}
+#touchUI #btnR{left:170px!important}
+#touchUI #btnBrake{right:64px!important}
+#touchUI #btnL,
+#touchUI #btnR,
+#touchUI #btnBrake{bottom:40px!important}
+#touchUI #btnBrake{font-size:18px!important}
+
+@media (pointer:coarse) and (orientation:landscape){
+  #touchUI #btnL,
+  #touchUI #btnR,
+  #touchUI #btnHorn,
+  #touchUI #btnBrake{
+    width:112px!important;
+    height:112px!important;
+    min-width:112px!important;
+    min-height:112px!important;
+    max-width:112px!important;
+    max-height:112px!important;
+  }
+  /* Left pair, 64px in from the edge, 10px between the two. */
+  #touchUI #btnL{left:64px!important}
+  #touchUI #btnR{left:186px!important}
+  /* Brake, 64px in from the right edge. */
+  #touchUI #btnBrake{right:64px!important}
+  #touchUI #btnL,
+  #touchUI #btnR,
+  #touchUI #btnBrake{bottom:40px!important}
+}
+
+/* Short landscape phones - the 62px buttons became 96px (80px in round 1,
+   +20% now) and keep 64px of margin from each side edge, 40px from the
+   bottom. */
+@media (pointer:coarse) and (orientation:landscape) and (max-height:430px){
+  #touchUI #btnL,
+  #touchUI #btnR,
+  #touchUI #btnHorn,
+  #touchUI #btnBrake{
+    width:96px!important;
+    height:96px!important;
+    min-width:96px!important;
+    min-height:96px!important;
+    max-width:96px!important;
+    max-height:96px!important;
+  }
+  #touchUI #btnL{left:64px!important}
+  #touchUI #btnR{left:170px!important}
+  #touchUI #btnBrake{right:64px!important}
+  #touchUI #btnL,
+  #touchUI #btnR,
+  #touchUI #btnBrake{bottom:40px!important}
+}
+
+/* ===== GAME OVER PANEL: A POP-UP CARD, WITH BIGGER BUTTON TEXT =====
+   Player report (2026-10-22, round 2): the WRECKED panel must NOT grow to
+   fill the screen - it stays a card floating in the dim overlay, the old
+   way. What the player does want is bigger text in the buttons and proper
+   spacing between the blocks.
+
+   So: the card is sized to its content (with a cap), the stat rows are
+   back to a comfortable size, and the buttons keep the bigger label. */
+#over .gameOverModal{
+  width:min(760px,calc(100vw - 40px))!important;
+  height:auto!important;
+  max-height:calc(100dvh - 32px)!important;
+  padding:14px 18px!important;
+}
+#over #oQuip{
+  font-size:11px!important;
+}
+#over .wrecked{
+  font-size:clamp(42px,11vh,68px)!important;
+  margin-bottom:8px!important;
+}
+#over .stats{
+  gap:6px!important;
+}
+#over .stat{
+  height:48px!important;
+  min-height:48px!important;
+  padding:6px 9px!important;
+}
+#over .statIcon{
+  width:32px!important;
+  height:32px!important;
+  font-size:17px!important;
+}
+#over .stat small{
+  font-size:8px!important;
+}
+#over .stat b{
+  font-size:15px!important;
+}
+#over .overButtons{
+  margin-top:12px!important;
+  gap:12px!important;
+}
+#over .overButtons .fbtn{
+  min-height:52px!important;
+  height:52px!important;
+  padding:8px 12px!important;
+  font-size:13px!important;
+  letter-spacing:.04em!important;
+}
+#over #oRetryHint{
+  font-size:10px!important;
+  margin-top:8px!important;
+}
+/* The AD badge keeps up with the bigger button. */
+#over #continueBtn{
+  padding-right:42px!important;
+}
+#over #continueBtn .adChip{
+  width:21px!important;
+  height:21px!important;
+  top:6px!important;
+  right:6px!important;
+  border-radius:6px!important;
+  font-size:10px!important;
 }
 </style>
 
@@ -3536,16 +3753,42 @@ let best=+(store.get('moBest')||0);
 let bestDist=+(store.get('moBestDist')||0);
 const input={left:false,right:false,up:false,down:false,hand:false};
 const isTouch=matchMedia('(pointer:coarse)').matches||'ontouchstart' in window;
+/* LOW-MEM MODE, announced by the shell.
+   GameActivity measures the phone once at launch and appends `lowmem=1` when
+   the device has under 5GB of total RAM - the 4GB tier where the WebView
+   renderer, the JS heap and the WebGL game contend for the same memory. A
+   6GB device (Nothing Phone) does not get the flag and renders exactly as
+   before. Every trim below is decided BEFORE the first frame: discovering
+   this through mid-run stutters is what the lag reports were. */
+let LOW=/[?&]lowmem=1/.test(location.search);
 
 /* ================= renderer / scene ================= */
 let renderer;
-try{ renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'}); }
+/* antialias on lowmem: MSAA is resolved over the WHOLE frame buffer every
+   frame and is the single largest fixed fragment cost on a weak GPU. On a
+   4GB phone the GPU typically fills a 1080p surface in about 2-3ms, but with
+   4x MSAA that same fill is 3-4x the work - at lowmem the render scale is
+   also low enough that edge aliasing stays unnoticeable in a neon night
+   scene, so the quality trade is heavily in favour of turning it off. */
+try{ renderer=new THREE.WebGLRenderer({antialias:!LOW,powerPreference:'high-performance'}); }
 catch(e){ $('fail').style.display='flex'; throw e; }
 if(isTouch) document.body.classList.add('touch');
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,isTouch?1.8:2));
+/* Blur panels cost a full re-blit: backdrop-filter re-computes its blur of
+   the LIVE content behind it every frame - over a WebGL canvas that moves
+   60fps - and Chromium runs that blur on the compositor with NO regard for
+   the frame budget on a weak GPU (measured: menu/game-over pinned at 3
+   vsyncs ~49ms while the GL work was finished inside 8). Lowmem simply
+   drops the frosted-glass effect; the panels keep their translucent
+   backgrounds and read correctly. */
+if(LOW) document.documentElement.classList.add('molow');
+/* Render scale on lowmem starts at 1.25 rather than 1.8: the phone's own
+   DPR is 2-2.75 on this tier, so the untuned start rendered the game at up
+   to 4x the pixels its GPU could hold the frame at. The shell's governor
+   still steps DOWN from here (never up), so this is the new ceiling. */
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,LOW?1.25:isTouch?1.8:2));
 renderer.setSize(innerWidth,innerHeight);
 renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.type=LOW?THREE.PCFShadowMap:THREE.PCFSoftShadowMap;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.3;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -3568,7 +3811,12 @@ addEventListener('resize',()=>{
   renderer.setSize(innerWidth,innerHeight);
 });
 
-(function makeEnv(){
+/* Buildable, not just built: the environment is a PMREM target that only ever
+   lived in the CURRENT renderer's context - there is no CPU-side copy to
+   re-upload from. The low-power path swaps the renderer (MSAA is fixed at
+   context creation and can never be turned off otherwise), the old context
+   dies with it, and this has to be re-baked against the new one. */
+function buildEnv(){
   const pmrem=new THREE.PMREMGenerator(renderer);
   const s=new THREE.Scene();
   const strip=(c,i,w,h,x,y,z,rx,ry)=>{
@@ -3583,21 +3831,24 @@ addEventListener('resize',()=>{
   strip(0x30235c,.7,80,26,0,8,-22,0,0);
   scene.environment=pmrem.fromScene(s,.05).texture;
   pmrem.dispose();
-})();
+}
+buildEnv();
 
 scene.add(new THREE.HemisphereLight(0x4a3f78,0x140d1a,.65));
 const moonLight=new THREE.DirectionalLight(0xa79ae0,.65);
 moonLight.position.set(60,90,-80);
-moonLight.castShadow=true;
+moonLight.castShadow=!LOW;
 /* Perf: 2048x2048 PCFSoft re-rendered every frame was the dominant cost on a
    weak GPU (the whole dynamic scene re-renders into it each frame, since the
    world treadmill keeps everything moving). 1024 is 4x cheaper in the shadow
    pass and reads virtually the same on this low-poly scene; the director
-   verifies shadow appearance on-device and this can be reverted to 2048. */
-moonLight.shadow.mapSize.set(1024,1024);
-moonLight.shadow.camera.left=-50; moonLight.shadow.camera.right=50;
-moonLight.shadow.camera.top=60;   moonLight.shadow.camera.bottom=-60;
-moonLight.shadow.camera.near=10;  moonLight.shadow.camera.far=300;
+   verifies shadow appearance on-device and this can be reverted to 2048.
+   Lowmem doubles down: 512 and hard PCF (no soft filtering pass), another
+   ~4x off the most expensive remaining per-frame item. */
+moonLight.shadow.mapSize.set(LOW?512:1024,LOW?512:1024);
+moonLight.shadow.camera.left=-30; moonLight.shadow.camera.right=30;
+moonLight.shadow.camera.top=45;   moonLight.shadow.camera.bottom=-45;
+moonLight.shadow.camera.near=10;  moonLight.shadow.camera.far=200;
 moonLight.shadow.bias=-.0006;
 scene.add(moonLight);
 
@@ -3704,7 +3955,69 @@ function wheel(x,y,z,r){
   m.position.set(x,y,z); m.rotation.order='YXZ'; m.castShadow=true;
   return m;
 }
+/* ================= LOW-MEM BOX BATCHING =================
+   On the Adreno-610 the frame cost is per DRAW CALL (~50µs of driver time
+   each), roughly 14 calls per car: one per box + 8 more for wheels with
+   their two material groups. HIGH resolution hides that; on lowmem the
+   boxes of a car are merged per material into ONE mesh at build time (they
+   only ever translate in local space - merging is exact, not approximate).
+   box() routes to the collector whenever a batch is open; the builder calls
+   flushBoxBatch() when its group is fully assembled. */
+let BOX_BATCH=null;
+function startBoxBatch(){ BOX_BATCH=LOW?new Map():null; }
+function mergeSimpleGeos(geos){
+  /* Concatenates INDEXED BufferGeometries that each carry position+normal
+     (BoxGeometry, CylinderGeometry...). Owner-merged, no re-index math
+     beyond vertex offsets; fits Uint16 for anything a car contains. */
+  if(!geos.length) return null;
+  if(geos.length===1) return geos[0];
+  let vTotal=0,iTotal=0;
+  for(const g of geos){ vTotal+=g.attributes.position.count; iTotal+=(g.index?g.index.count:g.attributes.position.count); }
+  const pos=new Float32Array(vTotal*3), nor=new Float32Array(vTotal*3);
+  const idx=new Uint16Array(iTotal);
+  let vo=0, io=0;
+  for(const g of geos){
+    const vc=g.attributes.position.count;
+    pos.set(g.attributes.position.array,vo*3);
+    if(g.attributes.normal) nor.set(g.attributes.normal.array,vo*3);
+    if(g.index){ const ia=g.index.array;
+      for(let k=0;k<ia.length;k++) idx[io+k]=ia[k]+vo;
+      io+=ia.length;
+    } else {
+      for(let k=0;k<vc;k++) idx[io+k]=vo+k;
+      io+=vc;
+    }
+    vo+=vc;
+  }
+  const mg=new THREE.BufferGeometry();
+  mg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  if(nor.length) mg.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));
+  mg.setIndex(new THREE.BufferAttribute(idx,1));
+  return mg;
+}
+function flushBoxBatch(){
+  if(!BOX_BATCH) return;
+  const all=BOX_BATCH; BOX_BATCH=null;
+  for(const [parent,byMat] of all)
+    for(const [mat,geos] of byMat){
+      const mesh=new THREE.Mesh(mergeSimpleGeos(geos),mat);
+      mesh.castShadow=true; parent.add(mesh);
+    }
+}
 function box(w,h,d,mat,x,y,z,parent){
+  if(BOX_BATCH){
+    /* Batched: recorded against BOTH its own parent and its own material,
+       because box() is called with mixed parents inside one builder and the
+       merged mesh must not cross either. The local offset bakes into the
+       geometry (translate), so nothing else is lost. */
+    let byMat=BOX_BATCH.get(parent);
+    if(!byMat){ byMat=new Map(); BOX_BATCH.set(parent,byMat); }
+    let arr=byMat.get(mat);
+    if(!arr){ arr=[]; byMat.set(mat,arr); }
+    const geo=new THREE.BoxGeometry(w,h,d); geo.translate(x,y,z);
+    arr.push(geo);
+    return null;
+  }
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
   m.position.set(x,y,z); m.castShadow=true; parent.add(m); return m;
 }
@@ -4305,6 +4618,7 @@ splitLetters($('titleA')); splitLetters($('titleB'));
 /* ================= traffic cars ================= */
 function buildTraffic(type){
   const g=new THREE.Group();
+  startBoxBatch();
   const pc=paint(pick(PAINTS));
   const headMat=std({color:0x1a1a17,emissive:0xfff2d2,emissiveIntensity:2.4});
   const tailMat=std({color:0x1a0b0a,emissive:0xff2418,emissiveIntensity:1.3});
@@ -4329,10 +4643,26 @@ function buildTraffic(type){
     wheelZ=[-2.9,.4,2.6];
   }
   const wheels=[];
-  if(type==='truck'){
-    for(const z of wheelZ) for(const s of [-1,1]) wheels.push(wheel(s,r,z,r));
+  if(LOW){
+    /* One merged, non-spinning wheel set per car (tire, 10 segments, no rim
+       detail): spinning rims were unreadable at this render scale anyway,
+       and the 4-6 wheel meshes x 2 material groups were 8-12 calls per car
+       - the most expensive decoration in a lowmem frame. */
+    const wgeos=[];
+    for(const z of wheelZ) for(const s of [-1,1]){
+      const cg=new THREE.CylinderGeometry(r,r,.26,10);
+      cg.rotateZ(Math.PI/2);
+      cg.translate(type==='truck'?s:s*(hw-.15),r,z);
+      wgeos.push(cg);
+    }
+    const mergedWheels=mergeSimpleGeos(wgeos);
+    if(mergedWheels) g.add(new THREE.Mesh(mergedWheels,tireMat));
   }else{
-    for(const z of wheelZ) for(const s of [-1,1]) wheels.push(wheel(s*(hw-.15),r,z,r));
+    if(type==='truck'){
+      for(const z of wheelZ) for(const s of [-1,1]) wheels.push(wheel(s,r,z,r));
+    }else{
+      for(const z of wheelZ) for(const s of [-1,1]) wheels.push(wheel(s*(hw-.15),r,z,r));
+    }
   }
   for(const w of wheels) g.add(w);
   const hY=type==='truck'?1.0:.55, tY=type==='truck'?1.1:.6;
@@ -4340,6 +4670,9 @@ function buildTraffic(type){
     box(.34,.12,.06,headMat,s*(type==='truck'?.7:.6),hY,frontZ,g);
     box(.4,.1,.06,tailMat,s*(type==='truck'?.8:.62),tY,rearZ,g);
   }
+  /* Flush the car's box batch BEFORE the sprite decoration: from here the
+     car is one paint mesh + one glass mesh + head/tail each, plus wheels. */
+  flushBoxBatch();
   const gf=glowSprite(0xfff3d2,type==='truck'?3.2:2.4,type==='truck'?1.1:.8,.8);
   gf.position.set(0,hY,frontZ-.15); g.add(gf);
   const gr=glowSprite(0xff2a1a,type==='truck'?2.8:2.1,.7,.5);
@@ -4468,6 +4801,11 @@ function updateTraffic(dt){
     }
     c.rot+=(c.speed/c.r)*dt;
     c.g.position.set(c.x,0,c.z);
+    /* LOW: everything past ~-300 is inside the fog's far wall (the fog
+       reaches full coverage at 300) - invisible to the eye, but still one
+       draw call set each. Hide them: spawn/collision/near-miss logic is
+       distance-based and unaffected. */
+    if(LOW&&!c.wrecked) c.g.visible=c.z>-300;
     const base=c.dir==='onc'?Math.PI:0;
     c.g.rotation.y=base+clamp((c.tx-c.x)*(c.dir==='onc'?1:-1)*.14,-.3,.3);
     for(const w of c.wheels) w.rotation.x=c.rot;
@@ -4478,6 +4816,7 @@ function updateTraffic(dt){
 const player={g:new THREE.Group(),tilt:new THREE.Group(),wheels:[],frontW:[],tailMat:null,rearGlow:null};
 {
   const g=player.g, t=player.tilt; g.add(t);
+  startBoxBatch();
   const pm=std({color:0xff4f9a,metalness:.8,roughness:.3,envMapIntensity:.7});   // candy pink ride!
   box(1.88,.5,4.4,pm,0,.5,0,t);
   box(1.9,.1,1.15,pm,0,.8,-1.45,t);
@@ -4500,6 +4839,10 @@ const player={g:new THREE.Group(),tilt:new THREE.Group(),wheels:[],frontW:[],tai
     box(.44,.09,.06,headMat,.62*s,.52,-2.22,t);
     box(.52,.09,.06,player.tailMat,.56*s,.58,2.22,t);
   }
+  /* Flush the player's own box batch before the spinning wheels, so the
+     wheels (which CAN'T merge - each spins on its own hub) keep their nodes
+     and everything that only translates did. */
+  flushBoxBatch();
   const r=.34;
   for(const [x,z] of [[-.86,-1.42],[.86,-1.42],[-.86,1.42],[.86,1.42]]){
     const w=wheel(x,r,z,r); g.add(w); player.wheels.push(w);
@@ -4509,18 +4852,25 @@ const player={g:new THREE.Group(),tilt:new THREE.Group(),wheels:[],frontW:[],tai
   player.rearGlow.position.set(0,.58,2.3); t.add(player.rearGlow);
   const fg=glowSprite(0xfff4d8,2.4,.8,.8); fg.position.set(0,.5,-2.28); t.add(fg);
   g.add(blob(.94,2.2));
-  const coneGeo=new THREE.CylinderGeometry(2.6,.4,17,12,1,true);
-  coneGeo.rotateX(-Math.PI/2);
-  const coneMat=new THREE.MeshBasicMaterial({color:0xffdfae,transparent:true,opacity:.05,
-    blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
-  for(const s of [-1,1]){
-    const c=new THREE.Mesh(coneGeo,coneMat);
-    c.position.set(.62*s,.62,-10.8); c.renderOrder=4; t.add(c);
-  }
-  const tgt=new THREE.Object3D(); tgt.position.set(0,0,-45); g.add(tgt);
-  for(const s of [-1,1]){
-    const sp=new THREE.SpotLight(0xffe2b0,160,100,.5,.65,1.2);
-    sp.position.set(.62*s,.62,-2); sp.target=tgt; g.add(sp);
+  if(!LOW){
+    /* REAL headlight beams: two SpotLights re-shade every per-fragment light
+       in the scene's shaders AND two additive cone meshes. That is real GPU
+       fragment work per pixel and two more draw calls - invisible value at
+       the lowmem resolution, where the glow sprites (always on) already
+       carry the look. */
+    const coneGeo=new THREE.CylinderGeometry(2.6,.4,17,12,1,true);
+    coneGeo.rotateX(-Math.PI/2);
+    const coneMat=new THREE.MeshBasicMaterial({color:0xffdfae,transparent:true,opacity:.05,
+      blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false});
+    for(const s of [-1,1]){
+      const c=new THREE.Mesh(coneGeo,coneMat);
+      c.position.set(.62*s,.62,-10.8); c.renderOrder=4; t.add(c);
+    }
+    const tgt=new THREE.Object3D(); tgt.position.set(0,0,-45); g.add(tgt);
+    for(const s of [-1,1]){
+      const sp=new THREE.SpotLight(0xffe2b0,160,100,.5,.65,1.2);
+      sp.position.set(.62*s,.62,-2); sp.target=tgt; g.add(sp);
+    }
   }
   scene.add(g);
 }
@@ -4713,9 +5063,13 @@ function startGame(){
 }
 let moReviveUsed=false;
 let moCrashSnap=null;
-/* Director's report: after a rewarded video the run used to resume by itself.
-   Now the grant only WARMS the revive; the player must tap the button once to
-   actually continue. The button never charges a second ad for that tap. */
+/* Director's report (superseded by the 2026-10-22 player report): the grant
+   used to only WARM the revive and wait for a second tap on "TAP TO RESUME".
+   The player said the ad IS the second tap: when the reward completes, the
+   run must resume where it left - the wrecked-state panel must not re-appear
+   and there must be nothing left to press. So the grant path now resumes
+   directly (see the 'continue' rewarded handler). The armRevive warm-up is
+   kept only as a named no-op in case a shell path references it. */
 let moReviveGranted=false;
 function armRevive(){
   moReviveGranted=true;
@@ -5024,7 +5378,13 @@ $('continueBtn').addEventListener('click',e=>{ e.stopPropagation();
        back in - see the grant path below. */
     AU.adMute(true);
     Studio.ads.rewarded('continue',
-     function(){ try{ AU.adMute(false); }catch(e){} armRevive(); },
+     function(){ try{ AU.adMute(false); }catch(e){}
+       /* THE AD IS THE SECOND TAP: the moment the reward completes, the run
+          resumes where it left. No "TAP TO RESUME" button comes back, no
+          wrecked panel - the player said watching the ad is all the
+          confirmation they wanted, and a resume that needs one more press
+          after a rewarded video read as the game asking twice. */
+       continueFromAd(); },
      function(reason){
        try{ AU.adMute(false); }catch(e){}
        AU.uiClick();
@@ -5078,17 +5438,78 @@ function moPerfLog(rdt){
     console.log('[MO] fps='+Math.round(moFpsN/moFpsAcc)+' calls='+i.calls+
       ' tris='+i.triangles+' dpr='+renderer.getPixelRatio().toFixed(2)+
       ' dpscale='+(typeof __studioDprScale==='function'?__studioDprScale():'?')+
-      ' state='+state);
+      ' lowmem='+(LOW?1:0)+
+      ' script='+(moUpdN?(moUpdMs/moUpdN).toFixed(1):'?')+
+      ' submit='+(moUpdN?(moSubMs/moUpdN).toFixed(1):'?')+
+      ' state='+state+
+      ' vp='+(typeof innerWidth!=='undefined'?innerWidth+'x'+innerHeight:'?')+
+      ' dprcss='+(typeof devicePixelRatio!=='undefined'?devicePixelRatio.toFixed(2):'?'));
+    moUpdMs=0; moSubMs=0; moUpdN=0;
     moFpsAcc=0; moFpsN=0;
   }
+}
+/* ================= runtime low-power probe ================= */
+/* HARDWARE REPORTS LIE. Measured on a Snapdragon-460-class OPPO (RAM
+   Expansion inflated MemTotal to ~5.6GB, so the shell's lowmem flag never
+   arrived): gameplay ran ~200 draw calls at a median 49ms frame, and
+   lowering the resolution - the only lever the old auto-quality had -
+   changed nothing, because the cost is per-call CPU/driver overhead plus
+   MSAA, not pixels. The honest check is therefore the device's ACTUAL frame
+   times: once the render scale has reached its floor and frames are still
+   averaging over ~42ms, rebuild the renderer itself without MSAA, drop the
+   scale ceiling to 1.0 and trim the shadow pass - regardless of what any
+   flag said the hardware was. One-time, early, settles in well under a
+   second; the swap re-bakes the environment (buildEnv) because a PMREM
+   target is GPU-only data that dies with its context. */
+let lowTried=false;
+function applyLowPower(){
+  if(lowTried||LOW) return;
+  try{
+    lowTried=true; LOW=true;
+    const old=renderer;
+    renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
+    renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.0));
+    renderer.setSize(innerWidth,innerHeight);
+    renderer.shadowMap.enabled=true;
+    renderer.shadowMap.type=THREE.PCFShadowMap;
+    renderer.toneMapping=THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure=1.3;
+    renderer.outputColorSpace=THREE.SRGBColorSpace;
+    /* Same trims the shell flag applies: shadows off entirely (the scene's
+       blob contact shadows keep cars grounded), 512 hard-PCF for anything
+       still casting, and force the shadow map to rebuild at the new size. */
+    moonLight.castShadow=false;
+    moonLight.shadow.mapSize.set(512,512);
+    if(moonLight.shadow.map){moonLight.shadow.map.dispose(); moonLight.shadow.map=null;}
+    /* Swap the canvas in place; the old context dies with its renderer. */
+    const dom=renderer.domElement, oldDom=old.domElement;
+    try{ oldDom.parentNode.replaceChild(dom,oldDom); }
+    catch(_){ $('app').appendChild(dom); }
+    try{ old.forceContextLoss(); }catch(_){}
+    try{ old.dispose(); }catch(_){}
+    buildEnv();
+    $('app').dataset.molow='1';
+    console.log('[MO] low-power engaged: MSAA off, dpr<=1, shadow 512/PCF');
+    perfSlow=0;
+  }catch(e){ console.log('[MO] low-power switch failed:',e); }
 }
 function perfWatch(rdt){
   perfAcc+=rdt; perfN++;
   if(perfN>=50){
-    if(perfAcc/perfN>.026) perfSlow++; else perfSlow=0;
-    if(perfSlow>=3&&renderer.getPixelRatio()>1){
+    const med=perfAcc/perfN;
+    if(med>.026) perfSlow++; else perfSlow=0;
+    if(perfSlow>=3&&renderer.getPixelRatio()>1.001){
+      /* Scale first: the cheapest fix, and the old behaviour. */
       renderer.setPixelRatio(Math.max(1,renderer.getPixelRatio()*.75));
       perfSlow=0;
+    }else if(!lowTried&&!LOW&&perfSlow>=3&&renderer.getPixelRatio()<=1.001&&
+             med>=.042&&state!=='playing'){
+      /* Menu: three slow windows at the floor engages the switch at once. */
+      applyLowPower(); perfSlow=0;
+    }else if(!lowTried&&!LOW&&perfSlow>=8&&med>=.042&&state==='playing'){
+      /* Mid-run: a longer streak, so the crash/restart spike right after
+         START ENGINE is absorbed and the swap never lands on a good stretch. */
+      applyLowPower(); perfSlow=0;
     }
     perfAcc=0; perfN=0;
   }
@@ -5096,9 +5517,16 @@ function perfWatch(rdt){
 
 /* ================= main loop ================= */
 const clock=new THREE.Clock();
+/* TEMPORARY PROFILING (remove once the target frame budget is hit) splits a
+   frame into: script = JS update work (physics, world, traffic, HUD, audio)
+   and submit = renderer.render() (scene graph walk + GL command submission).
+   On the OPPO hold-up ~49ms was quantised vsync wait with NO thread pegged,
+   so this answers whether the 49ms is WORK or PIPELINE LATENCY. */
+let moUpdMs=0,moSubMs=0,moUpdN=0;
 function tick(){
   requestAnimationFrame(tick);
   const rdt=Math.min(clock.getDelta(),.05);
+  const _t0=performance.now();
   realT+=rdt;
   perfWatch(rdt);
   moPerfLog(rdt);
@@ -5121,7 +5549,9 @@ function tick(){
   updateCamera(rdt);
   updateHUD();
   updateAudio();
+  const _t1=performance.now();
   renderer.render(scene,camera);
+  moUpdMs+=_t1-_t0; moSubMs+=performance.now()-_t1; moUpdN++;
 }
 
 /* ================= boot ================= */
