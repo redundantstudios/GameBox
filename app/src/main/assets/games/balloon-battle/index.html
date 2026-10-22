@@ -483,12 +483,18 @@ function renderBG(){
   bgSky.width=Math.max(2,Math.round(W*s));bgSky.height=Math.max(2,Math.round(H*s));
   let g=bgSky.getContext('2d');g.scale(s,s);
   let gr=g.createLinearGradient(0,0,0,H);
-  gr.addColorStop(0,'#4fa9e0');gr.addColorStop(0.5,'#84c4ec');gr.addColorStop(1,'#b6dff2');
+  /* A DARKER SKY. The world was painted in pastels - a bright sky, a light
+     green field - and the characters, the pin and the balloons all sat on top
+     of it with very little to separate them. The field, the island and the
+     sky are now deeper, so the pale path, the gold pin and the coloured
+     players are the brightest things on screen, which is where the eye
+     needs to go. */
+  gr.addColorStop(0,'#12395e');gr.addColorStop(0.5,'#1d527e');gr.addColorStop(1,'#2f6d9c');
   g.fillStyle=gr;g.fillRect(0,0,W,H);
   gr=g.createRadialGradient(W*0.18,H*0.1,20,W*0.18,H*0.1,420);
-  gr.addColorStop(0,'rgba(255,250,225,0.42)');gr.addColorStop(1,'rgba(255,250,225,0)');
+  gr.addColorStop(0,'rgba(255,246,214,0.5)');gr.addColorStop(1,'rgba(255,246,214,0)');
   g.fillStyle=gr;g.fillRect(0,0,W,H);
-  for(let i=0;i<9;i++){g.globalAlpha=0.5+R()*0.3;drawCloud(g,R()*W,R()*H,0.35+R()*0.45);}
+  for(let i=0;i<9;i++){g.globalAlpha=0.42+R()*0.26;drawCloud(g,R()*W,R()*H,0.35+R()*0.45);}
   g.globalAlpha=1;
   drawFarIsland(g,W*0.87,H*0.15,0.9,R);
   drawFarIsland(g,W*0.07,H*0.8,0.7,R);
@@ -503,9 +509,9 @@ function renderBG(){
   g.save();g.translate(0,26);
   blobPath(g,cx,cy,hw,hh,rad);
   gr=g.createLinearGradient(0,cy-hh,0,cy+hh+26);
-  gr.addColorStop(0,'#a87f58');gr.addColorStop(0.6,'#93683f');gr.addColorStop(1,'#7a5735');
+  gr.addColorStop(0,'#6a4b2f');gr.addColorStop(0.6,'#54381f');gr.addColorStop(1,'#3f2916');
   g.fillStyle=gr;g.fill();
-  g.strokeStyle='rgba(75,50,28,0.55)';g.lineWidth=3;g.lineCap='round';
+  g.strokeStyle='rgba(48,30,14,0.7)';g.lineWidth=3;g.lineCap='round';
   for(let i=0;i<10;i++){const x=cx+(R()-0.5)*AR.w*0.85,y=cy+hh*0.5+R()*36;
     g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+8,y+14,x+3,y+26);g.stroke();}
   g.strokeStyle='rgba(75,50,28,0.6)';g.lineWidth=2.5;
@@ -514,14 +520,14 @@ function renderBG(){
   g.restore();
   blobPath(g,cx,cy,hw,hh,rad);
   gr=g.createLinearGradient(0,cy-hh,0,cy+hh);
-  gr.addColorStop(0,'#71b355');gr.addColorStop(0.55,'#61a446');gr.addColorStop(1,'#519438');
+  gr.addColorStop(0,'#3f7c33');gr.addColorStop(0.55,'#316a26');gr.addColorStop(1,'#24551d');
   g.fillStyle=gr;g.fill();
-  g.strokeStyle='#3e7c2f';g.lineWidth=7;g.stroke();
-  g.strokeStyle='rgba(255,255,255,0.18)';g.lineWidth=3;
+  g.strokeStyle='#1d441a';g.lineWidth=7;g.stroke();
+  g.strokeStyle='rgba(255,255,255,0.22)';g.lineWidth=3;
   blobPath(g,cx,cy,hw-6,hh-6,rad-6);g.stroke();
   g.save();
   blobPath(g,cx,cy,hw,hh,rad);g.clip();
-  g.fillStyle='rgba(15,50,15,0.06)';
+  g.fillStyle='rgba(6,26,6,0.12)';
   for(let y=cy-hh;y<cy+hh;y+=96)g.fillRect(cx-hw-20,y,AR.w+180,48);
   g.strokeStyle='#e0cb9e';g.lineWidth=76;
   g.beginPath();g.arc(cx,cy,330,0,TAU);g.stroke();
@@ -534,11 +540,11 @@ function renderBG(){
   deck(g,L+26,cy-56,cx-322-L-26,112);
   deck(g,cx+322,cy-56,RT-26-cx-322,112);
   gr=g.createRadialGradient(cx,cy-30,40,cx,cy,258);
-  gr.addColorStop(0,'#7fb25e');gr.addColorStop(1,'#6ca24c');
+  gr.addColorStop(0,'#4e8a38');gr.addColorStop(1,'#3a7130');
   g.fillStyle=gr;g.beginPath();g.arc(cx,cy,258,0,TAU);g.fill();
-  g.strokeStyle='rgba(240,235,208,0.72)';g.lineWidth=9;
+  g.strokeStyle='rgba(246,242,220,0.8)';g.lineWidth=9;
   g.beginPath();g.arc(cx,cy,266,0,TAU);g.stroke();
-  g.strokeStyle='rgba(240,235,208,0.35)';g.lineWidth=3;
+  g.strokeStyle='rgba(246,242,220,0.42)';g.lineWidth=3;
   g.beginPath();g.arc(cx,cy,238,0,TAU);g.stroke();
   g.save();g.translate(cx,cy);g.globalAlpha=0.42;
   g.fillStyle='#fbeed3';g.beginPath();g.arc(0,-16,30,0,TAU);g.fill();
@@ -556,7 +562,7 @@ function renderBG(){
     g.fillStyle='#e89c2c';ell(g,x,y,1.4,1.4);g.fill();
   }
   for(let i=0;i<90;i++){const x=cx+(R()-0.5)*(AR.w+80),y=cy+(R()-0.5)*(AR.h+80);
-    g.strokeStyle='rgba(28,88,28,0.5)';g.lineWidth=1.6;
+    g.strokeStyle='rgba(10,42,10,0.6)';g.lineWidth=1.6;
     for(let k=-1;k<=1;k++){g.beginPath();g.moveTo(x+k*3,y);g.lineTo(x+k*4.5,y-7);g.stroke();}}
   for(const o of obstacles){
     const sr=o.t==='pole'?10:o.r;
@@ -567,7 +573,7 @@ function renderBG(){
     g.strokeStyle=PAL[i].main;g.lineWidth=3;g.setLineDash([8,7]);ell(g,sp.x,sp.y,34,26);g.stroke();g.setLineDash([]);}
   g.restore();
   gr=g.createRadialGradient(cx,cy,Math.min(W,H)*0.35,cx,cy,Math.max(W,H)*0.62);
-  gr.addColorStop(0,'rgba(30,70,130,0)');gr.addColorStop(1,'rgba(30,70,130,0.2)');
+  gr.addColorStop(0,'rgba(6,18,40,0)');gr.addColorStop(1,'rgba(6,18,40,0.42)');
   g.fillStyle=gr;g.fillRect(0,0,W,H);
   clouds=[];
   for(let i=0;i<7;i++)clouds.push({x:R()*W,y:R()*H,s:0.7+R()*0.9,sp:8+R()*14,a:0.5+R()*0.4});
@@ -1839,8 +1845,8 @@ function drawHUD(){
   sysPause={x:cx-gap/2-r,y:gy,r};
   sysMute={x:cx+gap/2+r,y:gy,r};
   for(const b of[sysPause,sysMute]){
-    ctx.fillStyle='rgba(0,0,0,0.4)';ell(ctx,b.x,b.y,b.r,b.r);ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,0.6)';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='rgba(0,0,0,0.62)';ell(ctx,b.x,b.y,b.r,b.r);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.85)';ctx.lineWidth=2.5;ctx.stroke();
   }
   const bw=r*0.17,bh=r*0.6;
   ctx.fillStyle='#fff';
@@ -1867,9 +1873,16 @@ function drawControls(){
     const C=PAL[p.ci],JR=z.joyR,DR=z.dashR;
     const active=z.joyId>=0;
     const bx=z.joyDX,by=z.joyDY;
-    ctx.globalAlpha=active?0.9:0.5;
-    ctx.fillStyle='rgba(0,0,0,0.22)';ell(ctx,bx,by,JR,JR);ctx.fill();
+    /* SOLID CONTROLS. The joystick was drawn at 50% alpha when it was not
+       being held, so the player had to hunt for it against the field; the
+       dash button's plate, shadow and outline were translucent too. They are
+       all solid now, with a dark rim so they read against the darker world
+       as well as against the pale path. */
+    ctx.globalAlpha=active?1:0.82;
+    ctx.fillStyle='rgba(0,0,0,0.45)';ell(ctx,bx,by,JR,JR);ctx.fill();
     ctx.strokeStyle=C.main;ctx.lineWidth=5;ctx.stroke();
+    ctx.strokeStyle='rgba(0,0,0,0.55)';ctx.lineWidth=2;
+    ell(ctx,bx,by,JR+2.5,JR+2.5);ctx.stroke();
     ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=2;
     ell(ctx,bx,by,JR*0.78,JR*0.78);ctx.stroke();
     const tl=JR*0.62,TR=JR*0.45;
@@ -1880,10 +1893,13 @@ function drawControls(){
     const cd=clamp(p.dashCD/CFG.DASH_COOLDOWN,0,1);
     const pr=z.dashId>=0?0.92:1;
     ctx.save();ctx.translate(z.dashX,z.dashY);ctx.scale(pr,pr);
-    ctx.fillStyle='rgba(0,0,0,0.3)';ell(ctx,0,3,DR,DR);ctx.fill();
-    ctx.fillStyle=cd>0?'#7a7a82':C.main;ell(ctx,0,0,DR,DR);ctx.fill();
-    ctx.strokeStyle='rgba(30,20,10,0.55)';ctx.lineWidth=3.5;ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,0.3)';
+    /* The dash button is solid too: an opaque plate, a hard dark rim and a
+       solid shadow. A translucent button on a dark field read as a ghost the
+       player had to aim at. */
+    ctx.fillStyle='rgba(0,0,0,0.55)';ell(ctx,0,4,DR,DR);ctx.fill();
+    ctx.fillStyle=cd>0?'#6c6c74':C.main;ell(ctx,0,0,DR,DR);ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.85)';ctx.lineWidth=4;ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,0.32)';
     ell(ctx,0,-DR*0.56,DR*0.65,DR*0.26);ctx.fill();
     if(cd>0){
       ctx.fillStyle='rgba(15,15,25,0.5)';
