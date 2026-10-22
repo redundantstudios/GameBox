@@ -107,11 +107,25 @@ class GameActivity : AppCompatActivity() {
 
     /**
      * The colour that takes over as the canvas backdrop once the game's page has
-     * painted: the game's own tile colour, so a game that leaves part of its
-     * viewport unpainted still shows its own palette rather than the shell.
+     * painted - and, just before that, the colour that flashes while the game
+     * loads.
+     *
+     * It used to be the tile colour, which is LAUNCHER artwork. Carrom's tile is
+     * a bright green and the game itself sits on near-black soil, so opening it
+     * flashed green before the brown arrived - the flash was advertising the
+     * wrong thing.
+     *
+     * The page background is the right answer for both jobs, and the manifest
+     * already carries it: `bannerBg:` is documented as the game's own page
+     * background, for the same reason - the strip has to read as part of the
+     * game rather than as a launcher tile.
+     *
+     * So the same value is used for the flash and the strip, and a game that
+     * declares its page background gets both right. The tile colour is still
+     * the fallback, so a game that has not declared one behaves as before.
      */
     private fun backdropColor(): Int {
-        val hex = currentGame?.tileColor
+        val hex = currentGame?.bannerBg?.takeIf { it.isNotBlank() } ?: currentGame?.tileColor
         return try {
             if (hex.isNullOrBlank()) DEFAULT_BACKDROP else android.graphics.Color.parseColor(hex)
         } catch (e: IllegalArgumentException) {

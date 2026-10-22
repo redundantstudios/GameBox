@@ -10,7 +10,7 @@ aiSupport: full
 online: false
 tileColor: #2E7D32
 banner: bottom
-bannerBg: #12301a
+bannerBg: #2b1a10
 version: 1
 released: 2026-10-11
 -->
@@ -862,10 +862,10 @@ const Panels={
         if(document.getElementById(id)===next) next.classList.add('showing');
       }));
     } else if(next){ next.classList.add('showing'); }
-    S('open')
+    if(!clickWasRecent())S('open')
   },
   hide(){overlay.classList.remove('visible');
-    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('showing')); S('close')},
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('showing')); if(!clickWasRecent())S('close')},
   isOpen(){return overlay.classList.contains('visible')}
 };
 function uiPaused(){return Panels.isOpen()&&!Tutorial.active&&Game.players.length>0&&Game.phase!=='over'}
@@ -2255,7 +2255,7 @@ function gameOver(p){
      window.__shellRewarded('carroms.theme.'+themeId,function(){ give(); landed(); });
    } else if(give){ give(); landed(); }
  };
- $('#adcfNo').onclick=()=>{ S('close'); closeAdConfirm(); };
+ $('#adcfNo').onclick=()=>{ closeAdConfirm(); };
 
  $('#bPlay').onclick=()=>Panels.show('p-cmode');
  $('#bHow').onclick=()=>Tutorial.start();
@@ -2520,15 +2520,23 @@ const Tutorial={
    called S('click') themselves, so pressing one of those played it TWICE -
    once from this pointerdown and once from its own handler. The handlers are
    left alone (they do other work) but the sound is claimed once per press. */
-let _clickClaimed=false;
+let _clickClaimed=false, _clickAt=0;
 document.addEventListener('pointerdown',e=>{
 A.gesture=true;   /* a real touch: the context may be rebuilt now */
   audioEnsure();
   if(e.target.closest('button')){
-    if(!_clickClaimed){ _clickClaimed=true; S('click');Hap.tap();
-      setTimeout(()=>{_clickClaimed=false;},0); }
+    if(!_clickClaimed){ _clickClaimed=true; _clickAt=performance.now(); S('click');Hap.tap();
+      /* The claim is released by the NEXT press, not by a zero-delay timeout.
+         A timeout that short was never really the "single owner" of anything:
+         the panel a button opens plays its sound on the click event, a whole
+         task later, by which time the claim had already been released - which
+         is exactly how one press came to make two sounds. */
+    }
   }
 });
+/* True when a press was just heard, so anything that would add a second
+   sound on top of it stands down. */
+function clickWasRecent(){return performance.now()-_clickAt<400;}
 window.addEventListener('resize',resizeAll);
 window.addEventListener('orientationchange',()=>setTimeout(resizeAll,120));
 
