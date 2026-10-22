@@ -755,3 +755,41 @@ High input latency      12998     5103
 ## Launch Blockers
 - verify real UMP flow with production AdMob IDs + privacy policy URL before submission.
 - S3.6.1: Reverted renderer priority policy. Cause: IllegalStateException when called after WebView attach. Lesson: Speculative perf APIs require build-gate AND on-device verification in same phase.
+## Truth or Dare - director pass 1: the back button, and the spin - 2026-10-22
+
+Two reports from the director: the back button was acting strange, and the
+bottle stuttered while it was spinning. Both had a cause, and both are fixed.
+The game is on its director's device now; it becomes LOCKED when they say so.
+
+### TRUTH OR DARE - PASS 1, AWAITING THE DIRECTOR'S DEVICE
+
+- **The back button was gone from the intro page after a round, and there was
+  one on the game page that should not have been there.** The button was shown
+  and hidden by a 400ms poll of a variable that only ever said "play" or
+  "title" - and that variable was only ever set at boot and at the start of a
+  game. Coming back to the intro after a round never set it back, so the game
+  went on believing it was still playing, and the poll hid the button: the
+  first visit to the intro page had a back button and every visit after it did
+  not. The game screen had a second back button that the poll never touched at
+  all, so it was always there.
+  The button now lives inside the INTRO screen and nowhere else, so the screen
+  that is on top decides whether it exists - no timer, no variable, nothing to
+  get out of step. The game screen leaves through its own X, which opens a
+  confirm and asks Stay or Leave: that is the right control for leaving a
+  round in progress, and it is a different question from "go home".
+- **The screen that is on top is now recorded in the one place a screen
+  changes.** `window.__shellScreen` was set at boot and at the start of a game
+  and nowhere else, so the ad strip stayed up on the intro page after a round.
+  `show()` updates it now, which is the only place a screen changes.
+- **The spin was repainting twelve blurred shadows every frame.** The LEDs
+  around the bottle animated their `background` AND their `box-shadow` - and
+  neither of those can be done by the compositor. Every frame of the spin the
+  browser had to repaint twelve LEDs, each one carrying a 24px blurred glow,
+  and the bottle was being drawn on top of all of it. On a weak phone that is
+  the whole frame budget, and the spin is the one moment the player is
+  watching closest.
+  The colour and the glow now live on a pseudo-element and the animation
+  moves only its OPACITY, which the compositor does on the GPU. Same colours,
+  same glow, same timing, same picture - and the spin stops fighting the
+  compositor for the frame. The idle blink gets the same treatment, so the
+  twelve LEDs are no longer repainting themselves all the time the menu is up.

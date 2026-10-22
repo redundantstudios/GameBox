@@ -120,17 +120,23 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
 .icon-btn{width:42px;height:42px;display:grid;place-items:center;background:var(--panel);
   border:2px solid var(--line);border-radius:12px;color:var(--dim);transition:transform .07s}
 .icon-btn:active{transform:scale(.88)}
-  /* BACK TO THE ARCADE.
-
+  /* BACK TO THE ARCADE - AND ONLY THERE.
+  
      The class was on the button from the start and nothing ever styled it, so
-     the one back control this game had rendered as a plain grey icon - and the
-     sync loop hides it the moment play starts, which left the game screen with
-     only an X. X means "end the round, then confirm, then leave": three taps to
-     get home. Back is one tap, top-left, and says what it does.
-
+     the one back control this game had rendered as a plain grey icon.
+  
+     The button lives inside the INTRO screen (scrSetup) and nowhere else, so
+     the screen that is on top decides whether it exists: the intro page has it,
+     the game page does not. It used to be shown and hidden by a 400ms poll
+     instead, off a variable that only ever said "play" or "title" - so after a
+     round the intro page came back with no back button at all, and the game page
+     had one that the poll never touched. The game page leaves through its own
+     X, which asks Stay or Leave: that is the right control for leaving a round
+     in progress, and it is a different question from "go home".
+  
      Cyan, because that is what this game uses for anything the player can act
      on; the shape, size and press animation are inherited from .icon-btn so it
-     does not read as a control borrowed from another game. */
+  does not read as a control borrowed from another game. */
   .td-back{color:var(--cyan);border-color:#1E4257;background:var(--panel2)}
   .td-back:active{color:var(--cyan);background:var(--spotCyan);transform:scale(.88)}
   .td-row-right{display:flex;gap:8px;align-items:center}
@@ -179,14 +185,30 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
 .sline.hl{opacity:.95;transition:none}
 .spot{position:absolute;left:50%;top:50%;width:76%;height:44%;transform:translate(-50%,-50%);
   background:radial-gradient(ellipse,var(--spotCyan),transparent 68%);pointer-events:none}
+/* THE GLOW LIVES ON A LAYER OF ITS OWN, AND ONLY ITS OPACITY MOVES.
+   The chase used to animate `background` and `box-shadow` on the LED itself.
+   Neither of those can be done by the compositor: every frame of the spin the
+   browser had to REPINT twelve LEDs, each one with a 24px blurred shadow, and
+   the bottle was being drawn on top of all of it. On a weak phone that is
+   the whole frame budget, and the spin is where the player is watching
+   closest.
+   The colour and the glow now live on a pseudo-element and the animation
+   moves only its OPACITY, which the compositor does on the GPU. The picture
+   is the same - same colours, same glow, same timing - and the spin stops
+fighting the compositor for the frame. */
 .led{position:absolute;width:9px;height:9px;border-radius:2px;transform:translate(-50%,-50%);
-  pointer-events:none;background:var(--ledOff);animation:ledIdle 2.8s steps(2) infinite;animation-delay:var(--d,0s)}
-@keyframes ledIdle{50%{background:var(--lc);box-shadow:0 0 8px var(--lc)}}
-#zone.spinning .led{animation:chase .55s linear infinite;animation-delay:var(--c,0s)}
-@keyframes chase{0%,68%,100%{background:var(--ledOff);box-shadow:none}
-  10%{background:var(--lc);box-shadow:0 0 12px var(--lc),0 0 24px var(--lc)}}
-#zone.landed .led{animation:bflash .5s steps(2) 3}
-@keyframes bflash{50%{background:var(--ledOff);box-shadow:none}}
+pointer-events:none;background:var(--ledOff)}
+.led::after{content:'';position:absolute;inset:0;border-radius:inherit;opacity:0;
+background:var(--lc);box-shadow:0 0 8px var(--lc);will-change:opacity;
+animation:ledIdle 2.8s steps(2) infinite;animation-delay:var(--d,0s)}
+@keyframes ledIdle{50%{opacity:1}}
+#zone.spinning .led::after{animation:chase .55s linear infinite;animation-delay:var(--c,0s)}
+@keyframes chase{0%,68%,100%{opacity:0}
+10%{opacity:1}}
+#zone.spinning .led::after{box-shadow:0 0 12px var(--lc),0 0 24px var(--lc)}
+#zone.landed .led::after{animation:bflash .5s steps(2) 3}
+@keyframes bflash{0%,49%{opacity:1}
+50%,100%{opacity:0}}
 
 .chip-p{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:7px;
   background:var(--panel);border:2px solid var(--c,#888);border-radius:99px;padding:6px 12px 6px 7px;
@@ -395,11 +417,12 @@ body[data-theme="light"] .ovl{background:rgba(19,26,42,.35)}
   <!-- ============ GAME ============ -->
   <section id="scrGame" class="screen">
   <div class="top-row">
-    <!-- BACK TO THE ARCADE. See the .td-back note in the stylesheet: the class was
-         here from the start with no rule to style it, and the sync loop hides this
-         control the moment play begins - which left the game screen with only an X,
-         and three taps to get home. One tap, top-left, labelled. -->
-    <button class="icon-btn td-back" id="tdGameBack" aria-label="Back to arcade"><svg class="ic"><use href="#i-back"/></svg></button>
+    <!-- NO BACK BUTTON HERE. The back button belongs to the INTRO page and
+       nowhere else: it lives inside scrSetup, so the screen that is on top
+       decides whether it exists at all - no timer and no variable to get out
+       of step. The game screen leaves through its own X, which is the right
+       control for leaving a round in progress: it opens a confirm and asks
+    Stay or Leave. -->
     <span class="chip" id="roundChip">LEVEL 1</span>
     <div class="td-row-right">
       <button class="icon-btn" id="quitBtn" aria-label="End game"><svg class="ic"><use href="#i-x"/></svg></button>
@@ -1106,7 +1129,16 @@ function startGame(){
   state.players=players;
   startGame();
 };
-function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); $('#'+id).classList.add('active'); }
+function show(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); $('#'+id).classList.add('active');
+/* THE SCREEN THAT IS ON TOP IS THE ONE THAT COUNTS.
+   window.__shellScreen is what the ad strip was told to follow, and it was
+   only ever set at boot ('title') and at the start of a game ('play').
+   Coming back to the intro after a round never set it back, so the game
+   went on believing it was still playing - and the strip stayed up on the
+   intro page. The screen changes in ONE place, so this is the one place
+that updates it. */
+try{ window.__shellScreen=(id==='scrGame')?'play':'title'; window.__shellScreenSync(); }catch(e){}
+}
 
 /* --- LED ring --- */
 function buildLeds(){
@@ -1542,16 +1574,13 @@ function cleanupToSetup(){
 
 /* --- quit (stacked: RESUME returns to whatever popup was open) --- */
  $('#quitBtn').onclick=()=>{ S.tap(); openOnTop('ovQuit'); };
-/* Back, as distinct from the X above it.
-
-   The X opens a confirm overlay: end the round, then choose Stay or Leave. That
-   is the right control for "I am done playing" and it is kept. Back is for "I
-   just want to go home", which was three taps away and is now one.
-
-   It calls the same exit the shell hands games through `Studio.exit`, so it
-   leaves the way the framework expects and the shell's own state stays
-   consistent - the same path the setup screen's back button already used. */
-$('#tdGameBack').onclick=()=>{ S.tap(); try{ Studio.exit(); }catch(e){} };
+/* There is no back button on this screen, and there is no handler for one.
+   The back button belongs to the INTRO page and nowhere else - it lives
+   inside scrSetup, so it exists only while that screen is on top.
+   The X above is the way out of a round in progress: it opens a confirm, and
+   Stay or Leave decides whether the round ends or the player goes back in.
+   Leaving the whole game is the intro page's back button, one tap, and it
+calls the same exit the shell hands games through `Studio.exit`. */
  $('#btnStay').onclick=()=>{ S.tap(); closeTop('ovQuit'); };
  $('#btnLeave').onclick=()=>{
   S.tap(); closeAll();
@@ -1721,18 +1750,19 @@ document.addEventListener('pointerdown',()=>ac(),{passive:true});
     destroy:function(){ try{ banner(false); }catch(e){} }
   };
 
-  /* Polled, so the strip and the back button follow whatever the game's own
-     screens do without every one of them having to be edited. */
+  /* Polled, so the ad strip follows whatever the game's own screens do
+     without every one of them having to be edited.
+     The BACK BUTTON is not polled any more. It used to be shown and hidden
+     from here, on a 400ms timer, off a variable that only ever said 'play' or
+     'title'. So after a round the intro page came back with NO back button
+     at all - the timer believed the game was still playing - and the game
+     screen had one that this loop never touched. The button now lives inside
+     the intro screen and nowhere else, which means the screen that is on top
+  decides it: no timer, no variable, nothing to get out of step. */
   setInterval(function(){
-    try{
-      var sc=window.__shellScreen;
-      window.__shellScreenSync();
-      if(window.__shellBackBtn){
-        var onHome=(sc===HOME);
-        /* 'block' would drop the .icon-btn grid centring the glyph relies on */
-        window.__shellBackBtn.style.display=onHome?'grid':'none';
-      }
-    }catch(e){}
+  try{
+  window.__shellScreenSync();
+  }catch(e){}
   },400);
 
   window.__shellAd=ad;
