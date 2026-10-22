@@ -716,7 +716,10 @@ function applyTheme(id,silent){
   /* The banner strip is a native view over this page, so it cannot see a
      CSS change. Tell the shell what the background is now, or the strip
      stays on the colour the game started with. */
-  try{ if(window.NativeBridge&&window.NativeBridge.setPageBackground) window.NativeBridge.setPageBackground(th.ui.bg); }catch(e){}
+  try{ if(window.NativeBridge&&window.NativeBridge.setPageBackground){
+  console.log('setPageBackground '+th.ui.bg);
+  window.NativeBridge.setPageBackground(th.ui.bg); } }
+  catch(e){ console.log('setPageBackground failed: '+e.message); }
   document.documentElement.style.setProperty('--label',th.board.line);
   $('#themeName').textContent=th.name;
   paintStatic(); buildSprites(); buildThemeGrid(); if(!silent)saveState();
@@ -870,6 +873,7 @@ const Panels={
   },
   hide(){overlay.classList.remove('visible');
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('showing'));},
+  isOpen(){return overlay.classList.contains('visible')}
 };
 function uiPaused(){return Panels.isOpen()&&!Tutorial.active&&Game.players.length>0&&Game.phase!=='over'}
 let toastT=null;
