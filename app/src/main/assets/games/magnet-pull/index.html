@@ -2111,7 +2111,13 @@ const Demo={
     this.bars=[];
     for(let i=0;i<2;i++)this.bars.push({x:280+i*250,from:i===0?'top':'bottom',len:80,passed:true});
     this.rp=[];for(let i=0;i<6;i++)this.rp.push({on:false});
-    this.pat=this.x.createPattern(stripeRed,'repeat');
+    /* Boot can still be at a 0x0 viewport here (the shell's own logs show
+       window.innerWidth=0 while the WebView is being laid out), so the stripe
+       sprites used by buildStripes() may not exist yet. The pattern is built
+       lazily on first use in step() once the sprites exist, instead of throwing
+       inside boot and aborting everything after it - the menu never showed and
+       the player stared at a flat empty screen. */
+    this.pat=null;
   },
   ring(x,y,C){
     for(const r of this.rp)if(!r.on){Object.assign(r,{on:true,x,y,r:6,vr:95,life:.35,tl:.35,C});return;}
@@ -2125,6 +2131,9 @@ const Demo={
   },
   step(rdt){
     const dt=Math.min(rdt,.033),x=this.x,b=this.b,rest=9;
+    /* Lazy pattern build: by the time the HOW screen opens, a real viewport
+       exists and buildStripes() has run inside resize(). */
+    if(!this.pat&&stripeRed)this.pat=x.createPattern(stripeRed,'repeat');
     this.t+=dt;
     for(const bar of this.bars){
       bar.x-=95*dt;
@@ -2255,6 +2264,7 @@ function frame(now){
      something actually moved. */
   const iw=window.innerWidth, ih=window.innerHeight;
   if(iw<50||ih<50)return;
+  if(!booted){boot();return;}
   if(iw!==W||ih!==H)resize();
   let rdt=(now-lastT)/1000;lastT=now;
   if(rdt>.1)rdt=.1;if(rdt<0)rdt=0;
@@ -2306,14 +2316,33 @@ function frame(now){
 }
 
 /* ---- boot ---- */
+window.addEventListener('error',e=>{try{console.error('[PGERR]',e.message,'@',e.filename,e.lineno);}catch(_){}});
+window.addEventListener('unhandledrejection',e=>{try{console.error('[PGREJ]',e.reason&&e.reason.message||e.reason);}catch(_){}});
+
+/* The whole boot is deferred until a real viewport exists. This device can run
+   the page's scripts while the WebView is still 0x0 (window.innerWidth=0,
+   logged on real launches); building the world at that size produces zero-size
+   zone art, and repeated boot-time callers (Demo.init's createPattern,
+   toMenu's ensureZoneArt) threw on the missing sprites and killed boot before
+   the menu ever showed - the player stared at a flat empty screen until they
+   killed the game. Now every build side effect is gated behind one call that
+   only runs on a first frame with real dimensions. */
+let booted=false;
+function boot(){
+  resize();                /* builds the world - viewport is valid by now */
+  updateMobileOrientation();
+  requestPortraitLock();
+  Demo.init();
+  initCrazyGames();
+  toMenu();
+  booted=true;
+}
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,80));
-resize();
-updateMobileOrientation();
-requestPortraitLock();
-Demo.init();
-initCrazyGames();
-toMenu();
+/* Legacy direct boot: only run it immediately when the page parsed with a real
+   viewport already; otherwise the frame loop's boot() call owns it. */
+if(window.innerWidth>=50&&window.innerHeight>=50)boot();
+else console.warn('[BOOT] booted at a zero viewport; world deferred until the frame loop sees a real one');
 requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
 </script>
 <script>
