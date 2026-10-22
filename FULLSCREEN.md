@@ -66,9 +66,9 @@ Measured, step by step:
 2. The window manager's own copy of the window's attributes stays at
    `DEFAULT`. `dumpsys window windows` prints the field only when it is not
    the default, and for our window it prints **nothing**.
-3. The *same* parcel carries other changes of ours correctly - the flags
-   `LAYOUT_NO_LIMITS` and the cleared `LAYOUT_INSET_DECOR` do show up in the
-   window manager's copy - so this is not a transport problem.
+3. The *same* parcel carries other changes of ours correctly - the flag
+   `LAYOUT_NO_LIMITS` does show up in the window manager's copy - so this is
+   not a transport problem.
 4. `SHORT_EDGES` (1) is dropped exactly the same way, so it is not a
    "wrong constant" problem.
 5. The window's frame is clipped **client-side** (AOSP 12+ computes the
@@ -81,22 +81,23 @@ with it the ability to draw into the camera hole.
 
 ## What does work
 
-**Give the window the display's real size, and shift it so its left edge sits
-on the true edge of the screen.**
+**Give the window the display's real size, and shift it so its edge sits on
+the true edge of the screen.**
 
 `GameWindow.fitWindowToDisplay(window)`:
 
 ```kotlin
-val display = wm.currentWindowMetrics.bounds        // 2400x1080
-val appW    = ctx.resources.displayMetrics.widthPixels // 2285 (app bounds)
-val band    = display.width() - appW                 // 115 - the reserved strip
+val display = wm.currentWindowMetrics.bounds          // 2400x1080 landscape
+val appW    = ctx.resources.displayMetrics.widthPixels  // 2285 (app bounds)
+val appH    = ctx.resources.displayMetrics.heightPixels // 1080
 lp.width  = display.width()
 lp.height = display.height()
-lp.x      = -Math.round(band / 2f)                  // -58
+lp.x      = -Math.round((display.width()  - appW) / 2f) // -58
+lp.y      = -Math.round((display.height() - appH) / 2f) //  0
 window.attributes = lp
 ```
 
-The platform *centres* a window that is wider than its parent bounds, so the
+The platform *centres* a window that is bigger than its parent bounds, so the
 offset that puts the left edge on the screen is half the reserved strip.
 `FLAG_LAYOUT_NO_LIMITS` (also set) lets the window reach past the app bounds
 in the first place.
@@ -113,8 +114,29 @@ The game now draws edge to edge, **behind** the camera hole, which is what
 "full screen" has to mean on a phone with a punch-hole. The camera itself
 still sits on top of the game, as the hardware demands.
 
-In **portrait** the function puts the window back to `MATCH_PARENT`: the
-platform leaves the short edge alone, so there is nothing to fight there.
+## The portrait band, and the flag that must NOT be cleared
+
+A **portrait** game had its own band: the Orrery window measured
+`[0,115][1080,2400]` - it ran *below* the status bar, with a 115px strip at
+the top (the status bar + the corner hole).
+
+That one was **self-inflicted**, and the culprit is a flag:
+
+```
+the shell's own screen : fl=LAYOUT_IN_SCREEN LAYOUT_INSET_DECOR ...
+the game's window      : fl=... LAYOUT_NO_LIMITS          (no INSET_DECOR)
+```
+
+`FLAG_LAYOUT_INSET_DECOR` is deprecated in API 30, and clearing it during the
+cutout fight looked harmless - it is not. A window **without** it is measured
+inside the decor, which is how the portrait games ended up below the status
+bar; the shell's own screens carry the flag and are full screen. It is
+**set**, not cleared, and the portrait band went with it:
+
+```
+$ adb shell dumpsys window windows      # Orrery, portrait
+Frames: frame=[0,0][1080,2400]          ← was [0,115][1080,2400]
+```
 
 ## Where the code lives
 
