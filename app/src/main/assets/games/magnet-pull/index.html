@@ -624,28 +624,35 @@ let railT=0,railB=0,railH=10,ballR=14,playH=0;
 let vig=null,glowTop=null,glowBot=null,goldGlow=null,podGlow=null;
 let speedNow=300;
 
-/* The run's speed band. speedMin used to be 300 and the first half-minute of a
-   run crawled - the most common onboarding complaint. The band is raised as a
-   pair so the ramp keeps roughly its original headroom; streaks (drawn above
-   speed 380) fade in over the very first seconds instead of arriving abruptly
-   later. */
-const K={speedMin:430,speedMax:780,crossT0:.42,crossT1:.26};
+/* The run's speed band. The number that matters to the player is how long a
+   bar takes to reach the ball: the ball sits at 28% of the width and bars
+   spawn just past the right edge, and because both the width and the speed
+   scale with sf, that crossing time comes out device-invariant at
+   828/speedK seconds. 300 (the original) was a 2.76s reach, the first bump
+   to 430 still left 1.93s and players called it "too slow at the start".
+   690 gives a 1.20s first bar, and 990 caps the ramp at a 0.84s crossing so
+   the 75s speed ramp keeps its headroom. Streaks (drawn above speed 380) are
+   on from the first seconds, which reads as pace rather than a mode switch. */
+const K={speedMin:690,speedMax:990,crossT0:.42,crossT1:.26};
 
 const C_TOP=[61,224,199], C_BOT=[255,158,60], C_RED=[255,77,109],
       C_VIO=[172,120,255], C_GOLD=[255,205,110];
 const polRGB=p=>p==='top'?C_TOP:C_BOT;
 
 function resize(){
-  /* Cold-boot guard: the shell's logs show this device can report a 0-wide
-     WebView while the page parses (the canvas was still tagged at its 300x150
-     default and the game painted a blank screen - the world had been built
-     for a 0x0 viewport). Skip the build entirely; the frame loop watches
-     innerWidth/innerHeight every frame and rebuilds the moment a real
-     viewport exists. */
+  /* Zero-viewport boot: this device can run the page's scripts while the
+     WebView is still 0x0 (captured in the shell's own logs). An earlier fix
+     refused to build until real dimensions arrived, which made the player
+     stare at a flat empty screen for seconds - the menu only painted when 
+     the layout landed well after the shell had already revealed the page.
+     The build now goes ahead at a provisional portrait size instead, so the
+     world and the menu paint on the very first frame (the canvas element
+     stretches to the viewport via CSS), and the frame loop's live
+     width/height compare rebuilds at real dimensions the moment they land. */
   const rw=window.innerWidth, rh=window.innerHeight;
-  if(rw<50||rh<50)return;
+  const valid=rw>=50&&rh>=50;
   DPR=Math.min(window.devicePixelRatio||1,2);
-  W=window.innerWidth; H=window.innerHeight;
+  W=valid?rw:423; H=valid?rh:880;
   canvas.width=W*DPR; canvas.height=H*DPR;
   ctx.setTransform(DPR,0,0,DPR,0,0);
   sf=clamp(Math.min(W/1150,H/760),.55,1.5);
@@ -1222,9 +1229,14 @@ function buildWorld(){
   ballGrad={top:null,bottom:null};
   hubGrad=null;
   obstacleSpr={};
+  /* Zone layers are painted against the CURRENT viewport dims. On a
+     provisional-size boot the art was built at 423x880; without this clear,
+     the later real-size rebuild would hit the cache and keep stretching
+     layers painted for the wrong viewport. */
+  zoneCache={};
+  artA=artB=ensureZoneArt(0);
   padTop=makePad(C_TOP);padBot=makePad(C_BOT);
   bladeCv=makeBlade();podCv=makePod();
-  artA=artB=ensureZoneArt(0);
   dust=[];for(let i=0;i<34;i++)dust.push({x:Math.random()*W,y:rnd(railT,railB),s:rnd(1,2.2),a:rnd(.05,.16),p:rnd(.2,.7)});
   streaks=[];for(let i=0;i<12;i++)streaks.push({x:Math.random()*W,y:0,len:rnd(60,140)*sf,ok:false});
   rebuildEnv();
@@ -1804,7 +1816,10 @@ function checkPass(){
       score++;
       if(score>best){
         best=score; beatBest=true;
-        lsSet('magnet.best',best);
+        /* No localStorage here: this runs on EVERY pass once the record is
+           broken, and each synchronous write can hitch the frame right as the
+           bar passes the ball. The record is persisted once at run end in
+           showOver(). */
         $('best-hud').textContent='BEST '+best;
         $('best-hud').classList.add('beat');
         SFX.record();
@@ -1966,6 +1981,9 @@ function startGame(){
   score=0;elapsed=0;spawnCount=0;beatBest=false;setScoreDom();
   $('best-hud').textContent='BEST '+best;
   $('best-hud').classList.remove('beat');
+  /* speedNow still carries the menu demo's pace here; seed the band so the
+     very first spawn distance/frame timing uses the run's real speed. */
+  speedNow=K.speedMin*sf;
   spawnDist=speedNow*1.6;lastType='';
   timeScale=1;tsTarget=1;deathT=0;flashA=0;shakeMag=0;
   state='play';
@@ -2071,7 +2089,16 @@ function updatePolChip(){
 }
 function setScoreDom(){
   elScore.textContent=score;
-  elScore.classList.remove('pop');void elScore.offsetWidth;elScore.classList.add('pop');
+  /* The score used to restart its CSS animation with the remove-class /
+     void offsetWidth / add-class trick, and the forced reflow hitched the
+     frame at exactly the moment a bar passed the ball. The Web Animations
+     API restarts a transform pop cleanly with no layout work. */
+  if(elScore.animate){
+    elScore.animate(
+      [{transform:'scale(1.4)'},{transform:'scale(1)'}],
+      {duration:180,easing:'ease-out'}
+    );
+  }
 }
 function bind(id,fn){
   $(id).addEventListener('click',e=>{SFX.click();e.currentTarget.blur();fn();});
@@ -2267,16 +2294,14 @@ function render(){
 let lastT=performance.now();
 function frame(now){
   requestAnimationFrame(frame);
-  /* Viewport self-heal: compare against the live window every frame. This
-     catches two boots the old code could not recover from - a page that parsed
-     before the WebView had been laid out (0x0, world built at garbage size,
-     player on a blank screen until restart), and a late re-layout after the
-     first real size. The compare per frame is free; resize() only runs when
-     something actually moved. */
+  /* Viewport self-heal: compare against the live window every frame. The
+     world is always built - at a provisional size on a 0x0 boot, real size
+     otherwise - so this compare only exists to catch the moment the real
+     dimensions land and swap the world over. The compare per frame is free;
+     resize() only runs when something actually moved. */
   const iw=window.innerWidth, ih=window.innerHeight;
-  if(iw<50||ih<50)return;
-  if(!booted){boot();return;}
-  if(iw!==W||ih!==H)resize();
+  if(!booted)boot();
+  if(iw>=50&&ih>=50&&(iw!==W||ih!==H))resize();
   let rdt=(now-lastT)/1000;lastT=now;
   if(rdt>.1)rdt=.1;if(rdt<0)rdt=0;
   tGlobal+=rdt;
@@ -2330,17 +2355,18 @@ function frame(now){
 window.addEventListener('error',e=>{try{console.error('[PGERR]',e.message,'@',e.filename,e.lineno);}catch(_){}});
 window.addEventListener('unhandledrejection',e=>{try{console.error('[PGREJ]',e.reason&&e.reason.message||e.reason);}catch(_){}});
 
-/* The whole boot is deferred until a real viewport exists. This device can run
-   the page's scripts while the WebView is still 0x0 (window.innerWidth=0,
-   logged on real launches); building the world at that size produces zero-size
-   zone art, and repeated boot-time callers (Demo.init's createPattern,
-   toMenu's ensureZoneArt) threw on the missing sprites and killed boot before
-   the menu ever showed - the player stared at a flat empty screen until they
-   killed the game. Now every build side effect is gated behind one call that
-   only runs on a first frame with real dimensions. */
+/* Boot runs as the script parses. This device used to run the page's scripts
+   while the WebView was still 0x0 (window.innerWidth=0, logged on real
+   launches): building at that size produced zero-size zone art and repeated
+   boot-time callers (Demo.init's createPattern, toMenu's ensureZoneArt) threw
+   on the missing sprites and killed boot before the menu ever showed - the
+   player stared at a flat empty screen until they killed the game. resize()
+   now always builds (a provisional portrait world on a 0x0 viewport, real
+   world otherwise) and rebuilds when the real dimensions land, so the menu
+   paints on the first frame instead of seconds later. */
 let booted=false;
 function boot(){
-  resize();                /* builds the world - viewport is valid by now */
+  resize();                /* builds the world at whatever the viewport is */
   updateMobileOrientation();
   requestPortraitLock();
   Demo.init();
@@ -2350,10 +2376,10 @@ function boot(){
 }
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,80));
-/* Legacy direct boot: only run it immediately when the page parsed with a real
-   viewport already; otherwise the frame loop's boot() call owns it. */
-if(window.innerWidth>=50&&window.innerHeight>=50)boot();
-else console.warn('[BOOT] booted at a zero viewport; world deferred until the frame loop sees a real one');
+/* Boot runs unconditionally as the script parses: resize() is safe at any
+   viewport size now (provisional world on a 0x0 boot, real world otherwise),
+   and the frame loop's `if(!booted)` guard stays as a belt-and-braces net. */
+boot();
 requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
 </script>
 <script>
