@@ -2068,13 +2068,20 @@ const Studio = (() => {
       interstitial(onDone,placement){
         const b=bridge();
         if(b&&b.showInterstitial){
-          window.__studioInterCb=function(){if(onDone)onDone();};
+          /* A callback name of its OWN for every request. The name used to be the
+             fixed "__studioInterCb", so a second request OVERWROTE the first one's
+             callback - and the first request's action then never ran, leaving the
+             button that asked for it dead. The shell calls back by whatever name
+             it is given, so a unique name is all it takes. */
+          window.__studioInterSeq=(window.__studioInterSeq||0)+1;
+          var interCb='__studioInterCb'+window.__studioInterSeq;
+          window[interCb]=function(){ try{ delete window[interCb]; }catch(_){} if(onDone) onDone(); };
           /* Two arguments: showInterstitial(callback, placement) takes two
              parameters and addJavascriptInterface matches by EXACT arity, so the
              one-argument form THREW and the catch turned it into a silent no-op.
              The shim used to hardcode '' for the placement as well, which meant
              the shell's log could not say which button asked. */
-          try{b.showInterstitial('__studioInterCb',placement||'');return true;}catch(_){}
+          try{b.showInterstitial(interCb,placement||'');return true;}catch(_){try{delete window[interCb];}catch(_){}}
         }
         if(onDone)onDone();
         return false;

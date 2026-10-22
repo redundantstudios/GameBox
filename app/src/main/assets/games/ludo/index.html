@@ -263,8 +263,15 @@ function showRewarded(placement,onReward,onFail){
 function showInterstitial(next){
   const B=window.NativeBridge;
   if(B&&typeof B.showInterstitial==='function'){
-    window.__studioInterCb=function(){ if(next) next(); };
-    try{ B.showInterstitial('__studioInterCb',''); return; }catch(e){}
+    /* A callback name of its OWN for every request. The name used to be the
+       fixed "__studioInterCb", so a second request OVERWROTE the first one's
+       callback - and the first request's action then never ran, leaving the
+       button that asked for it dead. The shell calls back by whatever name
+       it is given, so a unique name is all it takes. */
+    window.__studioInterSeq=(window.__studioInterSeq||0)+1;
+    var interCb='__studioInterCb'+window.__studioInterSeq;
+    window[interCb]=function(){ try{ delete window[interCb]; }catch(_){} if(next) next(); };
+    try{ B.showInterstitial(interCb,''); return; }catch(e){try{delete window[interCb];}catch(_){}}
   }
   FX.inter={ t:0, dur:CFG.ads.interDur, next };
 }
