@@ -1,5 +1,84 @@
 # Project Progress
 
+## Magnet Pull - director pass: the banner, the rebuild, the blur, the dead buttons - 2026-10-22
+
+Badri's PR merged, then five fixes on top of it. The game is LOCKED; any further request
+becomes a numbered pass on top.
+
+### MAGNET PULL - LOCKED
+
+- **The ad strip was up on the title screen.** The PR asked for the banner once at boot
+  and left it up for the life of the screen, so the player arrived at a menu with an ad
+  under it and left by it too. The strip now comes up with a RUN and goes down on the
+  MENU. The pause screen and the result screen still count as the game, so the strip
+  stays up for those and the player never watches it collapse and spring back
+  mid-session - which is also what the shell's own design asks for ("games hide the
+  strip on a screen CHANGE, not mid-play"). Nothing is attached at the moment it comes
+  up: the shell preloads the strip at launch, so by the time the first run starts the
+  ad is already in hand. Verified on device: menu has no strip, the run brings it up,
+  the result screen keeps it, MENU takes it down.
+- **The world was rebuilt every time the viewport changed, and the viewport changes
+  whenever the strip moves.** The world's height is derived from its WIDTH, so a
+  viewport that changed only in height - the system bars coming and going, the strip
+  collapsing on the way to the menu - left the world exactly where it was. But the
+  resize handler rebuilt it anyway, repainting the zone art (a canvas the width of
+  the screen plus 420) behind the player on every menu transition. The rebuild now
+  happens only when the world has actually moved: ONE rebuild at boot, and none at all
+  on any transition.
+- **The frosted-glass blur over the live canvas was the frame budget.** A
+  backdrop-filter blurs the LIVE frame behind it, and the compositor has to do that
+  again for every frame the canvas moves. Measured on this phone in one session:
+  **11 frame stalls over 60ms with the blur on** - two of them 194ms and 259ms, on
+  the MENU and on the transitions into and out of it - and **3 with it off**. The
+  menu buttons went from an 84ms hitch to none at all. The blur is off on the panel
+  and on the BACK chip; the panel is 62% opaque dark anyway, so it still reads as a
+  panel without it. The same change is in Midnight Overdrive, for the same reason.
+- **A second ad request could wipe out the first one's callback, leaving a dead
+  button.** The interstitial callback was registered under a FIXED name, so a second
+  request overwrote the first - and the first request's action then never ran. That
+  is the "the buttons take too long to do their job" report: the player taps RETRY
+  and nothing happens. Every request now gets a name of its own and deletes itself
+  when it runs.
+- **The same fixed callback name was in THIRTEEN other games.** This is not a
+  Magnet Pull bug, it is a shell-shaped one that every game had copied: colour-rush,
+  ember, kiro, midnight-overdrive, orrery, pool-8ball, root-io, sheepdog-trials,
+  bomb-relay, checkers, chess, chicken-chaos and ludo all registered the ad callback
+  under the same fixed name. All thirteen now give every request a name of its own.
+  The other twelve games needed nothing: chinese-checkers, egg-rush, memory-grab,
+  planetmerge, mimic and truth-or-dare already had unique names, and balloon-battle
+  has a busy-guard that stops a second request being made at all.
+- **The crash froze a whole screen's worth of work into one frame.** 46 sparks, the
+  ring and the flash all landed on the impact frame - over 100ms on this device, on
+  the exact frame the player is watching hardest. The sparks now arrive over three
+  frames and no single frame goes over budget.
+- **The best score was written on every single pass.** A synchronous localStorage
+  write each time a bar passed the ball, and that write hitched the frame at the one
+  moment the player is watching. The record is now written once, at the end of the
+  run.
+- **The score pop forced a layout.** The score restarted its CSS animation with the
+  remove-class / forced-reflow / add-class trick, and the reflow hitched the frame
+  again at the same moment. It uses the Web Animations API now, which restarts a
+  transform with no layout work at all.
+- **An ad that never called back turned every button in the game dead.** `adInProgress`
+  gates every button, so a request whose callback never arrives did not just lose a
+  reward - it turned the whole screen into dead buttons. Both the rewarded and the
+  interstitial path now have a watchdog (15s and 10s) that releases the game if
+  nothing comes back.
+- **The game-over buttons waited for an ad before they did anything.** The ad opened
+  a beat after the tap and the action only ran once the player closed it, which is
+  what "the buttons take too long to react" was. The two game-over buttons now fire
+  their action directly; the break that covers that screen is the game-over
+  interstitial, governed by the same gap as always.
+- **The world used to be rebuilt at startup, under the player's eyes.** This device
+  hands the page its height in stages, and a world whose height followed the viewport
+  had to be rebuilt at every stage - which moved the environment under the player. The
+  world's shape now follows its width, so it is built once and never moves.
+- **A zero-size viewport could abort the boot.** The stripe sprites the menu needs may
+  not exist yet when the page's scripts first run, and the pattern built from them
+  threw - inside the boot, which aborted everything after it, and the player stared
+  at an empty screen. The pattern is built lazily now, and the boot is split so the
+  very first committed frame already carries the menu.
+
 ## Chinese Checkers - director pass: the blocked player, the board, the names - 2026-10-22
 
 Six issues, all fixed and verified on device. The game is LOCKED; any further request
