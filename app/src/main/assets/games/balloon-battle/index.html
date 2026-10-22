@@ -623,12 +623,13 @@ function backToMenu(placement){
                    next step happens in its callback, so the player is never
                    dropped into a countdown behind an ad.
 
-   startMatch()  - the title-screen PLAY button and the seat buttons behind it.
-                   NO AD. Those are the "let me play" taps: the first action of
-                   a session, and asking for an ad there is punishing someone
-                   for starting the game. The same goes for the N PLAYER
-                   preselect path, which is just a shortcut to the same title
-                   PLAY button.
+   startMatch()  - the seat sheet's buttons, which is where the title-screen
+                   PLAY button leads. NO AD. Those are the "let me play" taps:
+                   the first action of a session, and asking for an ad there is
+                   punishing someone for starting the game. The shell's "N
+                   PLAYER" tile marks a seat on that sheet; it does not skip
+                   it, so this is still the player's own tap that starts the
+                   bout.
 
    The distinction is a deliberate reading of "no ad on PLAY": it means the
    start-page PLAY button and everything it leads to, not the results card. */
@@ -640,6 +641,10 @@ function startMatch(np,solo){
   requestMobileFullscreen();
   attractExit();
   showBannerFor(true);
+  /* The seat the shell had marked is consumed here: the bout is running, so
+     the seat sheet must not still be showing it as pending, and the results
+     card must not auto-restart into it. */
+  preselectMode=0;
   nPlayers=np;soloMode=solo;
   setupWorld();buildObstacles();buildPUSpots();
   players=[];
@@ -678,8 +683,17 @@ function layoutZones(){
   if(!zones.length)return;
   const w=cssW,h=cssH,ss=Math.min(w,h);
   readSafeInsets();
-  const joyR=clamp(ss*0.075,42,64);
-  const dashR=clamp(ss*0.055,34,50);
+  /* BIGGER CONTROLS. The joystick and the dash button are the only things a
+     human touches, and they were sized for a fingertip-sized target: on a
+     phone in landscape the joystick came out at its floor (42px), which is a
+     small target for a thumb that also has to slide. Both are now about a
+     quarter bigger - the joystick from 42-64 to 54-82, the dash from 34-50
+     to 44-64 - and everything that draws or reads them (the knob, the
+     cooldown ring, the touch radius) scales off these two numbers, so the
+     whole control grows together. The anchors are computed from them too,
+     so the pair still sits in the same corner of the player's half. */
+  const joyR=clamp(ss*0.095,54,82);
+  const dashR=clamp(ss*0.072,44,64);
   const hM=Math.max(clamp(ss*0.035,14,30),safeL,safeR);
   const bM=Math.max(clamp(ss*0.065,28,50),safeB);
   const tM=Math.max(clamp(ss*0.045,20,36),safeT);
@@ -2829,36 +2843,29 @@ requestAnimationFrame(frame);
     const solo=QS.get('mode')==='solo';
     const sk=parseFloat(QS.get('skill'));
     if(!isNaN(sk))aiSkill=clamp(sk>1?sk/100:sk,0,1);
-    /* SHELL PRESELECT. Opened from the shell's "N PLAYER" tile the game is handed
-       ?mode=pass&skill=medium&players=N. That tile is the player saying "we are N",
-       so the intro should already reflect it instead of making them tap the
-       matching button again. N=1 is this game's SOLO mode. A count outside the
-       game's 1-4 range is ignored and the menu is left alone. */
+    /* SHELL PRESELECT - A HIGHLIGHT, NOT A SHORTCUT.
+       Opened from the shell's "N PLAYER" tile the game is handed
+       ?mode=pass&skill=medium&players=N, and ?mode=solo for the solo entry
+       point. That tile is the player saying "we are N", so the seat sheet
+       opens with that seat already marked - but the game ALWAYS goes
+       PLAY -> SETUP -> GAMEPLAY now, for one, two, three and four players
+       alike. Opening straight into a bout meant the player never saw the
+       seat they had chosen, never saw the rules, and had no way back to the
+       menu: the tile decided the match instead of the player. A count
+       outside the game's 1-4 range is ignored, as before. */
     const wantPlayers=parseInt(QS.get('players')||'0',10);
     if(QS.get('mode')==='pass'&&wantPlayers>=1&&wantPlayers<=4){
       preselectMode=wantPlayers;
-      console.log('[Balloon Battle] shell auto-path: mode=pass players='+wantPlayers+' -> straight into the match');
+      console.log('[Balloon Battle] shell preselect: players='+wantPlayers+' -> marked on the seat sheet, the player still confirms it');
     }else if(QS.get('players')){
       console.log('[Balloon Battle] players='+wantPlayers+' is outside this game\'s 1-4 range, opening the menu');
     }
+    if(solo)preselectMode=1;
     setupWorld();buildObstacles();buildPUSpots();spawnPts=null;renderBG();
-    if(solo){startMatch(1,true);showBannerFor(true);}
-    else if(preselectMode){
-      /* OPEN STRAIGHT INTO THE GAME. The shell's "N PLAYER" page is the player
-         already saying "we are N": ModeActivity passes
-         ?mode=pass&skill=medium&players=N for the 1-4 pages (and deliberately
-         NOT for All Games or Party, which keep the game's own menu). Making them
-         tap the matching button again is a wasted step, so the request is
-         honoured and the bout begins.
-
-         The attract loop is skipped deliberately - the demo would be torn down a
-         frame later, which just looks like a glitch. N=1 is SOLO (vs bots). */
-      const n=preselectMode;
-      preselectMode=0;   /* consumed: the results card must not auto-restart */
-      showModes=false;showHow=false;showSettings=false;
-      startMatch(n,n===1);
-    }
-    else{attractEnter();showBannerFor(false);}
+    /* THE NORMAL ROUTE, EVERY TIME: the menu, then PLAY, then the seat
+       sheet, then the bout. Nothing starts behind the player's back any
+       more - not the solo entry point and not the "N PLAYER" tiles. */
+    attractEnter();showBannerFor(false);
   }catch(e){
     bootError=e;
     console.error('Balloon Battle boot error:',e);
