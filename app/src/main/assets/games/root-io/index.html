@@ -135,10 +135,18 @@ var Studio=(function(){
       interstitial:function(onDone,placement){
         var b=bridge();
         if(b&&b.showInterstitial){
-          window.__studioInterCb=function(){ if(onDone) onDone(); };
-          try{ b.showInterstitial('__studioInterCb', placement||''); return; }
+          /* A callback name of its OWN for every request. The name used to be the
+             fixed "__studioInterCb", so a second request OVERWROTE the first one's
+             callback - and the first request's action then never ran, leaving the
+             button that asked for it dead. The shell calls back by whatever name
+             it is given, so a unique name is all it takes. */
+          window.__studioInterSeq=(window.__studioInterSeq||0)+1;
+          var interCb='__studioInterCb'+window.__studioInterSeq;
+          window[interCb]=function(){ try{ delete window[interCb]; }catch(_){} if(onDone) onDone(); };
+          try{ b.showInterstitial(interCb, placement||''); return; }
           catch(err){
             try{ console.error('[Studio] interstitial bridge call failed: '+((err&&err.message)||err)); }catch(_){}
+            try{ delete window[interCb]; }catch(_){}
           }
         }
         if(onDone) onDone();

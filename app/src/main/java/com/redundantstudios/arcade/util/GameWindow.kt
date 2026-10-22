@@ -106,13 +106,21 @@ object GameWindow {
             lp.layoutInDisplayCutoutMode = mode
             window.attributes = lp
             /* FLAG_LAYOUT_NO_LIMITS lets the window reach past the display's
-               app bounds (where the cutout band comes from), and
-               FLAG_LAYOUT_INSET_DECOR - deprecated in API 30 but still set on
-               this window by the framework - is what asks for the content to
-               be inset by the decor. Both were verified to reach the window
-               manager (they show up in its copy of the attributes). */
+               app bounds (where the cutout band comes from).
+
+               FLAG_LAYOUT_INSET_DECOR is NOT cleared. It is deprecated in
+               API 30, but it is what the shell's own screens carry, and
+               they are the ones that come out full screen: a window with it
+               lays its content out across the whole display, and a window
+               without it is measured inside the decor - which is how the
+               portrait games ended up running BELOW the status bar (the
+               Orrery window measured [0,115][1080,2400] - a 115px band at
+               the top, exactly the status bar + cutout height). Clearing it
+               was a wrong turn from the cutout fight; restoring it fixes
+               the portrait games without touching the landscape fix, which
+               rests on the cutout mode and the explicit size below. */
             window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
-            window.clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR)
+            window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR)
             /* And the push that actually matters: into the view root, which is
                where the frame is computed. The decor of `window` is not always
                the attached one (it can be a stale, never-attached instance),
@@ -125,26 +133,32 @@ object GameWindow {
 
     /**
      * Make the window cover the WHOLE display, including the strip the
-     * platform reserves for the camera hole.
+     * platform reserves for the camera hole or the status bar.
      *
-     * WHY THIS EXISTS. The camera hole of the test phone (OPPO A55 /
-     * CPH2219, ColorOS, Android 13) is a CORNER cutout, so in landscape it
-     * ends up on a long edge and the platform letterboxes the game away from
-     * it: the window frame was measured at [115,0][2400,1080] - exactly the
-     * cutout width - and the game ran 115px narrow with a dead strip (and
-     * the camera) beside it. The documented cure is
-     * `layoutInDisplayCutoutMode = ALWAYS`, and the app sets it - but on this
-     * ROM the window manager does not keep that field: its own copy of the
-     * window's attributes stays at DEFAULT, while the flags we set (and the
-     * same parcel!) do arrive. Measured, not guessed.
+     * WHY THIS EXISTS. Two separate strips, one rule:
+     *
+     *  - LANDSCAPE. The camera hole of the test phone (OPPO A55 / CPH2219,
+     *    ColorOS, Android 13) is a CORNER cutout, so in landscape it lands on
+     *    a long edge and the platform letterboxes the game away from it: the
+     *    window frame measured [115,0][2400,1080] - exactly the cutout width
+     *    - and the game ran 115px narrow with a dead strip (and the camera) in
+     *    it. The documented cure is `layoutInDisplayCutoutMode = ALWAYS`, and
+     *    the app sets it - but on this ROM the window manager does not keep
+     *    that field: its own copy of the window's attributes stays at
+     *    DEFAULT, while the flags we set (and the same parcel!) do arrive.
+     *    Measured, not guessed.
+     *
+     *  - PORTRAIT. The window measured [0,115][1080,2400] - the game ran
+     *    BELOW the status bar, with a 115px band at the top. That one was
+     *    self-inflicted: the window was missing FLAG_LAYOUT_INSET_DECOR, the
+     *    flag the shell's own screens carry, and a window without it is
+     *    measured inside the decor.
      *
      * So the window is given the display's own size explicitly and shifted
-     * by half the reserved strip, which puts its left edge on the true edge
-     * of the screen: the game then draws behind the hole, which is what
-     * "full screen" has to mean on a phone with a punch-hole.
-     *
-     * In portrait the strip is on a short edge, which the platform already
-     * leaves alone, so the window goes back to filling its parent there.
+     * by half the reserved strip on the axis that has one, which puts its
+     * edge on the true edge of the screen: the game then draws behind the
+     * hole (and under the status bar), which is what "full screen" has to
+     * mean on a phone with a punch-hole.
      */
     fun fitWindowToDisplay(window: Window) {
         try {
@@ -154,51 +168,40 @@ object GameWindow {
             if (display == null) return
             val dw = display.width()
             val dh = display.height()
-            if (dw <= dh) {
-                // Portrait: nothing to fight, fill the parent.
-                val lp0 = window.attributes
-                if (lp0.width != WindowManager.LayoutParams.MATCH_PARENT ||
-                    lp0.height != WindowManager.LayoutParams.MATCH_PARENT
-                ) {
-                    lp0.width = WindowManager.LayoutParams.MATCH_PARENT
-                    lp0.height = WindowManager.LayoutParams.MATCH_PARENT
-                    window.attributes = lp0
-                }
-                return
-            }
             // The app's own metrics are the platform's app bounds (the display
             // minus the reserved strip); the window metrics are the display.
-            val appW = ctx.resources.displayMetrics.widthPixels
-            val band = (dw - appW).coerceAtLeast(0)
+            val dm = ctx.resources.displayMetrics
+            val bandW = (dw - dm.widthPixels).coerceAtLeast(0)
+            val bandH = (dh - dm.heightPixels).coerceAtLeast(0)
             val lp = window.attributes
             lp.width = dw
             lp.height = dh
-            /* THE WINDOW STARTS AT THE DISPLAY'S EDGE, NOT HALF A BAND BEFORE
-               IT. This used to be lp.x = -band/2, on the reasoning that "the
-               platform centres a window that is bigger than its parent
-               bounds, so the offset that puts the left edge on the screen is
-               half the reserved strip".
-
-               Measured on the ZTE (GameActivity's own frame, dumpsys window):
+            /* WHERE THE WINDOW LANDS IS PLATFORM-DEPENDENT, SO IT IS CORRECTED
+               AFTERWARDS RATHER THAN GUESSED HERE.
+               This used to be a fixed half-band shift (lp.x = -band/2), on the
+               reasoning that "the platform centres a window that is bigger
+               than its parent bounds, so the offset that puts the edge on the
+               screen is half the reserved strip". That is true on the OPPO
+               (ColorOS centres it) and FALSE on the ZTE, where the frame
+               landed exactly at lp.x:
                    mAttrs={(-40,0)(1612x720) ... layoutInDisplayCutoutMode=always}
-               The platform did NOT add a centring offset of its own - the
-               frame was exactly lp.x. So the half-band shift was just that: a
-               half-band shift. It cost the game 40px of its LEFT edge (the
-               left-hand player's joystick ran off-screen) and left the 40px at
-               the other end of the display uncovered by the window - the black
-               band beside the game, with the right-hand player's DASH button
-               clipped in half by it.
+               On the ZTE the half-band shift cost the game 40px of its LEFT
+               edge (the left-hand player's joystick ran off-screen) and left
+               the 40px at the other end of the display uncovered by the
+               window - the black band beside the game, with the right-hand
+               player's DASH button clipped in half by it.
 
-               The window is the size of the DISPLAY, so it belongs at the
-               display's origin: the reserved strip is then covered, the game
-               fills the screen, and the camera hole (which the platform draws
-               on top of the app) sits over the game exactly as
-               layoutInDisplayCutoutMode=always intends. */
-            lp.x = 0
-            lp.y = 0
+               So the guess is kept as the starting point and the real
+               position is measured afterwards (see applyCutoutModeToView):
+               wherever the view landed, it is moved so its edge sits on the
+               display's edge. That is the whole point of the cutout
+               workaround - the game covers the screen - and it no longer
+               depends on what the platform does with an oversized window. */
+            lp.x = -Math.round(bandW / 2f)
+            lp.y = -Math.round(bandH / 2f)
             window.attributes = lp
             android.util.Log.i("GameJS", "[cutout] full display " + dw + "x" + dh +
-                " band=" + band + " x=" + lp.x)
+                " band=" + bandW + "x" + bandH + " at=" + lp.x + "," + lp.y)
         } catch (e: Throwable) {
             android.util.Log.i("GameJS", "[cutout] fit failed: " + e)
         }
@@ -235,6 +238,40 @@ object GameWindow {
                 android.util.Log.i("GameJS", "[cutout] pushed mode=" + mode)
                 val act = root.context as? android.app.Activity
                 if (act != null) fitWindowToDisplay(act.window)
+                /* PUT THE VIEW'S EDGE ON THE DISPLAY'S EDGE, WHEREVER THE
+                   PLATFORM PUT IT. The window is the size of the display, but
+                   an oversized window is not placed the same way on every ROM:
+                   the OPPO (ColorOS) centres one that is bigger than its
+                   parent bounds, the ZTE puts it exactly where lp.x says. The
+                   guess in fitWindowToDisplay can only be a guess, so the
+                   real position is measured here - once the layout has
+                   happened - and the window is shifted by the difference.
+
+                   Without this, one of the two devices always ends up with a
+                   band of the display that the app does not cover: on the ZTE
+                   the game lost 40px of its left edge and the black band sat
+                   at the right, clipping the dash button in half. */
+                root.post {
+                    try {
+                        val loc = IntArray(2)
+                        root.getLocationOnScreen(loc)
+                        val dx = -loc[0]
+                        val dy = -loc[1]
+                        if (dx != 0 || dy != 0) {
+                            val lp2 = root.layoutParams as? WindowManager.LayoutParams
+                            if (lp2 != null) {
+                                lp2.x += dx
+                                lp2.y += dy
+                                wm.updateViewLayout(root, lp2)
+                                android.util.Log.i("GameJS",
+                                    "[cutout] corrected from " + loc[0] + "," + loc[1] +
+                                    " by " + dx + "," + dy)
+                            }
+                        }
+                    } catch (e: Throwable) {
+                        android.util.Log.i("GameJS", "[cutout] correction failed: " + e)
+                    }
+                }
             }
         } catch (e: Throwable) {
             android.util.Log.i("GameJS", "[cutout] push failed: " + e)

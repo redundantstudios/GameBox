@@ -536,8 +536,13 @@ const Studio = (() => {
       interstitial(onDone) {
         const b = bridge();
         if (b && b.showInterstitial) {
-          window.__studioInterCb = function() { if (onDone) onDone(); };
-          b.showInterstitial('__studioInterCb','');
+          /* A callback name of its OWN for every request: the fixed name meant a
+             second request overwrote the first one's callback, so the first
+             action never ran and the button that asked for it looked dead. */
+          window.__studioInterSeq=(window.__studioInterSeq||0)+1;
+          var interCb='__studioInterCb'+window.__studioInterSeq;
+          window[interCb] = function() { try{ delete window[interCb]; }catch(_){} if (onDone) onDone(); };
+          b.showInterstitial(interCb,'');
           return;
         }
         if (onDone) onDone();

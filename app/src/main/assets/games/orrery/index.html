@@ -139,10 +139,18 @@ var Studio=(function(){
       interstitial:function(onDone,placement){
         var b=bridge();
         if(b&&b.showInterstitial){
-          window.__studioInterCb=function(){ if(onDone) onDone(); };
-          try{ b.showInterstitial('__studioInterCb', placement||''); return; }
+          /* A callback name of its OWN for every request. The name used to be the
+             fixed "__studioInterCb", so a second request OVERWROTE the first one's
+             callback - and the first request's action then never ran, leaving the
+             button that asked for it dead. The shell calls back by whatever name
+             it is given, so a unique name is all it takes. */
+          window.__studioInterSeq=(window.__studioInterSeq||0)+1;
+          var interCb='__studioInterCb'+window.__studioInterSeq;
+          window[interCb]=function(){ try{ delete window[interCb]; }catch(_){} if(onDone) onDone(); };
+          try{ b.showInterstitial(interCb, placement||''); return; }
           catch(err){
             try{ console.error('[Studio] interstitial bridge call failed: '+((err&&err.message)||err)); }catch(_){}
+            try{ delete window[interCb]; }catch(_){}
           }
         }
         if(onDone) onDone();
@@ -375,6 +383,11 @@ button{font-family:inherit}
   animation:fadeIn .3s ease;
 }
 .layer,.panel{scrollbar-width:none;-ms-overflow-style:none}
+/* Low-RAM device: the full-screen backdrop blur is a compositor cost the
+   phone cannot afford - the menu, the tutorial and the pause screen are
+   all open panels, and each one blurs the whole screen behind it every
+   frame. The dim stays, the blur goes. */
+html.molow .layer{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 .layer::-webkit-scrollbar,.panel::-webkit-scrollbar{width:0;height:0;display:none}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .panel{
@@ -791,6 +804,12 @@ const goldA=a=>'rgba(212,175,55,'+a+')';
 
 /* ================= Canvas ================= */
 const stage=$('stage'),canvas=$('game'),ctx=canvas.getContext('2d');
+/* Low-RAM device: the shell's launcher says so in the URL (lowmem=1).
+   Measured on the OPPO CPH2219 the game holds 60fps in play, so nothing
+   here costs frames - this is the compositor's blur, and the display
+   scale, not the game's own work. */
+const LOW=/(?:^|[?&])lowmem=1/.test(location.search||'');
+if(LOW)document.documentElement.classList.add('molow');
 let W=0,H=0,DPR=1,scale=1,chartTop=0,viewW=0,vign=null,topGrad=null,botGrad=null;
 function resize(){
   chartStrip=null;   /* viewW changed: the cached strip no longer spans it */
@@ -811,6 +830,19 @@ function resize(){
   topGrad.addColorStop(0,'rgba(0,0,0,0.16)');topGrad.addColorStop(1,'rgba(0,0,0,0)');
   botGrad=ctx.createLinearGradient(0,H-90,0,H);
   botGrad.addColorStop(0,'rgba(0,0,0,0)');botGrad.addColorStop(1,'rgba(0,0,0,0.16)');
+  buildOverlay();
+}
+/* The vignette and the two edge gradients are painted once, here, and blitted
+   in a single pass - see buildOverlay's call in resize(). */
+let overlayCv=null;
+function buildOverlay(){
+  if(!overlayCv)overlayCv=document.createElement('canvas');
+  overlayCv.width=Math.max(1,Math.round(W)||1);
+  overlayCv.height=Math.max(1,Math.round(H)||1);
+  const g=overlayCv.getContext('2d');
+  g.clearRect(0,0,W,H);
+  g.fillStyle=vign;g.fillRect(0,0,W,H);
+  if(topGrad){g.fillStyle=topGrad;g.fillRect(0,0,W,90);g.fillStyle=botGrad;g.fillRect(0,H-90,W,90);}
 }
 window.addEventListener('resize',resize);
 
@@ -1989,7 +2021,7 @@ function buildChartStrip(){
   const pad=viewW;
   const W0=Math.floor(camX)-pad,W1=W0+viewW+pad*2;
   const c=document.createElement('canvas');
-  c.width=Math.max(1,Math.ceil(W1-W0));c.height=1008;
+  c.width=Math.max(1,Math.ceil(W1-W0)||1);c.height=1008;
   const g=c.getContext('2d');
   g.translate(-W0,0);
   drawGraticule(g);drawRhumbLines(g);drawMilkyWay(g);
@@ -1998,7 +2030,7 @@ function buildChartStrip(){
 function blitChartStatic(){
   if(!chartStrip||camX<chartStripX+40||camX+viewW>chartStripX+chartStrip.width-40)
     buildChartStrip();
-  ctx.drawImage(chartStrip,chartStripX,0);
+  if(chartStrip&&chartStrip.width>0)ctx.drawImage(chartStrip,chartStripX,0);
 }
 function drawGraticule(c){
   c=c||ctx;
@@ -2454,8 +2486,7 @@ function render(){
   if(state!=='dead')drawComet();
   drawParticles();drawPopups();drawHint();
   ctx.restore();
-  ctx.fillStyle=vign;ctx.fillRect(0,0,W,H);
-  if(topGrad){ctx.fillStyle=topGrad;ctx.fillRect(0,0,W,90);ctx.fillStyle=botGrad;ctx.fillRect(0,H-90,W,90);}
+  if(overlayCv&&overlayCv.width>0)ctx.drawImage(overlayCv,0,0,W,H);
   drawDangerPulse();
   drawEclipseMarker();
   updateHUD();
@@ -2637,13 +2668,28 @@ if(document.fonts&&document.fonts.ready){
   document.fonts.ready.then(()=>{clearEnvCaches();});
 }
 let loopAlive=true;
+/* Diagnostics: the real frame rate (the gap between rAF callbacks - the
+   number the player feels), the time this game's own JavaScript spends in a
+   frame, and the state. One line every two seconds; it changes nothing
+   about how the game is drawn. */
+let _orN=0,_orJs=0,_orPer=0,_orLast=0,OR_JS=0,_orMax=0,_orFirst=0;
+function orPerfLog(now){
+  if(_orLast){_orPer+=(now-_orLast);if(now-_orLast>_orMax)_orMax=now-_orLast;}else if(!_orFirst)_orFirst=now;
+  _orLast=now;_orN++;_orJs+=OR_JS;
+  if(_orN>=120){
+    console.log('[OR] fps='+Math.round(120000/Math.max(1,_orPer))+' js='+(_orJs/_orN).toFixed(1)+
+      ' state='+state+' dpr='+DPR+' max='+_orMax.toFixed(0)+' first='+_orFirst.toFixed(0));
+    _orN=0;_orJs=0;_orPer=0;_orMax=0;
+  }
+}
 function frame(now){
   if(!loopAlive)return;
   requestAnimationFrame(frame);
   let dt=Math.min((now-lastT)/1000,0.033);lastT=now;
   if(freeze>0){freeze-=dt;dt=0;}
   if(!paused)update(dt);
-  if(loopAlive&&!paused&&!document.hidden)render();
+  if(loopAlive&&!paused&&!document.hidden){const _t0=performance.now();render();OR_JS=performance.now()-_t0;}
+  orPerfLog(now);
 }
 requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
 </script>

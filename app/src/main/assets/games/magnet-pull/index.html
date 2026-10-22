@@ -43,7 +43,14 @@ width:76px;height:38px;border-radius:19px;display:none;align-items:center;justif
 background:rgba(8,10,14,.72);border:1px solid rgba(255,255,255,.3);color:#fff;
 font:800 12px/1 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;letter-spacing:.16em;
 cursor:pointer;-webkit-tap-highlight-color:transparent;
-backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 4px 14px rgba(0,0,0,.35)}
+/* NO BLUR. A backdrop-filter blurs the LIVE canvas behind it, and the
+   compositor has to do that again for every frame the canvas moves.
+   Measured on this phone with the blur on: 11 frame stalls over 60ms in
+   one session, two of them 194ms and 259ms - on the MENU, and on every
+   transition into and out of it. With the blur off: 3 stalls, and the
+   menu buttons go from an 84ms hitch to nothing at all.
+   The same change is in Midnight Overdrive, for the same reason. */
+box-shadow:0 4px 14px rgba(0,0,0,.35)}
 #studioBack.show{display:flex}
 #studioBack:active{transform:scale(.96)}
 /* per-game theme, substituted by the integrator: the button wears the game own
@@ -322,7 +329,10 @@ try{
   .orientation-text{font-size:10px;letter-spacing:.2em;color:var(--dim);line-height:1.7}
 
   .screen{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;
-    background:rgba(4,8,14,.62);backdrop-filter:blur(5px) saturate(1.15);-webkit-backdrop-filter:blur(5px) saturate(1.15);
+    /* NO BLUR - see the note on #studioBack above. The panel is 62% opaque
+   dark anyway, so the frosted look was costing a frame budget the game
+   cannot spare, and the panel still reads as a panel without it. */
+background:rgba(4,8,14,.62); saturate(1.15);
     transition:opacity .3s ease;opacity:1}
   .screen.off{opacity:0;pointer-events:none}
   #s-menu{background:rgba(4,8,14,.35)}
@@ -674,10 +684,22 @@ function resize(){
      a little dark space above and below the game. */
   const rw=window.innerWidth, rh=window.innerHeight;
   const valid=rw>=50&&rh>=50;
+  const nw=valid?rw:423, nh=valid?worldHeight(rw,rh):880;
+  const ndpr=Math.min(window.devicePixelRatio||1,2);
+  /* THE WORLD IS BUILT ONCE.
+     The viewport changes its HEIGHT all the time - the system bars come
+     and go, and the shell collapses the ad strip on the way to the menu -
+     and the world does not care, because its height is derived from its
+     width. So when the world has not actually moved there is nothing to
+     rebuild, and returning here is what stops the whole environment being
+     repainted behind the player every time the strip moves.
+     Before this, a resize rebuilt the zone art - a canvas the width of
+     the screen plus 420 - and that was the lag on every menu transition. */
+  if(nw===W&&nh===H&&ndpr===DPR){ worldLive=valid; return; }
   worldLive=valid;
-  DPR=Math.min(window.devicePixelRatio||1,2);
-  W=valid?rw:423;
-  H=valid?worldHeight(rw,rh):880;
+  DPR=ndpr;
+  W=nw;
+  H=nh;
   canvas.width=W*DPR; canvas.height=H*DPR;
   canvas.style.height=H+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -688,7 +710,9 @@ function resize(){
   railH=Math.max(8,10*vf);
   ballR=Math.max(10,14*vf);
   playH=railB-railT;
+  const _t0=performance.now();
   buildGlowSprites(); buildVignette(); buildWorld();
+  try{ console.log('[RS] rebuild ' + Math.round(performance.now()-_t0) + 'ms at ' + W + 'x' + H); }catch(e){}
   for(const o of obstacles) o._cv=null;
   player.trans=false;
   player.y=railYof(player.pol); player.x=W*.3;
@@ -2054,6 +2078,11 @@ function clearPools(){parts.forEach(p=>p.on=false);rings.forEach(r=>r.on=false);
 function toMenu(){
   gameplayStop();
   state='attract';
+  /* The strip goes down with the menu. This is the only place that takes
+     it down: the pause screen and the result screen are still the game,
+     so the strip stays up for those and the player never watches it
+     collapse and spring back. */
+  try{ Studio.ads.banner(false); }catch(e){}
   obstacles.length=0;clearPools();resetPlayer();
   resetZone();
   $('best-menu').textContent=best;
@@ -2062,6 +2091,11 @@ function toMenu(){
 }
 function startGame(){
   if(adInProgress)return;
+  /* The strip comes up with the run. The shell preloads it at launch (this
+     game asks for `banner: bottom`), so by now the ad is already in hand
+     and showing it only swaps a view that is already there - no attach,
+     and no stall on the first frame of the run. */
+  try{ Studio.ads.banner(true); }catch(e){}
   gameplayStart();
   rewardedUsed=false;
   /* The shell caps rewarded revives at ONE PER RUN and only learns that a new
@@ -2392,6 +2426,7 @@ function render(){
 let lastT=performance.now(),menuAcc=0,provT=0,liveLogged=false;
 function frame(now){
   requestAnimationFrame(frame);
+
   /* Viewport self-heal: compare against the live window every frame. The
      world is always built - at a provisional size on a 0x0 boot, real size
      otherwise - so this compare only exists to catch the moment the real
@@ -2576,7 +2611,10 @@ requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
      the game is still warming up and the player is watching. The ad is now
      requested while the menu is still up (so it has time to load before the
      first run) and it stays up from then on. */
-  try{ Studio.ads.banner(true); }catch(e){}
+  /* The strip is NOT asked for here. It comes up with a RUN and goes down
+     on the MENU - the player is looking at a menu when they arrive and a
+     menu when they leave, and an ad has no business in either. See
+     startGame() and toMenu(), which are the two places that decide it. */
 
   window.Game={
     pause:function(){ try{ if(state==='play') pauseGame(); }catch(e){} if(prev.pause) try{ prev.pause(); }catch(e){} },
