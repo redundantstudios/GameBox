@@ -746,6 +746,11 @@ function initAudio(){
   const hf=actx.createBiquadFilter(); hf.type='lowpass'; hf.frequency.value=230;
   humGain=actx.createGain(); humGain.gain.value=0;
   humOsc.connect(hf); hf.connect(humGain); humGain.connect(master); humOsc.start();
+  /* The crash SFX samples a shared noise buffer. It used to be built on the
+     first crash - a half-second of samples generated exactly on the impact
+     frame, the one a player is watching hardest. Build it once, here, where
+     half a millisecond cannot be felt. */
+  try{getNoise();}catch(e){}
 }
 function sfxGuard(){
   if(!actx)initAudio();
@@ -1474,7 +1479,14 @@ let obstacles=[];
 function drawObstacle(o){
   if(o.type==='bar'){
     if(!o._cv){
-      const w=Math.round(o.w),h=Math.round(o.len);
+      const w=Math.round(o.w);
+      /* The bar length ramp is continuous (lerp with the live difficulty), so
+         a raw Math.round(o.len) key produced a near-miss every spawn and the
+         cache only ever paid its cost. The sprite is cached at a quantized
+         height and stretched to the exact length on draw - the texture is a
+         repeat panel, a sub-8px vertical stretch is invisible, and gameplay
+         keeps the exact length. */
+      const h=Math.round(o.len/8)*8;
       /* the band position depends on o.from, so it is part of the cache key */
       const sk='bar:'+o.from+':'+w+'x'+h;
       if(!obstacleSpr[sk]){
@@ -1505,7 +1517,7 @@ function drawObstacle(o){
       }
       o._cv=obstacleSpr[sk];
     }
-    ctx.drawImage(o._cv,o.x,o.from==='top'?railT-2:railB-o.len);
+    ctx.drawImage(o._cv,o.x,o.from==='top'?railT-2:railB-o.len,o.w,o.len);
     const ey=o.from==='top'?railT-2+o.len:railB-o.len;
     glowLine(o.x,ey,o.x+o.w,ey,'rgba(220,242,255,.95)',0,2);
     ctx.fillStyle='rgba(160,215,245,.07)';
@@ -1947,7 +1959,11 @@ function startGame(){
   SFX.start();
 }
 function die(){
-  player.alive=false;state='dying';deathT=0;tsTarget=.13;
+  /* The world used to drop to 13% speed for the whole death animation
+     (tsTarget=.13) and players read that crawl as the game lagging. The
+     crash now plays at the normal clock and the hold before the result
+     screen is shorter (0.85s vs 1.35s): same effects, less dead time. */
+  player.alive=false;state='dying';deathT=0;
   shake(15*sf);flashA=.85;
   explosion(player.x,player.y);
   ring(player.x,player.y,'rgba(255,120,120,1)',620*vf,.6,3);
@@ -2008,7 +2024,13 @@ function showOver(){
      moment the run ends, not a second one on the way out of it.
      The callback is empty on purpose: nothing on this screen waits on the ad,
      and the shell's governor still decides whether one is actually due. */
-  try{ Studio.ads.interstitial(function(){},'magnet.gameover'); }catch(e){}
+  /* Deferred a beat so the ad request does not land on the same frames as the
+     game-over transition - the crash-to-result handoff is where players
+     reported jank. Skipped entirely if the screen has already moved on. */
+  setTimeout(function(){
+    if(state!=='over')return;
+    try{ Studio.ads.interstitial(function(){},'magnet.gameover'); }catch(e){}
+  },300);
 }
 /* The only place that decides whether CONTINUE is offered: an ad that has not
    been spent yet, on a run where the SDK is up. Called from showOver() and
@@ -2247,7 +2269,7 @@ function frame(now){
     updateObstacles(dt);
     updateZone(rdt);
     deathT+=rdt;
-    if(deathT>1.35)showOver();
+    if(deathT>.85)showOver();
   }
 
   if(state!=='pause'){
