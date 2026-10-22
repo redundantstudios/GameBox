@@ -169,12 +169,9 @@ class SettingsActivity : ThemedActivity() {
                 else -> "Evening"
             }
             ReminderScheduler.schedule(this)
-            ShellAudio.tapTiny(this)
             sync()
         }
 
-        // ---- dev-only test ping ---------------------------------------------
-            ShellAudio.tap(this)
     }
 
     /**
