@@ -1,5 +1,52 @@
 # Project Progress
 
+## Chinese Checkers - director pass: the blocked player, the board, the names - 2026-10-22
+
+Six issues, all fixed and verified on device. The game is LOCKED; any further request
+becomes a numbered pass on top.
+
+### CHINESE CHECKERS - LOCKED
+
+- **A blocked player could not lose, so the game never ended.** The rule for a player
+  with no legal move was to pass the turn, and it passed, and passed, and passed -
+  the opponent kept moving, the blocked player kept having nothing to do, and the game
+  went on forever. The rule is now the ordinary one: a player with no legal move is
+  GIVEN A TURN TO BE FREED. If the opponent then moves and the player is still stuck,
+  the marbles blocking them have not moved, nothing is going to change, and that player
+  has lost. "Still stuck" is the important half - a player hemmed in for one turn is not
+  lost, because the opponent might move away and release them, and the rule does not
+  say they are.
+- **RESUME appeared on the home screen for a game that was already finished.** The
+  games' save helpers are rewritten to read and write through the shell's
+  `NativeBridge`, and the DELETE half of that rewrite had no counterpart: the delete
+  fell through to localStorage while every read came from the bridge's store. A save
+  was deleted in one place and read from another, so it was never really gone. The
+  bridge has a `del` now, and the game clears both stores.
+- **The END TURN button had no place on a board that is six triangles.** It is now on
+  the side the player is playing from - top camps get it at the top, bottom camps at
+  the bottom - and it moves when the turn does. It sits BELOW the row of player
+  tokens when it is at the top, and the token row's height is MEASURED rather than
+  guessed, because it is 36px tokens normally and 29px with five or six players.
+- **The board was the wrong way round for the person playing.** RED is the human's
+  marble and RED's triangle was at the top, so you played away from your own end.
+  The board is turned and RED is now at the bottom. The board's shape is symmetric
+  top to bottom, so the drawn shape is identical - what changed is which triangle is
+  which. The lattice is untouched: every hole keeps the same x, the rows keep the
+  same offsets, and the star path between camps runs the way it did.
+- **Players were called PLAYER 1 and P1, which told the player nothing they could
+  see.** They are named by the colour of their marbles now - RED, GREEN, BLUE, YELLOW,
+  BLACK, WHITE - and the computer is marked so the two can be told apart at a
+  glance: YELLOW (Bot). The name comes from the PALETTE rather than the camp, and
+  the difference matters: a two-player game seats RED against BLACK, not RED against
+  YELLOW, because the seat is a triangle and the marble is a marble. It also reads
+  better in the game's own messages.
+- **The warning was an 11px caption.** It says "that is not your marble", so it is
+  now 16px on a padded wooden plaque, and the box is as wide as the message needs
+  rather than pinned to 88vw with the words huddled in the middle. The wording
+  changed too - it now says whose turn it is, not whose marble you touched, and it
+  names the player whose turn it ACTUALLY is. Tapping a blue marble while green was
+  playing used to say "IT IS BLUE'S TURN", which named the wrong player entirely.
+
 ## Mimic / Knot Away / Truth or Dare — final pass, all three LOCKED — 2026-10-13
 
 All three verified on device and frozen. Any further request becomes a numbered pass on top.

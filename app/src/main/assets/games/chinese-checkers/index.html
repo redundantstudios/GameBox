@@ -52,10 +52,7 @@ button{font-family:var(--serif)}
 .woodbtn:active{transform:translateY(2px);filter:brightness(.95);box-shadow:inset 0 2px 7px rgba(20,8,0,.5),0 1px 3px rgba(0,0,0,.4)}
 .woodbtn.primary{font-size:16px}
 .woodbtn.opt{width:100%;margin:.4em 0;padding:.65em 1.2em}
- /* The dev control is deliberately quieter than the real choices: it is a
-    test affordance, and it should not look like a way to play. */
- .woodbtn.opt.dev{margin-top:1.1em;opacity:.72;border-style:dashed}
- .woodbtn.opt.dev b{color:#FFB020}
+
 .woodbtn.danger{color:#f3c8a8}
 .iconbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--edge);cursor:pointer;display:flex;align-items:center;
  justify-content:center;color:#f0ddba;background:linear-gradient(175deg,rgba(255,232,190,.16),rgba(0,0,0,0) 50%),linear-gradient(#7c4f27,#54331a);
@@ -549,7 +546,7 @@ function spawnSparks(x,y,col){
 }
 function loop(ts){
   requestAnimationFrame(loop);
-  const dt=Math.min(48,ts-(lastT||ts))*SPEED;lastT=ts;T=ts/1000;
+  const dt=Math.min(48,ts-(lastT||ts));lastT=ts;T=ts/1000;
   ctx.clearRect(0,0,W,H);
   if(!staticCv)return;
   ctx.drawImage(staticCv,0,0,W,H);
@@ -562,14 +559,6 @@ function loop(ts){
 let G=null,homeBoard=new Int8Array(NH).fill(-1),botTimer=0,passTimer=0;
 CAMPS.forEach((a,c)=>a.forEach(i=>homeBoard[i]=c));
 let cfg=null,seatEls=[];
-/* THE DEV SPEED.
-
-   1 is normal play. The dev button sets it to 10, which is what makes a
-   self-playing game finish in a fraction of the time. Every timer in the game
-   goes through ms() so there is one number to reason about, and the frame
-   delta is scaled to match. */
-let SPEED=1;
-const ms=n=>Math.max(1,Math.round(n/SPEED));
 
 function setupPlayers(c){
   const seats=SEATS[c.count],pal=PALS[c.count];
@@ -577,10 +566,9 @@ function setupPlayers(c){
     bot:c.mode==='bot'&&i>0,
     /* Named by the colour of their marbles, not by seat number. CNAME is
        indexed by palette, which is what decides the marble's colour. */
-    /* The computer is marked in a normal game so the two can be told apart at
-       a glance. In the dev game there is nothing to tell apart - every seat is
-       a player - so nobody is marked. */
-    name:(c.dev||!(c.mode==='bot'&&i>0))?CNAME[pal[i]]:CNAME[pal[i]]+' (Bot)',
+    /* The computer is marked in a normal game against it, so the two can be
+       told apart at a glance. */
+    name:!(c.mode==='bot'&&i>0)?CNAME[pal[i]]:CNAME[pal[i]]+' (Bot)',
     team:c.team?(c.count===4?i%2:i%3):i,done:false}));
 }
 function destLegal(pid,from,to){
@@ -709,10 +697,10 @@ function endTurn(){
   return;}
   G.stuck[n]=true;
   toast(G.players[n].name+' HAS NO MOVES - TURN PASSES');
-  passTimer=setTimeout(()=>{if(G&&G.cur===n&&G.phase==='idle')endTurn()},ms(1100));
+  passTimer=setTimeout(()=>{if(G&&G.cur===n&&G.phase==='idle')endTurn()},1100);
   return;}
   G.stuck[n]=false;
-  if(G.players[n].bot){G.phase='bot';botTimer=setTimeout(botTurn,ms(680))}
+  if(G.players[n].bot){G.phase='bot';botTimer=setTimeout(botTurn,680)}
   }
 
 /* ---------------- bot AI ---------------- */
@@ -767,9 +755,9 @@ function scoreCand(m,pid,set){
 }
 function botTurn(){
   if(!G||G.phase==='over')return;
-  if(G.paused){botTimer=setTimeout(botTurn,ms(400));return}
+  if(G.paused){botTimer=setTimeout(botTurn,400);return}
   const pid=G.cur,cands=botCandidates(pid);
-  if(!cands.length){toast(G.players[pid].name+' HAS NO MOVES');botTimer=setTimeout(endTurn,ms(500));return}
+  if(!cands.length){toast(G.players[pid].name+' HAS NO MOVES');botTimer=setTimeout(endTurn,500);return}
   const set=G.diff===2?threatSet(pid):null;
   let best=null,bs=-1e9;
   for(const m of cands){const s=scoreCand(m,pid,set);if(s>bs){bs=s;best=m}}
@@ -784,10 +772,6 @@ function botTurn(){
 }
 function initializeGame(c,restore){
   window.__ccOverAdDone=false;
-  /* The dev speed belongs to THIS game, not to the session. Setting it at the
-     button would leave every game after it running at ten times the speed
-     with nothing on screen to say why. */
-  SPEED=(c&&c.dev)?10:1;
   /* The resets the original had. Without them a new game inherits the old
      one's pending flights, sparks and TIMERS - and the timers matter here:
      the blocked-player rule schedules a pass, and a stale pass firing into a
@@ -804,7 +788,7 @@ function initializeGame(c,restore){
   if(!restore)G.players.forEach(P=>CAMPS[P.camp].forEach(h=>G.board[h]=P.idx));
   hide($('ovWin'));hide($('ovPause'));hide($('scrHome'));hide($('scrSetup'));
   buildSeats();showGame();updateHUD();saveGame();
-  if(G.players[G.cur].bot){G.phase='bot';botTimer=setTimeout(botTurn,ms(750))}
+  if(G.players[G.cur].bot){G.phase='bot';botTimer=setTimeout(botTurn,750)}
 }
 function restartGame(){if(G)initializeGame(G.cfg)}
 function saveGame(){
@@ -837,7 +821,7 @@ function finishGame(w){
     G.players.filter(q=>q.team===w.id).map(q=>q.color));
   const camps=w.type==='p'?[G.players[w.id].camp]:G.players.filter(q=>q.team===w.id).map(q=>q.camp);
   camps.forEach(c=>spawnSparks(cx0+CENT[c].x*S,cy0+CENT[c].y*S,winnerColors.values().next().value));
-  setTimeout(showWin,ms(1500));try{window.__ccSyncBanner()}catch(e){}
+  setTimeout(showWin,1500);try{window.__ccSyncBanner()}catch(e){}
 }
 function showWin(){
   if(!G||!G.winner)return;
@@ -846,18 +830,13 @@ function showWin(){
   if(w.type==='p'){const P=G.players[w.id];
   if(w.lost){
   /* The player named here is the one who was BLOCKED. */
-  if(cfg&&cfg.dev){
-  /* The dev game is about the rules, so the panel says what HAPPENED rather
-     than who won - which is the whole point of watching for a block. */
-  title=P.name+' WAS BLOCKED';names=[P];
-  }else if(G.mode==='bot'&&P.bot){
+  if(G.mode==='bot'&&P.bot){
   /* The computer was the blocked one, so the human won. */
   const H=G.players.find(q=>!q.bot);
   title='CHAMPION';names=H?[H]:[P];
   }else{title='DEFEAT';names=[P];}
   }else{
-  /* In the dev game the point is WHO won, not that the tester lost. */
-  title=(cfg&&cfg.dev)?P.name+' WINS':(G.mode==='bot'&&P.bot?'DEFEAT':'CHAMPION');
+  title=G.mode==='bot'&&P.bot?'DEFEAT':'CHAMPION';
   names=[P];}
   }
   else{const mem=G.players.filter(q=>q.team===w.id);
@@ -942,7 +921,7 @@ function refreshHome(){
 }
 function pauseGame(){if(!G||G.phase==='over')return;G.paused=true;SFX.pause();show($('ovPause'));try{window.__ccSyncBanner()}catch(e){}}
 function resumeGame(){if(!G)return;G.paused=false;hide($('ovPause'));try{window.__ccSyncBanner()}catch(e){}
-  if(G.players[G.cur].bot&&G.phase!=='over'){G.phase='bot';clearTimeout(botTimer);botTimer=setTimeout(botTurn,ms(600))}}
+  if(G.players[G.cur].bot&&G.phase!=='over'){G.phase='bot';clearTimeout(botTimer);botTimer=setTimeout(botTurn,600)}}
 
 /* ---------------- input ---------------- */
 cv.addEventListener('pointerdown',e=>{
@@ -974,11 +953,14 @@ function handleTap(h){
   SFX.bad();buzz([30,40,30]);
   /* Whose go it is, not whose marble it is: that is the question the player
      actually has when a tap does nothing. */
-  if(b>=0&&b!==G.cur)toast("IT IS "+G.players[b].name+"'S TURN");
+  /* Whose go it is, which is the CURRENT player - not the colour of the
+     marble that was tapped. Tapping a blue marble while green was playing
+     used to say "IT IS BLUE'S TURN", which named the wrong player entirely. */
+  if(b>=0&&b!==G.cur)toast("IT IS "+G.players[G.cur].name+"'S TURN");
 }
 
 /* ---------------- setup screens ---------------- */
-function openSetup(){cfg={mode:null,team:null,count:null,diff:null,dev:false};setupStep('mode');show($('scrSetup'))}
+function openSetup(){cfg={mode:null,team:null,count:null,diff:null};setupStep('mode');show($('scrSetup'))}
 function setupStep(step){
   const o=$('setupOpts');o.innerHTML='';
   const T2=$('setupTitle'),N2=$('setupNote');
@@ -988,19 +970,6 @@ function setupStep(step){
   if(step==='mode'){T2.textContent='SELECT MODE';N2.textContent='CHINESE CHECKERS';
     mk('VS BOT','play against the computer',()=>{cfg.mode='bot';setupStep('type')});
     mk('VS FRIENDS','local pass-and-play',()=>{cfg.mode='friends';setupStep('type')});
-    /* THE DEV BUTTON.
-       Every seat played by the computer, ten times the speed, so a whole game
-       resolves in a fraction of the time. It exists to test the RULES - the
-       blocked-loss rule, the win detection, a team game playing itself out -
-       rather than to be played, and it is marked as a test control so it is
-       never mistaken for one of the real choices. */
-    const dev=document.createElement('button');
-    dev.className='woodbtn opt dev';
-    dev.innerHTML='<b>DEV: ALL AI</b><small>every player is a computer - 10x speed</small>';
-    dev.onclick=()=>{SFX.click();
-    cfg.mode='bot';cfg.team=false;cfg.count=4;cfg.dev=true;
-    hide($('scrSetup'));initializeGame(cfg);};
-    o.appendChild(dev);
     $('setupBack').onclick=()=>{SFX.click();hide($('scrSetup'));show($('scrHome'))};}
   else if(step==='type'){T2.textContent='SELECT GAME TYPE';N2.textContent='PARTNERS SIT OPPOSITE EACH OTHER';
     mk('INDIVIDUAL','every player for themselves',()=>{cfg.team=false;setupStep('count')});
@@ -1121,7 +1090,7 @@ function closeTut(){tut.on=false;tut.M={};tut.fly=null;tut.hl=[];hide($('ovTut')
  $('btnSetBack').onclick=()=>{SFX.click();hide($('ovSettings'))};
  $('btnResume').onclick=()=>{SFX.click();
   if(G){showGame();updateHUD();
-    if(G.players[G.cur].bot&&G.phase!=='over'){G.phase='bot';clearTimeout(botTimer);botTimer=setTimeout(botTurn,ms(700))}}
+    if(G.players[G.cur].bot&&G.phase!=='over'){G.phase='bot';clearTimeout(botTimer);botTimer=setTimeout(botTurn,700)}}
   else loadGame()};
  $('btnPause').onclick=()=>{SFX.click();pauseGame()};
  $('btnResumeG').onclick=()=>{SFX.click();resumeGame()};
