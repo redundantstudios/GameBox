@@ -1916,6 +1916,7 @@ function requestRewardedAd(){
    callback, so the ad plays and the button then does nothing.
    adInProgress is raised for the duration so a mash-tap cannot queue two, and
    released before the action runs so startGame()'s own guard lets it through. */
+/* ==== TEMP probes for the game-over button latency report - remove when done ==== */
 function withInterstitial(placement,fn){
   if(adInProgress)return;
   adInProgress=true;
@@ -2080,9 +2081,19 @@ bind('btn-how',()=>showScreen(sHow,'how'));
 bind('btn-set',()=>showScreen(sSet,'set'));
 bind('btn-how-back',uiBack);
 bind('btn-set-back',uiBack);
-bind('btn-retry',()=>withInterstitial('magnet.gameover.retry',startGame));
+/* The game-over buttons fire their action directly, with no interstitial
+   before it. On-device measurement (performance.now() in the click handlers)
+   showed the click itself runs in ~1ms and the shell answers suppressed
+   requests in ~15ms - the whole wait players reported came from the ads these
+   two buttons used to request whenever the app-wide 3-minute interstitial gap
+   had elapsed: the shell opens the ad a beat after the tap and the action only
+   runs once the player closes it, which read as "the buttons take too long to
+   react". The break that covers this screen is the game-over interstitial in
+   showOver() below, governed by the same gap; the pause-screen buttons keep
+   their own calls. */
+bind('btn-retry',startGame);
 bind('btn-watch-ad',requestRewardedAd);
-bind('btn-over-menu',()=>withInterstitial('magnet.gameover.menu',toMenu));
+bind('btn-over-menu',toMenu);
 bind('btn-pause',pauseGame);
 bind('btn-resume',resumeGame);
 bind('btn-restart',()=>withInterstitial('magnet.pause.restart',startGame));
