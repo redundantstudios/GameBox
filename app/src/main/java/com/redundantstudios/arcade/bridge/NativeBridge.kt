@@ -241,6 +241,20 @@ class NativeBridge(private val context: Context) {
         NativeBridgeContext.bannerHandler?.invoke(false)
     }
 
+    /**
+     * The game changed its page background; the banner strip follows it.
+     *
+     * See [NativeBridgeContext.pageBgHandler].
+     */
+    @JavascriptInterface
+    fun setPageBackground(hex: String) {
+        try {
+            NativeBridgeContext.pageBgHandler?.invoke(hex)
+        } catch (e: Throwable) {
+            Log.w("NativeBridge", "page background rejected: ${e.message}")
+        }
+    }
+
     @JavascriptInterface
     fun exitGame() {
         NativeBridgeContext.exitHandler?.invoke()
@@ -305,6 +319,21 @@ object NativeBridgeContext {
      * See [NativeBridge.newRun] and AdPolicy.onRunStarted.
      */
     var runHandler: (() -> Unit)? = null
+
+    /**
+     * The game changed its own page background, and the banner strip has to
+     * follow it.
+     *
+     * The strip is a native view that sits over the game's WebView, so it
+     * cannot pick up a CSS change. It is coloured from the game's manifest when
+     * the screen opens - but a game with themes changes its background WHILE it
+     * is open, and the strip stayed on the colour the game started with. A
+     * brown strip over a green game, which is worse than no strip at all.
+     *
+     * The colour comes across as a hex string, and the shell parses it. A value
+     * it cannot parse is ignored rather than allowed to blank the strip.
+     */
+    var pageBgHandler: ((String) -> Unit)? = null
 }
 
 /**

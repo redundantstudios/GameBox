@@ -713,6 +713,10 @@ function applyTheme(id,silent){
   const th=THEMES.find(t=>t.id===id)||THEMES[0];
   state.theme=th.id;
   for(const[k,v]of Object.entries(th.ui))document.documentElement.style.setProperty('--'+k,v);
+  /* The banner strip is a native view over this page, so it cannot see a
+     CSS change. Tell the shell what the background is now, or the strip
+     stays on the colour the game started with. */
+  try{ if(window.NativeBridge&&window.NativeBridge.setPageBackground) window.NativeBridge.setPageBackground(th.ui.bg); }catch(e){}
   document.documentElement.style.setProperty('--label',th.board.line);
   $('#themeName').textContent=th.name;
   paintStatic(); buildSprites(); buildThemeGrid(); if(!silent)saveState();
@@ -862,11 +866,10 @@ const Panels={
         if(document.getElementById(id)===next) next.classList.add('showing');
       }));
     } else if(next){ next.classList.add('showing'); }
-    if(!clickWasRecent())S('open')
+/* The panel makes no sound of its own: the button that opened it already did. */
   },
   hide(){overlay.classList.remove('visible');
-    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('showing')); if(!clickWasRecent())S('close')},
-  isOpen(){return overlay.classList.contains('visible')}
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('showing'));},
 };
 function uiPaused(){return Panels.isOpen()&&!Tutorial.active&&Game.players.length>0&&Game.phase!=='over'}
 let toastT=null;
@@ -2520,23 +2523,25 @@ const Tutorial={
    called S('click') themselves, so pressing one of those played it TWICE -
    once from this pointerdown and once from its own handler. The handlers are
    left alone (they do other work) but the sound is claimed once per press. */
-let _clickClaimed=false, _clickAt=0;
+/* THE ONE VOICE OF A BUTTON.
+   Every press in the game makes this sound, and this is the only place a
+   button makes a sound at all.
+
+   It used to be otherwise. This handler claimed the click sound, and the
+   panel a button opened added its own sound on the click event - a whole
+   task later, by which time the claim had been released, because the claim
+   was released by a zero-delay timeout. One press, two sounds, every time.
+   The claim was also supposed to stop the same press making the sound
+   twice, and a window that short never did that either.
+
+   There is no race in the simple arrangement: this is the only place a
+   button makes a sound, and the panels make none. A press is one click,
+   every button, every time. */
 document.addEventListener('pointerdown',e=>{
 A.gesture=true;   /* a real touch: the context may be rebuilt now */
-  audioEnsure();
-  if(e.target.closest('button')){
-    if(!_clickClaimed){ _clickClaimed=true; _clickAt=performance.now(); S('click');Hap.tap();
-      /* The claim is released by the NEXT press, not by a zero-delay timeout.
-         A timeout that short was never really the "single owner" of anything:
-         the panel a button opens plays its sound on the click event, a whole
-         task later, by which time the claim had already been released - which
-         is exactly how one press came to make two sounds. */
-    }
-  }
+audioEnsure();
+if(e.target.closest('button')){ S('click');Hap.tap(); }
 });
-/* True when a press was just heard, so anything that would add a second
-   sound on top of it stands down. */
-function clickWasRecent(){return performance.now()-_clickAt<400;}
 window.addEventListener('resize',resizeAll);
 window.addEventListener('orientationchange',()=>setTimeout(resizeAll,120));
 

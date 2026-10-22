@@ -848,6 +848,24 @@ val bannerEdge = currentGame?.bannerEdge
            run's revive had been spent and refused the second run's. */
         NativeBridgeContext.runHandler = { AdPolicy.onRunStarted() }
 
+        /* A game that changes its own background WHILE IT IS OPEN - Carrom has
+           themes - tells the shell, and the banner strip follows. The strip is
+           a native view over the WebView, so it cannot see a CSS change by
+           itself, and being left on the colour the game started with put a
+           brown strip over a green game. */
+        NativeBridgeContext.pageBgHandler = { hex ->
+            val colour = try {
+                android.graphics.Color.parseColor(hex.trim())
+            } catch (e: IllegalArgumentException) {
+                Log.w(TAG_TIME, "page background not a colour: $hex")
+                null
+            }
+            if (colour != null) {
+                adMobManager.setBannerBackdrop(colour)
+                Log.d(TAG_TIME, "page background now $hex")
+            }
+        }
+
         /* Banner handler: games call Studio.ads.showBanner()/hideBanner().
            Only wired for a game whose manifest carries a `banner:` line, so a
            game that never opted in cannot bring a strip up on its own. */
