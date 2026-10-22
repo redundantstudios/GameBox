@@ -2054,6 +2054,11 @@ function clearPools(){parts.forEach(p=>p.on=false);rings.forEach(r=>r.on=false);
 function toMenu(){
   gameplayStop();
   state='attract';
+  /* The strip goes down with the menu. This is the only place that takes
+     it down: the pause screen and the result screen are still the game,
+     so the strip stays up for those and the player never watches it
+     collapse and spring back. */
+  try{ Studio.ads.banner(false); }catch(e){}
   obstacles.length=0;clearPools();resetPlayer();
   resetZone();
   $('best-menu').textContent=best;
@@ -2062,6 +2067,11 @@ function toMenu(){
 }
 function startGame(){
   if(adInProgress)return;
+  /* The strip comes up with the run. The shell preloads it at launch (this
+     game asks for `banner: bottom`), so by now the ad is already in hand
+     and showing it only swaps a view that is already there - no attach,
+     and no stall on the first frame of the run. */
+  try{ Studio.ads.banner(true); }catch(e){}
   gameplayStart();
   rewardedUsed=false;
   /* The shell caps rewarded revives at ONE PER RUN and only learns that a new
@@ -2576,7 +2586,10 @@ requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
      the game is still warming up and the player is watching. The ad is now
      requested while the menu is still up (so it has time to load before the
      first run) and it stays up from then on. */
-  try{ Studio.ads.banner(true); }catch(e){}
+  /* The strip is NOT asked for here. It comes up with a RUN and goes down
+     on the MENU - the player is looking at a menu when they arrive and a
+     menu when they leave, and an ad has no business in either. See
+     startGame() and toMenu(), which are the two places that decide it. */
 
   window.Game={
     pause:function(){ try{ if(state==='play') pauseGame(); }catch(e){} if(prev.pause) try{ prev.pause(); }catch(e){} },
