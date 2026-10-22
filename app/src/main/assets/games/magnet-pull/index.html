@@ -624,13 +624,26 @@ let railT=0,railB=0,railH=10,ballR=14,playH=0;
 let vig=null,glowTop=null,glowBot=null,goldGlow=null,podGlow=null;
 let speedNow=300;
 
-const K={speedMin:300,speedMax:680,crossT0:.42,crossT1:.26};
+/* The run's speed band. speedMin used to be 300 and the first half-minute of a
+   run crawled - the most common onboarding complaint. The band is raised as a
+   pair so the ramp keeps roughly its original headroom; streaks (drawn above
+   speed 380) fade in over the very first seconds instead of arriving abruptly
+   later. */
+const K={speedMin:430,speedMax:780,crossT0:.42,crossT1:.26};
 
 const C_TOP=[61,224,199], C_BOT=[255,158,60], C_RED=[255,77,109],
       C_VIO=[172,120,255], C_GOLD=[255,205,110];
 const polRGB=p=>p==='top'?C_TOP:C_BOT;
 
 function resize(){
+  /* Cold-boot guard: the shell's logs show this device can report a 0-wide
+     WebView while the page parses (the canvas was still tagged at its 300x150
+     default and the game painted a blank screen - the world had been built
+     for a 0x0 viewport). Skip the build entirely; the frame loop watches
+     innerWidth/innerHeight every frame and rebuilds the moment a real
+     viewport exists. */
+  const rw=window.innerWidth, rh=window.innerHeight;
+  if(rw<50||rh<50)return;
   DPR=Math.min(window.devicePixelRatio||1,2);
   W=window.innerWidth; H=window.innerHeight;
   canvas.width=W*DPR; canvas.height=H*DPR;
@@ -2234,6 +2247,15 @@ function render(){
 let lastT=performance.now();
 function frame(now){
   requestAnimationFrame(frame);
+  /* Viewport self-heal: compare against the live window every frame. This
+     catches two boots the old code could not recover from - a page that parsed
+     before the WebView had been laid out (0x0, world built at garbage size,
+     player on a blank screen until restart), and a late re-layout after the
+     first real size. The compare per frame is free; resize() only runs when
+     something actually moved. */
+  const iw=window.innerWidth, ih=window.innerHeight;
+  if(iw<50||ih<50)return;
+  if(iw!==W||ih!==H)resize();
   let rdt=(now-lastT)/1000;lastT=now;
   if(rdt>.1)rdt=.1;if(rdt<0)rdt=0;
   tGlobal+=rdt;
