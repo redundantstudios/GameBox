@@ -6,6 +6,7 @@ rem this order, and the first one that exists wins:
 rem   %ADB%        - an explicit override
 rem   %ANDROID_HOME% / %ANDROID_SDK_ROOT%\platform-tools\adb.exe
 rem   %LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe
+rem   %USERPROFILE%\.android-sdk\platform-tools\adb.exe (the lead's SDK)
 rem   adb on the PATH
 call BUILD.bat
 if errorlevel 1 (echo BUILD FAILED & exit /b 1)
@@ -19,6 +20,9 @@ if not defined ADB (
 )
 if not defined ADB (
   if exist "%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe" set "ADB=%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe"
+)
+if not defined ADB (
+  if exist "%USERPROFILE%\.android-sdk\platform-tools\adb.exe" set "ADB=%USERPROFILE%\.android-sdk\platform-tools\adb.exe"
 )
 if not defined ADB (
   for %%D in (adb.exe) do if not "%%D"=="adb.exe" set "ADB=%%D"

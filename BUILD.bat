@@ -12,11 +12,22 @@ cd /d "%~dp0"
 set "PROJECT_DIR=%~dp0"
 
 rem ---- JDK 17 (required by this project's AGP version) ----
+rem A pre-set JAVA_HOME is only trusted if it really has a java.exe in it.
+rem This machine carried JAVA_HOME pointing at an Android Studio jbr that
+rem is not installed, and gradle refused to start ("JAVA_HOME is set to an
+rem invalid directory") - which says nothing about the real cause. So an
+rem unusable JAVA_HOME is cleared and the lookup below runs instead.
+if defined JAVA_HOME if not exist "%JAVA_HOME%\bin\java.exe" set "JAVA_HOME="
+rem A candidate is only accepted if the executable is really in it. A folder
+rem that merely LOOKS like a JDK (or a gradle) would otherwise win the lookup
+rem and then fail with "The system cannot find the path specified", which
+rem says nothing about the real cause. There was a leftover gradle-8.5
+rem directory with no bin\ in it, and it took the build down.
 if not defined JAVA_HOME (
-  for /f "delims=" %%D in ('dir /b /ad "%USERPROFILE%\.jdk\jdk-17*" 2^>nul') do set "JAVA_HOME=%USERPROFILE%\.jdk\%%D"
+  for /f "delims=" %%D in ('dir /b /ad "%USERPROFILE%\.jdk\jdk-17*" 2^>nul') do if not defined JAVA_HOME if exist "%USERPROFILE%\.jdk\%%D\bin\java.exe" set "JAVA_HOME=%USERPROFILE%\.jdk\%%D"
 )
 if not defined JAVA_HOME (
-  for /f "delims=" %%D in ('dir /b /ad "%PROJECT_DIR%..\.jdk\jdk-17*" 2^>nul') do set "JAVA_HOME=%PROJECT_DIR%..\.jdk\%%D"
+  for /f "delims=" %%D in ('dir /b /ad "%PROJECT_DIR%..\.jdk\jdk-17*" 2^>nul') do if not defined JAVA_HOME if exist "%PROJECT_DIR%..\.jdk\%%D\bin\java.exe" set "JAVA_HOME=%PROJECT_DIR%..\.jdk\%%D"
 )
 if not defined JAVA_HOME (
   if exist "C:\Program Files\Android\Android Studio\jbr" set "JAVA_HOME=C:\Program Files\Android\Android Studio\jbr"
@@ -29,10 +40,10 @@ if defined GRADLE_HOME (
   if exist "%GRADLE_HOME%\bin\gradle.bat" set "GRADLE_CMD=%GRADLE_HOME%\bin\gradle.bat"
 )
 if not defined GRADLE_CMD (
-  for /f "delims=" %%D in ('dir /b /ad "%USERPROFILE%\.gradle-dist\gradle-*" 2^>nul') do set "GRADLE_CMD=%USERPROFILE%\.gradle-dist\%%D\bin\gradle.bat"
+  for /f "delims=" %%D in ('dir /b /ad "%USERPROFILE%\.gradle-dist\gradle-*" 2^>nul') do if not defined GRADLE_CMD if exist "%USERPROFILE%\.gradle-dist\%%D\bin\gradle.bat" set "GRADLE_CMD=%USERPROFILE%\.gradle-dist\%%D\bin\gradle.bat"
 )
 if not defined GRADLE_CMD (
-  for /f "delims=" %%D in ('dir /b /ad "%PROJECT_DIR%..\.gradle-dist\gradle-*" 2^>nul') do set "GRADLE_CMD=%PROJECT_DIR%..\.gradle-dist\%%D\bin\gradle.bat"
+  for /f "delims=" %%D in ('dir /b /ad "%PROJECT_DIR%..\.gradle-dist\gradle-*" 2^>nul') do if not defined GRADLE_CMD if exist "%PROJECT_DIR%..\.gradle-dist\%%D\bin\gradle.bat" set "GRADLE_CMD=%PROJECT_DIR%..\.gradle-dist\%%D\bin\gradle.bat"
 )
 if not defined GRADLE_CMD (
   for %%D in (gradle.bat) do if not "%%D"=="gradle.bat" set "GRADLE_CMD=%%D"
