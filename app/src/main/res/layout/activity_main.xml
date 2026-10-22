@@ -44,7 +44,8 @@
         android:src="@drawable/ic_settings_gear"
         app:layout_constraintBottom_toBottomOf="@id/brandTitle"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/brandTitle" />
+        app:layout_constraintTop_toTopOf="@id/brandTitle" 
+            android:soundEffectsEnabled="false"/>
 
     <!-- Single primary action: browse the whole catalogue -->
     <com.redundantstudios.arcade.ui.ChunkyCardView
@@ -64,7 +65,8 @@
         app:ccShadowOffset="5dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/brandTitle">
+        app:layout_constraintTop_toBottomOf="@id/brandTitle"
+            android:soundEffectsEnabled="false">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -204,7 +206,8 @@
                 app:ccColor="@color/studio_surface"
                 app:ccCornerRadius="18dp"
                 app:ccShadowColor="#22000000"
-                app:ccShadowOffset="4dp">
+                app:ccShadowOffset="4dp"
+            android:soundEffectsEnabled="false">
 
                 <LinearLayout
                     android:layout_width="match_parent"
