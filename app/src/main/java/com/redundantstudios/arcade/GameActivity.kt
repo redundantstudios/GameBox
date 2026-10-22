@@ -830,8 +830,8 @@ val bannerEdge = currentGame?.bannerEdge
            once the hierarchy is on screen - that is where the frame is
            computed (see GameWindow.applyCutoutModeToView). */
         webView.post { GameWindow.applyCutoutModeToView(webView.rootView) }
-        webView.post { GameWindow.fitWindowToDisplay(window) }
-        webView.postDelayed({ GameWindow.fitWindowToDisplay(window) }, 600)
+        webView.post { GameWindow.fitWindowToDisplay(window, webView.rootView) }
+        webView.postDelayed({ GameWindow.fitWindowToDisplay(window, webView.rootView) }, 600)
         // The decor exists now, so the cutout declaration sticks. Before this
         // point the platform re-applied the theme's window attributes when it
         // created the decor, which is what silently put the game back into the
@@ -1034,7 +1034,7 @@ val bannerEdge = currentGame?.bannerEdge
            to be re-pushed into the view root afterwards - the frame is
            computed there (see GameWindow.applyCutoutModeToView). */
         webView.post { GameWindow.applyCutoutModeToView(webView.rootView) }
-        webView.post { GameWindow.fitWindowToDisplay(window) }
+        webView.post { GameWindow.fitWindowToDisplay(window, webView.rootView) }
         // Rotation can restore the system bars — drop them again.
         GameWindow.goImmersive(window)
         // Games normally reflow via the WebView's own resize event; this hook is
