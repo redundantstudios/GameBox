@@ -296,7 +296,7 @@ try{
   html,body{height:100%;overflow:hidden;background:var(--bg)}
   body{font-family:var(--mono);color:var(--ink);-webkit-user-select:none;user-select:none;
     touch-action:none;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
-  canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:crosshair}
+  canvas#game{position:fixed;left:0;top:50%;transform:translateY(-50%);width:100%;display:block;cursor:crosshair}
 
   /* Portrait-only on touch/mobile devices. Never shown on normal PC/desktop. */
   /* The shell's GameActivity locks the activity to the manifest orientation,
@@ -629,6 +629,10 @@ window.addEventListener('touchstart',requestPortraitLock,{passive:true,once:true
 const DISP_FONT="'Bahnschrift','Franklin Gothic Medium','Trebuchet MS','Segoe UI',sans-serif";
 
 let W=0,H=0,DPR=1,sf=1,vf=1;
+/* True once the world has been built at the REAL viewport size. A world
+   built for a provisional size is never drawn: the environment would be
+   drawn at one size and then shift when the real size landed. */
+let worldLive=false;
 let railT=0,railB=0,railH=10,ballR=14,playH=0;
 let vig=null,glowTop=null,glowBot=null,goldGlow=null,podGlow=null;
 let speedNow=300;
@@ -648,21 +652,34 @@ const C_TOP=[61,224,199], C_BOT=[255,158,60], C_RED=[255,77,109],
       C_VIO=[172,120,255], C_GOLD=[255,205,110];
 const polRGB=p=>p==='top'?C_TOP:C_BOT;
 
+/* The playfield's shape: how tall it is per unit of width. The height is
+   derived from the WIDTH so that no viewport change can move the world -
+   see resize(). A screen too short for that shape gets the height it has
+   (there the world has to follow the viewport after all). */
+const WORLD_AR=1.98;
+function worldHeight(rw,rh){
+  const byW=Math.round(rw*WORLD_AR);
+  return byW<=rh?byW:rh;
+}
+
 function resize(){
-  /* Zero-viewport boot: this device can run the page's scripts while the
-     WebView is still 0x0 (captured in the shell's own logs). An earlier fix
-     refused to build until real dimensions arrived, which made the player
-     stare at a flat empty screen for seconds - the menu only painted when 
-     the layout landed well after the shell had already revealed the page.
-     The build now goes ahead at a provisional portrait size instead, so the
-     world and the menu paint on the very first frame (the canvas element
-     stretches to the viewport via CSS), and the frame loop's live
-     width/height compare rebuilds at real dimensions the moment they land. */
+  /* The world's SHAPE follows the WIDTH, never the viewport height. This
+     device hands the page its height in stages - 948 while the system bars
+     are still on screen, 890 once they are gone, 840 once the shell reserves
+     the banner strip - and a world whose height followed the viewport had to
+     be rebuilt at every stage, which moved the environment under the player
+     (the little glitch at startup: the world went up and came back). With
+     the height tied to the width the world is built once and never moves;
+     the canvas is centred in the viewport, so a taller viewport simply adds
+     a little dark space above and below the game. */
   const rw=window.innerWidth, rh=window.innerHeight;
   const valid=rw>=50&&rh>=50;
+  worldLive=valid;
   DPR=Math.min(window.devicePixelRatio||1,2);
-  W=valid?rw:423; H=valid?rh:880;
+  W=valid?rw:423;
+  H=valid?worldHeight(rw,rh):880;
   canvas.width=W*DPR; canvas.height=H*DPR;
+  canvas.style.height=H+'px';
   ctx.setTransform(DPR,0,0,DPR,0,0);
   sf=clamp(Math.min(W/1150,H/760),.55,1.5);
   vf=clamp(H/800,.6,1.6);
@@ -937,11 +954,21 @@ function burst(x,y,n,color,spd,grav){
 }
 function explosion(x,y){
   const cols=[[255,255,255],C_TOP,C_BOT];
-  for(let i=0;i<46;i++){
-    const a=Math.random()*6.283,v=rnd(80,640)*vf,c=cols[(Math.random()*3)|0];
-    pSpawn({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rnd(.4,1),
-      size:rnd(1.8,3.6)*vf,color:c,drag:1.6,
-      grav:Math.random()<.35?rnd(300,700):0,line:v>360*vf});
+  /* The crash used to put all 46 sparks on ONE frame. That frame cost more
+     than 100ms on this device - a visible freeze on the exact frame the
+     player is watching hardest - because 46 additive draws plus the ring and
+     the flash all landed together. The sparks now arrive over three frames:
+     the crash looks the same and no single frame goes over budget. */
+  for(let f=0;f<3;f++){
+    setTimeout(function(){
+      if(state!=='dying'&&state!=='over')return;
+      for(let i=0;i<16;i++){
+        const a=Math.random()*6.283,v=rnd(80,640)*vf,c=cols[(Math.random()*3)|0];
+        pSpawn({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rnd(.4,1),
+          size:rnd(1.8,3.6)*vf,color:c,drag:1.6,
+          grav:Math.random()<.35?rnd(300,700):0,line:v>360*vf});
+      }
+    },f*20);
   }
 }
 const rings=[];for(let i=0;i<20;i++)rings.push({on:false});
@@ -1250,6 +1277,7 @@ function buildWorld(){
   artA=artB=ensureZoneArt(0);
   padTop=makePad(C_TOP);padBot=makePad(C_BOT);
   bladeCv=makeBlade();podCv=makePod();
+  queuePrewarm();
   dust=[];for(let i=0;i<34;i++)dust.push({x:Math.random()*W,y:rnd(railT,railB),s:rnd(1,2.2),a:rnd(.05,.16),p:rnd(.2,.7)});
   streaks=[];for(let i=0;i<12;i++)streaks.push({x:Math.random()*W,y:0,len:rnd(60,140)*sf,ok:false});
   rebuildEnv();
@@ -1514,46 +1542,69 @@ function drawPlayer(){
 
 /* ============ 9. OBSTACLES ============ */
 let obstacles=[];
+/* The bar panel. One sprite per (side, length) - the length ramp is
+   continuous, so the height is quantised to 8px and the sprite is stretched
+   to the exact length on draw. Built here rather than inside the draw call
+   because a sprite that is built DURING a run costs a texture upload in the
+   middle of play, which on this device shows up as a ~150ms stall right at
+   the start of the first run. */
+function barSprite(from,w,h){
+  const sk='bar:'+from+':'+w+'x'+h;
+  if(obstacleSpr[sk])return obstacleSpr[sk];
+  const cv=makeLayer(w,h);
+  const g=cv.getContext('2d');
+  const gg=g.createLinearGradient(0,0,w,0);
+  gg.addColorStop(0,'#232f45');gg.addColorStop(.15,'#31435e');gg.addColorStop(.5,'#1b2739');
+  gg.addColorStop(.85,'#101a2a');gg.addColorStop(1,'#0a111c');
+  g.fillStyle=gg;g.fillRect(0,0,w,h);
+  g.fillStyle='rgba(180,215,245,.18)';g.fillRect(1,0,1,h);
+  g.fillStyle='rgba(0,0,0,.5)';g.fillRect(w-2,0,2,h);
+  for(let yy=26;yy<h-16;yy+=58){
+    g.fillStyle='rgba(0,0,0,.35)';g.fillRect(2,yy,w-4,1);
+    g.fillStyle='rgba(180,215,245,.12)';g.fillRect(3,yy+1,w-6,1);
+    g.fillStyle='rgba(190,220,250,.22)';g.fillRect(4,yy+6,2,2);g.fillRect(w-7,yy+6,2,2);
+  }
+  const band=12,pat=g.createPattern(stripeRed,'repeat');
+  g.fillStyle=pat;
+  if(from==='top')g.fillRect(0,h-band,w,band);
+  else g.fillRect(0,0,w,band);
+  g.fillStyle='rgba(0,0,0,.4)';
+  if(from==='top')g.fillRect(0,h-band,w,2);
+  else g.fillRect(0,band-2,w,2);
+  obstacleSpr[sk]=cv;
+  /* bounded reuse: identical sprites stay, the oldest entry goes. The cap
+     is above the number of bar lengths the game can ever produce (two sides
+     times the length ramp), so a pre-warmed sprite is never evicted by the
+     pre-warm itself. */
+  const ks=Object.keys(obstacleSpr);
+  if(ks.length>72)delete obstacleSpr[ks[0]];
+  return cv;
+}
+/* Pre-warm queue: the bar lengths a run can use are known in advance (the
+   length ramp runs from 55% to 68% of the play height), so they are built
+   one per frame while the menu is up - frames the game has spare - and no
+   run ever builds one in front of the player. */
+let prewarm=null,prewarmAt=0;
+function queuePrewarm(){
+  const w=Math.round(clamp(46*sf,34,60));
+  const lo=Math.round(playH*.50/8)*8, hi=Math.round(playH*.72/8)*8;
+  prewarm=[];
+  for(const from of ['top','bottom'])
+    for(let h=lo;h<=hi;h+=8) prewarm.push({from:from,w:w,h:h});
+  prewarmAt=0;
+}
+function stepPrewarm(){
+  if(!prewarm||prewarmAt>=prewarm.length)return;
+  const p=prewarm[prewarmAt++];
+  barSprite(p.from,p.w,p.h);
+}
 function drawObstacle(o){
   if(o.type==='bar'){
     if(!o._cv){
       const w=Math.round(o.w);
-      /* The bar length ramp is continuous (lerp with the live difficulty), so
-         a raw Math.round(o.len) key produced a near-miss every spawn and the
-         cache only ever paid its cost. The sprite is cached at a quantized
-         height and stretched to the exact length on draw - the texture is a
-         repeat panel, a sub-8px vertical stretch is invisible, and gameplay
-         keeps the exact length. */
-      const h=Math.round(o.len/8)*8;
       /* the band position depends on o.from, so it is part of the cache key */
-      const sk='bar:'+o.from+':'+w+'x'+h;
-      if(!obstacleSpr[sk]){
-        const cv=makeLayer(w,h);
-        const g=cv.getContext('2d');
-        const gg=g.createLinearGradient(0,0,w,0);
-        gg.addColorStop(0,'#232f45');gg.addColorStop(.15,'#31435e');gg.addColorStop(.5,'#1b2739');
-        gg.addColorStop(.85,'#101a2a');gg.addColorStop(1,'#0a111c');
-        g.fillStyle=gg;g.fillRect(0,0,w,h);
-        g.fillStyle='rgba(180,215,245,.18)';g.fillRect(1,0,1,h);
-        g.fillStyle='rgba(0,0,0,.5)';g.fillRect(w-2,0,2,h);
-        for(let yy=26;yy<h-16;yy+=58){
-          g.fillStyle='rgba(0,0,0,.35)';g.fillRect(2,yy,w-4,1);
-          g.fillStyle='rgba(180,215,245,.12)';g.fillRect(3,yy+1,w-6,1);
-          g.fillStyle='rgba(190,220,250,.22)';g.fillRect(4,yy+6,2,2);g.fillRect(w-7,yy+6,2,2);
-        }
-        const band=12,pat=g.createPattern(stripeRed,'repeat');
-        g.fillStyle=pat;
-        if(o.from==='top')g.fillRect(0,h-band,w,band);
-        else g.fillRect(0,0,w,band);
-        g.fillStyle='rgba(0,0,0,.4)';
-        if(o.from==='top')g.fillRect(0,h-band,w,2);
-        else g.fillRect(0,band-2,w,2);
-        obstacleSpr[sk]=cv;
-        /* bounded reuse: identical sprites stay, the oldest entry goes */
-        const ks=Object.keys(obstacleSpr);
-        if(ks.length>32)delete obstacleSpr[ks[0]];
-      }
-      o._cv=obstacleSpr[sk];
+      const h=Math.round(o.len/8)*8;
+      o._cv=barSprite(o.from,w,h);
     }
     ctx.drawImage(o._cv,o.x,o.from==='top'?railT-2:railB-o.len,o.w,o.len);
     const ey=o.from==='top'?railT-2+o.len:railB-o.len;
@@ -2338,7 +2389,7 @@ function render(){
   if(flashA>0){ctx.fillStyle='rgba(255,238,238,'+(flashA*.65)+')';ctx.fillRect(0,0,W,H);}
 }
 
-let lastT=performance.now(),menuAcc=0;
+let lastT=performance.now(),menuAcc=0,provT=0,liveLogged=false;
 function frame(now){
   requestAnimationFrame(frame);
   /* Viewport self-heal: compare against the live window every frame. The
@@ -2348,7 +2399,24 @@ function frame(now){
      resize() only runs when something actually moved. */
   const iw=window.innerWidth, ih=window.innerHeight;
   if(!booted)return;
-  if(iw>=50&&ih>=50&&(iw!==W||ih!==H))resize();
+  /* The world's size is watched, not the viewport's. The world is as tall as
+     its width says it should be, so the viewport's own height changes (the
+     system bars coming and going, the shell reserving the banner strip)
+     never move the environment: the world is built once and stays put. */
+  if(iw>=50&&ih>=50){
+    const nh=worldHeight(iw,ih);
+    if(iw!==W||nh!==H)resize();
+    worldLive=true;
+    if(!liveLogged){liveLogged=true;try{console.warn('[BOOT] world live '+W+'x'+H+' t='+Math.round(performance.now()));}catch(e){}}
+  }else{
+    /* No layout at all: the provisional world is the only thing there is.
+       Show it anyway after a moment, because a slightly wrong world beats
+       no world at all. */
+    worldLive=false;
+    if(!provT)provT=now;
+    if(now-provT>2500){resize();worldLive=true;}
+  }
+  if(!worldLive){lastT=now;return;}
   let rdt=(now-lastT)/1000;lastT=now;
   if(rdt>.1)rdt=.1;if(rdt<0)rdt=0;
   tGlobal+=rdt;
@@ -2378,6 +2446,10 @@ function frame(now){
     menuAcc+=rdt;
     if(menuAcc<1/30)return;
     rdt=Math.min(menuAcc,.1);menuAcc=0;
+    /* The menu's frames are the game's spare frames: the bar sprites are
+       built here, one per frame, so the first run does not have to build
+       any of them in front of the player. */
+    stepPrewarm();
   }
 
   timeScale+=(tsTarget-timeScale)*Math.min(1,rdt*6);
@@ -2495,11 +2567,16 @@ requestAnimationFrame(t=>{lastT=t;requestAnimationFrame(frame);});
      than sprinkled through startGame/pauseGame/die so a transition that is
      missed cannot leave the strip up over a menu. The shell owns the edge
      (this game's manifest asks for bottom) and the strip's colour. */
-  var bannerOn=false;
-  setInterval(function(){
-    var want=(state==='play');
-    if(want!==bannerOn){ bannerOn=want; try{ Studio.ads.banner(want); }catch(e){} }
-  },400);
+  /* BANNER: asked for ONCE, and left up.
+     The strip is reserved for the life of the screen (the shell reserves it
+     and never resizes the game for it), so showing and hiding the ad around
+     every run bought nothing and cost a great deal: each show or hide makes
+     the shell attach or detach the ad's own view, and on this device that
+     is a ~180ms stall on the UI thread - right at the start of a run, when
+     the game is still warming up and the player is watching. The ad is now
+     requested while the menu is still up (so it has time to load before the
+     first run) and it stays up from then on. */
+  try{ Studio.ads.banner(true); }catch(e){}
 
   window.Game={
     pause:function(){ try{ if(state==='play') pauseGame(); }catch(e){} if(prev.pause) try{ prev.pause(); }catch(e){} },
