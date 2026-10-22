@@ -706,20 +706,31 @@ function layoutZones(){
   const hM=Math.max(clamp(ss*0.035,14,30),safeL,safeR);
   const bM=Math.max(clamp(ss*0.065,28,50),safeB);
   const tM=Math.max(clamp(ss*0.045,20,36),safeT);
+  /* EDGE BANDS. The shell hands the game a window that is the whole display
+     but SHIFTED by half of the band the platform reserves on one edge (the
+     camera-hole strip): on this device the window is the full 1612px but
+     starts 40px off the left edge, so 40px of the game runs off-screen on one
+     side and 40px of the other side is not the game's at all. The page
+     cannot measure that band - every inset reports 0px - so the controls
+     keep a margin that clears a band of this size instead of being clipped
+     by it. Without this the dash button of the right-hand players and the
+     joystick of the left-hand ones were cut in half by the window edge. */
+  const EDGE=Math.max(30,ss*0.07);
+  const hMx=Math.max(hM,EDGE),bMx=Math.max(bM,EDGE),tMx=Math.max(tM,EDGE);
   const gap=clamp(ss*0.035,16,28);
   const c2c=joyR+gap+dashR;
   const n=zones.length;
-  const botY=h-bM-joyR;
-  const topY=tM+joyR;
-  const lx=hM+joyR;
-  const rx=w-hM-joyR;
+  const botY=h-bMx-joyR;
+  const topY=tMx+joyR;
+  const lx=hMx+joyR;
+  const rx=w-hMx-joyR;
   for(const z of zones){
     z.joyR=joyR;z.dashR=dashR;
     const s=z.slot;
     let jx,jy,dx,dy;
     if(n===1){
       jx=lx;jy=botY;
-      dx=w-hM-dashR;dy=botY;
+      dx=w-hMx-dashR;dy=botY;
     }else if(n===2){
       /* TWO PLAYERS: ONE AT THE BOTTOM, ONE AT THE TOP, ROTATED 180 DEGREES
          FROM EACH OTHER. Both used to sit along the bottom edge (bottom-left and
