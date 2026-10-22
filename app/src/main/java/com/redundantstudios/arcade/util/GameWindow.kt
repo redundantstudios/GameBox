@@ -173,10 +173,28 @@ object GameWindow {
             val lp = window.attributes
             lp.width = dw
             lp.height = dh
-            // The platform centres a window that is bigger than its parent
-            // bounds, so the offset that puts the left edge on the screen is
-            // half the reserved strip.
-            lp.x = -Math.round(band / 2f)
+            /* THE WINDOW STARTS AT THE DISPLAY'S EDGE, NOT HALF A BAND BEFORE
+               IT. This used to be lp.x = -band/2, on the reasoning that "the
+               platform centres a window that is bigger than its parent
+               bounds, so the offset that puts the left edge on the screen is
+               half the reserved strip".
+
+               Measured on the ZTE (GameActivity's own frame, dumpsys window):
+                   mAttrs={(-40,0)(1612x720) ... layoutInDisplayCutoutMode=always}
+               The platform did NOT add a centring offset of its own - the
+               frame was exactly lp.x. So the half-band shift was just that: a
+               half-band shift. It cost the game 40px of its LEFT edge (the
+               left-hand player's joystick ran off-screen) and left the 40px at
+               the other end of the display uncovered by the window - the black
+               band beside the game, with the right-hand player's DASH button
+               clipped in half by it.
+
+               The window is the size of the DISPLAY, so it belongs at the
+               display's origin: the reserved strip is then covered, the game
+               fills the screen, and the camera hole (which the platform draws
+               on top of the app) sits over the game exactly as
+               layoutInDisplayCutoutMode=always intends. */
+            lp.x = 0
             lp.y = 0
             window.attributes = lp
             android.util.Log.i("GameJS", "[cutout] full display " + dw + "x" + dh +
