@@ -57,7 +57,7 @@ changelog 2: start page rebuilt as a glanceable two-column screen - branding on
 /* @font-face:egg-rush:end */
 html,body{width:100%;height:100%;overflow:hidden;position:fixed;background:#79b651;touch-action:none;
   font-family:'Luckiest Guy',ui-rounded,"Comic Sans MS","Chalkboard SE","Segoe UI",sans-serif;color:#4b321b}
-#cv{position:fixed;inset:0;width:100%;height:100%;display:block}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;filter:saturate(1.16) contrast(1.08) brightness(1.025)}
 #vig{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 110px rgba(46,32,8,.26);z-index:2}
 .hidden{display:none!important}
 #rot{position:fixed;inset:0;z-index:99;background:linear-gradient(#7CBB53,#5d8a3c);
@@ -389,15 +389,15 @@ html,body{width:100%;height:100%;overflow:hidden;position:fixed;background:#79b6
 #controls{position:fixed;inset:0;z-index:8;pointer-events:none}
 .joyzone{position:absolute;pointer-events:auto;touch-action:none;--c:#EF4D3C}
 .joy{position:absolute;left:50%;top:50%;border-radius:50%;border:4px solid var(--c);background:rgba(255,255,255,.22);
-  box-shadow:inset 0 0 0 3px rgba(255,255,255,.25)}
+  box-shadow:0 0 0 3px rgba(255,255,255,.25),inset 0 0 0 3px rgba(255,255,255,.15);aspect-ratio:1/1}
 .thumb{position:absolute;left:50%;top:50%;border-radius:50%;background:var(--c);border:4px solid rgba(75,50,27,.5);
-  box-shadow:inset 0 -7px 0 rgba(0,0,0,.16),inset 0 5px 0 rgba(255,255,255,.35)}
-.dashhit{position:absolute;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;--c:#EF4D3C}
-.dashb{position:relative;border-radius:50%;background:var(--c);border:4px solid rgba(75,50,27,.55);
+  box-shadow:inset 0 0 0 3px rgba(0,0,0,.12)}
+.dashhit{position:absolute;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;overflow:visible;--c:#EF4D3C}
+.dashb{position:relative;border-radius:50%;background:var(--c);border:4px solid rgba(75,50,27,.6);
   color:#fff;font-weight:900;letter-spacing:1px;display:flex;align-items:center;justify-content:center;
-  text-shadow:0 2px 0 rgba(0,0,0,.25);box-shadow:0 5px 0 rgba(75,50,27,.4);font-family:inherit}
+  text-shadow:0 2px 0 rgba(0,0,0,.25);box-shadow:0 4px 0 rgba(75,50,27,.4);font-family:inherit;aspect-ratio:1/1}
 .dashb.cd{filter:grayscale(.65) brightness(.92)}
-.dashb.pressed{transform:translateY(3px) scale(.94);box-shadow:0 2px 0 rgba(75,50,27,.4)}
+.dashb.pressed{transform:translateY(3px) scale(.92);box-shadow:0 1px 0 rgba(75,50,27,.4)}
 .dashb .cdo{position:absolute;inset:-4px;border-radius:50%;pointer-events:none}
 #sys{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);
   display:flex;gap:8px;z-index:9}
@@ -691,7 +691,7 @@ const CFG = {
   /* hens must not start underneath a joystick or a dash key: the four screen
      corners belong to the controls, so a spawn closer than this to any edge is
      pushed back into open ground (see buildMatch) */
-  START_EDGE_CLEAR: 230,
+  START_EDGE_CLEAR: 280,
   RACE_TARGET_DEFAULT: 4,
   RACE_GOLDEN_VALUE: 2,
   RAID_TIME: 1.15,
@@ -704,7 +704,7 @@ const CFG = {
   GOLDEN_EGG_VALUE: 3,
   GOLDEN_EGG_INTERVAL_MIN: 12,
   GOLDEN_EGG_INTERVAL_MAX: 18,
-  PLAYER_RADIUS: 24,
+  PLAYER_RADIUS: 34,
   PLAYER_MAX_SPEED: 255,
   PLAYER_ACCEL: 9,
   DASH_SPEED: 650,
@@ -943,21 +943,21 @@ function star(x,cx,cy,r){
     x[i?'lineTo':'moveTo'](cx+Math.cos(a)*rr, cy+Math.sin(a)*rr); }
   x.closePath(); x.fill();
 }
-const eggSprN=spr(48,56,x=>{
-  x.translate(24,28);
-  const g=x.createRadialGradient(-6,-12,4,0,0,26);
+const eggSprN=spr(60,70,x=>{
+  x.translate(30,35);
+  const g=x.createRadialGradient(-8,-15,5,0,0,32);
   g.addColorStop(0,'#FFFDF6'); g.addColorStop(.65,'#F7EEDB'); g.addColorStop(1,'#E4D5B8');
   eggPath(x); x.fillStyle=g; x.fill();
-  x.strokeStyle='#C9B894'; x.lineWidth=2.5; x.stroke();
-  x.fillStyle='rgba(255,255,255,.9)'; x.beginPath(); x.ellipse(-6,-10,4.5,6,-.5,0,TAU); x.fill();
+  x.strokeStyle='#C9B894'; x.lineWidth=3; x.stroke();
+  x.fillStyle='rgba(255,255,255,.9)'; x.beginPath(); x.ellipse(-8,-12,5.5,7.5,-.5,0,TAU); x.fill();
 });
-const eggSprG=spr(48,56,x=>{
-  x.translate(24,28);
-  const g=x.createRadialGradient(-6,-12,4,0,0,26);
+const eggSprG=spr(60,70,x=>{
+  x.translate(30,35);
+  const g=x.createRadialGradient(-8,-15,5,0,0,32);
   g.addColorStop(0,'#FFEFAF'); g.addColorStop(.55,'#FFD34D'); g.addColorStop(1,'#E89B12');
-  eggPath(x); x.fillStyle=g; x.fill(); x.strokeStyle='#B27507'; x.lineWidth=2.5; x.stroke();
-  x.fillStyle='rgba(255,255,255,.95)'; x.beginPath(); x.ellipse(-6,-10,4.5,6,-.5,0,TAU); x.fill();
-  x.fillStyle='rgba(255,255,255,.7)'; star(x,8,6,3.5);
+  eggPath(x); x.fillStyle=g; x.fill(); x.strokeStyle='#B27507'; x.lineWidth=3; x.stroke();
+  x.fillStyle='rgba(255,255,255,.95)'; x.beginPath(); x.ellipse(-8,-12,5.5,7.5,-.5,0,TAU); x.fill();
+  x.fillStyle='rgba(255,255,255,.7)'; star(x,10,8,4.5);
 });
 const glowSpr=spr(120,120,x=>{
   const g=x.createRadialGradient(60,60,6,60,60,58);
@@ -984,41 +984,41 @@ const puSpr={
 };
 
 /* ---------- BASKETS ---------- */
-const basketBackSpr=PCOL.map(c=>spr(140,124,x=>{
-  x.fillStyle='#8A5A2E'; rrect(x,115,12,5,38,2); x.fill();
-  x.strokeStyle='#5E3A18'; x.lineWidth=1.5; rrect(x,115,12,5,38,2); x.stroke();
-  x.fillStyle=c.m; x.beginPath(); x.moveTo(120,14); x.lineTo(139,21); x.lineTo(120,29); x.closePath(); x.fill();
-  x.strokeStyle=c.d; x.lineWidth=2; x.stroke();
-  x.beginPath(); x.ellipse(70,42,41,13,0,0,TAU); x.fillStyle='#5C3D19'; x.fill();
-  x.beginPath(); x.ellipse(70,45,36,9,0,0,TAU); x.fillStyle='rgba(0,0,0,.30)'; x.fill();
+const basketBackSpr=PCOL.map(c=>spr(200,170,x=>{
+  x.fillStyle='#8A5A2E'; rrect(x,165,16,7,54,3); x.fill();
+  x.strokeStyle='#5E3A18'; x.lineWidth=2; rrect(x,165,16,7,54,3); x.stroke();
+  x.fillStyle=c.m; x.beginPath(); x.moveTo(172,20); x.lineTo(198,29); x.lineTo(172,41); x.closePath(); x.fill();
+  x.strokeStyle=c.d; x.lineWidth=3; x.stroke();
+  x.beginPath(); x.ellipse(100,58,58,18,0,0,TAU); x.fillStyle='#5C3D19'; x.fill();
+  x.beginPath(); x.ellipse(100,62,52,13,0,0,TAU); x.fillStyle='rgba(0,0,0,.30)'; x.fill();
   x.lineCap='round';
-  x.beginPath(); x.ellipse(70,42,46,15,0,Math.PI,TAU); x.strokeStyle=c.d; x.lineWidth=10; x.stroke();
-  x.beginPath(); x.ellipse(70,42,46,15,0,Math.PI,TAU); x.strokeStyle=c.m; x.lineWidth=6; x.stroke();
-  x.beginPath(); x.ellipse(70,41,42,11,0,Math.PI*1.1,Math.PI*1.8);
-  x.strokeStyle='rgba(255,255,255,.5)'; x.lineWidth=2.5; x.stroke();
+  x.beginPath(); x.ellipse(100,58,65,21,0,Math.PI,TAU); x.strokeStyle=c.d; x.lineWidth=14; x.stroke();
+  x.beginPath(); x.ellipse(100,58,65,21,0,Math.PI,TAU); x.strokeStyle=c.m; x.lineWidth=8; x.stroke();
+  x.beginPath(); x.ellipse(100,57,59,15,0,Math.PI*1.1,Math.PI*1.8);
+  x.strokeStyle='rgba(255,255,255,.5)'; x.lineWidth=3.5; x.stroke();
 }));
-const basketFrontSpr=PCOL.map(c=>spr(140,124,x=>{
+const basketFrontSpr=PCOL.map(c=>spr(200,170,x=>{
   x.beginPath();
-  x.moveTo(25,46);
-  x.bezierCurveTo(27,78,42,96,70,96);
-  x.bezierCurveTo(98,96,113,78,115,46);
-  x.quadraticCurveTo(70,58,25,46);
+  x.moveTo(36,64);
+  x.bezierCurveTo(39,108,58,132,100,132);
+  x.bezierCurveTo(142,132,161,108,164,64);
+  x.quadraticCurveTo(100,80,36,64);
   x.closePath();
   x.fillStyle='#DBA55F'; x.fill();
-  x.strokeStyle='#8A5A26'; x.lineWidth=3.5; x.stroke();
-  x.strokeStyle='#B27E3E'; x.lineWidth=3;
-  for(let i=0;i<3;i++){ const yy=58+i*11, k=1-i*0.12;
-    x.beginPath(); x.ellipse(70,yy,40*k,8,0,0.2,Math.PI-0.2); x.stroke(); }
-  x.strokeStyle='rgba(138,90,38,.5)'; x.lineWidth=2;
-  for(let i=0;i<6;i++){ const xx=36+i*13;
-    x.beginPath(); x.moveTo(xx,56+i%2*3); x.lineTo(xx+3,90-i%2*4); x.stroke(); }
-  x.strokeStyle='rgba(255,240,200,.5)'; x.lineWidth=4;
-  x.beginPath(); x.moveTo(34,52); x.bezierCurveTo(36,76,46,88,56,91); x.stroke();
-  x.strokeStyle='rgba(94,58,24,.55)'; x.lineWidth=3;
-  x.beginPath(); x.moveTo(48,92); x.quadraticCurveTo(70,97,92,92); x.stroke();
+  x.strokeStyle='#8A5A26'; x.lineWidth=5; x.stroke();
+  x.strokeStyle='#B27E3E'; x.lineWidth=4;
+  for(let i=0;i<3;i++){ const yy=80+i*15, k=1-i*0.12;
+    x.beginPath(); x.ellipse(100,yy,55*k,11,0,0.2,Math.PI-0.2); x.stroke(); }
+  x.strokeStyle='rgba(138,90,38,.5)'; x.lineWidth=3;
+  for(let i=0;i<6;i++){ const xx=50+i*18;
+    x.beginPath(); x.moveTo(xx,78+i%2*4); x.lineTo(xx+4,124-i%2*5); x.stroke(); }
+  x.strokeStyle='rgba(255,240,200,.5)'; x.lineWidth=5;
+  x.beginPath(); x.moveTo(48,72); x.bezierCurveTo(51,104,68,120,82,126); x.stroke();
+  x.strokeStyle='rgba(94,58,24,.55)'; x.lineWidth=4;
+  x.beginPath(); x.moveTo(68,128); x.quadraticCurveTo(100,134,132,128); x.stroke();
   x.lineCap='round';
-  x.beginPath(); x.ellipse(70,42,46,15,0,0,Math.PI); x.strokeStyle=c.d; x.lineWidth=10; x.stroke();
-  x.beginPath(); x.ellipse(70,42,46,15,0,0,Math.PI); x.strokeStyle=c.m; x.lineWidth=6; x.stroke();
+  x.beginPath(); x.ellipse(100,58,65,21,0,0,Math.PI); x.strokeStyle=c.d; x.lineWidth=14; x.stroke();
+  x.beginPath(); x.ellipse(100,58,65,21,0,0,Math.PI); x.strokeStyle=c.m; x.lineWidth=8; x.stroke();
 }));
 
 const crateSpr=spr(84,92,x=>{
@@ -1077,8 +1077,8 @@ const rockSpr=spr(66,58,x=>{
 const bushSpr=spr(88,68,x=>{
   shE(x,44,62,32,8);
   const blob=(cx,cy,r,col)=>{ x.beginPath(); x.arc(cx,cy,r,0,TAU); x.fillStyle=col; x.fill(); x.strokeStyle='#2F5E23'; x.lineWidth=2.5; x.stroke(); };
-  blob(24,44,17,'#4E8F3A'); blob(64,44,17,'#4E8F3A'); blob(44,34,21,'#57A03C'); blob(44,42,19,'#63AC49');
-  blob(34,30,10,'#7CC45B'); blob(56,28,9,'#7CC45B');
+  blob(24,44,17,'#438A2E'); blob(64,44,17,'#438A2E'); blob(44,34,21,'#58AC36'); blob(44,42,19,'#70BF4C');
+  blob(34,30,10,'#91E16B'); blob(56,28,9,'#91E16B');
   x.fillStyle='#E14B3B';
   [[30,42],[52,38],[42,50],[62,48]].forEach(p=>{ x.beginPath(); x.arc(p[0],p[1],3,0,TAU); x.fill();
     x.fillStyle='rgba(255,255,255,.7)'; x.beginPath(); x.arc(p[0]-1,p[1]-1,1,0,TAU); x.fill(); x.fillStyle='#E14B3B'; });
@@ -1087,9 +1087,9 @@ const treeSpr=spr(210,236,x=>{
   shE(x,105,222,62,14,.24);
   x.fillStyle='#8A5A2E'; rrect(x,96,152,18,68,7); x.fill(); x.strokeStyle='#5E3A18'; x.lineWidth=3; x.stroke();
   const cl=(cx,cy,r,col)=>{ x.beginPath(); x.arc(cx,cy,r,0,TAU); x.fillStyle=col; x.fill(); };
-  cl(105,98,64,'#3E7A2E'); cl(58,124,42,'#3E7A2E'); cl(152,124,42,'#3E7A2E');
-  cl(105,90,54,'#57A03C'); cl(62,118,33,'#57A03C'); cl(148,118,33,'#57A03C');
-  cl(88,74,26,'#6FBC4E'); cl(120,80,20,'#6FBC4E'); cl(66,108,15,'#6FBC4E');
+  cl(105,98,64,'#367526'); cl(58,124,42,'#367526'); cl(152,124,42,'#367526');
+  cl(105,90,54,'#51A632'); cl(62,118,33,'#51A632'); cl(148,118,33,'#51A632');
+  cl(88,74,26,'#82D257'); cl(120,80,20,'#82D257'); cl(66,108,15,'#82D257');
   x.fillStyle='#E14B3B';
   [[76,116],[132,100],[104,136],[146,132]].forEach(p=>{ x.beginPath(); x.arc(p[0],p[1],4,0,TAU); x.fill();
     x.fillStyle='rgba(255,255,255,.75)'; x.beginPath(); x.arc(p[0]-1.3,p[1]-1.3,1.4,0,TAU); x.fill(); x.fillStyle='#E14B3B'; });
@@ -1139,6 +1139,14 @@ const barnSpr=spr(380,252,x=>{
   x.beginPath(); x.arc(126,190,3,0,TAU); x.fill();
 });
 
+const grassTuftSpr=spr(44,28,x=>{
+  x.fillStyle='rgba(53,105,34,.22)'; x.beginPath(); x.ellipse(22,23,18,4,0,0,TAU); x.fill();
+  x.lineCap='round';
+  [[10,22,5,9,'#4F9639'],[16,23,14,5,'#70B84A'],[22,23,23,3,'#3F812F'],[28,23,31,7,'#67AD43'],[34,23,38,11,'#4A8E34']].forEach(a=>{
+    x.strokeStyle=a[4]; x.lineWidth=3; x.beginPath(); x.moveTo(a[0],a[1]); x.quadraticCurveTo(a[2],a[3]+4,(a[2]+a[0])/2,a[3]); x.stroke();
+  });
+});
+
 /* ---------- farm layout ---------- */
 let obstacles=[], colliders=[];
 const EGG_SPOTS=[[300,215],[620,150],[1120,160],[1440,250],[240,390],[430,470],[500,640],[860,650],
@@ -1153,10 +1161,30 @@ function buildFarm(){
   colliders.push({rect:true,x:706,y:150,w:248,h:152});
   colliders.push({rect:true,x:950,y:118,w:72,h:184});
   addO({barn:true,x:860,sy:308,sw:380,sh:252,spr:barnSpr});
-  [[420,110],[1310,105],[95,640],[1625,640],[560,985],[1190,985]].forEach(t=>{
+  [[420,110],[1310,105],[560,985],[1190,985]].forEach(t=>{
     colliders.push({x:t[0],y:t[1],r:24});
     addO({x:t[0],sy:t[1]+16,sw:210,sh:236,spr:treeSpr});
   });
+  /* trees along the FAR LEFT and FAR RIGHT green margins */
+  [[45,700],[1675,700]].forEach(t=>{
+    colliders.push({x:t[0],y:t[1],r:22});
+    addO({x:t[0],sy:t[1]+14,sw:180,sh:202,spr:treeSpr});
+  });
+  /* small bushes scattered in the far left/right green strips */
+  [[55,250],[15,490],[55,720],[1665,250],[1705,490],[1665,720]].forEach(b=>{
+    colliders.push({x:b[0],y:b[1],r:16});
+    addO({x:b[0],sy:b[1]+10,sw:60,sh:56,spr:bushSpr});
+  });
+  /* bushes in the TOP green margins */
+  [[90,120],[200,80],[350,110],[1370,80],[1520,110],[1630,120]].forEach(b=>{
+    colliders.push({x:b[0],y:b[1],r:18});
+    addO({x:b[0],sy:b[1]+12,sw:70,sh:64,spr:bushSpr});
+  });
+  [[540,85],[1180,85]].forEach(r=>{
+    colliders.push({x:r[0],y:r[1],r:18});
+    addO({x:r[0],sy:r[1]+10,sw:60,sh:52,spr:rockSpr});
+  });
+  /* Keep the corners around the basket spawn points free of tall trees. */
   [[540,380],[1180,380],[540,740],[1180,740]].forEach(h=>{
     colliders.push({x:h[0],y:h[1],r:40});
     addO({x:h[0],sy:h[1]+16,sw:96,sh:82,spr:haySpr});
@@ -1185,6 +1213,8 @@ function buildFarm(){
     colliders.push({seg:true,x1:f[0],y1:f[1],x2:f[2],y2:f[3],r:7});
     addO({fence:true,x1:f[0],y1:f[1],x2:f[2],y2:f[3],sy:Math.max(f[1],f[3])+4});
   });
+
+
 }
 buildFarm();
 
@@ -1193,10 +1223,10 @@ const groundC=document.createElement('canvas');
 groundC.width=W; groundC.height=H;
 (function makeGround(){
   const g=groundC.getContext('2d');
-  g.fillStyle='#7CBB53'; g.fillRect(0,0,W,H);
-  for(let y=0;y<H;y+=96){ g.fillStyle=(y/96)%2?'rgba(255,255,220,.05)':'rgba(30,80,20,.04)'; g.fillRect(0,y,W,48); }
+  g.fillStyle='#83CC50'; g.fillRect(0,0,W,H);
+  for(let y=0;y<H;y+=96){ g.fillStyle=(y/96)%2?'rgba(255,255,220,.09)':'rgba(30,80,20,.075)'; g.fillRect(0,y,W,48); }
   for(let i=0;i<90;i++){
-    g.fillStyle=i%2?'rgba(140,205,105,.17)':'rgba(100,165,70,.17)';
+    g.fillStyle=i%2?'rgba(153,226,106,.22)':'rgba(83,151,46,.22)';
     g.beginPath(); g.ellipse(rndSt(i*3.7)*W,rndSt(i*7.3)*H,30+rndSt(i*1.3)*80,20+rndSt(i*2.1)*46,rndSt(i)*3,0,TAU); g.fill();
   }
   for(let i=0;i<24;i++){
@@ -1204,7 +1234,7 @@ groundC.width=W; groundC.height=H;
     g.beginPath(); g.ellipse(rndSt(i*6.3)*W,rndSt(i*9.1)*H,26+rndSt(i*2.2)*42,18+rndSt(i*4.7)*26,rndSt(i)*3,0,TAU); g.fill();
   }
   for(let i=0;i<520;i++){
-    g.fillStyle=i%2?'rgba(50,110,35,.25)':'rgba(220,255,160,.22)';
+    g.fillStyle=i%2?'rgba(43,102,28,.30)':'rgba(232,255,166,.28)';
     g.fillRect(rndSt(i*5.1)*W,rndSt(i*9.7)*H,2.5,2.5);
   }
   for(let i=0;i<56;i++){
@@ -1270,7 +1300,10 @@ function featherBurst(x,y,col,n){
 /* ---------- nests & hens ---------- */
 const BASKET_POS={
   2:[[150,520],[1570,520]],
-  3:[[170,520],[1550,520],[860,905]],
+  /* Three-player mode uses the same first three corner stations as four-player
+     mode: red bottom-left, yellow bottom-right, blue top-left. This keeps every
+     player's basket/nest aligned with the corner control pair assigned by ID. */
+  3:[[165,875],[1555,875],[165,175]],
   4:[[165,875],[1555,875],[165,175],[1555,175]]
 };
 function basketValue(b){ let s=0; for(const e of b.stored) s+=e.value; return s; }
@@ -1341,15 +1374,15 @@ function buildMatch(count,hum){
 function goldenActive(){ return eggs.some(e=>e.golden&&e.state!=='DELIVERED'); }
 
 function validSpot(x,y,skipPlayers){
-  if(x<70||x>W-70||y<80||y>H-70) return false;
+  if(x<100||x>W-100||y<110||y>H-100) return false;
   for(const c of colliders){
-    if(c.rect){ if(x>c.x-24&&x<c.x+c.w+24&&y>c.y-24&&y<c.y+c.h+24) return false; }
-    else if(c.seg){ if(segDist(x,y,c)<c.r+26) return false; }
-    else if(hyp(x-c.x,y-c.y)<c.r+26) return false;
+    if(c.rect){ if(x>c.x-30&&x<c.x+c.w+30&&y>c.y-30&&y<c.y+c.h+30) return false; }
+    else if(c.seg){ if(segDist(x,y,c)<c.r+32) return false; }
+    else if(hyp(x-c.x,y-c.y)<c.r+32) return false;
   }
-  for(const b of baskets) if(hyp(x-b.x,y-b.y)<135) return false;
-  for(const e of eggs) if(e.state!=='CARRIED'&&hyp(x-e.x,y-e.y)<70) return false;
-  if(skipPlayers!==false) for(const p of players) if(hyp(x-p.x,y-p.y)<90) return false;
+  for(const b of baskets) if(hyp(x-b.x,y-b.y)<180) return false;
+  for(const e of eggs) if(e.state!=='CARRIED'&&hyp(x-e.x,y-e.y)<80) return false;
+  if(skipPlayers!==false) for(const p of players) if(hyp(x-p.x,y-p.y)<110) return false;
   return true;
 }
 function segDist(px,py,c){
@@ -1496,7 +1529,11 @@ function showBanner(txt,warn){ const b=$('banner'); b.textContent=txt; b.classLi
 function showBig(txt){ const b=$('big'); b.textContent=txt; b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); }
 
 /* =========================================================
-   RESPONSIVE TOUCH CONTROLS (unchanged)
+   RESPONSIVE TOUCH CONTROLS
+   2 players: P1 joystick bottom-left + DASH upper-left; P2 joystick
+   top-right + DASH lower-right.
+   3 and 4 players: use the same corner-based control layout; three-player nests
+   occupy the first three matching corner stations.
    ========================================================= */
 let ctrls=[];
 const keys={};
@@ -1507,33 +1544,25 @@ function buildControls(){
   const humans=modeCfg.humans;
   let specs;
   if(humans===1){
-    specs=[[ {t:'joy',a:'bl'}, {t:'dash',a:'br'} ]];
-  }else if(humans===2){
+    /* Solo: large joystick at bottom-left and large DASH at bottom-right. */
     specs=[
-      [ {t:'dash',a:'tl'}, {t:'joy',a:'bl'} ],
-      [ {t:'joy',a:'tr'}, {t:'dash',a:'br'} ]
+      [ {t:'joy',a:'bl'}, {t:'dash',a:'br'} ]
     ];
-  }else if(humans===3){
-    /* Player 3 was given 'bc' - a bottom-CENTRE slot, the one place on the
-       screen that is not a corner. It read as a stray stick marooned in the
-       middle of the field, and it was also the slot the layout had to raise
-       (bcRaise) to clear the centred #sys row underneath it. The four control
-       corners are exactly what the hens are pushed out of at match start
-       (CFG.START_EDGE_CLEAR), so a centre joystick was outside the contract
-       that code assumes. 'tr' is the corner player 2 already uses in 2-player
-       mode, so three players now take bl / br / tr and every stick sits where
-       the spawn exclusion expects to find one. */
+  }else if(modeCfg.count===2){
+    /* P1: bottom-left joystick, upper-left dash.
+       P2: top-right joystick, lower-right dash. */
     specs=[
-      [ {t:'joy',a:'bl'}, {t:'dash',a:'bl-side'} ],
-      [ {t:'joy',a:'br'}, {t:'dash',a:'br-side'} ],
-      [ {t:'joy',a:'tr'}, {t:'dash',a:'tr-side'} ]
+      [ {t:'joy',a:'bl'}, {t:'dash',a:'l-side-top'} ],
+      [ {t:'joy',a:'tr'}, {t:'dash',a:'r-side'} ]
     ];
   }else{
+    /* 3-player mode uses the same corner-based control placements as 4-player
+       mode. The fourth slot is simply not created when there are only 3 humans. */
     specs=[
-      [ {t:'joy',a:'bl'}, {t:'dash',a:'bl-side'} ],
-      [ {t:'joy',a:'br'}, {t:'dash',a:'br-side'} ],
-      [ {t:'joy',a:'tl'}, {t:'dash',a:'tl-side'} ],
-      [ {t:'joy',a:'tr'}, {t:'dash',a:'tr-side'} ]
+      [ {t:'joy',a:'bl'}, {t:'dash',a:'l-side'} ],
+      [ {t:'joy',a:'br'}, {t:'dash',a:'r-side'} ],
+      [ {t:'joy',a:'tl'}, {t:'dash',a:'l-side-top'} ],
+      [ {t:'joy',a:'tr'}, {t:'dash',a:'r-side-top'} ]
     ];
   }
   for(let i=0;i<humans;i++){
@@ -1609,15 +1638,24 @@ function layoutControls(){
      8.2% with a 52px floor is about a fifth more thumb to aim with. The thumb
      (td) and the deflection limit (c.max) are both derived from jr, so they
      grow with it and stay in proportion. */
-  const jr =clamp(short*0.082,52,76);
-  const dr =clamp(short*0.055,36,55);
-  const m  =clamp(short*0.025,10,24);
-  const hp =clamp(short*0.018,8,14);
+  /* Solo and two-human matches need more forgiving touch targets. Enlarge both
+     the joystick and dash button in those modes; 3/4-player controls keep the
+     established compact size so all four corners remain clear. */
+  const enlargedTouchTargets = modeCfg.humans === 1 || modeCfg.humans === 2;
+  const jr = enlargedTouchTargets
+    ? clamp(short*0.092,60,78)
+    : clamp(short*0.075,52,66);
+  const dr = enlargedTouchTargets
+    ? clamp(short*0.058,42,60)
+    : clamp(short*0.045,34,52);
+  const ml =clamp(short*0.01,4,12);
+  const mr =clamp(short*0.035,14,32);
+  const hp =clamp(short*0.01,4,8);
   const td =Math.round(jr*0.9);
-  const gap=clamp(short*0.014,6,12);
-  geo={jr,dr,m,hp,td,gap};
-  const JD=Math.round((jr+hp)*2);
-  const DD=Math.round((dr+hp)*2);
+  const gap=clamp(short*0.018,10,18);
+  geo={jr,dr,m:ml,mr,hp,td,gap};
+  const JD=Math.round(jr*2 + hp*2);
+  const DD=Math.round(dr*2);
   let maxBottom=0;
   const place=(el,o)=>{
     el.style.width=Math.round(o.w)+'px'; el.style.height=Math.round(o.h)+'px';
@@ -1632,11 +1670,23 @@ function layoutControls(){
     for(const pc of c.pieces){
       const el=pc.el, a=pc.sp.a;
       if(pc.sp.t==='joy'){
-        place(el,{w:JD,h:JD,
-          l:(a==='bl'||a==='tl')?m:undefined,
-          r:(a==='br'||a==='tr')?m:undefined,
-          t:(a==='tl'||a==='tr')?m:undefined,
-          b:(a==='bl'||a==='br')?m:undefined});
+        let o;
+        const midTop=Math.round((vh-JD)/2);
+        if(a==='bl')   o={w:JD,h:JD, l:ml,               b:ml};
+        else if(a==='br')   o={w:JD,h:JD, r:mr,               b:ml};
+        else if(a==='tl')   o={w:JD,h:JD, l:ml,               t:ml};
+        else if(a==='lm')   o={w:JD,h:JD, l:ml,               t:midTop};
+        else if(a==='rm')   o={w:JD,h:JD, r:mr,               t:midTop};
+        else if(a==='bc'){
+          /* Center the two-button group on the screen. The joystick is placed
+             just above the third basket's ground area so it doesn't cover the
+             basket or overlap the pause/sound buttons at the bottom edge. */
+          const centerY=Math.round(vh*0.67);
+          o={w:JD,h:JD,l:Math.round(vw/2-(DD+gap)/2-JD/2),t:centerY-Math.round(JD/2)};
+        }
+        else if(a==='tl')   o={w:JD,h:JD, l:ml,               t:ml};
+        else                o={w:JD,h:JD, r:mr,               t:ml};
+        place(el,o);
         const joy=el.querySelector('.joy'), th=el.querySelector('.thumb');
         joy.style.width=joy.style.height=Math.round(jr*2)+'px';
         joy.style.margin=Math.round(-jr)+'px';
@@ -1645,12 +1695,32 @@ function layoutControls(){
         if(c.id!==null){ const r=el.getBoundingClientRect(); c.bx=r.left+r.width/2; c.by=r.top+r.height/2; }
       }else{
         let o;
-        if(a==='bl-side')      o={w:DD,h:DD, l:m+2*jr+gap,      b:m+jr-dr};
-        else if(a==='br-side') o={w:DD,h:DD, r:m+2*jr+gap,      b:m+jr-dr};
-        else if(a==='tl-side') o={w:DD,h:DD, l:m+2*jr+gap,      t:m+jr-dr};
-        else if(a==='tr-side') o={w:DD,h:DD, r:m+2*jr+gap,      t:m+jr-dr};
-        else if(a==='tl')      o={w:DD,h:DD, l:m,               t:m};
-        else                   o={w:DD,h:DD, r:m,               b:m};
+        const midTopDash=Math.round((vh-DD)/2);
+        const dashLaneOffset = Math.round((JD-DD)/2);
+        if(a==='lm') o={w:DD,h:DD,l:ml+JD+gap,t:midTopDash};
+        else if(a==='rm') o={w:DD,h:DD,r:mr+JD+gap,t:midTopDash};
+        else if(a==='bc'){
+          const centerY=Math.round(vh*0.67);
+          o={w:DD,h:DD,l:Math.round(vw/2+(JD+gap)/2-DD/2),t:centerY-Math.round(DD/2)};
+        }
+        /* Four-player controls retain their basket-matched corner anchors. */
+        else if(a==='l-side')      o={w:DD,h:DD, l:ml+dashLaneOffset, t:Math.round(vh*0.76-DD/2)};
+        else if(a==='r-side')      o={w:DD,h:DD, r:mr+dashLaneOffset, t:Math.round(vh*0.76-DD/2)};
+        else if(a==='l-side-top')  o={w:DD,h:DD, l:ml+dashLaneOffset, t:Math.round(vh*0.27-DD/2)};
+        else if(a==='r-side-top')  o={w:DD,h:DD, r:mr+dashLaneOffset, t:Math.round(vh*0.27-DD/2)};
+        else if(a==='l-up')   o={w:DD,h:DD, l:ml,               b:ml+JD+gap};
+        else if(a==='l-down') o={w:DD,h:DD, l:ml,               t:ml+JD+gap};
+        else if(a==='r-up')   o={w:DD,h:DD, r:mr,               b:ml+JD+gap};
+        else if(a==='r-down') o={w:DD,h:DD, r:mr,               t:ml+JD+gap};
+        else if(a==='tl')     o={w:DD,h:DD, l:ml,               t:ml};
+        else if(a==='br'){
+          /* Solo DASH: lift it slightly above the bottom-right joystick lane
+             so the two thumb targets don't feel crowded against the same edge.
+             Other modes keep their original bottom-right anchor. */
+          const soloLift = modeCfg.humans===1 ? clamp(short*0.075,32,52) : 0;
+          o={w:DD,h:DD,r:mr,b:ml+soloLift};
+        }
+        else                  o={w:DD,h:DD, r:mr,               b:ml};
         place(el,o);
         const db=el.querySelector('.dashb');
         db.style.width=db.style.height=Math.round(dr*2)+'px';
@@ -1955,12 +2025,12 @@ function updRaid(d){
       for(const b of baskets){
         if(b.owner===p||!b.stored.length||b.raidCd>0) continue;
         if(b.owner.shieldActive){
-          if(hyp(p.x-b.x,p.y-b.y)<CFG.RAID_RADIUS&&b.owner.shieldHit<=0&&Math.random()<d*2){
+          if(hyp(p.x-b.x,p.y-b.y)<CFG.RAID_RADIUS+30&&b.owner.shieldHit<=0&&Math.random()<d*2){
             b.owner.shieldHit=0.45; playSnd('shield');
           }
           continue;
         }
-        if(hyp(p.x-b.x,p.y-b.y)<CFG.RAID_RADIUS){ target=b; break; }
+        if(hyp(p.x-b.x,p.y-b.y)<CFG.RAID_RADIUS+30){ target=b; break; }
       }
     }
     if(target!==p.raidTarget){
@@ -2142,9 +2212,9 @@ function updEggs(d){
       if(e.x<46||e.x>W-46){ e.vx*=-0.5; e.x=clamp(e.x,46,W-46); }
       if(e.y<56||e.y>H-40){ e.vy*=-0.5; e.y=clamp(e.y,56,H-40); }
       for(const c of colliders){
-        if(c.rect){ if(e.x>c.x-14&&e.x<c.x+c.w+14&&e.y>c.y-14&&e.y<c.y+c.h+14){ e.vx*=-0.6; e.vy*=-0.6; e.x+=e.vx*0.03; e.y+=e.vy*0.03; } }
+        if(c.rect){ if(e.x>c.x-18&&e.x<c.x+c.w+18&&e.y>c.y-18&&e.y<c.y+c.h+18){ e.vx*=-0.6; e.vy*=-0.6; e.x+=e.vx*0.03; e.y+=e.vy*0.03; } }
         else if(!c.seg){ const dx=e.x-c.x,dy=e.y-c.y,dd=hyp(dx,dy);
-          if(dd<c.r+14&&dd>0){ e.x=c.x+dx/dd*(c.r+14); e.y=c.y+dy/dd*(c.r+14); e.vx*=-0.5; e.vy*=-0.5; } }
+          if(dd<c.r+18&&dd>0){ e.x=c.x+dx/dd*(c.r+18); e.y=c.y+dy/dd*(c.r+18); e.vx*=-0.5; e.vy*=-0.5; } }
       }
       if(hyp(e.vx,e.vy)<7){ e.vx=0; e.vy=0; e.state='LOOSE'; }
     }
@@ -2164,7 +2234,7 @@ function updEggs(d){
          radius is pulled in and taken, so the power-up is worth having without
          having to stand on every egg yourself. Hands still have to be free. */
       if(p.magnetT>0&&dd<CFG.MAGNET_RADIUS&&dd<bd){ bd=dd; best=p; }
-      if(dd<p.radius+17&&dd<bd){ bd=dd; best=p; }
+      if(dd<p.radius+24&&dd<bd){ bd=dd; best=p; }
     }
     if(best) collectEgg(best,e);
   }
@@ -2176,12 +2246,12 @@ function updDeliveries(d){
     /* MAGNET THROWS: inside half the magnet radius the carried eggs are flung
        into the nest on their own, so the power-up finishes the job instead of
        only dragging you towards it. */
-    const R=(p.magnetT>0?Math.max(62+CFG.MAGNET_DELIVER_BONUS,CFG.MAGNET_RADIUS/2):62);
-    if(dd<R){ deliver(p, dd>62); continue; }
+    const R=(p.magnetT>0?Math.max(90+CFG.MAGNET_DELIVER_BONUS,CFG.MAGNET_RADIUS/2):90);
+    if(dd<R){ deliver(p, dd>90); continue; }
     if(p.wrongCd<=0){
       for(const b of baskets){
         if(b===p.basket) continue;
-        if(hyp(p.x-b.x,p.y-b.y)<70){
+        if(hyp(p.x-b.x,p.y-b.y)<95){
           pop(p.x,p.y-50,'NOT YOURS!','#8a7a5a');
           playSnd('notMine'); p.wrongCd=2.2; break;
         }
@@ -2347,28 +2417,26 @@ function drawObs(o){
   }
   ctx.drawImage(o.spr, o.x-o.sw/2*ds, o.sy-o.sh*ds, o.sw*ds, o.sh*ds);
 }
-const NEST_SLOTS=[[-18,-84],[1,-86],[19,-82],[-26,-74],[-7,-73],[12,-74]];
+const NEST_SLOTS=[[-25,-90],[2,-92],[26,-87],[-36,-76],[-10,-74],[17,-76]];
 const NEST_ORDER=[3,4,5,0,1,2];
 function drawBasket(b){
   const ds=0.94+0.12*(b.y/H);
-  ctx.fillStyle='rgba(110,80,35,.22)';
-  ctx.beginPath(); ctx.ellipse(b.x,b.y+6,62*ds,24*ds,0,0,TAU); ctx.fill();
-  const jx=b.underRaid?Math.sin(time*30)*2.2:0;
+  const jx=b.underRaid?Math.sin(time*30)*3:0;
   const s=ds*(1+b.bounce*0.09), ys=ds*(1-b.bounce*0.12);
   ctx.save(); ctx.translate(b.x+jx,b.y); ctx.scale(s,ys);
-  ctx.drawImage(basketBackSpr[b.owner.id],-70,-120,140,124);
+  ctx.drawImage(basketBackSpr[b.owner.id],-100,-132,200,170);
   const stored=b.stored, n=Math.min(stored.length,NEST_SLOTS.length);
   for(let k=0;k<n;k++){
     const slot=NEST_SLOTS[NEST_ORDER[k]];
     const e=stored[stored.length-1-k];
-    ctx.save(); ctx.translate(slot[0],slot[1]); ctx.scale(.42,.42);
+    ctx.save(); ctx.translate(slot[0],slot[1]); ctx.scale(.55,.55);
     ctx.drawImage(e.golden?eggSprG:eggSprN,-24,-28,48,56);
     ctx.restore();
   }
-  ctx.drawImage(basketFrontSpr[b.owner.id],-70,-120,140,124);
+  ctx.drawImage(basketFrontSpr[b.owner.id],-100,-132,200,170);
   if(b.flash>0){ ctx.globalAlpha=b.flash;
-    ctx.beginPath(); ctx.ellipse(0,-78,50,17,0,0,TAU);
-    ctx.strokeStyle='#FFF'; ctx.lineWidth=5; ctx.stroke(); ctx.globalAlpha=1; }
+    ctx.beginPath(); ctx.ellipse(0,-82,70,24,0,0,TAU);
+    ctx.strokeStyle='#FFF'; ctx.lineWidth=7; ctx.stroke(); ctx.globalAlpha=1; }
   if(b.owner.shieldActive){
     const P=b.owner, C=P.col;
     let sc=1, al=1;
@@ -2385,8 +2453,8 @@ function drawBasket(b){
     if(P.shieldT<1.2&&P.shieldActive){
       al*=Math.sin(time*14)>0?1:0.55;
     }
-    const R=95*sc*(1+0.012*Math.sin(time*2.6));
-    const cy=-52;
+    const R=130*sc*(1+0.012*Math.sin(time*2.6));
+    const cy=-44;
     ctx.save();
     ctx.globalAlpha=al;
     const g=ctx.createRadialGradient(0,cy,R*0.45,0,cy,R);
@@ -2394,21 +2462,21 @@ function drawBasket(b){
     g.addColorStop(0.75,hexA(C.m,0.17));
     g.addColorStop(1,hexA(C.m,0.30));
     ctx.beginPath(); ctx.arc(0,cy,R,0,TAU); ctx.fillStyle=g; ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0,2,R*0.82,14*sc,0,0,TAU);
+    ctx.beginPath(); ctx.ellipse(0,2,R*0.82,19*sc,0,0,TAU);
     ctx.fillStyle=hexA(C.m,0.10); ctx.fill();
     ctx.beginPath(); ctx.arc(0,cy,R,0,TAU);
-    ctx.strokeStyle=hexA(C.m,0.85); ctx.lineWidth=4; ctx.stroke();
+    ctx.strokeStyle=hexA(C.m,0.85); ctx.lineWidth=5; ctx.stroke();
     ctx.beginPath(); ctx.arc(0,cy,R+4,0,TAU);
-    ctx.strokeStyle=hexA(C.m,0.22); ctx.lineWidth=6; ctx.stroke();
+    ctx.strokeStyle=hexA(C.m,0.22); ctx.lineWidth=8; ctx.stroke();
     ctx.beginPath(); ctx.arc(0,cy,R*0.84,Math.PI*1.12,Math.PI*1.55);
-    ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=5; ctx.lineCap='round'; ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=7; ctx.lineCap='round'; ctx.stroke();
     ctx.beginPath(); ctx.arc(0,cy,R*0.84,Math.PI*1.62,Math.PI*1.72);
-    ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=4; ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.lineWidth=5; ctx.stroke();
     if(P.shieldHit>0){
       const t=1-P.shieldHit/0.45;
       ctx.beginPath(); ctx.arc(0,cy,R*(0.65+0.45*t),0,TAU);
       ctx.strokeStyle='rgba(255,255,255,'+(0.8*(1-t)).toFixed(3)+')';
-      ctx.lineWidth=3.5; ctx.stroke();
+      ctx.lineWidth=5; ctx.stroke();
     }
     ctx.restore();
     ctx.globalAlpha=1;
@@ -2417,132 +2485,132 @@ function drawBasket(b){
   if(b.underRaid){
     ctx.save(); ctx.translate(b.x+jx,b.y);
     ctx.globalAlpha=0.45+0.3*Math.sin(time*12);
-    ctx.strokeStyle='#E14B3B'; ctx.lineWidth=4;
-    ctx.setLineDash([12,8]); ctx.lineDashOffset=-time*60;
-    ctx.beginPath(); ctx.ellipse(0,-62,72,44,0,0,TAU); ctx.stroke();
+    ctx.strokeStyle='#E14B3B'; ctx.lineWidth=5;
+    ctx.setLineDash([16,10]); ctx.lineDashOffset=-time*60;
+    ctx.beginPath(); ctx.ellipse(0,-57,100,58,0,0,TAU); ctx.stroke();
     ctx.setLineDash([]); ctx.globalAlpha=1; ctx.restore();
   }
 }
 function drawEggWorld(e){
   const ds=0.94+0.12*(e.y/H);
-  let yo=Math.sin(time*2.4+e.seed)*2.2, sx=1, sy=1;
-  if(e.hopT>0){ const hp=1-e.hopT/0.35; yo-=Math.sin(hp*Math.PI)*16;
-    if(hp>0.75){ const k=(hp-0.75)/0.25; sx=1+0.35*k; sy=1-0.3*k; } }
+  let yo=Math.sin(time*2.4+e.seed)*2.8, sx=1, sy=1;
+  if(e.hopT>0){ const hp=1-e.hopT/0.35; yo-=Math.sin(hp*Math.PI)*20;
+    if(hp>0.75){ const k=(hp-0.75)/0.25; sx=1+0.4*k; sy=1-0.35*k; } }
   ctx.fillStyle='rgba(40,30,10,.22)';
-  ctx.beginPath(); ctx.ellipse(e.x,e.y+5,12*ds,5*ds,0,0,TAU); ctx.fill();
-  const dy=e.y-16*ds-yo;
+  ctx.beginPath(); ctx.ellipse(e.x,e.y+6,15*ds,6*ds,0,0,TAU); ctx.fill();
+  const dy=e.y-20*ds-yo;
   if(e.golden){
-    const pulse=1+0.09*Math.sin(time*5+e.seed);
+    const pulse=1+0.11*Math.sin(time*5+e.seed);
     ctx.globalAlpha=0.75+0.2*Math.sin(time*5);
-    ctx.drawImage(glowSpr,e.x-60*pulse,dy-60*pulse,120*pulse,120*pulse);
+    ctx.drawImage(glowSpr,e.x-72*pulse,dy-72*pulse,144*pulse,144*pulse);
     ctx.globalAlpha=1;
   }
-  const w=38*ds*sx, h=44*ds*sy;
+  const w=48*ds*sx, h=56*ds*sy;
   ctx.drawImage(e.golden?eggSprG:eggSprN, e.x-w/2, dy-h*0.62, w, h);
   if(e.golden){
-    ctx.save(); ctx.translate(e.x+12*ds,dy-14*ds); ctx.rotate(time*2);
-    ctx.fillStyle='rgba(255,255,255,.9)'; star(ctx,0,0,5); ctx.restore();
-    ctx.font='900 14px '+FONT;
-    ctx.textAlign='center'; ctx.lineWidth=4; ctx.strokeStyle='#4b321b'; ctx.fillStyle='#FFD34D';
-    ctx.strokeText('+'+e.value,e.x,dy-34); ctx.fillText('+'+e.value,e.x,dy-34);
+    ctx.save(); ctx.translate(e.x+15*ds,dy-17*ds); ctx.rotate(time*2);
+    ctx.fillStyle='rgba(255,255,255,.9)'; star(ctx,0,0,6); ctx.restore();
+    ctx.font='900 16px '+FONT;
+    ctx.textAlign='center'; ctx.lineWidth=5; ctx.strokeStyle='#4b321b'; ctx.fillStyle='#FFD34D';
+    ctx.strokeText('+'+e.value,e.x,dy-42); ctx.fillText('+'+e.value,e.x,dy-42);
   }
 }
 function drawHen(p){
   const ds=0.92+0.16*(p.y/H);
   if(p.carryingEgg||p.carryingEgg2){
     ctx.globalAlpha=0.35+0.15*Math.sin(time*6);
-    ctx.strokeStyle=p.col.m; ctx.lineWidth=3.5;
-    ctx.beginPath(); ctx.arc(p.x,p.y-8,30*ds,0,TAU); ctx.stroke();
+    ctx.strokeStyle=p.col.m; ctx.lineWidth=4.5;
+    ctx.beginPath(); ctx.arc(p.x,p.y-10,40*ds,0,TAU); ctx.stroke();
     ctx.globalAlpha=1;
   }
   ctx.fillStyle='rgba(40,30,10,.24)';
-  ctx.beginPath(); ctx.ellipse(p.x,p.y+6,20*ds,7.5*ds,0,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(p.x,p.y+8,28*ds,10*ds,0,0,TAU); ctx.fill();
   ctx.save();
   ctx.translate(p.x,p.y);
-  if(p.bumpT>0) ctx.translate(Math.sin(time*45)*1.6,0);
-  const lean=(clamp(p.vx*0.0005,-0.13,0.13)+(p.carryingEgg?0.04:0)+(p.dashT>0?clamp(p.dvx*0.0002,-0.1,0.1):0))*p.face;
+  if(p.bumpT>0) ctx.translate(Math.sin(time*45)*2.2,0);
+  const lean=(clamp(p.vx*0.0005,-0.13,0.13)+(p.carryingEgg?0.05:0)+(p.dashT>0?clamp(p.dvx*0.0002,-0.12,0.12):0))*p.face;
   ctx.rotate(lean);
-  const st=p.dashT>0?1.15:1, sq=p.dashT>0?0.88:1;
+  const st=p.dashT>0?1.2:1, sq=p.dashT>0?0.85:1;
   ctx.scale(ds*p.sx*p.face*st, ds*p.sy*sq);
   const C=p.col;
-  const bob=(p.run*2.6+0.6)*Math.abs(Math.sin(p.walk))+Math.sin(time*2.2+p.id*1.7)*0.8*(1-p.run);
+  const bob=(p.run*3.2+0.8)*Math.abs(Math.sin(p.walk))+Math.sin(time*2.2+p.id*1.7)*1.1*(1-p.run);
   ctx.translate(0,-bob);
-  ctx.strokeStyle='#E8912A'; ctx.lineWidth=3; ctx.lineCap='round';
+  ctx.strokeStyle='#E8912A'; ctx.lineWidth=4; ctx.lineCap='round';
   const step=Math.sin(p.walk)*p.run;
   const leg=(hx,s)=>{
-    const fx2=hx+s*5, lift=Math.max(0,s)*3;
-    ctx.beginPath(); ctx.moveTo(hx,-10); ctx.lineTo(fx2,-2-lift); ctx.stroke();
+    const fx2=hx+s*7, lift=Math.max(0,s)*4.5;
+    ctx.beginPath(); ctx.moveTo(hx,-14); ctx.lineTo(fx2,-3-lift); ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(fx2,-2-lift); ctx.lineTo(fx2-3.5,0.5-lift);
-    ctx.moveTo(fx2,-2-lift); ctx.lineTo(fx2+3.5,0.5-lift);
+    ctx.moveTo(fx2,-3-lift); ctx.lineTo(fx2-5,1-lift);
+    ctx.moveTo(fx2,-3-lift); ctx.lineTo(fx2+5,1-lift);
     ctx.stroke();
   };
-  leg(-5,step); leg(6,-step);
+  leg(-7,step); leg(8,-step);
   for(let i=0;i<3;i++){
-    ctx.save(); ctx.translate(-13,-24); ctx.rotate(-2.25+i*0.4);
-    ctx.beginPath(); ctx.ellipse(9,0,10.5,4.2,0,0,TAU);
-    ctx.fillStyle=C.d; ctx.fill(); ctx.strokeStyle=C.o; ctx.lineWidth=2; ctx.stroke();
+    ctx.save(); ctx.translate(-18,-32); ctx.rotate(-2.25+i*0.4);
+    ctx.beginPath(); ctx.ellipse(12,0,14,5.5,0,0,TAU);
+    ctx.fillStyle=C.d; ctx.fill(); ctx.strokeStyle=C.o; ctx.lineWidth=3; ctx.stroke();
     ctx.restore();
   }
-  const bg=ctx.createLinearGradient(0,-34,0,-4);
+  const bg=ctx.createLinearGradient(0,-46,0,-6);
   bg.addColorStop(0,C.h); bg.addColorStop(0.45,C.m); bg.addColorStop(1,C.d);
-  ctx.beginPath(); ctx.ellipse(0,-18,17,14,0,0,TAU);
-  ctx.fillStyle=bg; ctx.fill(); ctx.strokeStyle=C.o; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0,-24,22,18,0,0,TAU);
+  ctx.fillStyle=bg; ctx.fill(); ctx.strokeStyle=C.o; ctx.lineWidth=3.5; ctx.stroke();
   ctx.fillStyle='rgba(255,255,255,.35)';
-  ctx.beginPath(); ctx.ellipse(7,-11,6.5,4.5,0.3,0,TAU); ctx.fill();
-  const flap=p.dashT>0?Math.sin(time*42)*0.55-0.45:Math.sin(p.walk)*0.14*p.run;
-  ctx.save(); ctx.translate(-2,-19); ctx.rotate(flap);
-  ctx.beginPath(); ctx.ellipse(-2,2,10,6.5,-0.25,0,TAU);
-  ctx.fillStyle=C.d; ctx.fill(); ctx.strokeStyle=C.o; ctx.lineWidth=2; ctx.stroke();
-  ctx.strokeStyle='rgba(0,0,0,.18)'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.moveTo(-8,4.5); ctx.lineTo(-2,5.5); ctx.moveTo(-4.5,7); ctx.lineTo(0.5,7.5); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(9,-15,8.5,6,0.3,0,TAU); ctx.fill();
+  const flap=p.dashT>0?Math.sin(time*42)*0.7-0.6:Math.sin(p.walk)*0.18*p.run;
+  ctx.save(); ctx.translate(-3,-25); ctx.rotate(flap);
+  ctx.beginPath(); ctx.ellipse(-3,3,13,8.5,-0.25,0,TAU);
+  ctx.fillStyle=C.d; ctx.fill(); ctx.strokeStyle=C.o; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.strokeStyle='rgba(0,0,0,.18)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(-10,6); ctx.lineTo(-3,7); ctx.moveTo(-6,9.5); ctx.lineTo(1,10); ctx.stroke();
   ctx.restore();
-  const hy=Math.max(0,Math.sin(time*1.4+p.id*1.9))*1.7*(1-p.run);
+  const hy=Math.max(0,Math.sin(time*1.4+p.id*1.9))*2.2*(1-p.run);
   ctx.save(); ctx.translate(0,hy);
-  ctx.beginPath(); ctx.arc(13,-34,8.5,0,TAU);
-  ctx.fillStyle=C.m; ctx.fill(); ctx.strokeStyle=C.o; ctx.lineWidth=2.5; ctx.stroke();
-  ctx.fillStyle='#E14B3B'; ctx.strokeStyle='#9E2B1E'; ctx.lineWidth=1.5;
-  [[9.5,-41.5,2.6],[13,-43.8,3.1],[16.6,-41.5,2.6]].forEach(c=>{
+  ctx.beginPath(); ctx.arc(17,-44,11,0,TAU);
+  ctx.fillStyle=C.m; ctx.fill(); ctx.strokeStyle=C.o; ctx.lineWidth=3; ctx.stroke();
+  ctx.fillStyle='#E14B3B'; ctx.strokeStyle='#9E2B1E'; ctx.lineWidth=2;
+  [[12.5,-53.5,3.4],[17,-56.5,4],[21.5,-53.5,3.4]].forEach(c=>{
     ctx.beginPath(); ctx.arc(c[0],c[1],c[2],0,TAU); ctx.fill(); ctx.stroke(); });
-  ctx.fillStyle='#F6A41E'; ctx.strokeStyle='#B26E08'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.moveTo(20.5,-35.5); ctx.lineTo(27.5,-33.5); ctx.lineTo(20.5,-31.2); ctx.closePath();
+  ctx.fillStyle='#F6A41E'; ctx.strokeStyle='#B26E08'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(26.5,-45.5); ctx.lineTo(35.5,-43); ctx.lineTo(26.5,-40.5); ctx.closePath();
   ctx.fill(); ctx.stroke();
   ctx.fillStyle='#E14B3B';
-  ctx.beginPath(); ctx.ellipse(19.6,-27.8,2.3,2.9,0.2,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(25.5,-35.5,3,3.8,0.2,0,TAU); ctx.fill();
   ctx.strokeStyle='#9E2B1E'; ctx.stroke();
   const blink=((time*0.8+p.id*0.37)%4)<0.09;
   if(p.bumpT>0.12){
-    ctx.strokeStyle='#2A1B10'; ctx.lineWidth=1.8;
+    ctx.strokeStyle='#2A1B10'; ctx.lineWidth=2.5;
     ctx.beginPath();
-    ctx.moveTo(13.6,-38.2); ctx.lineTo(17.4,-34.6);
-    ctx.moveTo(17.4,-38.2); ctx.lineTo(13.6,-34.6); ctx.stroke();
+    ctx.moveTo(17.5,-50); ctx.lineTo(22.5,-45.5);
+    ctx.moveTo(22.5,-50); ctx.lineTo(17.5,-45.5); ctx.stroke();
   }else if(blink){
-    ctx.strokeStyle='#2A1B10'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.moveTo(13,-36.4); ctx.lineTo(18,-36.4); ctx.stroke();
+    ctx.strokeStyle='#2A1B10'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(16.5,-47); ctx.lineTo(23,-47); ctx.stroke();
   }else{
-    ctx.fillStyle='#FFF'; ctx.beginPath(); ctx.arc(15.4,-36.4,3.1,0,TAU); ctx.fill();
-    ctx.strokeStyle=C.o; ctx.lineWidth=1.2; ctx.stroke();
-    ctx.fillStyle='#2A1B10'; ctx.beginPath(); ctx.arc(16.3,-36.2,1.7,0,TAU); ctx.fill();
+    ctx.fillStyle='#FFF'; ctx.beginPath(); ctx.arc(19.5,-47,4,0,TAU); ctx.fill();
+    ctx.strokeStyle=C.o; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='#2A1B10'; ctx.beginPath(); ctx.arc(20.8,-46.8,2.2,0,TAU); ctx.fill();
   }
   ctx.fillStyle='rgba(255,255,255,.4)';
-  ctx.beginPath(); ctx.ellipse(17.5,-31.6,2,1.4,0,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(22.5,-41,2.8,2,0,0,TAU); ctx.fill();
   ctx.restore();
   ctx.restore();
   if(p.magnetT>0){
     ctx.globalAlpha=0.28+0.1*Math.sin(time*8);
-    ctx.strokeStyle='#E14B3B'; ctx.lineWidth=2.5; ctx.setLineDash([8,10]); ctx.lineDashOffset=time*30;
+    ctx.strokeStyle='#E14B3B'; ctx.lineWidth=3; ctx.setLineDash([10,12]); ctx.lineDashOffset=time*30;
     ctx.beginPath(); ctx.arc(p.x,p.y,CFG.MAGNET_RADIUS,0,TAU); ctx.stroke();
     ctx.setLineDash([]); ctx.globalAlpha=1;
   }
   if(p.raidT>0&&p.raidTarget){
     const frac=clamp(p.raidT/CFG.RAID_TIME,0,1);
-    ctx.strokeStyle='rgba(75,50,27,.35)'; ctx.lineWidth=6;
-    ctx.beginPath(); ctx.arc(p.x,p.y-4,27*ds,0,TAU); ctx.stroke();
+    ctx.strokeStyle='rgba(75,50,27,.35)'; ctx.lineWidth=8;
+    ctx.beginPath(); ctx.arc(p.x,p.y-5,36*ds,0,TAU); ctx.stroke();
     ctx.strokeStyle='#E14B3B';
-    ctx.beginPath(); ctx.arc(p.x,p.y-4,27*ds,-Math.PI/2,-Math.PI/2+frac*TAU); ctx.stroke();
+    ctx.beginPath(); ctx.arc(p.x,p.y-5,36*ds,-Math.PI/2,-Math.PI/2+frac*TAU); ctx.stroke();
   }
-  let px2=p.x-((p.shieldActive?1:0)+(p.magnetT>0)+(p.dblT>0))*9+9;
-  const pip=(icon)=>{ ctx.globalAlpha=0.9; ctx.drawImage(puSpr[icon],px2-8,p.y-64*ds-8,16,16); ctx.globalAlpha=1; px2+=18; };
+  let px2=p.x-((p.shieldActive?1:0)+(p.magnetT>0)+(p.dblT>0))*12+12;
+  const pip=(icon)=>{ ctx.globalAlpha=0.9; ctx.drawImage(puSpr[icon],px2-10,p.y-82*ds-10,20,20); ctx.globalAlpha=1; px2+=24; };
   if(p.shieldActive) pip('shield');
   if(p.magnetT>0) pip('magnet');
   if(p.dblT>0) pip('double');
@@ -2551,43 +2619,194 @@ function drawCarriedEgg(p){
   const ds=0.94+0.12*(p.y/H);
   const k=Math.min(1,rdt*10);
   const drawOne=(e,x,y,ph,val)=>{
-    const bob=Math.sin(time*5+p.id+ph*1.4)*2.5;
+    const bob=Math.sin(time*5+p.id+ph*1.4)*3.2;
     if(e.golden){
       ctx.globalAlpha=0.7;
-      ctx.drawImage(glowSpr,x-46,y+bob-46,92,92);
+      ctx.drawImage(glowSpr,x-55,y+bob-55,110,110);
       ctx.globalAlpha=1;
     }
-    const w=36*ds, h=42*ds;
+    const w=45*ds, h=52*ds;
     ctx.drawImage(e.golden?eggSprG:eggSprN,x-w/2,y+bob-h*0.62,w,h);
     if(e.golden){
-      ctx.font='900 15px '+FONT;
-      ctx.textAlign='center'; ctx.lineWidth=4; ctx.strokeStyle='#4b321b'; ctx.fillStyle='#FFD34D';
-      ctx.strokeText('+'+val,x,y+bob-30);
-      ctx.fillText('+'+val,x,y+bob-30);
+      ctx.font='900 17px '+FONT;
+      ctx.textAlign='center'; ctx.lineWidth=5; ctx.strokeStyle='#4b321b'; ctx.fillStyle='#FFD34D';
+      ctx.strokeText('+'+val,x,y+bob-36);
+      ctx.fillText('+'+val,x,y+bob-36);
     }
   };
   if(p.carryingEgg){
-    const tx=p.x-p.face*14, ty=p.y-44;
+    const tx=p.x-p.face*18, ty=p.y-54;
     p.ex+=(tx-p.ex)*k; p.ey+=(ty-p.ey)*k;
     drawOne(p.carryingEgg,p.ex,p.ey,0,p.carryingValue);
   }
   if(p.carryingEgg2){
-    const tx=p.x+p.face*5, ty=p.y-40;
+    const tx=p.x+p.face*7, ty=p.y-48;
     p.ex2+=(tx-p.ex2)*k; p.ey2+=(ty-p.ey2)*k;
     drawOne(p.carryingEgg2,p.ex2,p.ey2,1,p.carryingValue2);
   }
 }
+/* ---------- matching grass beyond the farm fence ----------
+   The playfield is aspect-fitted, leaving screen-space margins on wide screens.
+   Those margins used to be a flat dark green, which made the outer bushes look
+   pasted on. This cached layer uses the same base grass, soft horizontal bands,
+   mottled patches, tiny flecks and daisies as the farm canvas. The real farm is
+   drawn over the centre immediately afterwards, so this only changes the areas
+   beyond the fence. */
+let outerGroundCache=null, outerGroundCacheW=0, outerGroundCacheH=0, outerGroundScale=0;
+function ensureOuterGround(){
+  const w=Math.max(1,Math.ceil(vw)), h=Math.max(1,Math.ceil(vh));
+  const z=cam.z||Math.min(vw/W,vh/H);
+  if(outerGroundCache && outerGroundCacheW===w && outerGroundCacheH===h && Math.abs(outerGroundScale-z)<0.0001) return;
+  outerGroundCache=document.createElement('canvas');
+  outerGroundCache.width=w; outerGroundCache.height=h;
+  outerGroundCacheW=w; outerGroundCacheH=h; outerGroundScale=z;
+  const g=outerGroundCache.getContext('2d');
+  g.fillStyle='#83CC50'; g.fillRect(0,0,w,h);
+
+  // Continue the farm's broad, softly alternating grass rows past the fence.
+  const top=vh/2-cam.y*z;
+  const bandH=96*z, fillH=48*z;
+  const first=Math.floor((0-top)/bandH)-1;
+  for(let n=first, y=top+n*bandH; y<h; n++,y=top+n*bandH){
+    g.fillStyle=(Math.abs(n)%2)?'rgba(255,255,220,.09)':'rgba(30,80,20,.075)';
+    g.fillRect(0,y,w,fillH);
+  }
+
+  // Large low-contrast grass mottling; deterministic so it never shimmers.
+  for(let i=0;i<90;i++){
+    g.fillStyle=i%2?'rgba(153,226,106,.22)':'rgba(83,151,46,.22)';
+    g.beginPath();
+    g.ellipse(rndSt(i*3.7)*w,rndSt(i*7.3)*h,
+      (30+rndSt(i*1.3)*80)*z,(20+rndSt(i*2.1)*46)*z,rndSt(i)*3,0,TAU);
+    g.fill();
+  }
+  for(let i=0;i<24;i++){
+    g.fillStyle='rgba(150,100,42,.10)';
+    g.beginPath();
+    g.ellipse(rndSt(i*6.3+4)*w,rndSt(i*9.1+7)*h,
+      (26+rndSt(i*2.2)*42)*z,(18+rndSt(i*4.7)*26)*z,rndSt(i+9)*3,0,TAU);
+    g.fill();
+  }
+  // Fine flecks match the small green and pale grains embedded in the playfield.
+  for(let i=0;i<520;i++){
+    g.fillStyle=i%2?'rgba(43,102,28,.30)':'rgba(232,255,166,.28)';
+    const x=rndSt(i*5.1+17)*w, y=rndSt(i*9.7+23)*h;
+    const sz=Math.max(1,2.5*z);
+    g.fillRect(x,y,sz,sz);
+  }
+  // The same tiny five-petal flowers, scattered more sparsely than the grass flecks.
+  for(let i=0;i<Math.max(18,Math.round(56*w*h/(W*H*z*z)));i++){
+    const fx=rndSt(i*8.9+31)*w, fy=rndSt(i*3.1+19)*h;
+    const r=Math.max(1,2.1*z);
+    g.fillStyle=['#FFFDF6','#FFD9E8','#FFE9A8'][i%3];
+    for(let p=0;p<5;p++){
+      const a=p*TAU/5+i;
+      g.beginPath(); g.arc(fx+Math.cos(a)*r*1.45,fy+Math.sin(a)*r*1.45,r,0,TAU); g.fill();
+    }
+    g.fillStyle=i%2?'#F6B41E':'#EF4D3C';
+    g.beginPath(); g.arc(fx,fy,Math.max(.8,r*.8),0,TAU); g.fill();
+  }
+  // Subtle edge shade keeps the margins integrated with the game's painted frame.
+  const shade=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.30,w/2,h/2,Math.max(w,h)*.76);
+  shade.addColorStop(0,'rgba(38,70,25,0)');
+  shade.addColorStop(1,'rgba(38,70,25,.24)');
+  g.fillStyle=shade; g.fillRect(0,0,w,h);
+}
+function drawOuterGround(){
+  ensureOuterGround();
+  if(outerGroundCache) ctx.drawImage(outerGroundCache,0,0,vw,vh);
+}
+
+/* ---------- scenery outside the farm fence ----------
+   The farm canvas is aspect-fitted inside the viewport. On taller screens this
+   leaves green letterbox bands outside the fence; these are SCREEN-SPACE
+   decorations, not obstacles, so they never affect movement, collisions, or AI. */
+function drawOuterScenery(){
+  const z=cam.z||Math.min(vw/W,vh/H);
+  const left=vw/2+shakeOx-cam.x*z;
+  const top=vh/2+shakeOy-cam.y*z;
+  const right=left+W*z;
+  const bottom=top+H*z;
+  const bush=(x,y,w=74,h=58)=>ctx.drawImage(bushSpr,x-w/2,y-h,w,h);
+  const tree=(x,y,w=78,h=88)=>ctx.drawImage(treeSpr,x-w/2,y-h,w,h);
+  const rock=(x,y,w=42,h=36)=>ctx.drawImage(rockSpr,x-w/2,y-h,w,h);
+  const tuft=(x,y,w=38,h=24)=>ctx.drawImage(grassTuftSpr,x-w/2,y-h,w,h);
+  const flower=(x,y,r=2.4)=>{
+    ctx.fillStyle='#FFE9A8';
+    for(let i=0;i<5;i++){
+      const a=i*Math.PI*2/5;
+      ctx.beginPath();ctx.arc(x+Math.cos(a)*r*1.5,y+Math.sin(a)*r*1.5,r,0,TAU);ctx.fill();
+    }
+    ctx.fillStyle='#E7A92E';ctx.beginPath();ctx.arc(x,y,r*.85,0,TAU);ctx.fill();
+  };
+  // Upper margin: low bushes, a couple of small trees, stones and flowers.
+  const tg=Math.max(0,top);
+  if(tg>16){
+    const y= Math.max(12,tg*.72);
+    const upper=[.06,.23,.43,.63,.83,.96];
+    upper.forEach((f,i)=>{
+      const x=vw*f;
+      if(i===1||i===4) tree(x,Math.min(tg-2,y+8),66,76);
+      else if(i===0||i===5) bush(x,Math.min(tg-2,y+5),78,60);
+      else rock(x,Math.min(tg-2,y+2),34,29);
+    });
+    for(let i=0;i<16;i++){
+      const x=vw*(.035+((i*37)%93)/100);
+      const yy=8+((i*29)%Math.max(12,Math.floor(tg*.72)));
+      if(yy<tg-8) { if(i%3===0) tuft(x,yy+14,34,22); else flower(x,yy,2); }
+    }
+  }
+  // Lower margin: foliage follows the fence line, while the centre stays clear
+  // for the studio footer and the main menu's lower button.
+  const bg=vh-bottom;
+  if(bg>16){
+    const y0=bottom+Math.min(bg*.56,76);
+    const lower=[.055,.17,.31,.69,.83,.945];
+    lower.forEach((f,i)=>{
+      const x=vw*f;
+      if(i===0||i===5) tree(x,Math.min(vh-4,y0+18),72,82);
+      else if(i===1||i===4) bush(x,Math.min(vh-4,y0+8),78,60);
+      else rock(x,Math.min(vh-4,y0+5),38,32);
+    });
+    for(let i=0;i<20;i++){
+      const x=vw*(.025+((i*23)%95)/100);
+      const yy=bottom+8+((i*31)%Math.max(12,Math.floor(bg*.74)));
+      if(yy<vh-7 && !(x>vw*.37&&x<vw*.63&&yy>vh-45)){
+        if(i%4===0) tuft(x,yy+12,34,22); else if(i%5===0) rock(x,yy+8,28,24); else flower(x,yy,2);
+      }
+    }
+  }
+  // If a wide/short viewport creates side margins instead of top/bottom bands,
+  // decorate those bands too.
+  const lg=Math.max(0,left), rg=Math.max(0,vw-right);
+  if(lg>16){
+    for(let i=0;i<6;i++){
+      const y=vh*(.12+i*.15);
+      if(i%2===0) bush(Math.max(30,lg*.52),y,70,56); else rock(Math.max(20,lg*.48),y,38,32);
+    }
+  }
+  if(rg>16){
+    for(let i=0;i<6;i++){
+      const y=vh*(.12+i*.15);
+      if(i%2===0) bush(Math.min(vw-30,right+rg*.48),y,70,56); else rock(Math.min(vw-20,right+rg*.52),y,38,32);
+    }
+  }
+}
 function render(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  ctx.fillStyle='#5d8a3c'; ctx.fillRect(0,0,vw,vh);
+  drawOuterGround();
+  drawOuterScenery();
   ctx.save();
   ctx.translate(vw/2+shakeOx,vh/2+shakeOy);
   ctx.scale(cam.z,cam.z);
   ctx.translate(-cam.x,-cam.y);
   ctx.drawImage(groundC,0,0);
   for(const b of baskets){
-    ctx.fillStyle='rgba(160,120,60,.3)';
-    ctx.beginPath(); ctx.ellipse(b.x,b.y+2,72,30,0,0,TAU); ctx.fill();
+    const bds=0.94+0.12*(b.y/H);
+    ctx.fillStyle='rgba(39,29,13,.22)';
+    ctx.beginPath(); ctx.ellipse(b.x,b.y+3,86*bds,17*bds,0,0,TAU); ctx.fill();
+    ctx.fillStyle='rgba(39,29,13,.12)';
+    ctx.beginPath(); ctx.ellipse(b.x,b.y+2,64*bds,9*bds,0,0,TAU); ctx.fill();
   }
   const list=[];
   for(const o of obstacles) list.push({y:o.sy,f:()=>drawObs(o)});

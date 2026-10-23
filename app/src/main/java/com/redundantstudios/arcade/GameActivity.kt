@@ -393,16 +393,29 @@ class GameActivity : AppCompatActivity() {
            display the app may use. */
         GameWindow.applyCutoutMode(window)
 
+        /* SETTINGS AND THEME, BEFORE super.onCreate() - same rule the shell's
+           ThemedActivity screens follow ("a cold start of any screen must
+           already know the saved preferences", so the screen is constructed
+           inside its final theme).
+           This is also the finish line of the launch-jitter fight: applying
+           the theme AFTER super.onCreate() makes setDefaultNightMode re-deliver
+           the configuration of the activity that is mid-creation, the platform
+           answers with a RELAUNCH, and opening a game endpoints up tearing
+           down the GameActivity that was one frame away from showing and
+           building a second one - whose onCreate re-pins requestedOrientation
+           to portrait (line above) before setupOrientation turns it back to
+           the game's orientation. LAND -> PORTRAIT -> LAND in one open: the
+           portrait flash, the window-fit dance and the double rotation all
+           seen at the start of every game. */
+        com.redundantstudios.arcade.util.SettingsManager.init(this)
+        com.redundantstudios.arcade.util.SettingsManager.applyTheme()
+
         super.onCreate(savedInstanceState)
 
         // The game must cover the WHOLE display. This has to happen BEFORE
         // setContentView, otherwise the content view is measured against an inset
         // window and the game sits below the status bar with a dead band above it.
         GameWindow.goEdgeToEdge(window)
-
-        // Defensive: GameActivity can be cold-started directly (deep link/adb) — settings must exist
-        com.redundantstudios.arcade.util.SettingsManager.init(this)
-        com.redundantstudios.arcade.util.SettingsManager.applyTheme()
 
         WebView.setWebContentsDebuggingEnabled(true)
 
