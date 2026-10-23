@@ -1952,20 +1952,36 @@ function genChart(g,i,L,r){
 
 /* ---- chunk cache infrastructure ---- */
 const ENV={
-  far:{pf:0.22,cw:1500,pad:300,res:0.45,salt:0x9E37,drift:6,dw:0.02,gen:genFar,map:new Map()},
-  mid:{pf:0.5,cw:1100,pad:200,res:0.7,salt:0x51ED,drift:10,dw:0.03,gen:genMid,map:new Map()},
-  chart:{pf:1,cw:1200,pad:180,res:1,salt:0x2B1F,drift:0,dw:0,gen:genChart,map:new Map()}
+  far:{name:'far',pf:0.22,cw:1500,pad:300,res:0.45,salt:0x9E37,drift:6,dw:0.02,gen:genFar,map:new Map(),pool:[]},
+  mid:{name:'mid',pf:0.5,cw:1100,pad:200,res:0.7,salt:0x51ED,drift:10,dw:0.03,gen:genMid,map:new Map(),pool:[]},
+  chart:{name:'chart',pf:1,cw:1200,pad:180,res:1,salt:0x2B1F,drift:0,dw:0,gen:genChart,map:new Map(),pool:[]}
 };
 function makeChunk(L,i){
   const cw=L.cw,pad=L.pad;
-  const c=document.createElement('canvas');
-  c.width=Math.max(1,Math.ceil((cw+2*pad)*L.res));
-  c.height=Math.max(1,Math.ceil(1040*L.res));
+  const w=Math.max(1,Math.ceil((cw+2*pad)*L.res));
+  const h=Math.max(1,Math.ceil(1040*L.res));
+  /* A chunk is the SAME SIZE for its layer for ever, so the canvas comes
+     from a pool instead of being allocated fresh. A new offscreen canvas
+     is a malloc plus a new GPU texture, and that allocation was showing
+     up as an occasional stutter whenever the camera crossed into a chunk
+     that had not been painted yet. Same size, same pixels; the canvas is
+     cleared and its state reset first, so the old chunk cannot ghost. */
+  let c=L.pool.pop();
+  if(!c)c=document.createElement('canvas');
+  if(c.width!==w)c.width=w;
+  if(c.height!==h)c.height=h;
   const g=c.getContext('2d');
+  g.setTransform(1,0,0,1,0,0);
+  g.globalAlpha=1;g.globalCompositeOperation='source-over';
+  g.filter='none';g.shadowBlur=0;g.textAlign='left';g.textBaseline='alphabetic';
+  g.lineCap='butt';g.lineJoin='miter';g.lineWidth=1;
+  g.clearRect(0,0,w,h);
+  const _ck=performance.now();
   g.scale(L.res,L.res);
   g.translate(pad,20);
   const r=mulberry32(((((i*2654435761)>>>0)^L.salt)>>>0)>>>0);
   L.gen(g,i,L,r);
+  if(_orLogChunk){const _cd=performance.now()-_ck;if(_cd>8)console.log('[OR] chunk '+L.name+'#'+i+' '+_cd.toFixed(0)+'ms');}
   return c;
 }
 function layerCam(L){return camX*L.pf+(L.drift?Math.sin(gameT*L.dw)*L.drift:0);}
@@ -1983,7 +1999,11 @@ function pumpLayer(L){
     }
   }
   const cap=Math.ceil(viewW/L.cw)+4;
-  while(L.map.size>cap)L.map.delete(L.map.keys().next().value);
+  while(L.map.size>cap){
+    const k=L.map.keys().next().value;
+    if(L.pool.length<4)L.pool.push(L.map.get(k));
+    L.map.delete(k);
+  }
 }
 function blitLayer(L){
   const lx=layerCam(L);
@@ -2003,7 +2023,12 @@ function drawParallaxLayer(L){
   blitLayer(L);
   ctx.restore();
 }
-function clearEnvCaches(){ENV.far.map.clear();ENV.mid.map.clear();ENV.chart.map.clear();}
+function clearEnvCaches(){
+  for(const n of [ENV.far,ENV.mid,ENV.chart]){
+    for(const c of n.map.values())if(n.pool.length<4)n.pool.push(c);
+    n.map.clear();
+  }
+}
 
 /* ---- per-frame chart extras ---- */
 /* Static chart furniture depends only on camX, but it used to be rebuilt
@@ -2019,12 +2044,27 @@ function buildChartStrip(){
      is now three screens wide, so this runs roughly once every two screens of
      travel instead of roughly twice a second. */
   const pad=viewW;
-  const W0=Math.floor(camX)-pad,W1=W0+viewW+pad*2;
-  const c=document.createElement('canvas');
-  c.width=Math.max(1,Math.ceil(W1-W0)||1);c.height=1008;
+  const W0=Math.floor(camX)-pad;
+  const W=Math.max(1,Math.ceil(viewW+pad*2)||1);
+  /* The strip is the SAME SIZE every rebuild, so one canvas is repainted
+     in place instead of a fresh 2100x1008 canvas (a malloc plus a new GPU
+     texture) being handed to the garbage collector every screen of
+     travel. Cleared and state-reset first; the same paint order, so the
+     same pixels. */
+  let c=chartStrip;
+  if(!c)c=document.createElement('canvas');
+  if(c.width!==W)c.width=W;
+  if(c.height!==1008)c.height=1008;
   const g=c.getContext('2d');
+  g.setTransform(1,0,0,1,0,0);
+  g.globalAlpha=1;g.globalCompositeOperation='source-over';
+  g.filter='none';g.shadowBlur=0;g.textAlign='left';g.textBaseline='alphabetic';
+  g.lineCap='butt';g.lineJoin='miter';g.lineWidth=1;
+  g.clearRect(0,0,W,1008);
   g.translate(-W0,0);
+  const _s0=performance.now();
   drawGraticule(g);drawRhumbLines(g);drawMilkyWay(g);
+  if(_orLogChunk){const _sd=performance.now()-_s0;if(_sd>8)console.log('[OR] strip rebuilt '+_sd.toFixed(0)+'ms');}
   chartStrip=c;chartStripX=W0;
 }
 function blitChartStatic(){
@@ -2077,7 +2117,7 @@ function drawRhumbLines(c){
       c.moveTo(cx+Math.cos(a)*36,cy+Math.sin(a)*36);
       c.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);}
     c.stroke();
-    c.setLineDash([3,5]);c.strokeStyle='rgba(230,216,182,0.12)';
+    c.setLineDash(DASH_35);c.strokeStyle='rgba(230,216,182,0.12)';
     c.beginPath();c.arc(cx,cy,36,0,TAU);c.stroke();c.setLineDash([]);
   }
 }
@@ -2150,16 +2190,30 @@ function drawVoyage(){
 }
 
 /* ================= Rendering: gameplay objects ================= */
+const DASH_78=[7,8],DASH_36=[3,6],DASH_57=[5,7],DASH_109=[10,9],DASH_68=[6,8],DASH_35=[3,5];
+/* Pool the dash patterns: setLineDash([a,b]) builds an array on every call,
+   and they were called per object per frame. Same values, same pixels. */
 function drawStains(){
-  for(const st of stains){const r=mulberry32(st.seed);ctx.fillStyle='rgba(0,0,0,0.55)';
-    for(let i=0;i<8;i++){const a=r()*TAU,dd=r()*26;
-      ctx.beginPath();ctx.arc(st.x+Math.cos(a)*dd,st.y+Math.sin(a)*dd,2+r()*17,0,TAU);ctx.fill();}
-    for(let i=0;i<6;i++){const a=r()*TAU,dd=34+r()*46;
-      ctx.beginPath();ctx.arc(st.x+Math.cos(a)*dd,st.y+Math.sin(a)*dd,0.8+r()*2.4,0,TAU);ctx.fill();}}
+  for(const st of stains){
+    /* The blobs come from the stain's seed: 42 PRNG draws per stain, was
+       per stain per FRAME - each one a fresh closure on the garbage heap,
+       24 of them a frame. Drawn once into a table instead and consumed in
+       the same order afterwards: identical pixels, no per-frame garbage. */
+    if(!st._r){
+      const r=mulberry32(st.seed);st._r=new Float64Array(42);
+      for(let i=0;i<42;i++)st._r[i]=r();
+    }
+    ctx.fillStyle='rgba(0,0,0,0.55)';
+    let k=0;
+    for(let i=0;i<8;i++){const a=st._r[k++]*TAU,dd=st._r[k++]*26;
+      ctx.beginPath();ctx.arc(st.x+Math.cos(a)*dd,st.y+Math.sin(a)*dd,2+st._r[k++]*17,0,TAU);ctx.fill();}
+    for(let i=0;i<6;i++){const a=st._r[k++]*TAU,dd=34+st._r[k++]*46;
+      ctx.beginPath();ctx.arc(st.x+Math.cos(a)*dd,st.y+Math.sin(a)*dd,0.8+st._r[k++]*2.4,0,TAU);ctx.fill();}
+  }
 }
 function drawPlanet(p){
   const{x,y,r}=p;
-  ctx.strokeStyle='rgba(230,216,182,0.35)';ctx.lineWidth=1.5;ctx.setLineDash([7,8]);
+  ctx.strokeStyle='rgba(230,216,182,0.35)';ctx.lineWidth=1.5;ctx.setLineDash(DASH_78);
   ctx.beginPath();ctx.arc(x,y,p.capR,0,TAU);ctx.stroke();ctx.setLineDash([]);
   ctx.strokeStyle='rgba(230,216,182,0.42)';ctx.lineWidth=2;ctx.beginPath();
   for(let k=0;k<4;k++){const a=k*Math.PI/2+Math.PI/4,c=Math.cos(a),s=Math.sin(a);
@@ -2206,7 +2260,7 @@ function drawPlanet(p){
     ctx.ellipse(x,y,r*1.55,r*0.45,ringRot,0,Math.PI);ctx.stroke();}
   if(p.moon){
     const ma=gameT*p.moon.spd+p.moon.ph;
-    ctx.setLineDash([3,6]);ctx.strokeStyle='rgba(230,216,182,0.2)';ctx.lineWidth=1;
+    ctx.setLineDash(DASH_36);ctx.strokeStyle='rgba(230,216,182,0.2)';ctx.lineWidth=1;
     ctx.beginPath();ctx.arc(x,y,p.moon.d,0,TAU);ctx.stroke();ctx.setLineDash([]);
     ctx.fillStyle=INK;ctx.beginPath();
     ctx.arc(x+Math.cos(ma)*p.moon.d,y+Math.sin(ma)*p.moon.d,3.6,0,TAU);ctx.fill();
@@ -2238,7 +2292,7 @@ function drawHazards(){
     if(h.x<camX-260||h.x>camX+viewW+260)continue;
     if(h.type==='spike'){
       const kill=h.r*2.35,rot=gameT*0.8+h.ph;
-      ctx.strokeStyle='rgba(216,90,64,0.35)';ctx.lineWidth=1.4;ctx.setLineDash([5,7]);
+      ctx.strokeStyle='rgba(216,90,64,0.35)';ctx.lineWidth=1.4;ctx.setLineDash(DASH_57);
       ctx.beginPath();ctx.arc(h.x,h.y,kill,0,TAU);ctx.stroke();ctx.setLineDash([]);
       ctx.fillStyle='#cf4530';ctx.strokeStyle=INK;ctx.lineWidth=1.3;
       for(let k=0;k<8;k++){const a=rot+k*TAU/8;
@@ -2326,9 +2380,9 @@ function drawEdgeWarn(){
   if(!_edgeTop||_edgeM!==170){
     _edgeM=170;
     _edgeTop=ctx.createLinearGradient(0,0,0,_edgeM);
-    _edgeTop.addColorStop(0,'rgba(0,0,0,1)');_edgeTop.addColorStop(1,'rgba(0,0,0,0)');
+    _edgeTop.addColorStop(0,'rgba(0,0,0,0.25)');_edgeTop.addColorStop(1,'rgba(0,0,0,0)');
     _edgeBot=ctx.createLinearGradient(0,1000-_edgeM,0,1000);
-    _edgeBot.addColorStop(0,'rgba(0,0,0,0)');_edgeBot.addColorStop(1,'rgba(0,0,0,1)');
+    _edgeBot.addColorStop(0,'rgba(0,0,0,0)');_edgeBot.addColorStop(1,'rgba(0,0,0,0.25)');
   }
   const m=170;
   if(comet.y<m){ctx.save();ctx.globalAlpha=0.30*(1-comet.y/m);
@@ -2370,7 +2424,7 @@ function drawComet(){
   const c=comet;
   if(state==='play'&&c.mode==='orbit'){
     const tx=-Math.sin(c.angle)*c.dir,ty=Math.cos(c.angle)*c.dir,L=330;
-    ctx.strokeStyle='rgba(230,216,182,0.55)';ctx.lineWidth=1.8;ctx.setLineDash([10,9]);
+    ctx.strokeStyle='rgba(230,216,182,0.55)';ctx.lineWidth=1.8;ctx.setLineDash(DASH_109);
     ctx.beginPath();ctx.moveTo(c.x+tx*16,c.y+ty*16);ctx.lineTo(c.x+tx*L,c.y+ty*L);ctx.stroke();
     ctx.setLineDash([]);
     ctx.lineWidth=1.4;ctx.beginPath();
@@ -2402,7 +2456,7 @@ function drawParticles(){
       ctx.moveTo(p.x-L,p.y+L);ctx.lineTo(p.x+L,p.y-L);ctx.stroke();}
     else{const rr=p.r0+(p.life/p.max)*95;
       ctx.strokeStyle='rgba(230,216,182,'+(f*0.45).toFixed(3)+')';ctx.lineWidth=1.8;
-      ctx.setLineDash([6,8]);ctx.beginPath();ctx.arc(p.x,p.y,rr,0,TAU);ctx.stroke();ctx.setLineDash([]);}
+      ctx.setLineDash(DASH_68);ctx.beginPath();ctx.arc(p.x,p.y,rr,0,TAU);ctx.stroke();ctx.setLineDash([]);}
   }
 }
 function drawPopups(){
@@ -2672,14 +2726,14 @@ let loopAlive=true;
    number the player feels), the time this game's own JavaScript spends in a
    frame, and the state. One line every two seconds; it changes nothing
    about how the game is drawn. */
-let _orN=0,_orJs=0,_orPer=0,_orLast=0,OR_JS=0,_orMax=0,_orFirst=0;
+let _orN=0,_orJs=0,_orPer=0,_orLast=0,OR_JS=0,_orMax=0,_orFirst=0,_orJsMax=0,_orLogChunk=true,OR_UPD=0,_orUpdMax=0;
 function orPerfLog(now){
   if(_orLast){_orPer+=(now-_orLast);if(now-_orLast>_orMax)_orMax=now-_orLast;}else if(!_orFirst)_orFirst=now;
-  _orLast=now;_orN++;_orJs+=OR_JS;
+  _orLast=now;_orN++;_orJs+=OR_JS;if(OR_JS>_orJsMax)_orJsMax=OR_JS;if(OR_UPD>_orUpdMax)_orUpdMax=OR_UPD;
   if(_orN>=120){
     console.log('[OR] fps='+Math.round(120000/Math.max(1,_orPer))+' js='+(_orJs/_orN).toFixed(1)+
-      ' state='+state+' dpr='+DPR+' max='+_orMax.toFixed(0)+' first='+_orFirst.toFixed(0));
-    _orN=0;_orJs=0;_orPer=0;_orMax=0;
+      ' state='+state+' dpr='+DPR+' max='+_orMax.toFixed(0)+' jsmax='+_orJsMax.toFixed(1)+' upmax='+_orUpdMax.toFixed(1));
+    _orN=0;_orJs=0;_orPer=0;_orMax=0;_orJsMax=0;_orUpdMax=0;
   }
 }
 function frame(now){
@@ -2687,7 +2741,7 @@ function frame(now){
   requestAnimationFrame(frame);
   let dt=Math.min((now-lastT)/1000,0.033);lastT=now;
   if(freeze>0){freeze-=dt;dt=0;}
-  if(!paused)update(dt);
+  if(!paused){const _u0=performance.now();update(dt);OR_UPD=performance.now()-_u0;}
   if(loopAlive&&!paused&&!document.hidden){const _t0=performance.now();render();OR_JS=performance.now()-_t0;}
   orPerfLog(now);
 }
