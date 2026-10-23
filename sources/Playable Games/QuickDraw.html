@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#FDF9F0">
 <title>Quick Draw</title>
+<!-- STUDIO_GAME_MANIFEST
+id: quick-draw
+title: Quick Draw
+orientation: portrait
+minPlayers: 3
+maxPlayers: 10
+aiSupport: none
+online: false
+tileColor: orange
+version: 2
+-->
 <style>
 /* ============================================================
    QUICK DRAW · SKETCHBOOK EDITION
@@ -28,7 +39,7 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{
-  font-family:ui-rounded,"SF Pro Rounded","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  font-family:"Baloo 2","SF Pro Rounded","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
   background:var(--paper);color:var(--ink);
   overscroll-behavior:none;-webkit-user-select:none;user-select:none;overflow:hidden;
   touch-action:manipulation;
@@ -38,7 +49,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
 .ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex:none}
 :focus-visible{outline:3px dashed var(--crayon-blue);outline-offset:2px}
 
-#app{max-width:480px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden}
+#app{max-width:480px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;position:relative;overflow:hidden;padding-top:env(safe-area-inset-top)}
 /* graph paper background */
 body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
@@ -62,6 +73,8 @@ body::after{content:"";position:fixed;inset:0;z-index:90;pointer-events:none;
 .chip.med{border-color:var(--crayon-yellow-d);color:var(--crayon-yellow-d);transform:rotate(-1.6deg)}
 .chip.hard{border-color:var(--crayon-red);color:var(--crayon-red-d);transform:rotate(1deg)}
 .chip.cat{border-color:var(--crayon-purple);color:var(--crayon-purple);transform:rotate(-.8deg)}
+.cat-chip{position:relative}
+.cat-timer{position:absolute;bottom:-2px;right:-2px;font-size:8px;font-weight:900;color:var(--crayon-yellow-d);background:var(--paper);padding:1px 4px;border-radius:4px;border:1px solid var(--crayon-yellow-d);white-space:nowrap;transform:rotate(3deg)}
 
 /* hand-drawn sketch borders on buttons */
 .btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:52px;
@@ -85,7 +98,7 @@ body::after{content:"";position:fixed;inset:0;z-index:90;pointer-events:none;
   box-shadow:0 3px 0 rgba(59,54,48,.14)}
 .icon-btn:active{transform:translateY(2px) rotate(1deg);box-shadow:0 1px 0 rgba(59,54,48,.14)}
 .icon-btn.sm{width:40px;height:40px;border-radius:11px 13px 10px 14px/13px 10px 14px 11px}
-.corner-btn{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:5;
+.corner-btn{position:fixed;top:12px;right:14px;z-index:5;
   transform:rotate(2deg)}
 .corner-btn:active{transform:translateY(2px) rotate(2deg)}
 
@@ -97,9 +110,7 @@ body::after{content:"";position:fixed;inset:0;z-index:90;pointer-events:none;
 #scrHome{align-items:center;justify-content:center;padding:28px 24px;text-align:center}
 .logo{font-size:clamp(44px,13vw,58px);font-weight:900;line-height:.95;letter-spacing:-.01em;transform:rotate(-1deg)}
 .logo .l2{color:var(--crayon-red);position:relative;display:inline-block}
-.logo .l2::after{content:"";position:absolute;left:-4%;right:-4%;bottom:-2px;height:5px;
-  background:var(--crayon-blue);border-radius:99px;transform:rotate(-1.5deg);opacity:.85}
-.logo-squig{width:170px;margin:8px auto 0;display:block}
+  .logo-squig{width:170px;margin:8px auto 0;display:block}
 .tagline{margin-top:12px;font-size:15px;font-weight:800;color:var(--ink-soft);transform:rotate(.5deg)}
 .home-btns{width:100%;max-width:300px;margin-top:36px;display:flex;flex-direction:column;gap:14px}
 #scrHome .home-btns .btn:nth-child(1){transform:rotate(-.7deg)}
@@ -114,7 +125,14 @@ body::after{content:"";position:fixed;inset:0;z-index:90;pointer-events:none;
 @keyframes squigDraw{from{stroke-dashoffset:var(--sq-len,420)}to{stroke-dashoffset:0}}
 
 /* ---------- headers / setup ---------- */
-.top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px 0}
+.top{position:relative;top:auto;left:auto;right:auto;width:100%;flex:none;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;justify-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 16px;z-index:5}
+.top > :first-child{grid-column:1;justify-self:start}
+.top > .ttl{grid-column:2;justify-self:center;text-align:center}
+.top > :last-child{grid-column:3;justify-self:end}
+#scrHome .top{position:fixed;top:max(10px,env(safe-area-inset-top));left:auto;right:10px;width:auto;padding:0;display:flex;justify-content:flex-end;z-index:2147483000}
+#scrSetup .top{align-self:stretch}
+#scrSetup .top #btnBackSetup{grid-column:1;justify-self:start}
+#scrSetup .top .gearBtn{grid-column:3;justify-self:end}
 .top .ttl{font-size:18px;font-weight:900;letter-spacing:.04em;transform:rotate(-.5deg)}
 .sec{padding:10px 16px 0}
 .sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
@@ -208,7 +226,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
 /* ---------- DRAW ---------- */
 #scrDraw{padding:0}
-.d-top{display:flex;align-items:center;gap:8px;padding:12px 12px 4px}
+.d-top{position:relative;top:auto;left:auto;right:auto;width:100%;flex:none;display:flex;align-items:center;justify-content:space-between;padding:calc(8px + env(safe-area-inset-top)) 16px;z-index:5}
 .d-word{flex:1;min-width:0;text-align:center;background:var(--card);border:2.5px solid var(--ink);
   border-radius:12px 14px 11px 15px/14px 11px 15px 12px;transform:rotate(-.7deg);
   padding:8px 10px;font-weight:900;font-size:13px;letter-spacing:.1em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -366,6 +384,18 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
   <symbol id="i-redo" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/></symbol>
   <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M9 20 4 15a2.4 2.4 0 0 1 0-3.4l7.6-7.6a2.4 2.4 0 0 1 3.4 0l4.6 4.6a2.4 2.4 0 0 1 0 3.4L14 18H9z"/><path d="M6.5 9.5l8 8"/><path d="M5 21h15"/></symbol>
   <symbol id="i-fill" viewBox="0 0 24 24"><path d="M12 2l7.5 7.5-8 8a2.6 2.6 0 0 1-3.7 0l-3.3-3.3a2.6 2.6 0 0 1 0-3.7L10 5"/><path d="M8 9.5l7.5 7.5"/><path d="M20.5 15.5c.9 1.2 1.5 2.2 1.5 3a2.5 2.5 0 0 1-5 0c0-.8.6-1.8 1.5-3 .5-.7 1.5-.7 2 0z"/></symbol>
+  <symbol id="i-bucket" viewBox="0 0 24 24">
+  <!-- Bucket body - tapered container -->
+  <path d="M6 5h12a1 1 0 0 1 .97 1.24l-1.5 10A2 2 0 0 1 15.47 18H6.53a2 2 0 0 1-1.97-1.76L4.03 6.24A1 1 0 0 1 5 5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Rim highlight -->
+  <path d="M6.5 6.2h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <!-- Handle -->
+  <path d="M17.5 7c0-3.5-3-5-5.5-5S6.5 3.5 6.5 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Paint drips -->
+  <path d="M8 16v3M11 16v4M14 16v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <!-- Fill level indicator -->
+  <path d="M7 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4 2" opacity="0.4"/>
+</symbol>
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v5M14 11v5"/></symbol>
   <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19l-4 1z"/><path d="M13.5 7.5l3 3"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="3"/><path d="M11 18h2"/></symbol>
@@ -374,6 +404,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
   <symbol id="i-tv" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M8 3l4 3 4-3"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 17l-5.9 3.2 1.3-6.6L2.5 9l6.6-.8z"/></symbol>
 </svg>
 
@@ -381,7 +412,9 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
   <!-- ============ HOME ============ -->
   <section id="scrHome" class="screen active">
-    <button class="icon-btn corner-btn gearBtn" aria-label="Settings"><svg class="ic"><use href="#i-gear"/></svg></button>
+    <div class="top">
+      <button class="icon-btn gearBtn" aria-label="Settings"><svg class="ic"><use href="#i-gear"/></svg></button>
+    </div>
     <!-- crayon doodles -->
     <svg class="doodle" style="top:8%;left:6%;width:44px;height:44px;transform:rotate(-12deg)" viewBox="0 0 44 44"><path d="M8 30 Q10 18 22 16 Q34 14 36 24" fill="none" stroke="var(--crayon-yellow)" stroke-width="4" stroke-linecap="round"/><path d="M6 36 Q20 30 38 34" fill="none" stroke="var(--crayon-green)" stroke-width="4" stroke-linecap="round"/></svg>
     <svg class="doodle" style="top:15%;right:8%;width:40px;height:40px;transform:rotate(14deg)" viewBox="0 0 40 40"><path d="M20 5 L24 15 L34 16 L26 23 L28 33 L20 28 L12 33 L14 23 L6 16 L16 15 Z" fill="none" stroke="var(--crayon-red)" stroke-width="3.5" stroke-linejoin="round"/></svg>
@@ -409,7 +442,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
   <!-- ============ SETUP ============ -->
   <section id="scrSetup" class="screen">
     <div class="top">
-      <button class="icon-btn" id="btnBackHome" aria-label="Back"><svg class="ic"><use href="#i-back"/></svg></button>
+      <button class="icon-btn" id="btnBackSetup" aria-label="Back"><svg class="ic"><use href="#i-back"/></svg></button>
       <span class="ttl">NEW GAME</span>
       <button class="icon-btn gearBtn" aria-label="Settings"><svg class="ic"><use href="#i-gear"/></svg></button>
     </div>
@@ -503,7 +536,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
         <span style="flex:1"></span>
         <button class="tool-b" id="btnUndo" aria-label="Undo" disabled><svg class="ic"><use href="#i-undo"/></svg></button>
         <button class="tool-b" id="btnRedo" aria-label="Redo" disabled><svg class="ic"><use href="#i-redo"/></svg></button>
-        <button class="tool-b" id="btnFill" aria-label="Fill"><svg class="ic"><use href="#i-fill"/></svg></button>
+        <button class="tool-b" id="btnFill" aria-label="Fill bucket"><svg class="ic"><use href="#i-bucket"/></svg></button>
         <button class="tool-b" id="btnEraser" aria-label="Eraser"><svg class="ic"><use href="#i-eraser"/></svg></button>
         <button class="tool-b" id="btnClear" aria-label="Clear all"><svg class="ic"><use href="#i-trash"/></svg></button>
       </div>
@@ -573,7 +606,7 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
 <!-- ============ SETTINGS ============ -->
 <div class="ovl" id="ovSettings"><div class="panel-ovl">
-  <span class="eyebrow">SETTINGS</span>
+  <div style="font-size:22px;font-weight:900;letter-spacing:.1em;color:var(--ink);transform:rotate(-.5deg);margin-bottom:4px">SETTINGS</div>
   <div style="margin-top:8px">
     <div class="s-row">
       <div class="s-lbl">Sound<small>Clicks, chimes, fanfares</small></div>
@@ -587,12 +620,12 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
   <div class="ovl-hr"></div>
   <button class="btn ghost danger" id="btnExitMenu" style="display:none"><svg class="ic"><use href="#i-home"/></svg>EXIT TO MENU</button>
   <div class="ovl-note">TAP OUTSIDE TO CLOSE</div>
-  <div class="ovl-note" style="margin-top:4px">QUICK DRAW · V1.5 · SKETCHBOOK</div>
+  <div class="ovl-note" style="margin-top:4px"></div>
 </div></div>
 
 <!-- ============ CATEGORY CHOOSER ============ -->
 <div class="ovl" id="ovCats"><div class="panel-ovl" style="text-align:left">
-  <div style="text-align:center"><span class="eyebrow">CATEGORIES</span>
+  <div style="text-align:center"><div style="font-size:18px;font-weight:900;letter-spacing:.08em;color:var(--ink);transform:rotate(-.5deg);margin-bottom:4px">CATEGORIES</div>
   <div style="font-size:12px;font-weight:800;color:var(--ink-soft);margin-top:6px" id="catSummary"></div></div>
   <div id="catFreeSec" class="cat-sec" style="margin-top:14px">
     <div class="cat-sec-h">FREE</div>
@@ -608,17 +641,17 @@ input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;bac
 
 <!-- ============ UNLOCK CATEGORY ============ -->
 <div class="ovl" id="ovUnlock"><div class="panel-ovl">
-  <span class="eyebrow">PREMIUM CATEGORY</span>
+  <div style="font-size:18px;font-weight:900;letter-spacing:.08em;color:var(--ink);transform:rotate(-.5deg);margin-bottom:4px">PREMIUM CATEGORY</div>
   <div class="ava" style="--c:var(--crayon-purple);margin:14px auto 8px"><svg class="ic"><use href="#i-lock"/></svg></div>
   <div style="font-size:20px;font-weight:900" id="ulName">CATEGORY</div>
-  <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-top:6px">ONE AD UNLOCKS IT FOREVER</div>
+  <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-top:6px">ONE AD UNLOCKS IT FOR 30 MIN</div>
   <button class="btn indigo" id="ulAd" style="margin-top:16px"><svg class="ic"><use href="#i-tv"/></svg>WATCH AD · UNLOCK</button>
-  <button class="mini" id="ulNo" style="margin-top:6px">NOT NOW</button>
+  <button class="btn ghost" id="ulNo" style="margin-top:6px">NOT NOW</button>
 </div></div>
 
 <!-- ============ HOW TO PLAY ============ -->
 <div class="ovl" id="ovHelp"><div class="panel-ovl">
-  <span class="eyebrow">HOW TO PLAY</span>
+  <div style="font-size:18px;font-weight:900;letter-spacing:.08em;color:var(--ink);transform:rotate(-.5deg);margin-bottom:4px">HOW TO PLAY</div>
   <div style="margin-top:16px">
     <div class="hstep"><span class="n">1</span><p>Add <b>3 to 10 players</b>, pick rounds, words difficulty, <b>categories</b> and timer, then start.</p></div>
     <div class="hstep"><span class="n">2</span><p><b>Pass the phone</b> to the named drawer. Everyone else, look away!</p></div>
@@ -851,6 +884,31 @@ const DIFF_IDX = {EASY:0, MEDIUM:1, HARD:2};
 const IN_GAME = ['PASS_PHONE','WORD_REVEAL','DRAW','GUESS_WHO','RESULT','ROUND_END','GAME_OVER'];
 
 /* ================================================================
+   SECTION · WORD COOLDOWN (cross-session, 3 days)
+   ================================================================ */
+const WORD_HISTORY_KEY = 'qd_word_history';
+const COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
+
+function filterRecentlyPlayed(pool){
+  const now = Date.now();
+  let history = {};
+  try { history = JSON.parse(localStorage.getItem(WORD_HISTORY_KEY) || '{}'); }catch(e){}
+  // Remove expired entries
+  for (const key in history) {
+    if (now - history[key] > COOLDOWN_MS) delete history[key];
+  }
+  localStorage.setItem(WORD_HISTORY_KEY, JSON.stringify(history));
+  return pool.filter(p => !history[p.key]);
+}
+
+function recordWord(key){
+  let history = {};
+  try { history = JSON.parse(localStorage.getItem(WORD_HISTORY_KEY) || '{}'); }catch(e){}
+  history[key] = Date.now();
+  localStorage.setItem(WORD_HISTORY_KEY, JSON.stringify(history));
+}
+
+/* ================================================================
    SECTION · UTILITIES
    ================================================================ */
 function initials(n){ const w=(n||'P').trim().split(/\s+/).filter(Boolean); return (w.slice(0,2).map(x=>x[0]).join('')||'P').toUpperCase(); }
@@ -937,7 +995,7 @@ function closeSettings(){
 }
  $('#swSound').onclick = () => { state.settings.sound = !state.settings.sound; syncSettingsUI(); saveSettings(); AudioFX.click(); };
  $('#swHaptics').onclick = () => { state.settings.haptics = !state.settings.haptics; syncSettingsUI(); saveSettings(); AudioFX.click(); buzz(20); };
- $('#btnExitMenu').onclick = () => { AudioFX.click(); closeSettings(); goHome(); toast('Back to menu'); };
+ $('#btnExitMenu').onclick = () => { AudioFX.click(); GameBoxSDK.ad('interstitial', () => { closeSettings(); goHome(); toast('Back to menu'); }); };
 document.querySelectorAll('.gearBtn').forEach(b => b.onclick = openSettings);
  $('#btnHelp').onclick = () => { AudioFX.click(); openOvl('ovHelp'); };
  $('#btnCloseHelp').onclick = () => { AudioFX.click(); closeOvl('ovHelp'); };
@@ -1037,7 +1095,19 @@ function catChip(c){
   const on = state.enabledCats.includes(c.id);
   const b = document.createElement('button');
   b.className = 'cat-chip' + (!unlocked ? ' lock' : on ? ' on' : '');
-  b.innerHTML = (!unlocked ? '<svg class="ic"><use href="#i-lock"/></svg>' : '') + c.name;
+  b.dataset.catId = c.id;
+  // Show timer for premium categories that are unlocked but on cooldown
+  let timerHtml = '';
+  if (unlocked && !c.free){
+    const timer = getCategoryTimer(c.id);
+    if (timer > 0){
+      const elapsed = Date.now() - timer;
+      if (elapsed < 30*60*1000){
+        timerHtml = '<span class="cat-timer" data-timer="' + timer + '">' + formatTimer(elapsed) + '</span>';
+      }
+    }
+  }
+  b.innerHTML = (!unlocked ? '<svg class="ic"><use href="#i-lock"/></svg>' : '') + c.name + timerHtml;
   b.onclick = () => {
     if (!unlocked){
       state.pendingCat = c.id;
@@ -1061,19 +1131,51 @@ function renderCatSheets(){
 function syncCatButton(){
   $('#catCount').textContent = state.enabledCats.length + ' ON';
 }
- $('#btnChooseCats').onclick = () => { AudioFX.click(); renderCatSheets(); openOvl('ovCats'); };
- $('#btnCloseCats').onclick = () => { AudioFX.click(); closeOvl('ovCats'); };
- $('#ulAd').onclick = () => {
+ $('#btnChooseCats').onclick = () => { AudioFX.click(); renderCatSheets(); openOvl('ovCats'); startCatTimerUpdates(); };
+
+/* --------- category unlock timer (30 min cooldown) --------- */
+function getUnlockTimers(){
+  const raw = GameBoxSDK.storage.get('unlockTimers') || '{}';
+  return raw;
+}
+function saveUnlockTimers(timers){
+  GameBoxSDK.storage.set('unlockTimers', timers);
+}
+function getCategoryTimer(id){
+  const timers = getUnlockTimers();
+  return timers[id] || 0;
+}
+function setCategoryTimer(id){
+  const timers = getUnlockTimers();
+  timers[id] = Date.now();
+  saveUnlockTimers(timers);
+}
+function formatTimer(ms){
+  const remaining = Math.max(0, 30*60*1000 - ms);
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  return mins + ':' + (secs < 10 ? '0' : '') + secs;
+}
+ $('#btnCloseCats').onclick = () => { AudioFX.click(); closeOvl('ovCats'); stopCatTimerUpdates(); };
+  $('#ulAd').onclick = () => {
   const id = state.pendingCat; if (!id) return;
+  const catName = CATS.find(x=>x.id===id).name;
   AudioFX.click();
-  GameBoxSDK.ad('rewarded', () => {
+  GameBoxSDK.ad('rewarded', (success) => {
+    /* ALWAYS close the popup - even on failure, the player tapped and
+       an ad attempt was made. We must not leave them stuck. */
+    closeOvl('ovUnlock'); stopCatTimerUpdates();
+    state.pendingCat = null;
+    if (!success) {
+      toast('AD SKIPPED - CATEGORY LOCKED');
+      AudioFX.wrong(); buzz(50); return;
+    }
     if (!state.unlockedCats.includes(id)) state.unlockedCats.push(id);
     if (!state.enabledCats.includes(id)) state.enabledCats.push(id);
+    setCategoryTimer(id);
     saveCats(); renderCatSheets(); syncCatButton();
-    closeOvl('ovUnlock');
-    toast(CATS.find(x=>x.id===id).name + ' UNLOCKED');
+    toast(catName + ' UNLOCKED FOR 30 MIN');
     AudioFX.correct(); buzz([15,25,15]);
-    state.pendingCat = null;
   });
 };
  $('#ulNo').onclick = () => { AudioFX.click(); closeOvl('ovUnlock'); state.pendingCat = null; };
@@ -1094,13 +1196,17 @@ function pickWord(){
     return pool;
   };
   let pool = build(diffs);
+  // Apply cooldown filter: exclude words shown in last 3 days
+  pool = filterRecentlyPlayed(pool);
   if (!pool.length){
     state.usedWords.forEach(k => { if (state.enabledCats.includes(k.split(':')[0])) state.usedWords.delete(k); });
     pool = build(diffs);
+    pool = filterRecentlyPlayed(pool);
   }
   if (!pool.length) pool = build(null);
   const p = pool[Math.floor(Math.random()*pool.length)];
   state.usedWords.add(p.key);
+  recordWord(p.key);  // persist for cross-session cooldown
   state.currentWord = { w: p.w, c: p.cat, d: ['EASY','MEDIUM','HARD'][p.d] };
 }
 
@@ -1108,7 +1214,8 @@ function pickWord(){
    SECTION · GAME FLOW
    ================================================================ */
  $('#btnPlay').onclick = () => { AudioFX.click(); buzz(10); setPhase('SETUP'); renderSetup(); showScreen('scrSetup'); };
- $('#btnBackHome').onclick = () => { AudioFX.click(); goHome(); };
+
+  $('#btnBackSetup').onclick = () => { AudioFX.click(); goHome(); };
  $('#btnStart').onclick = () => {
   if (state.phase !== 'SETUP') return;
   const players = state.setupDraft.map((p,i) => ({
@@ -1659,23 +1766,27 @@ function gameOver(){
   AudioFX.win(); buzz([30,40,30,60]);
   const c = $('.crown').getBoundingClientRect();
   confetti(c.left + c.width/2, c.top + c.height/2);
+  // Interstitial on game completion
+  setTimeout(() => { GameBoxSDK.ad('interstitial'); }, 500);
 }
  $('#btnAgain').onclick = () => {
   if (state.phase !== 'GAME_OVER') return;
   AudioFX.click(); buzz(12);
-  GameBoxSDK.ad('interstitial');
-  state.players.forEach(p => { p.score = 0; });
-  state.currentPlayerIndex = 0; state.currentRound = 1;
-  state.usedWords = new Set();
-  startTurnFlow(true);
+  GameBoxSDK.ad('interstitial', () => {
+    state.players.forEach(p => { p.score = 0; });
+    state.currentPlayerIndex = 0; state.currentRound = 1;
+    state.usedWords = new Set();
+    startTurnFlow(true);
+  });
 };
- $('#btnNew').onclick = () => {
+  $('#btnNew').onclick = () => {
   if (state.phase !== 'GAME_OVER') return;
   AudioFX.click();
-  GameBoxSDK.ad('interstitial');
-  setPhase('SETUP'); renderSetup(); showScreen('scrSetup');
+  GameBoxSDK.ad('interstitial', () => {
+    setPhase('SETUP'); renderSetup(); showScreen('scrSetup');
+  });
 };
- $('#btnHome').onclick = () => { if (state.phase !== 'GAME_OVER') return; AudioFX.click(); goHome(); };
+  $('#btnHome').onclick = () => { if (state.phase !== 'GAME_OVER') return; AudioFX.click(); GameBoxSDK.ad('interstitial', goHome); };
 
 /* ================================================================
    SECTION · INITIALIZATION
