@@ -2670,56 +2670,61 @@ function ensureOuterGround(){
   outerGroundCache.width=w; outerGroundCache.height=h;
   outerGroundCacheW=w; outerGroundCacheH=h; outerGroundScale=z;
   const g=outerGroundCache.getContext('2d');
+  /* Green base rendered immediately so the first frame is not blank. */
   g.fillStyle='#83CC50'; g.fillRect(0,0,w,h);
+  /* Detailed pattern deferred to after first paint so it doesn't block startup. */
+  setTimeout(function ogDetails(){
+    if(outerGroundCacheW!==w||outerGroundCacheH!==h||Math.abs(outerGroundScale-z)>0.0001) return;
 
-  // Continue the farm's broad, softly alternating grass rows past the fence.
-  const top=vh/2-cam.y*z;
-  const bandH=96*z, fillH=48*z;
-  const first=Math.floor((0-top)/bandH)-1;
-  for(let n=first, y=top+n*bandH; y<h; n++,y=top+n*bandH){
-    g.fillStyle=(Math.abs(n)%2)?'rgba(255,255,220,.09)':'rgba(30,80,20,.075)';
-    g.fillRect(0,y,w,fillH);
-  }
-
-  // Large low-contrast grass mottling; deterministic so it never shimmers.
-  for(let i=0;i<90;i++){
-    g.fillStyle=i%2?'rgba(153,226,106,.22)':'rgba(83,151,46,.22)';
-    g.beginPath();
-    g.ellipse(rndSt(i*3.7)*w,rndSt(i*7.3)*h,
-      (30+rndSt(i*1.3)*80)*z,(20+rndSt(i*2.1)*46)*z,rndSt(i)*3,0,TAU);
-    g.fill();
-  }
-  for(let i=0;i<24;i++){
-    g.fillStyle='rgba(150,100,42,.10)';
-    g.beginPath();
-    g.ellipse(rndSt(i*6.3+4)*w,rndSt(i*9.1+7)*h,
-      (26+rndSt(i*2.2)*42)*z,(18+rndSt(i*4.7)*26)*z,rndSt(i+9)*3,0,TAU);
-    g.fill();
-  }
-  // Fine flecks match the small green and pale grains embedded in the playfield.
-  for(let i=0;i<520;i++){
-    g.fillStyle=i%2?'rgba(43,102,28,.30)':'rgba(232,255,166,.28)';
-    const x=rndSt(i*5.1+17)*w, y=rndSt(i*9.7+23)*h;
-    const sz=Math.max(1,2.5*z);
-    g.fillRect(x,y,sz,sz);
-  }
-  // The same tiny five-petal flowers, scattered more sparsely than the grass flecks.
-  for(let i=0;i<Math.max(18,Math.round(56*w*h/(W*H*z*z)));i++){
-    const fx=rndSt(i*8.9+31)*w, fy=rndSt(i*3.1+19)*h;
-    const r=Math.max(1,2.1*z);
-    g.fillStyle=['#FFFDF6','#FFD9E8','#FFE9A8'][i%3];
-    for(let p=0;p<5;p++){
-      const a=p*TAU/5+i;
-      g.beginPath(); g.arc(fx+Math.cos(a)*r*1.45,fy+Math.sin(a)*r*1.45,r,0,TAU); g.fill();
+    // Continue the farm's broad, softly alternating grass rows past the fence.
+    const top=vh/2-cam.y*z;
+    const bandH=96*z, fillH=48*z;
+    const first=Math.floor((0-top)/bandH)-1;
+    for(let n=first, y=top+n*bandH; y<h; n++,y=top+n*bandH){
+      g.fillStyle=(Math.abs(n)%2)?'rgba(255,255,220,.09)':'rgba(30,80,20,.075)';
+      g.fillRect(0,y,w,fillH);
     }
-    g.fillStyle=i%2?'#F6B41E':'#EF4D3C';
-    g.beginPath(); g.arc(fx,fy,Math.max(.8,r*.8),0,TAU); g.fill();
-  }
-  // Subtle edge shade keeps the margins integrated with the game's painted frame.
-  const shade=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.30,w/2,h/2,Math.max(w,h)*.76);
-  shade.addColorStop(0,'rgba(38,70,25,0)');
-  shade.addColorStop(1,'rgba(38,70,25,.24)');
-  g.fillStyle=shade; g.fillRect(0,0,w,h);
+
+    // Large low-contrast grass mottling; deterministic so it never shimmers.
+    for(let i=0;i<90;i++){
+      g.fillStyle=i%2?'rgba(153,226,106,.22)':'rgba(83,151,46,.22)';
+      g.beginPath();
+      g.ellipse(rndSt(i*3.7)*w,rndSt(i*7.3)*h,
+        (30+rndSt(i*1.3)*80)*z,(20+rndSt(i*2.1)*46)*z,rndSt(i)*3,0,TAU);
+      g.fill();
+    }
+    for(let i=0;i<24;i++){
+      g.fillStyle='rgba(150,100,42,.10)';
+      g.beginPath();
+      g.ellipse(rndSt(i*6.3+4)*w,rndSt(i*9.1+7)*h,
+        (26+rndSt(i*2.2)*42)*z,(18+rndSt(i*4.7)*26)*z,rndSt(i+9)*3,0,TAU);
+      g.fill();
+    }
+    // Fine flecks match the small green and pale grains embedded in the playfield.
+    for(let i=0;i<520;i++){
+      g.fillStyle=i%2?'rgba(43,102,28,.30)':'rgba(232,255,166,.28)';
+      const x=rndSt(i*5.1+17)*w, y=rndSt(i*9.7+23)*h;
+      const sz=Math.max(1,2.5*z);
+      g.fillRect(x,y,sz,sz);
+    }
+    // The same tiny five-petal flowers, scattered more sparsely than the grass flecks.
+    for(let i=0;i<Math.max(18,Math.round(56*w*h/(W*H*z*z)));i++){
+      const fx=rndSt(i*8.9+31)*w, fy=rndSt(i*3.1+19)*h;
+      const r=Math.max(1,2.1*z);
+      g.fillStyle=['#FFFDF6','#FFD9E8','#FFE9A8'][i%3];
+      for(let p=0;p<5;p++){
+        const a=p*TAU/5+i;
+        g.beginPath(); g.arc(fx+Math.cos(a)*r*1.45,fy+Math.sin(a)*r*1.45,r,0,TAU); g.fill();
+      }
+      g.fillStyle=i%2?'#F6B41E':'#EF4D3C';
+      g.beginPath(); g.arc(fx,fy,Math.max(.8,r*.8),0,TAU); g.fill();
+    }
+    // Subtle edge shade keeps the margins integrated with the game's painted frame.
+    const shade=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.30,w/2,h/2,Math.max(w,h)*.76);
+    shade.addColorStop(0,'rgba(38,70,25,0)');
+    shade.addColorStop(1,'rgba(38,70,25,.24)');
+    g.fillStyle=shade; g.fillRect(0,0,w,h);
+  },0);
 }
 function drawOuterGround(){
   ensureOuterGround();
