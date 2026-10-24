@@ -1210,10 +1210,6 @@ function buildFarm(){
     colliders.push({x:s[0],y:s[1],r:8});
     addO({x:s[0],sy:s[1]+8,sw:110,sh:92,spr:signSpr});
   });
-  [[395,175,395,355],[1320,690,1320,855]].forEach(f=>{
-    colliders.push({seg:true,x1:f[0],y1:f[1],x2:f[2],y2:f[3],r:7});
-    addO({fence:true,x1:f[0],y1:f[1],x2:f[2],y2:f[3],sy:Math.max(f[1],f[3])+4});
-  });
 
 
 }
