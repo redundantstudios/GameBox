@@ -288,9 +288,9 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
 <style>
 :root{--cream:#f3e9d2;--dim:#c9bda0;--amber:#e8b04b;--green:#8fbf6a;--gd:#2c4a25;--danger:#e06c4f;--line:rgba(232,176,75,.22)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;background:#0e0906;font-family:"Trebuchet MS","Segoe UI",Verdana,sans-serif;color:var(--cream);user-select:none;-webkit-user-select:none;touch-action:none;overscroll-behavior:none}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#0e0906;font-family:"Trebuchet MS","Segoe UI",Verdana,sans-serif;color:var(--cream);user-select:none;-webkit-user-select:none;touch-action:none;overscroll-behavior:none}
 canvas{display:block}
-#game{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:crosshair}
+#game{position:fixed;inset:0;cursor:crosshair}
 #vignette{position:fixed;inset:0;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center,transparent 58%,rgba(6,3,1,.42) 100%)}
 .hidden{display:none!important}
 button{font-family:inherit}
@@ -367,15 +367,12 @@ button{font-family:inherit}
 .ib:hover{background:rgba(232,176,75,.18)}
 .ib svg{width:18px;height:18px;fill:var(--cream)}
 #edgeWarn{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);font-size:13px;font-weight:800;letter-spacing:.3em;color:#f0a08a;opacity:0;transition:opacity .3s;text-shadow:0 2px 8px rgba(0,0,0,.8)}
-#joy{position:fixed;left:64px;bottom:80px;z-index:11;pointer-events:none}
+#joy{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:11;pointer-events:none}
 #joyBase{width:134px;height:134px;border-radius:50%;border:2px solid rgba(243,233,210,.35);background:rgba(20,13,8,.35);position:relative}
 #joyKnob{position:absolute;width:56px;height:56px;border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(143,191,106,.75);border:2px solid rgba(243,233,210,.7);box-shadow:0 4px 14px rgba(0,0,0,.45)}
 #boostBtn{position:fixed;right:24px;bottom:28px;width:88px;height:88px;border-radius:50%;z-index:11;border:2px solid rgba(243,233,210,.5);background:rgba(20,13,8,.5);display:flex;align-items:center;justify-content:center;color:var(--cream);cursor:pointer;padding:0;transition:background .12s,transform .1s}
 #boostBtn svg{width:36px;height:36px;fill:var(--cream)}
 #boostBtn.on{background:rgba(143,191,106,.45);transform:scale(.94)}
-#dashBtn{position:fixed;right:24px;bottom:158px;width:88px;height:88px;border-radius:50%;z-index:11;border:2px solid rgba(243,233,210,.5);background:rgba(20,13,8,.5);display:flex;align-items:center;justify-content:center;color:var(--cream);cursor:pointer;padding:0;transition:background .12s,transform .1s}
-#dashBtn span{font-size:24px;font-weight:900}
-#dashBtn.on{background:rgba(143,191,106,.45);transform:scale(.94)}
 #goFlash{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);font-size:clamp(64px,13vw,130px);font-weight:900;letter-spacing:.08em;color:var(--cream);text-shadow:0 5px 0 rgba(0,0,0,.5),0 0 46px rgba(143,191,106,.65);opacity:0;pointer-events:none;z-index:30}
 #goFlash.show{animation:goA .95s ease-out forwards}
 @keyframes goA{0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}55%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.06)}}
@@ -422,7 +419,7 @@ button{font-family:inherit}
 @keyframes howInNext{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 @keyframes howInPrev{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
 @media (max-width:640px){.howWrap{min-height:360px}.howCard{padding:16px 14px;min-height:325px}.howShot{height:128px}.howTitle{font-size:21px}.howText{font-size:13px}.howNav .btn{min-width:108px;padding:11px 14px}}
-@media (max-width:640px){#leaderboard{width:150px;font-size:11px;padding:6px 8px}.lr{font-size:10.5px}.ht{font-size:16px}.hs b{font-size:14px}.panel{padding:18px 16px}#boostBtn{width:76px;height:76px;right:18px;bottom:96px}#dashBtn{width:76px;height:76px;right:18px;bottom:120px}}
+@media (max-width:640px){#leaderboard{width:150px;font-size:11px;padding:6px 8px}.lr{font-size:10.5px}.ht{font-size:16px}.hs b{font-size:14px}.panel{padding:18px 16px}#boostBtn{width:76px;height:76px;right:18px;bottom:96px}}
 @media (pointer:coarse){#boostBtn{display:none!important}.ptip{display:none!important}}
 @media (max-height:460px){#leaderboard{max-height:120px;overflow:hidden}}
 /* The shell's banner AdView occupies the top strip (50dp) while a run is
@@ -451,7 +448,6 @@ body.adTop #hudTL,body.adTop #hudTR{top:62px}
 
 <div id="joy" class="hidden"><div id="joyBase"><div id="joyKnob"></div></div></div>
 <button id="boostBtn" class="hidden" aria-label="Boost"><svg viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H10L9 22l8.5-11.5H12L13 2z"/></svg></button>
-<button id="dashBtn" class="hidden" aria-label="Dash (hold)">DASH</button>
 <div id="goFlash">GO!</div>
 
 <div id="menu" class="screen">
@@ -558,13 +554,12 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|
 /* ---------------- constants ---------------- */
 const WORLD=5000,SURFACE=130,SPACING=6,MAX_LEN=5000,MAX_PTS=560,HEAD_SEGS=1;
 const BASE_LEN=54,LEN_PER_GROWTH=1.8,ROOT_THICKNESS=12,GROWTH_SMOOTH=2.8;
-const WORLD_EDGE_MARGIN=0,AI_COUNT=10,MAX_PARTICLES=120,MIN_AI_GR=90,AI_STUCK_TIME=.65;
+const WORLD_EDGE_MARGIN=0,AI_COUNT=18,MAX_PARTICLES=120,MIN_AI_GR=90,AI_STUCK_TIME=.65;
 const AI_THINK_MIN=.22,AI_THINK_MAX=.30,AI_AVOID_INTERVAL=.13,AI_LOOK=520;
 const AI_INITIAL_MIN=90,AI_INITIAL_MAX=150,AI_BIG_SPAWN_MARGIN=260;
 const RES_T={nutrient:{v:1,r:5,c:'#ffb24d'},water:{v:2,r:7,c:'#58b7ff'},mineral:{v:5,r:8,c:'#b678ff'},golden:{v:15,r:11,c:'#ffd23f'}};
 const RES_N={nutrient:240,water:80,mineral:46,golden:6};
 const BOOST_MULT=1.8,BOOST_DRAIN=10,BOOST_MIN=10,BOOST_DROP=.16;
-const DASH_MULT=2.5,DASH_DRAIN=50,DASH_CD=1.0,DASH_DROP=.18;
 const RESONANCE_TIME=5.5;
 const FACE_BLINK_MIN=2.2,FACE_BLINK_MAX=5.4;
 /* PRICING.
@@ -721,7 +716,6 @@ const SFX={
   collect(v){const f=Math.min(920,430+v*26);tone(f,f*1.45,.09,'sine',.14);tone(f*2,f*2,.05,'sine',.04)},
   golden(){[660,880,1174].forEach((f,i)=>tone(f,f,.13,'sine',.13,i*.07))},
   boost(){noiseBurst(.22,.14);tone(280,540,.16,'sine',.07)},
-dash(){noiseBurst(.3,.1);tone(200,420,.14,'sine',.06);tone(420,420,.08,'sine',.05,.07)},
   kill(){noiseBurst(.2,.3);tone(392,392,.09,'square',.13);tone(587,587,.13,'square',.13,.09)},
   die(){tone(260,52,.75,'sawtooth',.22);noiseBurst(.5,.22)},
   milestone(){tone(523,523,.12,'sine',.09);tone(784,784,.16,'sine',.09,.08)},
@@ -860,7 +854,7 @@ const canvas=$('game'),ctx=canvas.getContext('2d');
 let W=0,H=0,DPR=1,FIT=1;
 function resize(){
   DPR=Math.min(1.5,window.devicePixelRatio||1);
-  W=document.documentElement.clientWidth||window.innerWidth;H=document.documentElement.clientHeight||window.innerHeight;
+  W=window.innerWidth;H=window.innerHeight;
   canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);
   canvas.style.width=W+'px';canvas.style.height=H+'px';
   FIT=clamp(Math.min(W/1250,H/760),.5,1.2);
@@ -974,7 +968,7 @@ let vx0=0,vy0=0,vx1=0,vy1=0,vw=0,vh=0;
 let shakeOn=true;
 
 /* ---------------- input ---------------- */
-const input={mx:0,my:0,mouse:false,boost:false,dash:false,joy:{active:false,dx:0,dy:0,mag:0}};
+const input={mx:0,my:0,mouse:false,boost:false,joy:{active:false,dx:0,dy:0,mag:0}};
 let joyCenter=null,joyTouchId=null;
 window.addEventListener('mousemove',e=>{input.mx=e.clientX;input.my=e.clientY;input.mouse=true});
 canvas.addEventListener('mousedown',e=>{ensureAudio();if(e.button===0)input.boost=true});
@@ -1041,14 +1035,6 @@ boostBtn.addEventListener('touchstart',bbOn,{passive:false});
 boostBtn.addEventListener('touchend',bbOff);
 boostBtn.addEventListener('touchcancel',bbOff);
 boostBtn.addEventListener('mousedown',bbOn);
-/* dash button (mobile) - hold to burst until particles drain */
-const dashBtn=$('dashBtn');
-function dbOn(e){e.preventDefault();e.stopPropagation();ensureAudio();if(STATE!=='PLAYING')return;input.dash=true;dashBtn.classList.add('on')}
-function dbOff(e){if(e)e.preventDefault();input.dash=false;dashBtn.classList.remove('on')}
-dashBtn.addEventListener('touchstart',dbOn,{passive:false});
-dashBtn.addEventListener('touchend',dbOff);
-dashBtn.addEventListener('touchcancel',dbOff);
-dashBtn.addEventListener('mousedown',dbOn);
 
 /* ---------------- world gen ---------------- */
 let soilPat=null,depthGrad=null;
@@ -1235,7 +1221,7 @@ function dropResources(r){
   // collectible mass spread along its OWN trail. Larger roots release more,
   // higher-value pellets, while keeping the drop count bounded for performance.
   const mass=Math.max(6,Math.floor(r.gr*.92));
-  const count=clamp(Math.floor(mass/2.2),10,100);
+  const count=clamp(Math.floor(mass/2.2),10,150);
   const step=Math.max(1,(n-1)/count);
 
   for(let k=0;k<count;k++){
@@ -1263,7 +1249,7 @@ function makeRoot(o){
   return{id:nextId++,name:o.name,isPlayer:!!o.isPlayer,
     body:o.body,darkC:o.darkC,glowC:o.glowC,spineC:o.spineC,deco:o.deco||null,decoC:o.decoC||'#e8e0c0',
     x:o.x,y:o.y,a:o.a,gr:o.gr,score:0,kills:0,collected:0,maxGr:o.gr,
-    th:ROOT_THICKNESS,len:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),targetLen:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),turn:4,boosting:false,dashing:false,dashCd:0,dropT:0,pulse:0,eatenQueue:[],
+    th:ROOT_THICKNESS,len:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),targetLen:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),turn:4,boosting:false,dropT:0,pulse:0,
     pts:[],branches:[],branchT:rand(3.5,7),nextMile:500,hairs:hairs,
     cd:0,dead:false,elite:!!o.elite,
     per:PERSONALITIES[0],home:null,tx:o.x,ty:o.y,think:rand(AI_THINK_MIN,AI_THINK_MAX),avoidT:rand(0,AI_AVOID_INTERVAL),mode:'collect',tgt:null,skill:1.12,
@@ -1327,8 +1313,8 @@ function environmentDeath(r,cause){
   if(r.dead)return true;
   r.dead=true;
   dropResources(r);
-  burst(r.x,r.y,5,r.darkC,'frag');
-  burst(r.x,r.y,3,r.body,'dust');
+  burst(r.x,r.y,8,r.darkC,'frag');
+  burst(r.x,r.y,5,r.body,'dust');
   if(r===player){startDeath(null,cause);return true;}
   const idx=roots.indexOf(r);
   if(idx>=0)roots.splice(idx,1);
@@ -1428,7 +1414,6 @@ function moveRoot(r,dt){
   r.prevX=r.x;r.prevY=r.y;
   let sp=clamp(170-r.gr*.012,92,170)*edgeFactor(r.x,r.y);
   if(r.boosting)sp*=BOOST_MULT;
-  if(r.dashing)sp*=DASH_MULT;
   for(let i=0;i<pockets.length;i++)if(Math.hypot(pockets[i].x-r.x,pockets[i].y-r.y)<pockets[i].r)sp*=.72;
   for(let i=0;i<fertiles.length;i++)if(Math.hypot(fertiles[i].x-r.x,fertiles[i].y-r.y)<fertiles[i].r)sp*=1.12;
   r.x+=Math.cos(r.a)*sp*dt;r.y+=Math.sin(r.a)*sp*dt;
@@ -1466,7 +1451,7 @@ function collect(r,s){
   const fer=inFertile(r.x,r.y);
   if(fer)v*=2;
   if(r.resonance>0)v*=1.25;
-  r.gr+=v;r.score+=s.value*10;r.collected++;if(r.eatenQueue){r.eatenQueue.push({v:s.value,type:s.type,col:s.col})}
+  r.gr+=v;r.score+=s.value*10;r.collected++;
   r.pulse=1;
   r.moodT=.42;r.faceMood=s.type==='golden'?'ecstatic':'happy';
   if(s.type==='golden'){
@@ -1506,29 +1491,6 @@ function rootPost(r,dt){
         g:40,life:rand(.3,.6),size:rand(1.6,3),col:Math.random()<.5?r.glowC:'#e9c98a',t:'spark',rot:0,spin:0,ph:rand(0,TAU)});
     }
     r.faceMood='determined';
-  }else if(r.dashing){
-    /* Snake.io-style: release stored eaten particles one by one.
-       Each release spawns a collectible pellet beside the body and
-       deducts the particle's value from the root's growth resource.
-       A slow base drain continues while dashing to simulate boost meter. */
-    r.gr-=DASH_DRAIN*dt;if(r.gr<0)r.gr=0;
-    r.dropT+=dt;
-    if(r.dropT>=DASH_DROP){
-      r.dropT=0;
-      if(r.eatenQueue&&r.eatenQueue.length>0){
-        const entry=r.eatenQueue.shift();
-        r.gr-=entry.v;
-        if(r.gr<0)r.gr=0;
-        r.releaseSide=(r.releaseSide||0)*-1;
-        const backDist=22,sideDist=14;
-        const ca=Math.cos(r.a),sa=Math.sin(r.a);
-        const sx=r.x-ca*backDist-sa*sideDist*r.releaseSide;
-        const sy=r.y-sa*backDist+ca*sideDist*r.releaseSide;
-        spawnResAt(entry.type,clamp(sx,100,WORLD-100),clamp(sy,SURFACE+110,WORLD-100));
-        spawnP({x:sx+rand(-6,6),y:sy+rand(-6,6),vx:-ca*60+rand(-20,20),vy:-sa*60+rand(-20,20),g:180,life:rand(.4,.7),size:rand(2,3.5),col:entry.col,t:'frag',rot:0,spin:rand(-5,5),ph:0});
-      }
-    }
-    if(Math.random()<dt*25){spawnP({x:r.x+rand(-4,4),y:r.y+rand(-4,4),vx:-Math.cos(r.a)*100+rand(-16,16),vy:-Math.sin(r.a)*100+rand(-16,16),g:40,life:rand(.2,.4),size:rand(1.2,2.2),col:r.glowC,t:'spark',rot:0,spin:0,ph:rand(0,TAU)})}
   }else r.dropT=.12;
 
   /* Root Resonance: Golden Seeds create a temporary harvest bonus.
@@ -2063,13 +2025,6 @@ function playerControl(r,dt){
     if(dx*dx+dy*dy>196)des=Math.atan2(dy,dx);
   }
   if(des!=null)r.a=turnToward(r.a,des,r.turn*dt*mag);
-  /* Dash: hold to burst at DASH_MULT until particles run out or button released */
-  if(input.dash&&r.dashCd<=0&&STATE==='PLAYING'&&r.gr>0){
-    if(!r.dashing)SFX.dash();
-    r.dashing=true;
-    if(r.gr<=0){r.gr=0;r.dashing=false;r.dashCd=DASH_CD;input.dash=false;dashBtn.classList.remove('on')}
-  }else if(r.dashing&&(!input.dash||r.gr<=0)){r.dashing=false;r.dashCd=DASH_CD}
-  if(r.dashCd>0)r.dashCd-=dt
   const wantBoost=input.boost&&r.gr>BOOST_MIN;
   if(wantBoost&&!r.boosting)SFX.boost();
   r.boosting=wantBoost;
@@ -2085,10 +2040,10 @@ function killRoot(v,killer){
   if(v.dead)return;
   v.dead=true;
   dropResources(v);
-  for(let i=0;i<v.pts.length;i+=(v.pts.length>420?24:v.pts.length>240?16:10)){
+  for(let i=0;i<v.pts.length;i+=(v.pts.length>420?18:v.pts.length>240?10:7)){
     const p=v.pts[i];
-    burst(p.x,p.y,0,v.darkC,'frag');
-    if(i%16===0)burst(p.x,p.y,1,v.glowC,'spark');
+    burst(p.x,p.y,2,v.darkC,'frag');
+    if(i%10===0)burst(p.x,p.y,1,v.glowC,'spark');
   }
   if(v===player){startDeath(killer);return}
   const idx=roots.indexOf(v);
@@ -2185,12 +2140,12 @@ function startDeath(killer,cause){
     pts:player.pts.map(p=>({x:p.x,y:p.y}))
   };
   STATE='DYING';deathT=1.2;
-  player.boosting=false;input.boost=false;boostBtn.classList.remove('on');player.dashing=false;input.dash=false;dashBtn.classList.remove('on');player.eatenQueue.length=0;
+  player.boosting=false;input.boost=false;boostBtn.classList.remove('on');
   deathCause=killer?killer.name.toUpperCase():(cause||'THE UNDERGROUND');
   let cnt=0;
   for(let i=0;i<roots.length;i++){const o=roots[i];if(o!==player&&!o.dead&&o.score>player.score)cnt++}
   deathRank=cnt+1;
-  burst(player.x,player.y,6,player.darkC,'frag');
+  burst(player.x,player.y,12,player.darkC,'frag');
   SFX.die();shake(12);
   try{if(navigator.vibrate)navigator.vibrate([60,40,80])}catch(e){}
   hideJoy();
@@ -2237,14 +2192,14 @@ function reviveFromAd(){
   /* Grace now also covers environment deaths: rockCollide() and the
      world-edge check ignored cd, so a revive that landed on a rock cluster
      still died on the next frame however much grace was left. */
-  player.cd=5.0;player.boosting=false;player.dashing=false;input.dash=false;dashBtn.classList.remove('on');player.eatenQueue.length=0;
+  player.cd=5.0;player.boosting=false;
   if(roots.indexOf(player)<0)roots.push(player);
   rebuildSegGrid();
   STATE='PLAYING';
   $('gameover').classList.add('hidden');
   $('hud').classList.remove('hidden');
   showOnly(null);
-  if(IS_TOUCH){$('joy').classList.remove('hidden');boostBtn.classList.add('hidden');$('dashBtn').classList.remove('hidden')}
+  if(IS_TOUCH){$('joy').classList.remove('hidden');boostBtn.classList.add('hidden')}
   updateLeaderboard();updateHUD();
   toastMsg('ROOT REVIVED — SURVIVE!',1.8);
   deathSnapshot=null;
@@ -2360,7 +2315,6 @@ function startGame(){
   if(IS_TOUCH){
     $('joy').classList.remove('hidden');
     boostBtn.classList.add('hidden');
-    $('dashBtn').classList.remove('hidden');
   }
   updateLeaderboard();updateHUD();
   goFlash();
@@ -2390,12 +2344,11 @@ function resumeGame(){
   if(IS_TOUCH){
     $('joy').classList.remove('hidden');
     boostBtn.classList.add('hidden');
-    $('dashBtn').classList.remove('hidden');
   }
 }
 function hideJoy(){
   $('joy').classList.add('hidden');resetJoy();
-  boostBtn.classList.add('hidden');input.boost=false;boostBtn.classList.remove('on');$('dashBtn').classList.add('hidden');input.dash=false;dashBtn.classList.remove('on');
+  boostBtn.classList.add('hidden');input.boost=false;boostBtn.classList.remove('on');
 }
 
 /* ---------------- simulation ---------------- */
