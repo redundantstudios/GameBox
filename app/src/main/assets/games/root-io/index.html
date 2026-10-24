@@ -1509,7 +1509,9 @@ function rootPost(r,dt){
   }else if(r.dashing){
     /* Snake.io-style: release stored eaten particles one by one.
        Each release spawns a collectible pellet beside the body and
-       deducts the particle's value from the root's growth resource. */
+       deducts the particle's value from the root's growth resource.
+       A slow base drain continues while dashing to simulate boost meter. */
+    r.gr-=DASH_DRAIN*dt;if(r.gr<0)r.gr=0;
     r.dropT+=dt;
     if(r.dropT>=DASH_DROP){
       r.dropT=0;
