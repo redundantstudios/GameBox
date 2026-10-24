@@ -564,7 +564,7 @@ const AI_INITIAL_MIN=90,AI_INITIAL_MAX=150,AI_BIG_SPAWN_MARGIN=260;
 const RES_T={nutrient:{v:1,r:5,c:'#ffb24d'},water:{v:2,r:7,c:'#58b7ff'},mineral:{v:5,r:8,c:'#b678ff'},golden:{v:15,r:11,c:'#ffd23f'}};
 const RES_N={nutrient:240,water:80,mineral:46,golden:6};
 const BOOST_MULT=1.8,BOOST_DRAIN=10,BOOST_MIN=10,BOOST_DROP=.16;
-const DASH_MULT=2.5,DASH_DRAIN=250,DASH_CD=1.0,DASH_DROP=.08;
+const DASH_MULT=2.5,DASH_DRAIN=100,DASH_CD=1.0,DASH_DROP=.08;
 const RESONANCE_TIME=5.5;
 const FACE_BLINK_MIN=2.2,FACE_BLINK_MAX=5.4;
 /* PRICING.
@@ -1235,7 +1235,7 @@ function dropResources(r){
   // collectible mass spread along its OWN trail. Larger roots release more,
   // higher-value pellets, while keeping the drop count bounded for performance.
   const mass=Math.max(6,Math.floor(r.gr*.92));
-  const count=clamp(Math.floor(mass/2.2),10,150);
+  const count=clamp(Math.floor(mass/2.2),10,100);
   const step=Math.max(1,(n-1)/count);
 
   for(let k=0;k<count;k++){
@@ -1327,8 +1327,8 @@ function environmentDeath(r,cause){
   if(r.dead)return true;
   r.dead=true;
   dropResources(r);
-  burst(r.x,r.y,8,r.darkC,'frag');
-  burst(r.x,r.y,5,r.body,'dust');
+  burst(r.x,r.y,5,r.darkC,'frag');
+  burst(r.x,r.y,3,r.body,'dust');
   if(r===player){startDeath(null,cause);return true;}
   const idx=roots.indexOf(r);
   if(idx>=0)roots.splice(idx,1);
@@ -1512,9 +1512,9 @@ function rootPost(r,dt){
       r.dropT=0;
       const t=r.pts[0]||r;
       spawnResAt('nutrient',clamp(t.x+rand(-16,16),100,WORLD-100),clamp(t.y+rand(-16,16),SURFACE+110,WORLD-100));
-      if(Math.random()<dt*60){spawnP({x:t.x+rand(-8,8),y:t.y+rand(-8,8),vx:rand(-30,30),vy:rand(-30,30),g:80,life:rand(.3,.5),size:rand(2,3.5),col:r.darkC,t:'frag',rot:0,spin:rand(-5,5),ph:0})}
+      if(Math.random()<dt*30){spawnP({x:t.x+rand(-8,8),y:t.y+rand(-8,8),vx:rand(-30,30),vy:rand(-30,30),g:80,life:rand(.3,.4),size:rand(2,3),col:r.darkC,t:'frag',rot:0,spin:rand(-4,4),ph:0})}
     }
-    if(Math.random()<dt*50){spawnP({x:r.x+rand(-4,4),y:r.y+rand(-4,4),vx:-Math.cos(r.a)*120+rand(-24,24),vy:-Math.sin(r.a)*120+rand(-24,24),g:40,life:rand(.25,.45),size:rand(1.4,2.8),col:r.glowC,t:'spark',rot:0,spin:0,ph:rand(0,TAU)})}
+    if(Math.random()<dt*25){spawnP({x:r.x+rand(-4,4),y:r.y+rand(-4,4),vx:-Math.cos(r.a)*100+rand(-20,20),vy:-Math.sin(r.a)*100+rand(-20,20),g:40,life:rand(.25,.45),size:rand(1.4,2.5),col:r.glowC,t:'spark',rot:0,spin:0,ph:rand(0,TAU)})}
   }else r.dropT=.12;
 
   /* Root Resonance: Golden Seeds create a temporary harvest bonus.
@@ -2072,10 +2072,10 @@ function killRoot(v,killer){
   if(v.dead)return;
   v.dead=true;
   dropResources(v);
-  for(let i=0;i<v.pts.length;i+=(v.pts.length>420?18:v.pts.length>240?10:7)){
+  for(let i=0;i<v.pts.length;i+=(v.pts.length>420?24:v.pts.length>240?16:10)){
     const p=v.pts[i];
-    burst(p.x,p.y,2,v.darkC,'frag');
-    if(i%10===0)burst(p.x,p.y,1,v.glowC,'spark');
+    burst(p.x,p.y,1,v.darkC,'frag');
+    if(i%12===0)burst(p.x,p.y,1,v.glowC,'spark');
   }
   if(v===player){startDeath(killer);return}
   const idx=roots.indexOf(v);
@@ -2177,7 +2177,7 @@ function startDeath(killer,cause){
   let cnt=0;
   for(let i=0;i<roots.length;i++){const o=roots[i];if(o!==player&&!o.dead&&o.score>player.score)cnt++}
   deathRank=cnt+1;
-  burst(player.x,player.y,12,player.darkC,'frag');
+  burst(player.x,player.y,6,player.darkC,'frag');
   SFX.die();shake(12);
   try{if(navigator.vibrate)navigator.vibrate([60,40,80])}catch(e){}
   hideJoy();
