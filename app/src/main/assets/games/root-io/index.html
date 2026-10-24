@@ -564,7 +564,7 @@ const AI_INITIAL_MIN=90,AI_INITIAL_MAX=150,AI_BIG_SPAWN_MARGIN=260;
 const RES_T={nutrient:{v:1,r:5,c:'#ffb24d'},water:{v:2,r:7,c:'#58b7ff'},mineral:{v:5,r:8,c:'#b678ff'},golden:{v:15,r:11,c:'#ffd23f'}};
 const RES_N={nutrient:240,water:80,mineral:46,golden:6};
 const BOOST_MULT=1.8,BOOST_DRAIN=10,BOOST_MIN=10,BOOST_DROP=.16;
-const DASH_MULT=2.5,DASH_DRAIN=50,DASH_CD=1.0,DASH_DROP=.15;
+const DASH_MULT=2.5,DASH_DRAIN=50,DASH_CD=1.0,DASH_DROP=.18;
 const RESONANCE_TIME=5.5;
 const FACE_BLINK_MIN=2.2,FACE_BLINK_MAX=5.4;
 /* PRICING.
@@ -1263,7 +1263,7 @@ function makeRoot(o){
   return{id:nextId++,name:o.name,isPlayer:!!o.isPlayer,
     body:o.body,darkC:o.darkC,glowC:o.glowC,spineC:o.spineC,deco:o.deco||null,decoC:o.decoC||'#e8e0c0',
     x:o.x,y:o.y,a:o.a,gr:o.gr,score:0,kills:0,collected:0,maxGr:o.gr,
-    th:ROOT_THICKNESS,len:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),targetLen:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),turn:4,boosting:false,dashing:false,dashCd:0,dropT:0,pulse:0,
+    th:ROOT_THICKNESS,len:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),targetLen:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),turn:4,boosting:false,dashing:false,dashCd:0,dropT:0,pulse:0,eatenQueue:[],
     pts:[],branches:[],branchT:rand(3.5,7),nextMile:500,hairs:hairs,
     cd:0,dead:false,elite:!!o.elite,
     per:PERSONALITIES[0],home:null,tx:o.x,ty:o.y,think:rand(AI_THINK_MIN,AI_THINK_MAX),avoidT:rand(0,AI_AVOID_INTERVAL),mode:'collect',tgt:null,skill:1.12,
@@ -1466,7 +1466,7 @@ function collect(r,s){
   const fer=inFertile(r.x,r.y);
   if(fer)v*=2;
   if(r.resonance>0)v*=1.25;
-  r.gr+=v;r.score+=s.value*10;r.collected++;
+  r.gr+=v;r.score+=s.value*10;r.collected++;if(r.eatenQueue){r.eatenQueue.push({v:s.value,type:s.type,col:s.col})}
   r.pulse=1;
   r.moodT=.42;r.faceMood=s.type==='golden'?'ecstatic':'happy';
   if(s.type==='golden'){
@@ -1507,14 +1507,26 @@ function rootPost(r,dt){
     }
     r.faceMood='determined';
   }else if(r.dashing){
+    /* Snake.io-style: release stored eaten particles one by one.
+       Each release spawns a collectible pellet beside the body and
+       deducts the particle's value from the root's growth resource. */
     r.dropT+=dt;
     if(r.dropT>=DASH_DROP){
       r.dropT=0;
-      const t=r.pts[0]||r;
-      spawnResAt('nutrient',clamp(t.x+rand(-16,16),100,WORLD-100),clamp(t.y+rand(-16,16),SURFACE+110,WORLD-100));
-      if(Math.random()<dt*30){spawnP({x:t.x+rand(-8,8),y:t.y+rand(-8,8),vx:rand(-30,30),vy:rand(-30,30),g:80,life:rand(.3,.4),size:rand(2,3),col:r.darkC,t:'frag',rot:0,spin:rand(-4,4),ph:0})}
+      if(r.eatenQueue&&r.eatenQueue.length>0){
+        const entry=r.eatenQueue.shift();
+        r.gr-=entry.v;
+        if(r.gr<0)r.gr=0;
+        r.releaseSide=(r.releaseSide||0)*-1;
+        const backDist=22,sideDist=14;
+        const ca=Math.cos(r.a),sa=Math.sin(r.a);
+        const sx=r.x-ca*backDist-sa*sideDist*r.releaseSide;
+        const sy=r.y-sa*backDist+ca*sideDist*r.releaseSide;
+        spawnResAt(entry.type,clamp(sx,100,WORLD-100),clamp(sy,SURFACE+110,WORLD-100));
+        spawnP({x:sx+rand(-6,6),y:sy+rand(-6,6),vx:-ca*60+rand(-20,20),vy:-sa*60+rand(-20,20),g:180,life:rand(.4,.7),size:rand(2,3.5),col:entry.col,t:'frag',rot:0,spin:rand(-5,5),ph:0});
+      }
     }
-    if(Math.random()<dt*25){spawnP({x:r.x+rand(-4,4),y:r.y+rand(-4,4),vx:-Math.cos(r.a)*100+rand(-20,20),vy:-Math.sin(r.a)*100+rand(-20,20),g:40,life:rand(.25,.45),size:rand(1.4,2.5),col:r.glowC,t:'spark',rot:0,spin:0,ph:rand(0,TAU)})}
+    if(Math.random()<dt*25){spawnP({x:r.x+rand(-4,4),y:r.y+rand(-4,4),vx:-Math.cos(r.a)*100+rand(-16,16),vy:-Math.sin(r.a)*100+rand(-16,16),g:40,life:rand(.2,.4),size:rand(1.2,2.2),col:r.glowC,t:'spark',rot:0,spin:0,ph:rand(0,TAU)})}
   }else r.dropT=.12;
 
   /* Root Resonance: Golden Seeds create a temporary harvest bonus.
@@ -2053,7 +2065,6 @@ function playerControl(r,dt){
   if(input.dash&&r.dashCd<=0&&STATE==='PLAYING'&&r.gr>0){
     if(!r.dashing)SFX.dash();
     r.dashing=true;
-    r.gr-=DASH_DRAIN*dt;
     if(r.gr<=0){r.gr=0;r.dashing=false;r.dashCd=DASH_CD;input.dash=false;dashBtn.classList.remove('on')}
   }else if(r.dashing&&(!input.dash||r.gr<=0)){r.dashing=false;r.dashCd=DASH_CD}
   if(r.dashCd>0)r.dashCd-=dt
@@ -2172,7 +2183,7 @@ function startDeath(killer,cause){
     pts:player.pts.map(p=>({x:p.x,y:p.y}))
   };
   STATE='DYING';deathT=1.2;
-  player.boosting=false;input.boost=false;boostBtn.classList.remove('on');player.dashing=false;input.dash=false;dashBtn.classList.remove('on');
+  player.boosting=false;input.boost=false;boostBtn.classList.remove('on');player.dashing=false;input.dash=false;dashBtn.classList.remove('on');player.eatenQueue.length=0;
   deathCause=killer?killer.name.toUpperCase():(cause||'THE UNDERGROUND');
   let cnt=0;
   for(let i=0;i<roots.length;i++){const o=roots[i];if(o!==player&&!o.dead&&o.score>player.score)cnt++}
@@ -2224,7 +2235,7 @@ function reviveFromAd(){
   /* Grace now also covers environment deaths: rockCollide() and the
      world-edge check ignored cd, so a revive that landed on a rock cluster
      still died on the next frame however much grace was left. */
-  player.cd=5.0;player.boosting=false;player.dashing=false;input.dash=false;dashBtn.classList.remove('on');
+  player.cd=5.0;player.boosting=false;player.dashing=false;input.dash=false;dashBtn.classList.remove('on');player.eatenQueue.length=0;
   if(roots.indexOf(player)<0)roots.push(player);
   rebuildSegGrid();
   STATE='PLAYING';
