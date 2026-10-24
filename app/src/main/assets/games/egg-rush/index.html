@@ -406,26 +406,9 @@ html,body{width:100%;height:100%;overflow:hidden;position:fixed;background:#79b6
   display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 0 rgba(75,50,27,.35);font-weight:900}
 .sbtn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(75,50,27,.35)}
 .sbtn svg{width:20px;height:20px;fill:currentColor}
-/* Loading overlay: shows instantly (before any JS runs) so the player never
-   sees a blank screen - the game's green backdrop + a spinning egg icon
-   give immediate feedback that something is happening. Hidden once the
-   start menu is up and the first frame has painted. */
-#loadOv{position:fixed;inset:0;background:#83CC50;display:flex;align-items:center;
-  justify-content:center;z-index:9999;transition:opacity .38s ease}
-#loadOv.hide{opacity:0;pointer-events:none}
-#loadOv .egg{position:absolute;width:48px;height:56px;background:#FFD34D;border:3px solid #B27507;
-  border-radius:50% 50% 50% 50%/62% 62% 40% 40%;box-shadow:inset -.14em -.1em 0 rgba(178,119,7,.55)}
-#loadOv .egg::before{content:'';position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);
-  width:8px;height:10px;background:rgba(255,255,255,.95);border-radius:50%;}
-#loadOv .egg::after{content:'';position:absolute;left:50%;top:26%;transform:translate(-50%,-50%);
-  width:6px;height:7px;background:rgba(255,255,255,.95);border-radius:50%;}
-#loadOv .sp{width:48px;height:48px;border:4px solid rgba(255,255,255,.6);
-  border-top-color:#FFF;border-radius:50%;animation:spin 0.85s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
-<body>
-<div id="loadOv"><div class="sp"></div><div class="egg"></div></div>
+<body style="background:#79b651">
 <canvas id="cv"></canvas>
 <div id="vig"></div>
 
@@ -1491,9 +1474,6 @@ function startAttract(){
   $('hud').classList.add('hidden'); $('sys').classList.add('hidden'); $('hint').classList.add('hidden');
   $('controls').innerHTML=''; ctrls=[];
   openSettings(false);
-  /* The menu is up and the first frame is about to paint - hide the loading
-     overlay so the player sees the game, not the spinner. */
-  try{ const ov=$('loadOv'); if(ov){ ov.classList.add('hide'); setTimeout(()=>{ if(ov.parentNode) ov.parentNode.removeChild(ov); },380); } }catch(e){}
   state='MENU';
 }
 function timeUp(){
