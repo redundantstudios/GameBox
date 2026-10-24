@@ -1262,9 +1262,9 @@ function makeGroundDetails(){
   rail(inx,inx,inx,H-inx); rail(W-inx,inx,W-inx,H-inx);
   g.strokeStyle='rgba(35,60,20,.14)'; g.lineWidth=70; g.strokeRect(8,8,W-16,H-16);
 }
+let groundDetailsTimer=null, outerGroundTimer=null;
 groundDetailsTimer=setTimeout(makeGroundDetails,0);
 
-let groundDetailsTimer=null, outerGroundTimer=null;
 /* ---------- game state ---------- */
 /* `state` moved up to the LANDSCAPE section: checkOrient() reads it during load. */
 let attract=true, destroyed=false;
