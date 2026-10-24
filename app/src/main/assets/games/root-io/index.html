@@ -367,12 +367,15 @@ button{font-family:inherit}
 .ib:hover{background:rgba(232,176,75,.18)}
 .ib svg{width:18px;height:18px;fill:var(--cream)}
 #edgeWarn{position:absolute;left:50%;bottom:18%;transform:translateX(-50%);font-size:13px;font-weight:800;letter-spacing:.3em;color:#f0a08a;opacity:0;transition:opacity .3s;text-shadow:0 2px 8px rgba(0,0,0,.8)}
-#joy{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:11;pointer-events:none}
+#joy{position:fixed;left:64px;bottom:80px;z-index:11;pointer-events:none}
 #joyBase{width:134px;height:134px;border-radius:50%;border:2px solid rgba(243,233,210,.35);background:rgba(20,13,8,.35);position:relative}
 #joyKnob{position:absolute;width:56px;height:56px;border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(143,191,106,.75);border:2px solid rgba(243,233,210,.7);box-shadow:0 4px 14px rgba(0,0,0,.45)}
 #boostBtn{position:fixed;right:24px;bottom:28px;width:88px;height:88px;border-radius:50%;z-index:11;border:2px solid rgba(243,233,210,.5);background:rgba(20,13,8,.5);display:flex;align-items:center;justify-content:center;color:var(--cream);cursor:pointer;padding:0;transition:background .12s,transform .1s}
 #boostBtn svg{width:36px;height:36px;fill:var(--cream)}
 #boostBtn.on{background:rgba(143,191,106,.45);transform:scale(.94)}
+#dashBtn{position:fixed;right:24px;bottom:28px;width:88px;height:88px;border-radius:50%;z-index:11;border:2px solid rgba(243,233,210,.5);background:rgba(20,13,8,.5);display:flex;align-items:center;justify-content:center;color:var(--cream);cursor:pointer;padding:0;transition:background .12s,transform .1s}
+#dashBtn svg{width:36px;height:36px;fill:var(--cream)}
+#dashBtn.on{background:rgba(143,191,106,.45);transform:scale(.94)}
 #goFlash{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);font-size:clamp(64px,13vw,130px);font-weight:900;letter-spacing:.08em;color:var(--cream);text-shadow:0 5px 0 rgba(0,0,0,.5),0 0 46px rgba(143,191,106,.65);opacity:0;pointer-events:none;z-index:30}
 #goFlash.show{animation:goA .95s ease-out forwards}
 @keyframes goA{0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}55%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.06)}}
@@ -419,7 +422,7 @@ button{font-family:inherit}
 @keyframes howInNext{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 @keyframes howInPrev{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
 @media (max-width:640px){.howWrap{min-height:360px}.howCard{padding:16px 14px;min-height:325px}.howShot{height:128px}.howTitle{font-size:21px}.howText{font-size:13px}.howNav .btn{min-width:108px;padding:11px 14px}}
-@media (max-width:640px){#leaderboard{width:150px;font-size:11px;padding:6px 8px}.lr{font-size:10.5px}.ht{font-size:16px}.hs b{font-size:14px}.panel{padding:18px 16px}#boostBtn{width:76px;height:76px;right:18px;bottom:96px}}
+@media (max-width:640px){#leaderboard{width:150px;font-size:11px;padding:6px 8px}.lr{font-size:10.5px}.ht{font-size:16px}.hs b{font-size:14px}.panel{padding:18px 16px}#boostBtn{width:76px;height:76px;right:18px;bottom:96px}#dashBtn{width:76px;height:76px;right:18px}}
 @media (pointer:coarse){#boostBtn{display:none!important}.ptip{display:none!important}}
 @media (max-height:460px){#leaderboard{max-height:120px;overflow:hidden}}
 /* The shell's banner AdView occupies the top strip (50dp) while a run is
@@ -448,6 +451,7 @@ body.adTop #hudTL,body.adTop #hudTR{top:62px}
 
 <div id="joy" class="hidden"><div id="joyBase"><div id="joyKnob"></div></div></div>
 <button id="boostBtn" class="hidden" aria-label="Boost"><svg viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H10L9 22l8.5-11.5H12L13 2z"/></svg></button>
+<button id="dashBtn" class="hidden" aria-label="Dash"><svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2z"/></svg></button>
 <div id="goFlash">GO!</div>
 
 <div id="menu" class="screen">
@@ -560,6 +564,7 @@ const AI_INITIAL_MIN=90,AI_INITIAL_MAX=150,AI_BIG_SPAWN_MARGIN=260;
 const RES_T={nutrient:{v:1,r:5,c:'#ffb24d'},water:{v:2,r:7,c:'#58b7ff'},mineral:{v:5,r:8,c:'#b678ff'},golden:{v:15,r:11,c:'#ffd23f'}};
 const RES_N={nutrient:240,water:80,mineral:46,golden:6};
 const BOOST_MULT=1.8,BOOST_DRAIN=10,BOOST_MIN=10,BOOST_DROP=.16;
+const DASH_MULT=2.2,DASH_TIME=0.18,DASH_CD=1.5;
 const RESONANCE_TIME=5.5;
 const FACE_BLINK_MIN=2.2,FACE_BLINK_MAX=5.4;
 /* PRICING.
@@ -968,7 +973,7 @@ let vx0=0,vy0=0,vx1=0,vy1=0,vw=0,vh=0;
 let shakeOn=true;
 
 /* ---------------- input ---------------- */
-const input={mx:0,my:0,mouse:false,boost:false,joy:{active:false,dx:0,dy:0,mag:0}};
+const input={mx:0,my:0,mouse:false,boost:false,dash:false,joy:{active:false,dx:0,dy:0,mag:0}};
 let joyCenter=null,joyTouchId=null;
 window.addEventListener('mousemove',e=>{input.mx=e.clientX;input.my=e.clientY;input.mouse=true});
 canvas.addEventListener('mousedown',e=>{ensureAudio();if(e.button===0)input.boost=true});
@@ -1035,6 +1040,14 @@ boostBtn.addEventListener('touchstart',bbOn,{passive:false});
 boostBtn.addEventListener('touchend',bbOff);
 boostBtn.addEventListener('touchcancel',bbOff);
 boostBtn.addEventListener('mousedown',bbOn);
+/* dash button (mobile) - tap for a quick speed burst with cooldown */
+const dashBtn=$('dashBtn');
+function dbOn(e){e.preventDefault();e.stopPropagation();ensureAudio();if(STATE!=='PLAYING')return;input.dash=true;dashBtn.classList.add('on')}
+function dbOff(e){if(e)e.preventDefault();dashBtn.classList.remove('on')}
+dashBtn.addEventListener('touchstart',dbOn,{passive:false});
+dashBtn.addEventListener('touchend',dbOff);
+dashBtn.addEventListener('touchcancel',dbOff);
+dashBtn.addEventListener('mousedown',dbOn);
 
 /* ---------------- world gen ---------------- */
 let soilPat=null,depthGrad=null;
@@ -1249,7 +1262,7 @@ function makeRoot(o){
   return{id:nextId++,name:o.name,isPlayer:!!o.isPlayer,
     body:o.body,darkC:o.darkC,glowC:o.glowC,spineC:o.spineC,deco:o.deco||null,decoC:o.decoC||'#e8e0c0',
     x:o.x,y:o.y,a:o.a,gr:o.gr,score:0,kills:0,collected:0,maxGr:o.gr,
-    th:ROOT_THICKNESS,len:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),targetLen:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),turn:4,boosting:false,dropT:0,pulse:0,
+    th:ROOT_THICKNESS,len:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),targetLen:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),turn:4,boosting:false,dashing:false,dashT:0,dashCd:0,dropT:0,pulse:0,
     pts:[],branches:[],branchT:rand(3.5,7),nextMile:500,hairs:hairs,
     cd:0,dead:false,elite:!!o.elite,
     per:PERSONALITIES[0],home:null,tx:o.x,ty:o.y,think:rand(AI_THINK_MIN,AI_THINK_MAX),avoidT:rand(0,AI_AVOID_INTERVAL),mode:'collect',tgt:null,skill:1.12,
@@ -1414,6 +1427,7 @@ function moveRoot(r,dt){
   r.prevX=r.x;r.prevY=r.y;
   let sp=clamp(170-r.gr*.012,92,170)*edgeFactor(r.x,r.y);
   if(r.boosting)sp*=BOOST_MULT;
+  if(r.dashing)sp*=DASH_MULT;
   for(let i=0;i<pockets.length;i++)if(Math.hypot(pockets[i].x-r.x,pockets[i].y-r.y)<pockets[i].r)sp*=.72;
   for(let i=0;i<fertiles.length;i++)if(Math.hypot(fertiles[i].x-r.x,fertiles[i].y-r.y)<fertiles[i].r)sp*=1.12;
   r.x+=Math.cos(r.a)*sp*dt;r.y+=Math.sin(r.a)*sp*dt;
@@ -2025,6 +2039,10 @@ function playerControl(r,dt){
     if(dx*dx+dy*dy>196)des=Math.atan2(dy,dx);
   }
   if(des!=null)r.a=turnToward(r.a,des,r.turn*dt*mag);
+  /* Dash: tap to burst at DASH_MULT speed for DASH_TIME seconds; DASH_CD cooldown */
+  if(input.dash&&r.dashCd<=0&&STATE==='PLAYING'){r.dashing=true;r.dashT=DASH_TIME;r.dashCd=DASH_CD;SFX.boost();input.dash=false}
+  if(r.dashing){r.dashT-=dt;if(r.dashT<=0)r.dashing=false}
+  if(r.dashCd>0)r.dashCd-=dt
   const wantBoost=input.boost&&r.gr>BOOST_MIN;
   if(wantBoost&&!r.boosting)SFX.boost();
   r.boosting=wantBoost;
@@ -2140,7 +2158,7 @@ function startDeath(killer,cause){
     pts:player.pts.map(p=>({x:p.x,y:p.y}))
   };
   STATE='DYING';deathT=1.2;
-  player.boosting=false;input.boost=false;boostBtn.classList.remove('on');
+  player.boosting=false;input.boost=false;boostBtn.classList.remove('on');player.dashing=false;input.dash=false;dashBtn.classList.remove('on');
   deathCause=killer?killer.name.toUpperCase():(cause||'THE UNDERGROUND');
   let cnt=0;
   for(let i=0;i<roots.length;i++){const o=roots[i];if(o!==player&&!o.dead&&o.score>player.score)cnt++}
@@ -2199,7 +2217,7 @@ function reviveFromAd(){
   $('gameover').classList.add('hidden');
   $('hud').classList.remove('hidden');
   showOnly(null);
-  if(IS_TOUCH){$('joy').classList.remove('hidden');boostBtn.classList.add('hidden')}
+  if(IS_TOUCH){$('joy').classList.remove('hidden');boostBtn.classList.add('hidden');$('dashBtn').classList.remove('hidden')}
   updateLeaderboard();updateHUD();
   toastMsg('ROOT REVIVED — SURVIVE!',1.8);
   deathSnapshot=null;
@@ -2315,6 +2333,7 @@ function startGame(){
   if(IS_TOUCH){
     $('joy').classList.remove('hidden');
     boostBtn.classList.add('hidden');
+    $('dashBtn').classList.remove('hidden');
   }
   updateLeaderboard();updateHUD();
   goFlash();
@@ -2344,11 +2363,12 @@ function resumeGame(){
   if(IS_TOUCH){
     $('joy').classList.remove('hidden');
     boostBtn.classList.add('hidden');
+    $('dashBtn').classList.remove('hidden');
   }
 }
 function hideJoy(){
   $('joy').classList.add('hidden');resetJoy();
-  boostBtn.classList.add('hidden');input.boost=false;boostBtn.classList.remove('on');
+  boostBtn.classList.add('hidden');input.boost=false;boostBtn.classList.remove('on');$('dashBtn').classList.add('hidden');input.dash=false;dashBtn.classList.remove('on');
 }
 
 /* ---------------- simulation ---------------- */
