@@ -1222,9 +1222,13 @@ buildFarm();
 /* ---------- ground ---------- */
 const groundC=document.createElement('canvas');
 groundC.width=W; groundC.height=H;
-(function makeGround(){
-  const g=groundC.getContext('2d');
-  g.fillStyle='#83CC50'; g.fillRect(0,0,W,H);
+const groundG=groundC.getContext('2d');
+/* Green base applied immediately so the canvas is never blank; the detailed
+   grass/dots/flowers/post pattern is deferred to after the first frame so
+   startup doesn't stall on ~700 synchronous canvas operations. */
+groundG.fillStyle='#83CC50'; groundG.fillRect(0,0,W,H);
+function makeGroundDetails(){
+  const g=groundG;
   for(let y=0;y<H;y+=96){ g.fillStyle=(y/96)%2?'rgba(255,255,220,.09)':'rgba(30,80,20,.075)'; g.fillRect(0,y,W,48); }
   for(let i=0;i<90;i++){
     g.fillStyle=i%2?'rgba(153,226,106,.22)':'rgba(83,151,46,.22)';
@@ -1257,7 +1261,8 @@ groundC.width=W; groundC.height=H;
   rail(inx,inx,W-inx,inx); rail(inx,H-inx,W-inx,H-inx);
   rail(inx,inx,inx,H-inx); rail(W-inx,inx,W-inx,H-inx);
   g.strokeStyle='rgba(35,60,20,.14)'; g.lineWidth=70; g.strokeRect(8,8,W-16,H-16);
-})();
+}
+setTimeout(makeGroundDetails,0);
 
 /* ---------- game state ---------- */
 /* `state` moved up to the LANDSCAPE section: checkOrient() reads it during load. */
