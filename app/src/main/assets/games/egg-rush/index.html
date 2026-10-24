@@ -8,6 +8,7 @@ maxPlayers: 4
 aiSupport: true
 online: false
 tileColor: #F2B441
+viewportBg: #83CC50
 version: 2
 released: 2026-09-24
 -->
@@ -2420,7 +2421,7 @@ function drawObs(o){
   }
   ctx.drawImage(o.spr, o.x-o.sw/2*ds, o.sy-o.sh*ds, o.sw*ds, o.sh*ds);
 }
-const NEST_SLOTS=[[-25,-90],[2,-92],[26,-87],[-36,-76],[-10,-74],[17,-76]];
+const NEST_SLOTS=[[-15,-88],[0,-90],[15,-88],[-15,-76],[0,-76],[15,-76]];
 const NEST_ORDER=[3,4,5,0,1,2];
 function drawBasket(b){
   const ds=0.94+0.12*(b.y/H);
@@ -2432,7 +2433,7 @@ function drawBasket(b){
   for(let k=0;k<n;k++){
     const slot=NEST_SLOTS[NEST_ORDER[k]];
     const e=stored[stored.length-1-k];
-    ctx.save(); ctx.translate(slot[0],slot[1]); ctx.scale(.55,.55);
+    ctx.save(); ctx.translate(slot[0],slot[1]); ctx.scale(.8,.8);
     ctx.drawImage(e.golden?eggSprG:eggSprN,-24,-28,48,56);
     ctx.restore();
   }
