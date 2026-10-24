@@ -1262,8 +1262,9 @@ function makeGroundDetails(){
   rail(inx,inx,inx,H-inx); rail(W-inx,inx,W-inx,H-inx);
   g.strokeStyle='rgba(35,60,20,.14)'; g.lineWidth=70; g.strokeRect(8,8,W-16,H-16);
 }
-setTimeout(makeGroundDetails,0);
+groundDetailsTimer=setTimeout(makeGroundDetails,0);
 
+let groundDetailsTimer=null, outerGroundTimer=null;
 /* ---------- game state ---------- */
 /* `state` moved up to the LANDSCAPE section: checkOrient() reads it during load. */
 let attract=true, destroyed=false;
@@ -2672,8 +2673,8 @@ function ensureOuterGround(){
   const g=outerGroundCache.getContext('2d');
   /* Green base rendered immediately so the first frame is not blank. */
   g.fillStyle='#83CC50'; g.fillRect(0,0,w,h);
-  /* Detailed pattern deferred to after first paint so it doesn't block startup. */
-  setTimeout(function ogDetails(){
+  /* Details deferred to after first paint so it doesn't block startup. */
+  outerGroundTimer=setTimeout(function ogDetails(){
     if(outerGroundCacheW!==w||outerGroundCacheH!==h||Math.abs(outerGroundScale-z)>0.0001) return;
 
     // Continue the farm's broad, softly alternating grass rows past the fence.
@@ -3154,7 +3155,7 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden&&state==='
      screen and the results. COUNTDOWN is included so the strip is up and filled
      before the round actually starts. */
   var bannerOn=false;
-  setInterval(function(){
+  var bannerTimer=setInterval(function(){
     var want=(state==='PLAYING'||state==='COUNTDOWN');
     if(want!==bannerOn){ bannerOn=want; try{ Studio.ads.banner(want); }catch(e){} }
   },400);
@@ -3179,8 +3180,19 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden&&state==='
   destroy(){
     destroyed=true;
     cancelAnimationFrame(raf);
+    /* Clear ALL pending timers so they don't outlive the page and pile up
+       across open/close cycles (banner manager interval + deferred ground
+       canvas detail draws). */
+    if(bannerTimer) clearInterval(bannerTimer); bannerTimer=null;
+    if(groundDetailsTimer) clearTimeout(groundDetailsTimer); groundDetailsTimer=null;
+    if(outerGroundTimer) clearTimeout(outerGroundTimer); outerGroundTimer=null;
     try{ if(AC) AC.close(); }catch(e){}
     $('controls').innerHTML='';
+    /* Release the large off-screen canvas backing stores so their pixel
+       memory returns to the system instead of lingering until the renderer
+       process is reaped. */
+    if(groundC){ groundC.width=0; groundC.height=0; }
+    if(outerGroundCache){ outerGroundCache.width=0; outerGroundCache.height=0; }
   }
 };
 
