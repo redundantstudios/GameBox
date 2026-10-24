@@ -1703,11 +1703,14 @@ function layoutControls(){
           const centerY=Math.round(vh*0.67);
           o={w:DD,h:DD,l:Math.round(vw/2+(JD+gap)/2-DD/2),t:centerY-Math.round(DD/2)};
         }
-        /* Four-player controls retain their basket-matched corner anchors. */
-        else if(a==='l-side')      o={w:DD,h:DD, l:ml+dashLaneOffset, t:Math.round(vh*0.76-DD/2)};
-        else if(a==='r-side')      o={w:DD,h:DD, r:mr+dashLaneOffset, t:Math.round(vh*0.76-DD/2)};
-        else if(a==='l-side-top')  o={w:DD,h:DD, l:ml+dashLaneOffset, t:Math.round(vh*0.27-DD/2)};
-        else if(a==='r-side-top')  o={w:DD,h:DD, r:mr+dashLaneOffset, t:Math.round(vh*0.27-DD/2)};
+        /* Four-player controls: side dashes sit between the corner joysticks, not
+           near them. At 0.76 / 0.27 the buttons overlapped the bottom-left/right
+           and top-left/right joysticks; 0.62 / 0.38 keeps them in the clear vertical
+           band between the two corner anchors. */
+        else if(a==='l-side')      o={w:DD,h:DD, l:ml+dashLaneOffset, t:Math.round(vh*0.62-DD/2)};
+        else if(a==='r-side')      o={w:DD,h:DD, r:mr+dashLaneOffset, t:Math.round(vh*0.62-DD/2)};
+        else if(a==='l-side-top')  o={w:DD,h:DD, l:ml+dashLaneOffset, t:Math.round(vh*0.38-DD/2)};
+        else if(a==='r-side-top')  o={w:DD,h:DD, r:mr+dashLaneOffset, t:Math.round(vh*0.38-DD/2)};
         else if(a==='l-up')   o={w:DD,h:DD, l:ml,               b:ml+JD+gap};
         else if(a==='l-down') o={w:DD,h:DD, l:ml,               t:ml+JD+gap};
         else if(a==='r-up')   o={w:DD,h:DD, r:mr,               b:ml+JD+gap};
