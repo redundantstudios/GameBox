@@ -373,7 +373,7 @@ button{font-family:inherit}
 #boostBtn{position:fixed;right:24px;bottom:28px;width:88px;height:88px;border-radius:50%;z-index:11;border:2px solid rgba(243,233,210,.5);background:rgba(20,13,8,.5);display:flex;align-items:center;justify-content:center;color:var(--cream);cursor:pointer;padding:0;transition:background .12s,transform .1s}
 #boostBtn svg{width:36px;height:36px;fill:var(--cream)}
 #boostBtn.on{background:rgba(143,191,106,.45);transform:scale(.94)}
-#dashBtn{position:fixed;right:24px;bottom:28px;width:88px;height:88px;border-radius:50%;z-index:11;border:2px solid rgba(243,233,210,.5);background:rgba(20,13,8,.5);display:flex;align-items:center;justify-content:center;color:var(--cream);cursor:pointer;padding:0;transition:background .12s,transform .1s}
+#dashBtn{position:fixed;right:24px;bottom:158px;width:88px;height:88px;border-radius:50%;z-index:11;border:2px solid rgba(243,233,210,.5);background:rgba(20,13,8,.5);display:flex;align-items:center;justify-content:center;color:var(--cream);cursor:pointer;padding:0;transition:background .12s,transform .1s}
 #dashBtn svg{width:36px;height:36px;fill:var(--cream)}
 #dashBtn.on{background:rgba(143,191,106,.45);transform:scale(.94)}
 #goFlash{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);font-size:clamp(64px,13vw,130px);font-weight:900;letter-spacing:.08em;color:var(--cream);text-shadow:0 5px 0 rgba(0,0,0,.5),0 0 46px rgba(143,191,106,.65);opacity:0;pointer-events:none;z-index:30}
@@ -422,7 +422,7 @@ button{font-family:inherit}
 @keyframes howInNext{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
 @keyframes howInPrev{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
 @media (max-width:640px){.howWrap{min-height:360px}.howCard{padding:16px 14px;min-height:325px}.howShot{height:128px}.howTitle{font-size:21px}.howText{font-size:13px}.howNav .btn{min-width:108px;padding:11px 14px}}
-@media (max-width:640px){#leaderboard{width:150px;font-size:11px;padding:6px 8px}.lr{font-size:10.5px}.ht{font-size:16px}.hs b{font-size:14px}.panel{padding:18px 16px}#boostBtn{width:76px;height:76px;right:18px;bottom:96px}#dashBtn{width:76px;height:76px;right:18px}}
+@media (max-width:640px){#leaderboard{width:150px;font-size:11px;padding:6px 8px}.lr{font-size:10.5px}.ht{font-size:16px}.hs b{font-size:14px}.panel{padding:18px 16px}#boostBtn{width:76px;height:76px;right:18px;bottom:96px}#dashBtn{width:76px;height:76px;right:18px;bottom:120px}}
 @media (pointer:coarse){#boostBtn{display:none!important}.ptip{display:none!important}}
 @media (max-height:460px){#leaderboard{max-height:120px;overflow:hidden}}
 /* The shell's banner AdView occupies the top strip (50dp) while a run is
@@ -451,7 +451,7 @@ body.adTop #hudTL,body.adTop #hudTR{top:62px}
 
 <div id="joy" class="hidden"><div id="joyBase"><div id="joyKnob"></div></div></div>
 <button id="boostBtn" class="hidden" aria-label="Boost"><svg viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H10L9 22l8.5-11.5H12L13 2z"/></svg></button>
-<button id="dashBtn" class="hidden" aria-label="Dash"><svg viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2z"/></svg></button>
+<button id="dashBtn" class="hidden" aria-label="Dash"><svg viewBox="0 0 24 24"><path d="M12 2l4 12h-3v6H11v-6L12 2z"/></svg></button>
 <div id="goFlash">GO!</div>
 
 <div id="menu" class="screen">
@@ -564,7 +564,7 @@ const AI_INITIAL_MIN=90,AI_INITIAL_MAX=150,AI_BIG_SPAWN_MARGIN=260;
 const RES_T={nutrient:{v:1,r:5,c:'#ffb24d'},water:{v:2,r:7,c:'#58b7ff'},mineral:{v:5,r:8,c:'#b678ff'},golden:{v:15,r:11,c:'#ffd23f'}};
 const RES_N={nutrient:240,water:80,mineral:46,golden:6};
 const BOOST_MULT=1.8,BOOST_DRAIN=10,BOOST_MIN=10,BOOST_DROP=.16;
-const DASH_MULT=2.2,DASH_TIME=0.18,DASH_CD=1.5;
+const DASH_MULT=2.5,DASH_DRAIN=250,DASH_CD=1.0;
 const RESONANCE_TIME=5.5;
 const FACE_BLINK_MIN=2.2,FACE_BLINK_MAX=5.4;
 /* PRICING.
@@ -721,6 +721,7 @@ const SFX={
   collect(v){const f=Math.min(920,430+v*26);tone(f,f*1.45,.09,'sine',.14);tone(f*2,f*2,.05,'sine',.04)},
   golden(){[660,880,1174].forEach((f,i)=>tone(f,f,.13,'sine',.13,i*.07))},
   boost(){noiseBurst(.22,.14);tone(280,540,.16,'sine',.07)},
+dash(){noiseBurst(.3,.1);tone(200,420,.14,'sine',.06);tone(420,420,.08,'sine',.05,.07)},
   kill(){noiseBurst(.2,.3);tone(392,392,.09,'square',.13);tone(587,587,.13,'square',.13,.09)},
   die(){tone(260,52,.75,'sawtooth',.22);noiseBurst(.5,.22)},
   milestone(){tone(523,523,.12,'sine',.09);tone(784,784,.16,'sine',.09,.08)},
@@ -1040,10 +1041,10 @@ boostBtn.addEventListener('touchstart',bbOn,{passive:false});
 boostBtn.addEventListener('touchend',bbOff);
 boostBtn.addEventListener('touchcancel',bbOff);
 boostBtn.addEventListener('mousedown',bbOn);
-/* dash button (mobile) - tap for a quick speed burst with cooldown */
+/* dash button (mobile) - hold to burst until particles drain */
 const dashBtn=$('dashBtn');
 function dbOn(e){e.preventDefault();e.stopPropagation();ensureAudio();if(STATE!=='PLAYING')return;input.dash=true;dashBtn.classList.add('on')}
-function dbOff(e){if(e)e.preventDefault();dashBtn.classList.remove('on')}
+function dbOff(e){if(e)e.preventDefault();input.dash=false;dashBtn.classList.remove('on')}
 dashBtn.addEventListener('touchstart',dbOn,{passive:false});
 dashBtn.addEventListener('touchend',dbOff);
 dashBtn.addEventListener('touchcancel',dbOff);
@@ -1262,7 +1263,7 @@ function makeRoot(o){
   return{id:nextId++,name:o.name,isPlayer:!!o.isPlayer,
     body:o.body,darkC:o.darkC,glowC:o.glowC,spineC:o.spineC,deco:o.deco||null,decoC:o.decoC||'#e8e0c0',
     x:o.x,y:o.y,a:o.a,gr:o.gr,score:0,kills:0,collected:0,maxGr:o.gr,
-    th:ROOT_THICKNESS,len:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),targetLen:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),turn:4,boosting:false,dashing:false,dashT:0,dashCd:0,dropT:0,pulse:0,
+    th:ROOT_THICKNESS,len:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),targetLen:Math.min(MAX_LEN,BASE_LEN+o.gr*LEN_PER_GROWTH),turn:4,boosting:false,dashing:false,dashCd:0,dropT:0,pulse:0,
     pts:[],branches:[],branchT:rand(3.5,7),nextMile:500,hairs:hairs,
     cd:0,dead:false,elite:!!o.elite,
     per:PERSONALITIES[0],home:null,tx:o.x,ty:o.y,think:rand(AI_THINK_MIN,AI_THINK_MAX),avoidT:rand(0,AI_AVOID_INTERVAL),mode:'collect',tgt:null,skill:1.12,
@@ -2039,9 +2040,13 @@ function playerControl(r,dt){
     if(dx*dx+dy*dy>196)des=Math.atan2(dy,dx);
   }
   if(des!=null)r.a=turnToward(r.a,des,r.turn*dt*mag);
-  /* Dash: tap to burst at DASH_MULT speed for DASH_TIME seconds; DASH_CD cooldown */
-  if(input.dash&&r.dashCd<=0&&STATE==='PLAYING'){r.dashing=true;r.dashT=DASH_TIME;r.dashCd=DASH_CD;SFX.boost();input.dash=false}
-  if(r.dashing){r.dashT-=dt;if(r.dashT<=0)r.dashing=false}
+  /* Dash: hold to burst at DASH_MULT until particles run out or button released */
+  if(input.dash&&r.dashCd<=0&&STATE==='PLAYING'&&r.gr>0){
+    if(!r.dashing)SFX.dash();
+    r.dashing=true;
+    r.gr-=DASH_DRAIN*dt;
+    if(r.gr<=0){r.gr=0;r.dashing=false;r.dashCd=DASH_CD;input.dash=false;dashBtn.classList.remove('on')}
+  }else if(r.dashing&&(!input.dash||r.gr<=0)){r.dashing=false;r.dashCd=DASH_CD}
   if(r.dashCd>0)r.dashCd-=dt
   const wantBoost=input.boost&&r.gr>BOOST_MIN;
   if(wantBoost&&!r.boosting)SFX.boost();
