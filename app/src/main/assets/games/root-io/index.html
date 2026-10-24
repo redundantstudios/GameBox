@@ -558,13 +558,13 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|
 /* ---------------- constants ---------------- */
 const WORLD=5000,SURFACE=130,SPACING=6,MAX_LEN=5000,MAX_PTS=560,HEAD_SEGS=1;
 const BASE_LEN=54,LEN_PER_GROWTH=1.8,ROOT_THICKNESS=12,GROWTH_SMOOTH=2.8;
-const WORLD_EDGE_MARGIN=0,AI_COUNT=18,MAX_PARTICLES=120,MIN_AI_GR=90,AI_STUCK_TIME=.65;
+const WORLD_EDGE_MARGIN=0,AI_COUNT=12,MAX_PARTICLES=120,MIN_AI_GR=90,AI_STUCK_TIME=.65;
 const AI_THINK_MIN=.22,AI_THINK_MAX=.30,AI_AVOID_INTERVAL=.13,AI_LOOK=520;
 const AI_INITIAL_MIN=90,AI_INITIAL_MAX=150,AI_BIG_SPAWN_MARGIN=260;
 const RES_T={nutrient:{v:1,r:5,c:'#ffb24d'},water:{v:2,r:7,c:'#58b7ff'},mineral:{v:5,r:8,c:'#b678ff'},golden:{v:15,r:11,c:'#ffd23f'}};
 const RES_N={nutrient:240,water:80,mineral:46,golden:6};
 const BOOST_MULT=1.8,BOOST_DRAIN=10,BOOST_MIN=10,BOOST_DROP=.16;
-const DASH_MULT=2.5,DASH_DRAIN=250,DASH_CD=1.0;
+const DASH_MULT=2.5,DASH_DRAIN=250,DASH_CD=1.0,DASH_DROP=.08;
 const RESONANCE_TIME=5.5;
 const FACE_BLINK_MIN=2.2,FACE_BLINK_MAX=5.4;
 /* PRICING.
@@ -1506,6 +1506,15 @@ function rootPost(r,dt){
         g:40,life:rand(.3,.6),size:rand(1.6,3),col:Math.random()<.5?r.glowC:'#e9c98a',t:'spark',rot:0,spin:0,ph:rand(0,TAU)});
     }
     r.faceMood='determined';
+  }else if(r.dashing){
+    r.dropT+=dt;
+    if(r.dropT>=DASH_DROP){
+      r.dropT=0;
+      const t=r.pts[0]||r;
+      spawnResAt('nutrient',clamp(t.x+rand(-16,16),100,WORLD-100),clamp(t.y+rand(-16,16),SURFACE+110,WORLD-100));
+      if(Math.random()<dt*60){spawnP({x:t.x+rand(-8,8),y:t.y+rand(-8,8),vx:rand(-30,30),vy:rand(-30,30),g:80,life:rand(.3,.5),size:rand(2,3.5),col:r.darkC,t:'frag',rot:0,spin:rand(-5,5),ph:0})}
+    }
+    if(Math.random()<dt*50){spawnP({x:r.x+rand(-4,4),y:r.y+rand(-4,4),vx:-Math.cos(r.a)*120+rand(-24,24),vy:-Math.sin(r.a)*120+rand(-24,24),g:40,life:rand(.25,.45),size:rand(1.4,2.8),col:r.glowC,t:'spark',rot:0,spin:0,ph:rand(0,TAU)})}
   }else r.dropT=.12;
 
   /* Root Resonance: Golden Seeds create a temporary harvest bonus.
@@ -2215,7 +2224,7 @@ function reviveFromAd(){
   /* Grace now also covers environment deaths: rockCollide() and the
      world-edge check ignored cd, so a revive that landed on a rock cluster
      still died on the next frame however much grace was left. */
-  player.cd=5.0;player.boosting=false;
+  player.cd=5.0;player.boosting=false;player.dashing=false;input.dash=false;dashBtn.classList.remove('on');
   if(roots.indexOf(player)<0)roots.push(player);
   rebuildSegGrid();
   STATE='PLAYING';
