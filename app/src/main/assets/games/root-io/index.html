@@ -288,9 +288,9 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
 <style>
 :root{--cream:#f3e9d2;--dim:#c9bda0;--amber:#e8b04b;--green:#8fbf6a;--gd:#2c4a25;--danger:#e06c4f;--line:rgba(232,176,75,.22)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#0e0906;font-family:"Trebuchet MS","Segoe UI",Verdana,sans-serif;color:var(--cream);user-select:none;-webkit-user-select:none;touch-action:none;overscroll-behavior:none}
+html,body{margin:0;padding:0;width:100vw;height:100vh;overflow:hidden;background:#0e0906;font-family:"Trebuchet MS","Segoe UI",Verdana,sans-serif;color:var(--cream);user-select:none;-webkit-user-select:none;touch-action:none;overscroll-behavior:none}
 canvas{display:block}
-#game{position:fixed;inset:0;cursor:crosshair}
+#game{position:fixed;inset:0;width:100vw;height:100vh;display:block;cursor:crosshair}
 #vignette{position:fixed;inset:0;z-index:5;pointer-events:none;background:radial-gradient(ellipse at center,transparent 58%,rgba(6,3,1,.42) 100%)}
 .hidden{display:none!important}
 button{font-family:inherit}
@@ -374,7 +374,7 @@ button{font-family:inherit}
 #boostBtn svg{width:36px;height:36px;fill:var(--cream)}
 #boostBtn.on{background:rgba(143,191,106,.45);transform:scale(.94)}
 #dashBtn{position:fixed;right:24px;bottom:158px;width:88px;height:88px;border-radius:50%;z-index:11;border:2px solid rgba(243,233,210,.5);background:rgba(20,13,8,.5);display:flex;align-items:center;justify-content:center;color:var(--cream);cursor:pointer;padding:0;transition:background .12s,transform .1s}
-#dashBtn svg{width:36px;height:36px;fill:var(--cream)}
+#dashBtn span{font-size:24px;font-weight:900}
 #dashBtn.on{background:rgba(143,191,106,.45);transform:scale(.94)}
 #goFlash{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);font-size:clamp(64px,13vw,130px);font-weight:900;letter-spacing:.08em;color:var(--cream);text-shadow:0 5px 0 rgba(0,0,0,.5),0 0 46px rgba(143,191,106,.65);opacity:0;pointer-events:none;z-index:30}
 #goFlash.show{animation:goA .95s ease-out forwards}
@@ -451,7 +451,7 @@ body.adTop #hudTL,body.adTop #hudTR{top:62px}
 
 <div id="joy" class="hidden"><div id="joyBase"><div id="joyKnob"></div></div></div>
 <button id="boostBtn" class="hidden" aria-label="Boost"><svg viewBox="0 0 24 24"><path d="M13 2 4.5 13.5H10L9 22l8.5-11.5H12L13 2z"/></svg></button>
-<button id="dashBtn" class="hidden" aria-label="Dash"><svg viewBox="0 0 24 24"><path d="M12 2l4 12h-3v6H11v-6L12 2z"/></svg></button>
+<button id="dashBtn" class="hidden" aria-label="Dash (hold)">DASH</button>
 <div id="goFlash">GO!</div>
 
 <div id="menu" class="screen">
@@ -558,13 +558,13 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|
 /* ---------------- constants ---------------- */
 const WORLD=5000,SURFACE=130,SPACING=6,MAX_LEN=5000,MAX_PTS=560,HEAD_SEGS=1;
 const BASE_LEN=54,LEN_PER_GROWTH=1.8,ROOT_THICKNESS=12,GROWTH_SMOOTH=2.8;
-const WORLD_EDGE_MARGIN=0,AI_COUNT=12,MAX_PARTICLES=120,MIN_AI_GR=90,AI_STUCK_TIME=.65;
+const WORLD_EDGE_MARGIN=0,AI_COUNT=10,MAX_PARTICLES=120,MIN_AI_GR=90,AI_STUCK_TIME=.65;
 const AI_THINK_MIN=.22,AI_THINK_MAX=.30,AI_AVOID_INTERVAL=.13,AI_LOOK=520;
 const AI_INITIAL_MIN=90,AI_INITIAL_MAX=150,AI_BIG_SPAWN_MARGIN=260;
 const RES_T={nutrient:{v:1,r:5,c:'#ffb24d'},water:{v:2,r:7,c:'#58b7ff'},mineral:{v:5,r:8,c:'#b678ff'},golden:{v:15,r:11,c:'#ffd23f'}};
 const RES_N={nutrient:240,water:80,mineral:46,golden:6};
 const BOOST_MULT=1.8,BOOST_DRAIN=10,BOOST_MIN=10,BOOST_DROP=.16;
-const DASH_MULT=2.5,DASH_DRAIN=100,DASH_CD=1.0,DASH_DROP=.08;
+const DASH_MULT=2.5,DASH_DRAIN=50,DASH_CD=1.0,DASH_DROP=.15;
 const RESONANCE_TIME=5.5;
 const FACE_BLINK_MIN=2.2,FACE_BLINK_MAX=5.4;
 /* PRICING.
@@ -860,7 +860,7 @@ const canvas=$('game'),ctx=canvas.getContext('2d');
 let W=0,H=0,DPR=1,FIT=1;
 function resize(){
   DPR=Math.min(1.5,window.devicePixelRatio||1);
-  W=window.innerWidth;H=window.innerHeight;
+  W=document.documentElement.clientWidth||window.innerWidth;H=document.documentElement.clientHeight||window.innerHeight;
   canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);
   canvas.style.width=W+'px';canvas.style.height=H+'px';
   FIT=clamp(Math.min(W/1250,H/760),.5,1.2);
@@ -2074,8 +2074,8 @@ function killRoot(v,killer){
   dropResources(v);
   for(let i=0;i<v.pts.length;i+=(v.pts.length>420?24:v.pts.length>240?16:10)){
     const p=v.pts[i];
-    burst(p.x,p.y,1,v.darkC,'frag');
-    if(i%12===0)burst(p.x,p.y,1,v.glowC,'spark');
+    burst(p.x,p.y,0,v.darkC,'frag');
+    if(i%16===0)burst(p.x,p.y,1,v.glowC,'spark');
   }
   if(v===player){startDeath(killer);return}
   const idx=roots.indexOf(v);
