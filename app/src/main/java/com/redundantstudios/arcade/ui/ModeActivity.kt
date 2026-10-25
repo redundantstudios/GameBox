@@ -1,9 +1,16 @@
 package com.redundantstudios.arcade.ui
 
+import android.content.Context
 import android.content.Intent
+import android.graphics.Rect
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
+import android.view.MotionEvent
 import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.TextView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -172,7 +179,7 @@ class ModeActivity : ThemedActivity() {
         }
 
         /**
-         * Order a flat list (ALL GAMES, PARTY GAMES) newest addition first.
+         * Order the PARTY GAMES list newest addition first.
          *
          * These pages used the raw scan order from the assets folder, which is
          * alphabetical by directory and has nothing to do with when a game was
@@ -196,6 +203,19 @@ class ModeActivity : ThemedActivity() {
                 )
             )
         }
+
+        /**
+         * ALL GAMES is a catalogue, not a feed: it reads A-Z by title, so the
+         * page never reshuffles under the player when a new game is integrated.
+         * Case is ignored, and a title that collides falls back to the id.
+         */
+        fun alphabetical(games: List<GameManifest>): List<GameManifest> =
+            games.sortedWith(
+                compareBy(
+                    { it.title.lowercase() },
+                    { it.id }
+                )
+            )
 
         /** Games an N PLAYER page lists: see [fitsOnPage] for the rule. */
         /** Games an N PLAYER page lists: see [fitsOnPage] for the rule. */
@@ -243,23 +263,24 @@ class ModeActivity : ThemedActivity() {
                 // Two columns on a phone, more once there is room for them.
         ResponsiveGrid.apply(findViewById(R.id.gamesRecyclerView))
 
-        val filteredGames = when {
-            // ALL GAMES and PARTY GAMES: newest integration first. These pages
-            // used the raw asset-scan order (alphabetical by directory), which
-            // has nothing to do with how recently a game was added.
-            allGamesMode -> orderNewestFirst(allGames)
+        val orderedGames = when {
+            // ALL GAMES: a plain A-Z catalogue.
+            allGamesMode -> alphabetical(allGames)
+            // PARTY GAMES: newest integration first, as before.
             partyMode -> orderNewestFirst(allGames.filter { it.id in PARTY_GAME_IDS })
             // N PLAYER page: exact-fit games first, then the next count up, and
             // so on - each group newest-first then A-Z. See orderForPage.
             else -> orderForPage(filterGames(allGames, playerCount), playerCount)
         }
-        Log.d(TAG, "Showing ${filteredGames.size} games (allGames=$allGamesMode, players=$playerCount)")
-        Log.d(TAG, "Order: ${filteredGames.joinToString { it.id }}")
+        Log.d(TAG, "Showing ${orderedGames.size} games (allGames=$allGamesMode, players=$playerCount)")
+        Log.d(TAG, "Order: ${orderedGames.joinToString { it.id }}")
 
-        findViewById<View>(R.id.emptyState).visibility =
-            if (filteredGames.isEmpty()) View.VISIBLE else View.GONE
+        val emptyState = findViewById<View>(R.id.emptyState)
+        val emptyTitle = findViewById<TextView>(R.id.emptyTitle)
+        val emptyHint = findViewById<TextView>(R.id.emptyHint)
+        emptyState.visibility = if (orderedGames.isEmpty()) View.VISIBLE else View.GONE
 
-        recyclerView.adapter = GameAdapter(filteredGames, { game ->
+        val adapter = GameAdapter(orderedGames, { game ->
             // All Games and 1 PLAYER open the game's own normal menu — bot mode
             // is never forced automatically. An N PLAYER page preselects that
             // count so play starts in one tap.
@@ -268,6 +289,44 @@ class ModeActivity : ThemedActivity() {
 
             launchGame(game, preselect)
         }, hidePlayerTag = partyMode)
+        recyclerView.adapter = adapter
+
+        /* Search is an ALL GAMES affordance only: the player-count pages and
+           PARTY GAMES are short, curated lists where a field would just be in
+           the way. Filtering happens on the already-ordered list, so matches
+           stay in A-Z order. */
+        if (allGamesMode) {
+            val searchHost = findViewById<View>(R.id.searchHost)
+            val searchInput = findViewById<EditText>(R.id.searchInput)
+            searchHost.visibility = View.VISIBLE
+            searchInput.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+                override fun afterTextChanged(s: Editable?) {
+                    val query = normalise(s?.toString().orEmpty())
+                    val matches = if (query.isEmpty()) {
+                        orderedGames
+                    } else {
+                        orderedGames.filter {
+                            normalise(it.title).contains(query) || normalise(it.id).contains(query)
+                        }
+                    }
+                    adapter.submit(matches)
+                    emptyState.visibility = if (matches.isEmpty()) View.VISIBLE else View.GONE
+                    emptyTitle.setText(
+                        if (query.isEmpty()) R.string.no_games_here else R.string.no_games_found
+                    )
+                    emptyHint.setText(
+                        if (query.isEmpty()) R.string.no_games_here_hint else R.string.no_games_found_hint
+                    )
+                }
+            })
+            searchInput.setOnEditorActionListener { view, _, _ ->
+                searchInput.clearFocus()
+                hideKeyboard(view)
+                true
+            }
+        }
 
         val btnBack = findViewById<android.widget.ImageButton>(R.id.btnBack)
         btnBack.setOnClickListener {
@@ -275,6 +334,39 @@ class ModeActivity : ThemedActivity() {
             ShellTransition.close(this)
             finish()
         }
+    }
+
+    /**
+     * A tap anywhere outside the search field drops its focus (and the cursor)
+     * and closes the keyboard, while still delivering that tap to whatever was
+     * touched - so tapping a game tile both dismisses the field and opens the
+     * game. Taps inside the field (including its border) are left alone.
+     */
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            val input = findViewById<EditText?>(R.id.searchInput)
+            val field = findViewById<View?>(R.id.searchField)
+            if (input != null && field != null && input.hasFocus()) {
+                val bounds = Rect()
+                field.getGlobalVisibleRect(bounds)
+                val outside = !bounds.contains(event.rawX.toInt(), event.rawY.toInt())
+                if (outside) {
+                    input.clearFocus()
+                    hideKeyboard(input)
+                }
+            }
+        }
+        return super.dispatchTouchEvent(event)
+    }
+
+    /** Letters and digits only, so "under cover" finds "Undercover" and a
+     *  hyphen or punctuation mark in a title never blocks a match. */
+    private fun normalise(raw: String): String =
+        raw.lowercase().filter { it.isLetterOrDigit() }
+
+    private fun hideKeyboard(view: View) {
+        (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
+            ?.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     private fun launchGame(game: GameManifest, preselect: Int) {

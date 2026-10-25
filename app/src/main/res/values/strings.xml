@@ -24,6 +24,9 @@
     <string name="n_player_games">%1$d player games</string>
     <string name="no_games_here">No games here yet</string>
     <string name="no_games_here_hint">New games are coming soon!</string>
+    <string name="search_games_hint">SEARCH GAMES</string>
+    <string name="no_games_found">No games found</string>
+    <string name="no_games_found_hint">Try a different name</string>
     <string name="badge_new">NEW</string>
 
     <!-- Settings -->

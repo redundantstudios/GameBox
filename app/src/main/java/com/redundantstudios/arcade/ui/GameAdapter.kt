@@ -17,7 +17,7 @@ import com.redundantstudios.arcade.model.NEW_GAME_IDS
 import com.redundantstudios.arcade.util.GameSeenStore
 
 class GameAdapter(
-    private val games: List<GameManifest>,
+    initialGames: List<GameManifest>,
     private val onGameClick: (GameManifest) -> Unit,
     /**
      * True on the PARTY GAMES page. Party tiles carry NO "NP" badge: they are
@@ -27,6 +27,17 @@ class GameAdapter(
      */
     private val hidePlayerTag: Boolean = false
 ) : RecyclerView.Adapter<GameAdapter.GameViewHolder>() {
+
+    /** The visible slice of the catalogue. ALL GAMES narrows this as the
+     *  player types; everywhere else it is the whole ordered page. */
+    private var games: List<GameManifest> = initialGames
+
+    /** Replace the visible list, keeping the caller's order. */
+    fun submit(next: List<GameManifest>) {
+        if (next === games) return
+        games = next
+        notifyDataSetChanged()
+    }
 
     class GameViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tileRoot: ChunkyCardView = view.findViewById(R.id.tileRoot)
