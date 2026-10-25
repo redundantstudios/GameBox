@@ -11,9 +11,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.audio.ShellAudio
-import com.redundantstudios.arcade.model.ESTABLISHED_GAME_IDS
 import com.redundantstudios.arcade.model.GameManifest
-import com.redundantstudios.arcade.model.NEW_GAME_IDS
 import com.redundantstudios.arcade.util.GameSeenStore
 
 class GameAdapter(
@@ -59,25 +57,17 @@ class GameAdapter(
         holder.tileRoot.cardColor = tileColor(game.tileColor)
 
         /* NEW tag.
-           Two independent reasons to wear it:
-             - the game is in NEW_GAME_IDS (the current cohort, added after
-               last-balloon), which is an explicit list and therefore cannot
-               expire;
-             - OR it is not established and is still inside its first-seen
-               window, which is what catches a game added later with no code
-               change at all.
-           The old test was the second clause alone, and because every bundled
-           game had been scanned during development those windows had all closed
-           - so the tags were gone from every tile. */
-        holder.newBadge.visibility = if (
-            game.id in NEW_GAME_IDS ||
-                (game.id !in ESTABLISHED_GAME_IDS &&
-                    GameSeenStore.isNew(holder.itemView.context, game.id))
-        ) {
-            View.VISIBLE
-        } else {
-            View.GONE
-        }
+           Every game wears it while it is inside its first-seen window - the
+           same [GameSeenStore] clock for the whole catalogue, not a hardcoded
+           cohort list. The 1.3.0 release reset that store (see PREFS), so all
+           bundled games start their window on the first launch of the update
+           and every one of them expires exactly like a normally added game. */
+        holder.newBadge.visibility =
+            if (GameSeenStore.isNew(holder.itemView.context, game.id)) {
+                View.VISIBLE
+            } else {
+                View.GONE
+            }
         // Tile artwork, generated from the game file by _gen_tiles.py and looked
         // up by name (see util.resName convention in that script). When a game has
         // no artwork yet the tile keeps its flat manifest colour and the title

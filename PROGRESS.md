@@ -793,3 +793,24 @@ The game is on its director's device now; it becomes LOCKED when they say so.
   same glow, same timing, same picture - and the spin stops fighting the
   compositor for the frame. The idle blink gets the same treatment, so the
   twelve LEDs are no longer repainting themselves all the time the menu is up.
+
+## Release 1.3.0 - Snakes & Ladders, and the whole catalogue reads NEW - 2026-10-25
+
+`versionCode 4`, `versionName "1.3.0"` - one step up from 1.2.0 (code 3), so the
+Play upload is a strict increment and existing installs are offered the update.
+
+- **Snakes & Ladders ships.** Ten themes, 2h rewarded unlocks with countdowns,
+  ads, haptics, shell settings and persistence. The ad banner is a reserved
+  bottom strip that appears only on the live game page, coloured from the
+  bottom pixel of that theme's own scene, so it always matches the background.
+  The turn card sits clear of the dice, and the dev autoplay build is gone.
+- **Every game wears NEW, and every badge expires normally.** The hand-kept
+  `NEW_GAME_IDS` / `ESTABLISHED_GAME_IDS` lists are deleted. The tile badge and
+  the NEW-first ordering both read `GameSeenStore.isNew` - the same ten-day
+  first-seen window - so a tag cannot outlive the window or be left on by a
+  forgotten id. `GameSeenStore` moved to `game_seen_v4`, which re-stamps the
+  whole catalogue from the first launch of this update; ten days later every
+  one of those tags retires together, exactly like a normally added game.
+- **Where the upload comes from:** `BUNDLE.bat` writes
+  `app/build/outputs/bundle/release/app-release.aab` and copies it to
+  `app-release.aab` in the project root.

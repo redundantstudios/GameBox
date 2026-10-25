@@ -18,7 +18,7 @@ import com.redundantstudios.arcade.GameActivity
 import com.redundantstudios.arcade.R
 import com.redundantstudios.arcade.audio.ShellAudio
 import com.redundantstudios.arcade.model.GameManifest
-import com.redundantstudios.arcade.model.NEW_GAME_IDS
+import com.redundantstudios.arcade.util.GameSeenStore
 import com.redundantstudios.arcade.util.ManifestParser
 
 class ModeActivity : ThemedActivity() {
@@ -156,15 +156,23 @@ class ModeActivity : ThemedActivity() {
          * Order an N PLAYER page: the NEW cohort first, then the games that
          * fit this count most tightly, then the ones that stretch to more
          * people - and within each group the newest first, then A-Z.
+         *
+         * [newIds] is the same first-seen window the tiles use, captured once
+         * for this screen. Pinning and badging therefore cannot disagree, and
+         * both retire on the same day.
          */
         @Suppress("DEPRECATION")
-        fun orderForPage(games: List<GameManifest>, playerCount: Int): List<GameManifest> {
+        fun orderForPage(
+            games: List<GameManifest>,
+            playerCount: Int,
+            newIds: Set<String>
+        ): List<GameManifest> {
             val legacy = NEWEST_FIRST
             return games.sortedWith(
                 compareBy(
                     /* NEW games pin to the very top of the page, whether they seat
                        this many people exactly or are only a near miss. */
-                    { if (it.id in NEW_GAME_IDS) 0 else 1 },
+                    { if (it.id in newIds) 0 else 1 },
                     { groupFor(it) },
                     { it.minPlayers },
                     // Newest first: ReleaseDate is Comparable and descending
@@ -270,7 +278,14 @@ class ModeActivity : ThemedActivity() {
             partyMode -> orderNewestFirst(allGames.filter { it.id in PARTY_GAME_IDS })
             // N PLAYER page: exact-fit games first, then the next count up, and
             // so on - each group newest-first then A-Z. See orderForPage.
-            else -> orderForPage(filterGames(allGames, playerCount), playerCount)
+            // The NEW set is the tiles' own window, evaluated once here, so a
+            // badge and its pinned position always appear and expire together.
+            else -> {
+                val newIds = allGames
+                    .filter { GameSeenStore.isNew(this, it.id) }
+                    .mapTo(HashSet()) { it.id }
+                orderForPage(filterGames(allGames, playerCount), playerCount, newIds)
+            }
         }
         Log.d(TAG, "Showing ${orderedGames.size} games (allGames=$allGamesMode, players=$playerCount)")
         Log.d(TAG, "Order: ${orderedGames.joinToString { it.id }}")
