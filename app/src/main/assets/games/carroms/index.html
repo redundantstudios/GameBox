@@ -16,13 +16,13 @@ released: 2026-10-11
 -->
 <html lang="en">
 <head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Carrom · Redundant Studios</title>
 <script src="../../shell/dpr.js"></script>
 <script src="../../shell/fullscreen.js"></script>
 <script src="../../shell/canvaswatch.js"></script>
 <script src="../../shell/audiotracker.js"></script>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Carrom · Redundant Studios</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
 /* ================= BASE ================= */
@@ -126,8 +126,7 @@ button{font-family:inherit; border:none; background:none; color:inherit; cursor:
 #turnPill .prow{display:flex; align-items:center; gap:7px}
 #pillName{font-family:'Baloo 2',cursive; font-weight:800; font-size:13.5px; color:#fff; letter-spacing:.4px; white-space:nowrap}
 #pillMsg{font-weight:800; font-size:11px; color:var(--hint); letter-spacing:.6px; white-space:nowrap}
-#pillSub{display:none; font-weight:700; font-size:10.5px; line-height:1.3; color:rgba(255,255,255,.75)}
-#turnPill.sub #pillSub{display:block}
+#pillSub{display:none !important}
 #tutBack{
   position:absolute; left:14px; bottom:16px; width:52px; height:52px; border-radius:15px; z-index:8; display:none;
   align-items:center; justify-content:center; background:var(--btn); color:#fff;
@@ -138,9 +137,7 @@ button{font-family:inherit; border:none; background:none; color:inherit; cursor:
 #overlay{
   position:absolute; inset:0; z-index:40; display:flex; align-items:center; justify-content:center; padding:18px;
   background:rgba(18,10,4,.52); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
-  /* Backdrop eases in a little ahead of the panel so the sheet is never
-     sliding over a backdrop that is still snapping on. */
-  opacity:0; pointer-events:none; transition:opacity .34s ease-out;
+  opacity:0; pointer-events:none; transition:opacity .25s;
 }
 #overlay.visible{opacity:1; pointer-events:auto}
 .panel{
@@ -148,45 +145,14 @@ button{font-family:inherit; border:none; background:none; color:inherit; cursor:
   border-radius:24px; padding:22px 20px 20px; border:1px solid rgba(0,0,0,.22);
   box-shadow:0 24px 60px rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.3);
 }
-.panel.showing{display:block; animation:pop .44s cubic-bezier(.22,.75,.28,1)}
-@keyframes pop{
-  from{transform:scale(.94) translateY(14px); opacity:0}
-  60%{opacity:1}
-  to{transform:scale(1) translateY(0); opacity:1}
-}
-/* Deliberately unhurried: .44s on a soft ease-out-out. The previous .3s on a
-   snappy back-ease read as a hard snap, and paired with the backdrop fade it
-   looked like a glitch rather than a transition. */
-/* Was scale(.9) + 16px of travel: a large enough jump to read as a glitch on a
-   low-refresh panel. Gentler, and combined with the one-panel-at-a-time
-   change above it no longer overlaps the backdrop fade. */
-/* --- theme unlock confirmation --- */
-.adcf-art{height:64px;width:64px;margin:0 auto 16px;border-radius:16px;
-  border:2px solid rgba(0,0,0,.22);box-shadow:0 6px 14px rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.35)}
-.adcf-note{font-size:12px;line-height:1.5;color:var(--ink-soft);text-align:center;
-  background:rgba(0,0,0,.12);border:1px solid rgba(0,0,0,.14);border-radius:14px;padding:12px 14px}
-.adcf-note b{color:var(--ink)}
-/* Centred deterministically against the viewport. As an overlay flex item this
-   panel rendered low in the sheet with its second button off the bottom, while
-   every other panel centred fine. `inset:0` + `margin:auto` centres a fixed
-   box on both axes with no transform, so the shared pop keyframes cannot fight
-   it and the panel never jumps on open. */
-#p-adconfirm{
-  position:fixed; z-index:60; inset:0; margin:auto;
-  width:min(392px, calc(100% - 36px));
-  height:fit-content; max-height:calc(100vh - 44px); overflow-y:auto;
-  text-align:center; padding:24px 22px 22px;
-}
-#adcfYes{margin-top:18px}
-
-/* Tutorial exit sits under the primary action, deliberately quiet. */
-#tutCancel{width:100%;margin-top:10px}
+.panel.showing{display:block; animation:pop .3s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pop{from{transform:scale(.9) translateY(16px); opacity:0}}
 .panel.home{
   background:transparent; border:none; box-shadow:none; text-align:center; overflow:visible;
   height:100%; display:none; flex-direction:column; align-items:center;
   padding-bottom:calc(env(safe-area-inset-bottom) + 10px);
 }
-.panel.home.showing{display:flex; animation:pop .44s cubic-bezier(.22,.75,.28,1)}
+.panel.home.showing{display:flex; animation:pop .3s cubic-bezier(.2,1.4,.4,1)}
 .home-core{margin:auto 0; display:flex; flex-direction:column; align-items:center; width:100%}
 .logo{font-family:'Baloo 2',cursive; font-weight:800; font-size:clamp(46px,14vw,66px); letter-spacing:3px; color:#fff8ea;
   text-shadow:0 4px 0 rgba(0,0,0,.35), 0 12px 28px rgba(0,0,0,.45); line-height:1}
@@ -198,6 +164,19 @@ button{font-family:inherit; border:none; background:none; color:inherit; cursor:
 }
 .ptitle{font-family:'Baloo 2',cursive; font-weight:800; font-size:23px; text-align:center; color:var(--ptitle); margin-bottom:16px}
 .psub{text-align:center; font-size:13px; font-weight:700; color:var(--sub); margin:-8px 0 14px}
+/* Back button — only visible on home panel, exits to shell */
+.home-back{
+  position:fixed; left:12px; top:calc(12px + env(safe-area-inset-top));
+  z-index:1000; width:54px; height:54px; border-radius:15px;
+  background:var(--btn); color:#fff;
+  box-shadow:0 5px 0 var(--bedge), 0 8px 16px rgba(0,0,0,.3);
+  border:none; cursor:pointer; display:none;
+  align-items:center; justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .08s, box-shadow .08s;
+}
+.home-back.show{display:flex}
+.home-back:active{transform:translateY(4px); box-shadow:0 1px 0 var(--bedge)}
 /* elimination popup */
 #elimTitle{color:var(--danger)}
 #elimList{display:flex; flex-direction:column; gap:8px; margin-bottom:14px}
@@ -236,8 +215,6 @@ button{font-family:inherit; border:none; background:none; color:inherit; cursor:
 .ptog{display:flex; flex-direction:column; gap:5px}
 .ptb{border-radius:9px; padding:6px 4px; font-weight:800; font-size:10.5px; background:var(--chip);
   border:1.5px solid var(--chipedge); color:var(--sub); transition:transform .08s}
-/* Seat 1 shows this instead of a toggle: same shape, not clickable. */
-.ptb.locked{opacity:1;cursor:default;pointer-events:none}
 .ptb:active{transform:scale(.95)}
 .ptb.on{background:var(--btn); color:#fff; border-color:transparent}
 /* settings */
@@ -253,13 +230,6 @@ button{font-family:inherit; border:none; background:none; color:inherit; cursor:
 .tcell:active{transform:scale(.95)}
 .tcell.sel{border-color:var(--btn); box-shadow:0 0 0 2px var(--btn) inset}
 .tcell.locked .tprev{filter:grayscale(.75) brightness(.72)}
-/* The padlock alone never said what the unlock costs. A chip spells it out. */
-.adchip{display:inline-flex;align-items:center;gap:2px;margin-top:2px;
-  background:linear-gradient(135deg,#ffd24a,#ff9d2e);color:#2b1a05;
-  border-radius:999px;padding:1px 6px;font-size:8.5px;font-weight:900;
-  letter-spacing:.3px;box-shadow:0 1px 3px rgba(0,0,0,.35)}
-.adchip i{width:6px;height:6px;border-radius:50%;background:#2b1a05;
-  display:inline-block;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
 .tprev{width:100%; aspect-ratio:1; border-radius:9px; border:5px solid; margin-bottom:6px}
 .tname{font-weight:800; font-size:11.5px; color:var(--text)}
 .lockb{position:absolute; top:5px; right:5px; width:22px; height:22px; border-radius:50%; background:rgba(20,12,6,.72);
@@ -334,6 +304,9 @@ svg{display:block}
   <div id="overlay">
 
     <section class="panel home" id="p-home">
+      <button class="home-back" id="bBack">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
       <div class="home-core">
         <div class="logo">CARROM</div>
         <div class="logo-sub">PULL &middot; AIM &middot; POCKET</div>
@@ -410,7 +383,7 @@ svg{display:block}
 
     <section class="panel" id="p-theme">
       <div class="ptitle">CHANGE THEME</div>
-      <div class="psub">Watch an ad to unlock a theme for 2 hours</div>
+      <div class="psub">Tap a locked theme to unlock it for 6 hours</div>
       <div class="tgrid" id="tgrid"></div>
       <button class="btn sec slim backbtn" data-to="p-settings">BACK</button>
     </section>
@@ -426,8 +399,7 @@ svg{display:block}
     <section class="panel" id="p-tut">
       <div class="ptitle" id="tutTitle">Tutorial</div>
       <div class="tscreen" id="tutText"></div>
-<button class="btn green" id="tutBtn">CONTINUE</button>
-<button class="btn sec" id="tutCancel">CANCEL</button>
+      <button class="btn green" id="tutBtn">CONTINUE</button>
     </section>
 
     <section class="panel" id="p-over">
@@ -439,21 +411,9 @@ svg{display:block}
 
   </div>
 
-<!-- theme unlock confirmation -->
-<section class="panel" id="p-adconfirm">
-  <div class="ptitle">UNLOCK THEME</div>
-  <div class="psub" id="adcfSub" style="margin-bottom:18px"></div>
-  <div class="adcf-art" id="adcfArt"></div>
-  <div class="adcf-note">A short video plays. The theme is yours for <b>2 hours</b> and works offline.</div>
-  <button class="btn primary" id="adcfYes" style="width:100%;margin-top:16px">WATCH AD &amp; UNLOCK</button>
-  <button class="btn sec" id="adcfNo" style="width:100%;margin-top:10px">NOT NOW</button>
-</section>
-
   <div id="toast"></div>
   <canvas id="fx"></canvas>
 </div>
-
-
 
 <script>
 'use strict';
@@ -477,9 +437,6 @@ const dark=(c,t)=>mixc(c,'#000000',t);
    SAVE / LOCALSTORAGE
 ============================================================ */
 const SAVE_KEY='carrom_redundant_v1';
-/* Volumes sat at .8 music / 1.0 sfx, then the shell's own level was applied
-   on top - so below full volume the game was barely audible. Lifted here. */
-const MUS_VOL=1.15, SFX_VOL=1.3;
 const state={music:true,sfx:true,haptics:true,theme:'classic',unlocked:{classic:0},tutorialSeen:false};
 function saveState(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(state))}catch(e){}}
 function loadState(){try{const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}');Object.assign(state,d)}catch(e){}}
@@ -489,42 +446,13 @@ function loadState(){try{const d=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'
 ============================================================ */
 const A={ctx:null,sfxG:null,musicG:null,noiseBuf:null};
 function midi(m){return 440*Math.pow(2,(m-69)/12)}
-/* Tear the graph down so audioEnsure() can build it again. Used only when a
-   context will not resume after a real gesture. */
-function audioRebuild(){
-  try{ if(Music&&Music.stop)Music.stop(); }catch(e){}
-  try{ if(A.ctx)A.ctx.close(); }catch(e){}
-  A.ctx=null; A.musicG=null; A.sfxG=null; A.noiseBuf=null; A.resumeT=0;
-A.gesture=true;   /* a real touch: the context may be rebuilt now */
-  audioEnsure();
-}
 function audioEnsure(){
-  /* Built on load, not on the first tap. The shell lifts the autoplay gate, so
-     the graph and the BGM can start immediately instead of the first tap
-     doing nothing but arming the audio. */
-  /* Re-entry: resume and bail if the graph already exists. */
-if(A.ctx){
-  if(A.ctx.state==='suspended'){
-    try{ A.ctx.resume(); }catch(e){}
-    /* A context built before any gesture can stay stuck in 'suspended' and refuse to
-     * resume. Once the player has touched the screen, rebuild it - one made
-     * during a real gesture runs. Only after a failed attempt, and at most
-     * every 1.5s, so a pointerdown cannot thrash this. */
-    const now=Date.now();
-    if(A.gesture && A.resumeT && now-A.resumeT>1500){ audioRebuild(); return; }
-    if(!A.resumeT)A.resumeT=now;
-  }
-  return
-}
+  if(A.ctx){if(A.ctx.state==='suspended')A.ctx.resume();return}
   const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return;
   A.ctx=new AC();
-  /* A context created before any gesture starts SUSPENDED even with the
-     shell's mediaPlaybackRequiresUserGesture=false, so ask it to run now and
-     again on the first touch (the pointerdown listener below). */
-  if(A.ctx.state==='suspended'&&A.ctx.resume){ try{ A.ctx.resume(); }catch(e){} }
   const master=A.ctx.createGain(); master.gain.value=.9; master.connect(A.ctx.destination);
-  A.musicG=A.ctx.createGain(); A.musicG.gain.value=state.music?MUS_VOL:0; A.musicG.connect(master);
-  A.sfxG=A.ctx.createGain(); A.sfxG.gain.value=state.sfx?SFX_VOL:0; A.sfxG.connect(master);
+  A.musicG=A.ctx.createGain(); A.musicG.gain.value=state.music?.8:0; A.musicG.connect(master);
+  A.sfxG=A.ctx.createGain(); A.sfxG.gain.value=state.sfx?1:0; A.sfxG.connect(master);
   const len=A.ctx.sampleRate*1.5, buf=A.ctx.createBuffer(1,len,A.ctx.sampleRate), d=buf.getChannelData(0);
   for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
   A.noiseBuf=buf;
@@ -627,7 +555,7 @@ const Music={
   }
 };
 function setMusic(on){state.music=on;if(A.ctx){A.musicG.gain.setTargetAtTime(on?.8:0,A.ctx.currentTime,.05);on?Music.start():Music.stop()}saveState()}
-function setSfx(on){state.sfx=on;if(A.ctx)A.sfxG.gain.value=on?SFX_VOL:0;saveState()}
+function setSfx(on){state.sfx=on;if(A.ctx)A.sfxG.gain.value=on?1:0;saveState()}
 
 /* ============================================================
    HAPTICS
@@ -638,7 +566,7 @@ const Hap={tap:()=>vib(10),shot:()=>vib(18),hit:()=>vib(8),pocket:()=>vib([20,40
 /* ============================================================
    THEMES — unlocks expire after UNLOCK_HOURS
 ============================================================ */
-const UNLOCK_HOURS=2;
+const UNLOCK_HOURS=6;
 function mk(id,name,ui,board){
   const base={
     bg:'#2b1a10',glow:'#45291a',panel:'#f7e9cb',ptitle:'#8a5423',text:'#4a2c15',sub:'#9a7a55',
@@ -713,13 +641,6 @@ function applyTheme(id,silent){
   const th=THEMES.find(t=>t.id===id)||THEMES[0];
   state.theme=th.id;
   for(const[k,v]of Object.entries(th.ui))document.documentElement.style.setProperty('--'+k,v);
-  /* The banner strip is a native view over this page, so it cannot see a
-     CSS change. Tell the shell what the background is now, or the strip
-     stays on the colour the game started with. */
-  try{ if(window.NativeBridge&&window.NativeBridge.setPageBackground){
-  console.log('setPageBackground '+th.ui.bg);
-  window.NativeBridge.setPageBackground(th.ui.bg); } }
-  catch(e){ console.log('setPageBackground failed: '+e.message); }
   document.documentElement.style.setProperty('--label',th.board.line);
   $('#themeName').textContent=th.name;
   paintStatic(); buildSprites(); buildThemeGrid(); if(!silent)saveState();
@@ -746,9 +667,7 @@ function buildThemeGrid(){
     const c=document.createElement('button');
     c.className='tcell'+(locked?' locked':'')+(state.theme===th.id?' sel':'');
     let badge='';
-    /* Padlock AND an ad chip: a greyed-out swatch with a lock does not say
-       "watch an ad to play this". */
-    if(locked)badge=LOCK_SVG+'<span class="adchip"><i></i>AD</span>';
+    if(locked)badge=LOCK_SVG;
     else if(state.unlocked[th.id]>0){
       const h=Math.max(1,Math.ceil((state.unlocked[th.id]-Date.now())/3600000));
       badge=`<span class="timeb">${h}h</span>`;
@@ -756,18 +675,12 @@ function buildThemeGrid(){
     c.innerHTML=`<div class="tprev" style="${prevStyle(th)}"></div><div class="tname">${th.name}</div>${badge}`;
     c.onclick=()=>{
       if(locked){
-        /* This handed the theme over for a single free tap. Unlocking now
-           asks the shell for a rewarded ad and only continues on a real
-           grant, so dismissing the offer leaves the theme locked. */
-        var id=th.id,name=th.name;
-        var give=function(){unlockTheme(id);applyTheme(id);S('queen');Hap.win();
-          /* Stay on the theme page and confirm what changed. Without this the
-             ad simply dropped the player on the bare start page. */
-          buildThemeGrid();
-          toast(name+' unlocked for '+UNLOCK_HOURS+' hours');};
-        confirmThemeAd(id,give);   /* ask first, then the rewarded ad */
+        unlockTheme(th.id);
+        applyTheme(th.id);
+        S('queen');Hap.win();
+        toast(th.name+' unlocked for '+UNLOCK_HOURS+' hours');
       }else{
-        applyTheme(th.id);toast(th.name+' theme selected');
+        applyTheme(th.id);S('click');Hap.tap();toast(th.name+' theme selected');
       }
     };
     grid.appendChild(c);
@@ -778,76 +691,6 @@ function buildThemeGrid(){
    PANELS / TOASTS
 ============================================================ */
 const overlay=$('#overlay');
-/* The shell injects a generic white back button and toggles its display from
-   its own poll. On this warm wood board it reads as a sticker, so it is
-   repainted in the game's palette and made visible only on the START page,
-   driven from here rather than by the shell. !important so the shell's
-   inline display loses either way. */
-function themeShellBack(){
-  var b=window.__shellBackBtn;
-  if(!b||b.__woodThemed)return;
-  b.__woodThemed=true;
-  b.id='__carromBackWood';
-  b.style.cssText='position:fixed;z-index:9998;top:calc(12px + env(safe-area-inset-top));'+
-    'left:calc(12px + env(safe-area-inset-left));width:40px;height:40px;border-radius:50%;'+
-    'padding:0;margin:0;cursor:pointer;box-sizing:border-box;box-shadow:0 3px 8px rgba(0,0,0,.45);'+
-    "font-family:'Baloo 2',Georgia,serif;font-size:25px;line-height:1;font-weight:800;"+
-    'background:radial-gradient(circle at 35% 28%,#f0d9a8,#d8b877 55%,#b8934f);'+
-    'border:1px solid rgba(74,47,21,.55);color:#4A2F14;-webkit-tap-highlight-color:transparent;'+
-    'transition:transform .12s,box-shadow .12s';
-  var prev=b.onclick;
-  b.onclick=function(ev){
-    if(ev&&ev.preventDefault)ev.preventDefault();
-    /* No sound here: this is a <button>, so the global pointerdown handler
-       already plays the click for it. Playing it again here is what made one
-       tap sound twice. */
-    if(prev){ prev(ev); return; }
-    try{ if(window.NativeBridge&&window.NativeBridge.exitGame)window.NativeBridge.exitGame(); }catch(_){}
-  };
-  try{
-    var st=document.createElement('style');
-    st.textContent='#__carromBackWood{display:none!important}'+
-      '#__carromBackWood.on{display:flex!important;align-items:center;justify-content:center;'+
-      'font-family:\'Baloo 2\',Georgia,serif;line-height:1;padding-bottom:2px}'+
-      '#__carromBackWood.on:active{transform:scale(.9)}';
-    (document.head||document.documentElement).appendChild(st);
-  }catch(e){}
-}
-setInterval(function(){
-  var b=window.__shellBackBtn;
-  if(!b)return;
-  themeShellBack();
-  /* Start page ONLY. A settings/theme panel is an overlay drawn on top of the
-   * start page rather than its own screen, so __shellScreen is still 'home'
-   * while one is open - the button has to hide for those too, or it floats
-   * over every panel. */
-  /* The home page is itself a panel (.panel.home inside the overlay), so
-     Panels.isOpen() is true there as well - gating on 'no panel open' hid
-     the button EVERYWHERE. The right test is whether the panel on screen is
-     the home panel: show for p-home, hide for every other sheet. */
-  var showing=document.querySelector('.panel.showing');
-  var on=(window.__shellScreen==='home')&&(!showing||showing.id==='p-home');
-  if(on===b.classList.contains('on'))return;
-  if(on)b.classList.add('on'); else b.classList.remove('on');
-},160);
-
-/* Confirm before spending a view on the theme unlock ad. Holds the pending
-   theme and the grant, so the ad only fires on an explicit YES. */
-let _cfTheme=null,_cfGive=null;
-function confirmThemeAd(id,give){
-  const th=THEMES.find(t=>t.id===id);
-  $('#adcfSub').textContent='Watch an ad to unlock '+((th&&th.name)||'this theme')+' for 2 hours?';
-  const art=$('#adcfArt');
-  if(art&&th&&th.ui){
-    art.style.background='linear-gradient(160deg,'+th.ui.btn+','+th.ui.b2edge+')';
-  }
-  _cfTheme=id; _cfGive=give;
-  Panels.show('p-adconfirm');
-}
-/* Cancelling closes the sheet and returns to SETTINGS, not the start page: the
-   player opened Themes from there and should come back to it. */
-function closeAdConfirm(){ _cfGive=null; _cfTheme=null; Panels.show('p-settings'); }
-
 const Panels={
   show(id){
     if(id==='p-home'){
@@ -856,23 +699,14 @@ const Panels={
       setTopbar('menu');
       setHint('');updateTurnPill();
     }
-    /* Drop the outgoing panel FIRST, then mount the incoming one a frame later.
-       Toggling every panel in one pass animated the old and the new together
-       while the backdrop was still fading - that is the stutter. */
-    const prev=document.querySelector('.panel.showing');
-    if(prev&&prev.id!==id) prev.classList.remove('showing');
     overlay.classList.add('visible');
-    const next=document.getElementById(id);
-    if(next&&prev!==next){
-      next.classList.remove('showing');   /* restart the pop cleanly */
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{
-        if(document.getElementById(id)===next) next.classList.add('showing');
-      }));
-    } else if(next){ next.classList.add('showing'); }
-/* The panel makes no sound of its own: the button that opened it already did. */
-  },
+    document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('showing',p.id===id));
+    /* Back button only shows on the home panel */
+    const showBack = document.querySelector('#p-home')?.classList.contains('showing');
+    $('#bBack').classList.toggle('show', !!showBack);
+    S('open')},
   hide(){overlay.classList.remove('visible');
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('showing'));},
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('showing')); S('close')},
   isOpen(){return overlay.classList.contains('visible')}
 };
 function uiPaused(){return Panels.isOpen()&&!Tutorial.active&&Game.players.length>0&&Game.phase!=='over'}
@@ -892,7 +726,7 @@ const RACK={gap:1};
 const board={L:80,R:920,T:80,B:920,
   pockets:[{x:112,y:112},{x:888,y:112},{x:112,y:888},{x:888,y:888}],
   pieces:[],captured:[],strikerIn:false};
-const POS_MIN=286,POS_MAX=714;
+const POS_MIN=277,POS_MAX=723;
 const Striker={side:'bottom',pos:500};
 function xyFor(side,pos){
   if(side==='bottom')return{x:pos,y:783};
@@ -910,7 +744,7 @@ function sideOutward(side){
   }
 }
 const Game={session:0,phase:'menu',players:[],turnOrder:[],turnIdx:0,cfg:null,
-  queen:{onBoard:true,pendingBy:null,coveredBy:null},aim:null,badPlacement:false,simT:0};
+  queen:{onBoard:true,pendingBy:null,coveredBy:null},classicDue:{},aim:null,badPlacement:false,simT:0};
 function later(ms,fn){const sid=Game.session;
   return setTimeout(function check(){
     if(sid!==Game.session)return;
@@ -1016,7 +850,6 @@ function blockedPos(side,pos){
   return board.pieces.some(p=>p!==s&&p.state==='table'&&Math.hypot(p.x-xy.x,p.y-xy.y)<p.r+s.r+2);
 }
 function resetStriker(){
-  try{ window.__shellOverAd=0; }catch(e){}
   const s=strikerP(); if(!s)return;
   s.state='table';s.vx=0;s.vy=0;
   let pos=500;
@@ -1657,6 +1490,8 @@ function render(t){
   ctx.drawImage(staticC,0,0);
   ctx.setTransform(view.k,0,0,view.k,0,0);
   drawSideGlow(ctx);
+  /* Gate piece rendering behind boardImgReady */
+  if(!boardImgReady)return;
   for(const p of board.pieces)if(p.kind!=='striker')drawPiece(ctx,p,t);
   const s=strikerP();
   if(s)drawPiece(ctx,s,t);
@@ -1715,7 +1550,6 @@ function canAim(){
   return Tutorial.active?Tutorial.step===2:curPlayer().type==='human';
 }
 canvas.addEventListener('pointerdown',e=>{
-A.gesture=true;   /* a real touch: the context may be rebuilt now */
   audioEnsure();
   const u=toUnits(e);
   if(hitSlider(u)){
@@ -1798,40 +1632,109 @@ function onShotSettled(){
   if(Tutorial.active){Tutorial.onSettled();return}
   if(Game.cfg.family){familyShotSettled();return}
 
-  /* ---------- CLASSIC CARROM (unchanged) ---------- */
+  /* CLASSIC CARROM: resolve each shot using the selected colour's rules. */
   const cap=board.captured.slice();board.captured=[];
   const strikerIn=board.strikerIn;board.strikerIn=false;
   const cur=curPlayer();
   const own=cap.filter(p=>p.kind==='coin'&&p.color===cur.color);
   const q=cap.find(p=>p.kind==='queen');
-  const msgs=[];let extra=false;
+  const msgs=[];
+  let extra=false;
+  const teamKey=String(cur.team);
+  const pendingForCur=Game.queen.pendingBy===cur;
+  const ownAlreadyPocketed=colorCount(cur.color);
+  const ownStillOnTable=board.pieces.filter(p=>p.kind==='coin'&&p.color===cur.color&&p.state==='table').length;
+
   if(strikerIn){
-    if(RULES.foulReturnsShotCoins)for(const p of cap)if(p.kind!=='striker')returnToCenter(p);
-    separateTable();
-    msgs.push('Foul — striker pocketed');
-    if(Game.queen.pendingBy===cur){
-      const qp=queenP();if(qp.state!=='table')returnToCenter(qp);
-      Game.queen.onBoard=true;Game.queen.pendingBy=null;msgs.push('Queen returned');
+    /* Coins pocketed on a foul do not count for the shooter. Return their
+       own-colour coins and the queen; opponent-colour coins stay pocketed. */
+    for(const p of cap){
+      if(p.kind==='queen'||(p.kind==='coin'&&p.color===cur.color))returnToCenter(p);
     }
+
+    /* A striker foul costs one additional previously pocketed coin.
+       If none exists, carry the due until this player/team pockets one. */
+    const previousOwn=board.pieces.find(p=>
+      p.kind==='coin'&&p.color===cur.color&&p.state==='pocketed'
+    );
+    if(previousOwn)returnToCenter(previousOwn);
+    else Game.classicDue[teamKey]=(Game.classicDue[teamKey]||0)+1;
+
+    if(pendingForCur){
+      const qp=queenP();
+      if(qp&&qp.state!=='table')returnToCenter(qp);
+      Game.queen.onBoard=true;
+      Game.queen.pendingBy=null;
+      msgs.push('Queen returned');
+    }
+    separateTable();
+    msgs.unshift('Foul — striker pocketed');
     S('foul');Hap.foul();
   }else{
+    let validQueen=false;
     if(q){
-      Game.queen.onBoard=false;
-      if(own.length){Game.queen.pendingBy=null;Game.queen.coveredBy=cur.team;msgs.push('Queen covered!');S('queen')}
-      else{Game.queen.pendingBy=cur;extra=true;msgs.push('Queen! Now cover it');S('queen')}
-    }else if(Game.queen.pendingBy===cur){
-      if(own.length){Game.queen.pendingBy=null;Game.queen.coveredBy=cur.team;msgs.push('Queen covered!');S('queen')}
-      else{
-        returnToCenter(queenP());separateTable();Game.queen.onBoard=true;Game.queen.pendingBy=null;
-        msgs.push('Queen uncovered — returned');S('foul');
+      /* Queen is only legal after the player/team has already pocketed
+         one of their own coins, and not when this is their last coin. */
+      if(ownAlreadyPocketed>0&&ownStillOnTable>0){
+        validQueen=true;
+        Game.queen.onBoard=false;
+        if(own.length){
+          Game.queen.pendingBy=null;
+          Game.queen.coveredBy=cur.team;
+          msgs.push('Queen covered!');
+          S('queen');
+        }else{
+          Game.queen.pendingBy=cur;
+          extra=true;
+          msgs.push('Queen! Now cover it');
+          S('queen');
+        }
+      }else{
+        returnToCenter(q);
+        Game.queen.onBoard=true;
+        msgs.push(ownAlreadyPocketed===0?'Pocket one of your coins before the Queen':'Queen cannot be your last piece');
+        S('foul');
+      }
+    }else if(pendingForCur){
+      if(own.length){
+        Game.queen.pendingBy=null;
+        Game.queen.coveredBy=cur.team;
+        msgs.push('Queen covered!');
+        S('queen');
+      }else{
+        const qp=queenP();
+        if(qp)returnToCenter(qp);
+        separateTable();
+        Game.queen.onBoard=true;
+        Game.queen.pendingBy=null;
+        msgs.push('Queen uncovered — returned');
+        S('foul');
       }
     }
-    if(own.length&&!q)extra=true;
+
+    /* A due is paid by returning the next own-colour coin pocketed. */
+    let ownCountsForTurn=own.length;
+    let due=Game.classicDue[teamKey]||0;
+    if(due>0&&own.length){
+      for(const p of own){
+        if(due<=0)break;
+        if(p.state==='pocketed'){
+          returnToCenter(p);
+          due--;
+          ownCountsForTurn--;
+        }
+      }
+      Game.classicDue[teamKey]=due;
+      if(due>0)msgs.push('Penalty coin still due');
+    }
+
+    if(ownCountsForTurn>0)extra=true;
     if(extra&&!q)msgs.push('Extra turn!');
     const opp=cap.filter(p=>p.kind==='coin'&&p.color!==cur.color);
-    if(opp.length&&!own.length&&!q)msgs.push('Opponent coin pocketed');
-    if(own.length)Hap.pocket();
+    if(opp.length&&!own.length&&!validQueen)msgs.push('Opponent coin pocketed');
+    if(ownCountsForTurn>0)Hap.pocket();
   }
+
   const winner=checkWin(msgs);
   updateChips();
   if(msgs.length)boardToast(msgs.slice(0,2).join('  ·  '));
@@ -1842,14 +1745,19 @@ function onShotSettled(){
   });
 }
 function checkWin(msgs){
+  /* Classic Carrom: queen MUST be covered for win.
+     Win if: all coins pocketed AND queen covered by them OR opponent.
+     No win if queen not covered -- game continues (no coin return loop). */
   for(const p of Game.players){
-    if(colorCount(p.color)>=p.target&&Game.queen.coveredBy!==p.team&&RULES.queenMustBeCovered){
-      const pcs=board.pieces.filter(x=>x.kind==='coin'&&x.color===p.color&&x.state==='pocketed');
-      if(pcs.length){returnToCenter(pcs[pcs.length-1]);separateTable();msgs.push('Cover the Queen first!');S('foul')}
+    if(colorCount(p.color)>=p.target){
+      const myTeam = p.team;
+      const queenCoveredByMe = Game.queen.coveredBy===myTeam;
+      const queenCoveredByOpponent = Game.queen.coveredBy!==null && Game.queen.coveredBy!==myTeam;
+      if(queenCoveredByMe || queenCoveredByOpponent){
+        return p;
+      }
     }
   }
-  for(const p of Game.players)
-    if(colorCount(p.color)>=p.target&&(!RULES.queenMustBeCovered||Game.queen.coveredBy===p.team))return p;
   return null;
 }
 
@@ -2010,12 +1918,7 @@ function familyGameOver(alive){
     for(const id of Object.keys(FP.bal)){
       if(best===null||FP.bal[id]>FP.bal[best])best=id;
     }
-  /* Build the audio graph now, not on the first tap: the shell lifts the
-     autoplay gesture gate, so the BGM can start with the game. Previously the
-     only call was inside the pointerdown listener, so nothing was audible
-     until the player touched something. */
-  try{ audioEnsure(); }catch(e){}
-showHome();
+    if(best===null){showHome();return}
     w={id:best,bal:FP.bal[best]||0};
   }
   S('win');Hap.win();launchConfetti();
@@ -2077,66 +1980,123 @@ function updateChips(){
    BOT AI (Family Point bots chase any coin / the 25-pt queen)
 ============================================================ */
 function botPlan(){
-  const cur=curPlayer();
-  const side=Striker.side;
-  const dirOK=a=>{
-    if(side==='bottom')return Math.sin(a)<-.05;
-    if(side==='top')return Math.sin(a)>.05;
-    if(side==='left')return Math.cos(a)>.05;
-    return Math.cos(a)<-.05;
-  };
-  const family=Game.cfg.family;
-  const mustCover=!family&&Game.queen.pendingBy===cur;
+  const cur=curPlayer(), side=Striker.side;
+  const family=!!(Game.cfg&&Game.cfg.family);
+  const ownColor=cur.color;
+  const allTargets=board.pieces.filter(p=>p.state==='table'&&p.kind!=='striker');
+  const ownOnBoard=allTargets.filter(p=>p.kind==='coin'&&p.color===ownColor).length;
+  const pending=!family&&Game.queen.pendingBy===cur;
   let targets;
   if(family){
-    targets=board.pieces.filter(p=>p.state==='table'&&p.kind!=='striker');
+    targets=allTargets.slice();
   }else{
-    targets=board.pieces.filter(p=>p.state==='table'&&p.kind==='coin'&&p.color===cur.color);
-    if(!mustCover&&!Game.queen.pendingBy&&Game.queen.onBoard&&targets.length>2&&Math.random()<.3)
-      targets=[queenP()];
+    targets=allTargets.filter(p=>p.kind==='coin'&&p.color===ownColor);
+    if(pending){
+      // A pending queen must be covered by an own coin, so prioritize cover shots.
+      targets=targets.filter(p=>p.kind==='coin'&&p.color===ownColor);
+    }else if(Game.queen.onBoard&&ownOnBoard>1){
+      targets.push(queenP());
+    }
   }
-  if(!targets.length)targets=board.pieces.filter(p=>p.state==='table'&&p.kind!=='striker');
+  targets=targets.filter(Boolean);
+  // If no legal own target remains, play a useful defensive/contact shot rather than freezing.
+  if(!targets.length)targets=allTargets.filter(p=>p.kind==='coin');
+  const dirOK=a=>{
+    if(side==='bottom')return Math.sin(a)<-.04;
+    if(side==='top')return Math.sin(a)>.04;
+    if(side==='left')return Math.cos(a)>.04;
+    return Math.cos(a)<-.04;
+  };
+  const sidePosition=(x,y)=>side==='bottom'||side==='top'?x:y;
+  const strikerAt=pos=>xyFor(side,pos);
+  const lineClear=(x1,y1,x2,y2,ignore)=>{
+    const vx=x2-x1,vy=y2-y1,len2=vx*vx+vy*vy||1;
+    for(const p of allTargets){
+      if(p===ignore)continue;
+      const u=clamp(((p.x-x1)*vx+(p.y-y1)*vy)/len2,0,1);
+      const dist=Math.hypot(p.x-(x1+u*vx),p.y-(y1+u*vy));
+      if(dist<p.r+P.strikerR*0.55)return false;
+    }
+    return true;
+  };
   let best=null;
-  for(const t of targets)for(const pk of board.pockets){
-    const dx=pk.x-t.x,dy=pk.y-t.y,d=Math.hypot(dx,dy);if(d<1)continue;
-    const gx=t.x-dx/d*(t.r+P.strikerR-2),gy=t.y-dy/d*(t.r+P.strikerR-2);
-    let pos0=(side==='bottom'||side==='top')?gx:gy;
-    pos0=clamp(pos0,POS_MIN,POS_MAX);
-    let pos=pos0,ok=!blockedPos(side,pos0);
-    if(!ok){
-      outer:for(let off=8;off<=420;off+=8){
-        for(const sg of[1,-1]){
-          const pp=clamp(pos0+sg*off,POS_MIN,POS_MAX);
-          if(!blockedPos(side,pp)){pos=pp;ok=true;break outer}
+  for(const t of targets){
+    for(const pk of board.pockets){
+      const pdx=pk.x-t.x,pdy=pk.y-t.y,pd=Math.hypot(pdx,pdy);
+      if(pd<1)continue;
+      const ux=pdx/pd,uy=pdy/pd;
+      // Ghost-ball contact point: striker centre stops one combined radius behind target.
+      const gx=t.x-ux*(t.r+P.strikerR+0.7),gy=t.y-uy*(t.r+P.strikerR+0.7);
+      // Reject impossible cuts and blocked coin-to-pocket lanes.
+      if(!lineClear(t.x,t.y,pk.x,pk.y,t))continue;
+      const base=sidePosition(gx,gy);
+      const candidates=[];
+      for(let off=0;off<=440;off+=6){
+        if(off===0)candidates.push(clamp(base,POS_MIN,POS_MAX));
+        else{
+          candidates.push(clamp(base+off,POS_MIN,POS_MAX));
+          candidates.push(clamp(base-off,POS_MIN,POS_MAX));
         }
       }
+      for(const pos of candidates){
+        if(blockedPos(side,pos))continue;
+        const sp=strikerAt(pos);
+        if(!lineClear(sp.x,sp.y,gx,gy,t))continue;
+        const dx=gx-sp.x,dy=gy-sp.y,d1=Math.hypot(dx,dy);
+        if(d1<1)continue;
+        const angle=Math.atan2(dy,dx);
+        if(!dirOK(angle))continue;
+        // Score pocket likelihood first, then shot length, cut angle and distance from an obstructed lane.
+        const aimX=t.x-sp.x,aimY=t.y-sp.y,aimLen=Math.hypot(aimX,aimY)||1;
+        const align=Math.abs((aimX/aimLen)*ux+(aimY/aimLen)*uy);
+        const cutPenalty=(1-align)*95;
+        const queenPenalty=(!family&&t.kind==='queen'&&ownOnBoard<=1)?10000:0;
+        const distancePenalty=d1*0.30+pd*0.10;
+        const edgePenalty=(pos<=POS_MIN+12||pos>=POS_MAX-12)?10:0;
+        const score=distancePenalty+cutPenalty+edgePenalty+queenPenalty;
+        if(!best||score<best.score)best={pos,angle,d1,pd,target:t,pocket:pk,score};
+      }
     }
-    if(!ok)continue;
-    const sp=xyFor(side,pos);
-    const aimX=gx+rnd(-14,14),aimY=gy+rnd(-14,14);
-    const angle=Math.atan2(aimY-sp.y,aimX-sp.x);
-    if(!dirOK(angle))continue;
-    const d1=Math.hypot(aimX-sp.x,aimY-sp.y);
-    const bonus=family&&t.kind==='queen'?.0009:0;
-    const score=1/(d1+d*.6+40)+Math.random()*.002+bonus;
-    if(!best||score>best.score)best={score,pos,angle,d1,d2:d};
   }
   if(!best){
-    const sp=xyFor(side,Striker.pos);
-    const angle=Math.atan2(500-sp.y,500-sp.x)+rnd(-.22,.22);
-    return{pos:Striker.pos,angle,speed:1350,power:.45};
+    const sp=strikerAt(Striker.pos);
+    const t=allTargets.slice().sort((a,b)=>Math.hypot(a.x-sp.x,a.y-sp.y)-Math.hypot(b.x-sp.x,b.y-sp.y))[0];
+    const angle=t?Math.atan2(t.y-sp.y,t.x-sp.x):Math.atan2(500-sp.y,500-sp.x);
+    return{pos:Striker.pos,angle,speed:P.maxShot,power:1};
   }
-  const speed=clamp((620+(best.d1+best.d2)*1.05+rnd(-80,140))*1.5,840,2300);
-  return{pos:clamp(best.pos+rnd(-26,26),POS_MIN,POS_MAX),angle:best.angle+rnd(-.02,.02),
-         speed,power:clamp((speed-300)/(P.maxShot-300),.15,1)};
+  // Strong AI uses near-maximum power for long shots and controlled power for close shots.
+  const speed=clamp(1850+best.d1*0.28+best.pd*0.10,1900,P.maxShot);
+  return{pos:best.pos,angle:best.angle,speed,power:clamp(speed/P.maxShot,.76,1)};
 }
 function scheduleBot(){
   later(850,()=>{
     const plan=botPlan();
-    animateStrikerPos(plan.pos,650,()=>{
+    // Never allow the bot to place the striker on top of a coin.
+    let legalPos=plan.pos;
+    if(blockedPos(Striker.side,legalPos)){
+      let found=false;
+      for(let off=8;off<=440&&!found;off+=8){
+        for(const sg of [1,-1]){
+          const candidate=clamp(plan.pos+sg*off,POS_MIN,POS_MAX);
+          if(!blockedPos(Striker.side,candidate)){legalPos=candidate;found=true;break}
+        }
+      }
+      if(!found)legalPos=Striker.pos;
+    }
+    animateStrikerPos(legalPos,650,()=>{
       later(300,()=>{
-        Game.aim={angle:plan.angle,power:plan.power,valid:true};S('tick');
-        later(700,()=>{Game.aim=null;shoot(plan.angle,plan.speed)});
+        // Recalculate the angle from the striker's actual final position, not the pre-correction position.
+        let finalAngle=plan.angle;
+        if(plan.target&&plan.target.state==='table'){
+          const pocket=plan.pocket||board.pockets[0];
+          const dx=pocket.x-plan.target.x,dy=pocket.y-plan.target.y,d=Math.hypot(dx,dy)||1;
+          const gx=plan.target.x-(dx/d)*(plan.target.r+P.strikerR+0.7);
+          const gy=plan.target.y-(dy/d)*(plan.target.r+P.strikerR+0.7);
+          const sp=xyFor(Striker.side,Striker.pos);
+          finalAngle=Math.atan2(gy-sp.y,gx-sp.x);
+        }
+        Game.aim={angle:finalAngle,power:plan.power,valid:true};S('tick');
+        later(700,()=>{Game.aim=null;shoot(finalAngle,plan.speed)});
       });
     });
   });
@@ -2192,13 +2152,12 @@ function orderFor(players,teamMode){
   return ord;
 }
 function startGame(cfg){
-  try{ window.__shellScreen='table'; }catch(e){}
   Game.session++;Game.cfg=cfg;
   Game.players=cfg.players.map(p=>({...p}));
   Game.turnOrder=orderFor(Game.players,cfg.teamMode);
   const sides=SIDES[Game.players.length]||SIDES[4];
   Game.turnOrder.forEach((pi,i)=>{Game.players[pi].side=sides[i]});
-  Game.turnIdx=0;Game.queen={onBoard:true,pendingBy:null,coveredBy:null};
+  Game.turnIdx=0;Game.queen={onBoard:true,pendingBy:null,coveredBy:null};Game.classicDue={};
   if(cfg.family)fpInit();
   Striker.side='bottom';
   setupRack();resetStriker();
@@ -2207,7 +2166,6 @@ function startGame(cfg){
   startTurn(0);
 }
 function showHome(){
-  try{ window.__shellScreen='home'; }catch(e){}
   Game.session++;Game.phase='menu';Tutorial.active=false;
   Striker.side='bottom';
   setupRack();resetStriker();
@@ -2222,11 +2180,6 @@ function setTopbar(mode){
   $('#btnSettings').classList.toggle('show',mode==='match');
 }
 function gameOver(p){
-  /* The game is over - the natural break. Only the buttons on the board-end
-     card asked for an ad before. */
-  /* The game is over. The panel is mounted by Panels.show('p-over') below and the
-     ad is requested the instant after, instead of the ad running first. */
-  window.__shellAd(function(){},'carroms.gameover');
   updateTurnPill();
   S('win');Hap.win();launchConfetti();
   const humans=Game.players.filter(x=>x.type==='human');
@@ -2244,27 +2197,8 @@ function gameOver(p){
 }
 
 /* ---------- menu wiring ---------- */
- /* theme unlock confirmation: the ad only runs on an explicit YES */
- $('#adcfYes').onclick=()=>{
-   const give=_cfGive,themeId=_cfTheme;
-   const th=THEMES.find(t=>t.id===themeId);
-   _cfGive=null; _cfTheme=null;
-   /* Dismiss the sheet, but NOT to the start page: the overlay stays alive so
-     the theme page can come back once the ad reports. Previously the sheet was
-     closed up front, so finishing the ad dropped the player on the bare start
-     page with no indication anything had changed. */
-   Panels.hide();
-   const landed=function(){
-     Panels.show('p-theme'); buildThemeGrid();
-     toast(((th&&th.name)||'Theme')+' applied');
-   };
-   if(window.__shellRewarded&&give){
-     window.__shellRewarded('carroms.theme.'+themeId,function(){ give(); landed(); });
-   } else if(give){ give(); landed(); }
- };
- $('#adcfNo').onclick=()=>{ closeAdConfirm(); };
-
- $('#bPlay').onclick=()=>Panels.show('p-cmode');
+ $('#bBack').onclick=()=>{ try{ if(window.NativeBridge&&window.NativeBridge.exitGame)window.NativeBridge.exitGame(); }catch(e){} };
+  $('#bPlay').onclick=()=>Panels.show('p-cmode');
  $('#bHow').onclick=()=>Tutorial.start();
  $('#bSettings').onclick=()=>Panels.show('p-settings');
 
@@ -2298,37 +2232,33 @@ function openProfiles(){
   Setup.types=Array.from({length:n},(_,i)=>i===0?'human':'bot');
   $('#bProfNext').textContent=Setup.type==='team'?'TEAM SETUP':'START MATCH';
   $('#bProfBack').dataset.to=(Setup.type==='ind'&&Setup.cmode==='family')?'p-pcount':'p-gtype';
-  try{ audioEnsure(); }catch(e){}   /* BGM from the first frame, not the first tap */
   renderProfiles();
   Panels.show('p-profiles');
 }
 function renderProfiles(){
   const n=Setup.types.length;
+  // P1 is always controlled by the human; only P2+ can be switched to BOT.
+  Setup.types[0]='human';
   $('#profSub').textContent=(Setup.cmode==='family'?'FAMILY POINT':'CLASSIC CARROM')
-    +' \u00b7 '+(Setup.type==='team'?'TEAMS \u00b7 4 PLAYERS':n+' PLAYERS')
-    +' \u00b7 PICK WHO PLAYS';
-  /* Seat 1 is the player: always HUMAN, and shown as a fixed chip rather than a
-     toggle. Offering BOT there is what made a bot-only game reachable - bots
-     playing each other with nobody at the table. */
+    +' · '+(Setup.type==='team'?'TEAMS · 4 PLAYERS':n+' PLAYERS')
+    +' · P1 HUMAN';
   $('#profRow').innerHTML=Setup.types.map((t,i)=>`
     <div class="pcard">
       <div class="pname">${shortName(i)}</div>
       <div class="ptog">
         ${i===0
-          ? '<div class="ptb on locked">HUMAN</div>'
-          : `<button class="ptb${t==='bot'?' on':''}" data-i="${i}" data-t="bot">BOT</button>`+
-            `<button class="ptb${t==='human'?' on':''}" data-i="${i}" data-t="human">HUMAN</button>`}
+          ? '<button class="ptb on" data-i="0" data-t="human">HUMAN</button>'
+          : `<button class="ptb${t==='bot'?' on':''}" data-i="${i}" data-t="bot">BOT</button>
+             <button class="ptb${t==='human'?' on':''}" data-i="${i}" data-t="human">HUMAN</button>`}
       </div>
     </div>`).join('');
 }
- $('#profRow').addEventListener('click',e=>{
+$('#profRow').addEventListener('click',e=>{
   const b=e.target.closest('.ptb');if(!b)return;
   const i=+b.dataset.i;
-  /* Seat 1 is the player - never a bot, and never a second one. This also
-     makes a bot-only game impossible, which was reachable before. */
-  if(i===0){ Setup.types[0]='human'; renderProfiles(); return; }
+  if(i===0){Setup.types[0]='human';return;}
   Setup.types[i]=b.dataset.t;
-  renderProfiles();
+  renderProfiles();S('click');Hap.tap();
 });
  $('#bProfNext').onclick=()=>{
   if(Setup.type==='team')openTeamSetup4();
@@ -2361,14 +2291,14 @@ document.querySelectorAll('.backbtn').forEach(b=>b.addEventListener('click',()=>
  $('#btnSettings').onclick=()=>Panels.show('p-settings');
  $('#btnTutClose').onclick=()=>{if(Tutorial.active)Tutorial.exit()};
  $('#bResume').onclick=()=>Panels.hide();
- $('#bRestart').onclick=()=>window.__shellAd(function(){startGame(Game.cfg);},'carroms.board.restart');
- $('#bPauseHome').onclick=()=>window.__shellAd(function(){showHome();},'carroms.pause.home');
+ $('#bRestart').onclick=()=>startGame(Game.cfg);
+ $('#bPauseHome').onclick=()=>showHome();
  $('#bSetBack').onclick=()=>{
   if(Game.phase==='menu')Panels.show('p-home');
   else Panels.hide();
 };
- $('#bAgain').onclick=()=>window.__shellAd(function(){startGame(Game.cfg);},'carroms.board.again');
- $('#bHome2').onclick=()=>window.__shellAd(function(){showHome();},'carroms.board.home');
+ $('#bAgain').onclick=()=>startGame(Game.cfg);
+ $('#bHome2').onclick=()=>showHome();
 
 /* ============================================================
    SETTINGS UI
@@ -2382,11 +2312,6 @@ function syncSwitches(){
  $('#swSfx').onclick=()=>{audioEnsure();setSfx(!state.sfx);syncSwitches()};
  $('#swHaptics').onclick=()=>{state.haptics=!state.haptics;saveState();syncSwitches();Hap.tap()};
  $('#bTheme').onclick=()=>{buildThemeGrid();Panels.show('p-theme')};
- /* Back out of Themes goes to Settings - that is where it was opened from.
-    A bare Panels.hide() dropped the player straight onto the start page. */
- document.querySelectorAll('#p-theme .backbtn,#p-theme .btn.sec').forEach(b=>{
-   b.addEventListener('click',()=>{ Panels.show('p-settings'); });
- });
 
 /* ============================================================
    CONFETTI
@@ -2430,14 +2355,9 @@ const Tutorial={
     $('#tutBack').classList.remove('show');
     this.goto(0);
   },
-  card(title,text,btn,fn,n){
+  card(title,text,btn,fn){
     $('#tutTitle').textContent=title;$('#tutText').textContent=text;
     const b=$('#tutBtn');b.textContent=btn;b.onclick=fn;
-    /* Step 0 can be abandoned, step 3 can step back to the aiming lesson. */
-    const c=$('#tutCancel');
-    if(n===0){c.textContent='CANCEL';c.style.display='block';c.onclick=()=>this.abort();}
-    else if(n===3){c.textContent='BACK';c.style.display='block';c.onclick=()=>this.goto(2);}
-    else c.style.display='none';
     Panels.show('p-tut');
   },
   goto(n){
@@ -2445,7 +2365,7 @@ const Tutorial={
     const top=$('#topHint'),label=$('#boardLabel');
     if(n===0){
       setTopbar('tutorial');
-      this.card('Tutorial','Welcome! Before your first match, we will teach you the controls. Follow the instructions.','CONTINUE',()=>this.goto(1),0);
+      this.card('Tutorial','Welcome! Before your first match, we will teach you the controls. Follow the instructions.','CONTINUE',()=>this.goto(1));
     }else if(n===1){
       Game.phase='placing';this.moveProg=0;resetStriker();
       top.textContent='Drag the slider to select where you want to place the striker';top.classList.add('show');
@@ -2460,7 +2380,7 @@ const Tutorial={
     }else if(n===3){
       this.finger(null);top.classList.remove('show');label.classList.remove('show');setHint('');
       $('#tutBack').classList.remove('show');
-      this.card('Congratulations','You are ready for the first match!','PLAY NOW',()=>this.finish(),3);
+      this.card('Congratulations','You are ready for the first match!','PLAY NOW',()=>this.finish());
     }
   },
   onSettled(){
@@ -2481,13 +2401,6 @@ const Tutorial={
     this.finger(null);setTopbar('menu');updateTurnPill();
     Panels.show('p-cmode');
   },
-  /* Leaving the tutorial from the welcome card: clear its state completely and
-     go back to the start page, rather than stranding the player in a
-     half-started tutorial. */
-  abort(){ this.active=false;this.step=-1;this.finger(null);
-    $('#tutBack').classList.remove('show');$('#fingerHint').classList.remove('show');
-    $('#tutCancel').style.display='none';
-    setTopbar('menu');updateTurnPill();showHome(); },
   exit(){showHome()},
   finger(mode){
     this.fingerMode=mode;
@@ -2523,28 +2436,9 @@ const Tutorial={
 /* ============================================================
    GLOBAL UI SOUNDS + BOOT
 ============================================================ */
-/* This is the single owner of the click sound. Several button handlers also
-   called S('click') themselves, so pressing one of those played it TWICE -
-   once from this pointerdown and once from its own handler. The handlers are
-   left alone (they do other work) but the sound is claimed once per press. */
-/* THE ONE VOICE OF A BUTTON.
-   Every press in the game makes this sound, and this is the only place a
-   button makes a sound at all.
-
-   It used to be otherwise. This handler claimed the click sound, and the
-   panel a button opened added its own sound on the click event - a whole
-   task later, by which time the claim had been released, because the claim
-   was released by a zero-delay timeout. One press, two sounds, every time.
-   The claim was also supposed to stop the same press making the sound
-   twice, and a window that short never did that either.
-
-   There is no race in the simple arrangement: this is the only place a
-   button makes a sound, and the panels make none. A press is one click,
-   every button, every time. */
 document.addEventListener('pointerdown',e=>{
-A.gesture=true;   /* a real touch: the context may be rebuilt now */
-audioEnsure();
-if(e.target.closest('button')){ S('click');Hap.tap(); }
+  audioEnsure();
+  if(e.target.closest('button')){S('click');Hap.tap()}
 });
 window.addEventListener('resize',resizeAll);
 window.addEventListener('orientationchange',()=>setTimeout(resizeAll,120));
@@ -2563,158 +2457,8 @@ applyTheme(state.theme,true);
 syncSwitches();
 buildSprites();
 resizeAll();
-
-/* BGM starts with the game, not with the first tap. The only audioEnsure()
-   on this path used to sit inside familyGameOver(), so the graph was never
-   built until a game had finished - Carroms had no music in normal play at
-   all. Placed after loadState() so a saved music toggle is still honoured. */
-A.gesture=true;   /* a real touch: the context may be rebuilt now */
-audioEnsure();
 showHome();
 requestAnimationFrame(loop);
 </script>
-
-<!-- ================= SHELL INTEGRATION ================= -->
-<script>
-(function(){
-  var B=window.NativeBridge;
-  if(!B)return;
-  var HOME='home', GAME='table';
-
-  /* ---------- storage ----------
-     The shell owns save/load so progress survives a data clear. LS is a const
-     object in some of these games, so where it exists its METHODS are replaced
-     rather than the binding. */
-  function shGet(k,d){
-    var v=null;
-    try{ v=B.load(k); }catch(e){ v=null; }
-    if(v==null||v==='')return d;
-    try{ return JSON.parse(v); }catch(e){ return d; }
-  }
-  function shSet(k,v){ try{ B.save(k,JSON.stringify(v)); }catch(e){} }
-  window.__shellSave=shGet; window.__shellSet=shSet;
-
-  /* ---------- settings ----------
-     The query string the shell appends is the source of truth at boot; the
-     shell pushes live changes through Game.setSettings. The vol value arrives
-     on a 0-100 scale and is normalised to 0-1. */
-  var Q=new URLSearchParams(location.search);
-  function qnum(k,d){ var v=Q.get(k); if(v==null)return d; var n=parseFloat(v); return isNaN(n)?d:(n>1?n/100:n); }
-  var settings={
-    sound: Q.get('sound')==null?true:Q.get('sound')==='1',
-    music:  Q.get('sound')==null?true:Q.get('sound')==='1',
-    haptics:Q.get('vibe')==null?true:Q.get('vibe')==='1',
-    volume: qnum('vol',1),
-    preset: Q.get('preset')||'classic',
-    haptic: Q.get('haptic')||'off'
-  };
-
-  /* ---------- ads ----------
-     showInterstitial takes (callbackName, placement) - matched by EXACT arity -
-     and the name must exist on window or the shell fires into the void and the
-     button looks dead. Each request gets its own name: one shared global was
-     how two overlapping requests overwrote each other. */
-  var seq=0;
-  function ad(cb,placement){
-    if(!B.showInterstitial){ if(cb)cb(); return; }
-    var n='__shellInterCb'+(++seq);
-    window[n]=function(){ try{delete window[n]}catch(e){} if(cb)cb(); };
-    try{ B.showInterstitial(n,placement||'break'); }
-    catch(e){ try{delete window[n]}catch(_){} if(cb)cb(); }
-  }
-  function rewarded(placement,ok,fail){
-    if(!B.showRewardedAd){ if(fail)fail(); return; }
-    var n='__shellRwCb'+(++seq);
-    window[n]=function(r){ try{delete window[n]}catch(e){}
-      if(r==='granted'||r===true){ if(ok)ok(r); } else if(fail)fail(r); };
-    try{ B.showRewardedAd(n,placement||'reward','NORMAL'); }
-    catch(e){ try{delete window[n]}catch(_){} if(fail)fail(); }
-  }
-
-  /* ---------- banner: game page only ----------
-     Driven by __shellScreen, which each game's own screen entry points set. */
-  var bOn=false;
-  function banner(on){
-    if(on===bOn)return; bOn=on;
-    try{ if(on){ if(B.showBanner)B.showBanner(); } else { if(B.hideBanner)B.hideBanner(); } }catch(e){}
-  }
-  window.__shellScreenSync=function(){
-    try{ banner(window.__shellScreen===GAME && !window.__shellBlocked); }catch(e){}
-  };
-  window.__shellBlock=function(on){ window.__shellBlocked=!!on; window.__shellScreenSync(); };
-
-  /* ---------- Studio ---------- */
-  window.Studio = window.Studio || {};
-  Studio.settings=settings;
-  Studio.save=shSet; Studio.load=shGet;
-  Studio.exit=function(){ try{ if(B.exitGame)B.exitGame(); }catch(e){} };
-  Studio.haptic=function(kind){
-    if(!settings.haptics)return;
-    var m={light:12,medium:28,heavy:55,success:40};
-    try{ if(B.haptic)B.haptic(m[kind]!=null?m[kind]:0); }catch(e){}
-  };
-  Studio.ads={ interstitial:ad, rewarded:rewarded, banner:function(on){ banner(!!on); },
-               showBanner:function(){banner(true);}, hideBanner:function(){banner(false);} };
-
-  /* ---------- back button, start screen only ---------- */
-  try{
-    var btn=document.createElement('button');
-    btn.setAttribute('aria-label','Back');
-    btn.style.cssText='position:fixed;z-index:9998;top:calc(10px + env(safe-area-inset-top));'+
-      'left:calc(10px + env(safe-area-inset-left));width:42px;height:42px;border-radius:50%;'+
-      'border:1px solid rgba(0,0,0,.25);background:rgba(255,255,255,.92);color:#222;'+
-      'font-size:20px;line-height:1;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.25);display:none';
-    btn.innerHTML='&#8249;';
-    btn.onclick=function(){ try{ if(B.exitGame)B.exitGame(); }catch(e){} };
-    var attach=function(){
-      if(!btn.parentNode)document.body.appendChild(btn);
-    };
-    if(document.body)attach(); else document.addEventListener('DOMContentLoaded',attach);
-    window.__shellBackBtn=btn;
-  }catch(e){}
-
-  /* ---------- lifecycle ---------- */
-  window.Game={
-    pause:function(){ try{ window.__shellPaused=true; }catch(e){} },
-    resume:function(){ try{ window.__shellPaused=false; }catch(e){} },
-    setMuted:function(m){ settings.sound=!m; settings.music=!m; },
-    setSettings:function(st){
-      try{
-        if(!st)return;
-        if(typeof st.sound==='boolean'){ settings.sound=st.sound; settings.music=st.sound; }
-        if(typeof st.haptics==='boolean') settings.haptics=st.haptics;
-        if(typeof st.volume==='number') settings.volume=st.volume>1?st.volume/100:st.volume;
-      }catch(e){}
-    },
-    destroy:function(){ try{ banner(false); }catch(e){} }
-  };
-
-  /* Polled, so the strip and the back button follow whatever the game's own
-     screens do without every one of them having to be edited. */
-  setInterval(function(){
-    try{
-      var sc=window.__shellScreen;
-      window.__shellScreenSync();
-      if(window.__shellBackBtn){
-        /* A panel is an overlay, not a screen, so __shellScreen still read
-           "home" while the theme sheet was up and the arrow sat behind it.
-           Hide it whenever any sheet is open. */
-        var sheet=document.querySelector('.panel.open,#p-theme.open,.panel.show');
-        var onHome=(sc===HOME)&&!sheet;
-        window.__shellBackBtn.style.display=onHome?'block':'none';
-      }
-    }catch(e){}
-  },400);
-
-  window.__shellAd=ad;
-  window.__shellRewarded=rewarded;
-})();
-/* __SHELL_BOOT__ - set the start screen once the game has finished booting,
-   so the banner and the back button are right from the first frame. */
-setTimeout(function(){
-  try{ window.__shellScreen='home'; window.__shellScreenSync(); }catch(e){}
-},0);
-</script>
-
 </body>
 </html>
