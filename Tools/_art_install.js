@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 
 const ART = path.join('sources', 'Shell Art');
-const DRAW = path.join('app', 'src', 'main', 'res', 'drawable');
+/* Tiles live in drawable-nodpi, never in plain drawable/: a copy in both would
+   shadow the one the game actually ships. */
 const NOPI = path.join('app', 'src', 'main', 'res', 'drawable-nodpi');
 
 /* Art file -> resource name. The resource name is tile_<id> with the id's dashes
@@ -34,6 +35,7 @@ const MAP = [
   ['planet_merge_tile.png', 'planetmerge'],
   ['root.io_tile_img.jpeg', 'root_io'],
   ['sheep_dog_tile_img.png', 'sheepdog_trials'],
+  ['snakes_and_ladders_tile_img.jpeg', 'snakes_and_ladders'],
   ['truth_or_dare_tile_img.png', 'truth_or_dare'],
 ];
 
@@ -52,7 +54,7 @@ const sniff = b => {
    would reject outright - so both get normalised here rather than at build time. */
 const EXT = { png: '.png', jpeg: '.jpg', webp: '.webp', gif: '.gif', avif: '.jpg' };
 
-fs.mkdirSync(DRAW, { recursive: true });
+fs.mkdirSync(NOPI, { recursive: true });
 
 const convertQueue = [];
 const installed = [];
@@ -63,7 +65,7 @@ MAP.forEach(([file, res]) => {
   const kind = sniff(fs.readFileSync(src));
   if (kind === 'unknown') { console.log('SKIP unrecognised ' + file); return; }
 
-  const dst = path.join(DRAW, 'tile_' + res + EXT[kind]);
+  const dst = path.join(NOPI, 'tile_' + res + EXT[kind]);
 
   if (kind === 'avif') {
     // Needs re-encoding; hand it to Pillow.

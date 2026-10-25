@@ -174,11 +174,16 @@ function fakeEvent(el) {
   };
 }
 
-function boot(html, gameId) {
+function boot(html, gameId, opts) {
+  opts = opts || {};
   const els = new Map();
   const getEl = (id) => { if (!els.has(id)) els.set(id, makeEl(id, 'div')); return els.get(id); };
 
   let rafQ = [];
+  /* Interval callbacks are kept so a test can tick a game's own timer by hand.
+     They are never fired by the smoke run itself, which is what has always
+     happened - only the reference is now retained. */
+  const intervals = [];
   const store = new Map();
   /* Games log banner art and diagnostics on load. Keep that out of the report
      so a real failure is the only thing on screen. */
@@ -186,7 +191,7 @@ function boot(html, gameId) {
   const sandbox = {
     console: quiet,
     setTimeout: () => 0, clearTimeout() {},
-    setInterval: () => 0, clearInterval() {},
+    setInterval(fn) { intervals.push(fn); return intervals.length; }, clearInterval() {},
     requestAnimationFrame(fn) { rafQ.push(fn); return rafQ.length; },
     cancelAnimationFrame() {},
     performance: { now: () => Date.now() },
@@ -293,6 +298,9 @@ function boot(html, gameId) {
     save() {}, load() { return null; },
     haptic() {}, exitGame() {}
   };
+  /* A test that needs the real bridge contract (exact arity, its own callback
+     names, refusal tokens) supplies one instead of the legacy stub above. */
+  if (opts.bridge) sandbox.NativeBridge = opts.bridge;
 
   const ctx = vm.createContext(sandbox);
   const scripts = [];
@@ -333,10 +341,13 @@ function boot(html, gameId) {
   for (const [, fn] of phases) {
     try { fn(); } catch (e) { errors.push(e && e.message); }
   }
-  return { errors, granted };
+  return { errors, granted, ctx, sandbox, intervals };
 }
 
+module.exports = { boot };
+
 /* ---- run ---- */
+if (require.main === module) {
 const only = process.argv.slice(2);
 const ids = fs.readdirSync(GAMES)
   .filter((d) => fs.existsSync(path.join(GAMES, d, 'index.html')))
@@ -390,3 +401,4 @@ console.log(bad === 0
   ? `${clean} boot clean, ${manual} manual, ${skipped} webgl-skip`
   : `${bad} FAILED (of ${clean + bad} checked)`);
 process.exit(bad ? 1 : 0);
+}

@@ -552,8 +552,12 @@ class AdMobManager(private val activity: Activity) {
     /** The game's own colour, so an unfilled strip is not a foreign block. */
     fun setBannerBackdrop(color: Int) {
         bannerBackdrop = color
-        bannerAdView?.setBackgroundColor(color)
         bannerPlaceholder?.setBackgroundColor(color)
+        /* The SDK wraps the ad in its own FrameLayout and paints that too, so
+           recolouring the AdView alone left the old theme's colour inside it
+           when a game changed theme after the ad had loaded. Repaint the whole
+           strip, exactly as onAdLoaded does. */
+        bannerAdView?.let { paintStrip(it) }
     }
 
     /**

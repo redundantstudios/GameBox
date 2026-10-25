@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#8fd7ee">
 <title>Snakes &amp; Ladders — Redundant Studios</title>
+<meta name="description" content="Snakes & Ladders for up to five players. Play against bots or pass the device with friends.">
+<meta name="color-scheme" content="light">
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none;
@@ -246,6 +248,31 @@ body.in-game #hud{opacity:1;pointer-events:auto;transform:none}
 #overName{font-weight:900;font-size:clamp(21px,6.5vw,27px);margin:10px 0 2px;letter-spacing:.06em;text-shadow:0 2px 0 rgba(0,0,0,.15)}
 
 @media (min-width:760px){ .wrap{padding:40px} }
+
+/* Production polish: clearer hierarchy, crisp controls, board-event callouts */
+#stage{padding-left:clamp(8px,2.6vw,18px);padding-right:clamp(8px,2.6vw,18px)}
+#hud{grid-template-columns:46px minmax(0,1fr) 46px;gap:10px}
+.hudBtn{width:46px;height:46px;box-shadow:0 4px 0 var(--btn2-d),0 8px 18px rgba(28,40,30,.12);background:linear-gradient(180deg,var(--panel),var(--panel2));}
+#playerChips{display:flex;justify-content:center;gap:clamp(4px,1.3vw,9px);min-width:0;overflow:visible}
+.chip{min-width:clamp(34px,8.8vw,46px);height:clamp(36px,9vw,44px);padding:0 5px;border-radius:14px;border:2px solid rgba(255,255,255,.8);box-shadow:0 3px 0 rgba(40,40,30,.15);font-size:clamp(11px,3vw,14px);position:relative}
+.chip.on{transform:translateY(-2px) scale(1.06);box-shadow:0 0 0 3px var(--chipc),0 6px 0 rgba(40,40,30,.15)}
+#boardBox{filter:drop-shadow(0 12px 18px rgba(30,48,38,.17))}
+#diceZone{gap:7px}
+#diceHint{font-size:10px;letter-spacing:.18em;font-weight:1000;text-shadow:0 1px rgba(255,255,255,.5)}
+#diceBtn{filter:drop-shadow(0 7px 0 var(--dice-edge)) drop-shadow(0 12px 12px rgba(25,35,30,.16));transition:transform .16s,filter .16s}
+#diceBtn:active{transform:translateY(3px) scale(.97);filter:drop-shadow(0 3px 0 var(--dice-edge))}
+#turnPill{max-width:min(92vw,420px);padding:9px 17px;border:2px solid rgba(255,255,255,.72);box-shadow:0 5px 0 rgba(40,50,35,.12),0 10px 20px rgba(40,50,35,.1);backdrop-filter:blur(8px)}
+.btn,.mode-card,.count-card{transition:transform .14s,box-shadow .14s,filter .14s}
+.btn:focus-visible,.hudBtn:focus-visible,.mode-card:focus-visible,.count-card:focus-visible,.th:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#eventBanner{position:fixed;z-index:8;top:calc(env(safe-area-inset-top) + 58px);left:50%;transform:translate(-50%,-14px) scale(.96);opacity:0;pointer-events:none;display:flex;align-items:center;gap:9px;max-width:min(92vw,390px);padding:10px 15px;border:2px solid rgba(255,255,255,.75);border-radius:17px;background:linear-gradient(135deg,#1d463a,#2b6a4d);color:#fff;box-shadow:0 8px 0 rgba(10,38,28,.18),0 16px 32px rgba(10,30,22,.24);transition:opacity .18s,transform .22s cubic-bezier(.2,.9,.3,1.25)}
+#eventBanner.show{opacity:1;transform:translate(-50%,0) scale(1)}
+#eventIcon{display:grid;place-items:center;width:31px;height:31px;border-radius:10px;background:rgba(255,255,255,.17);font-size:19px;flex:none}
+#eventBanner strong{font-size:12px;font-weight:1000;letter-spacing:.1em;white-space:nowrap}
+#eventBanner small{font-size:10px;font-weight:800;opacity:.85;white-space:nowrap}
+#btnWatchAd:disabled{opacity:.55;filter:grayscale(.4)}
+@media(max-height:700px){#stage{padding-top:calc(4px + env(safe-area-inset-top))}#hud{transform:scale(.94);transform-origin:top center}#diceHint{display:none}#diceZone{gap:4px}#eventBanner{top:calc(env(safe-area-inset-top) + 48px)}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+
 </style>
 </head>
 <body>
@@ -271,6 +298,7 @@ body.in-game #hud{opacity:1;pointer-events:auto;transform:none}
   </div>
 </div>
 
+<div id="eventBanner" aria-live="polite"><span id="eventIcon">★</span><strong id="eventTitle">NICE MOVE!</strong><small id="eventDetail"></small></div>
 <div id="toast"></div>
 
 <!-- HOME -->
@@ -302,8 +330,8 @@ body.in-game #hud{opacity:1;pointer-events:auto;transform:none}
       <li><i style="background:#43a05a"></i>Tap the dice to roll</li>
       <li><i style="background:#f5a623"></i>First to reach 100 wins</li>
       <li><i style="background:#2f7fe0"></i>Ladders go up · Snakes go down</li>
-      <li><i style="background:#e8433f"></i>Roll a 6 for an extra turn</li>
-      <li><i style="background:#8e5cd6"></i>Land on 100 exactly — too high bounces back</li>
+      <li><i style="background:#e8433f"></i>Roll a 6 for an extra turn (house rule)</li>
+      <li><i style="background:#8e5cd6"></i>Reach 100 exactly — overshoots bounce back</li>
     </ul>
   </div>
 </div>
@@ -425,9 +453,25 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const ri=(a,b)=>Math.floor(rnd(a,b+1));
+/* GameBox/Studio bridge adapter. Never use raw localStorage in the shell.
+   The shell may expose persistence as GameBoxSDK.storage or StudioSDK.storage.
+   When no supported bridge exists, settings/unlocks stay in memory for this session. */
 const store={
-  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
-  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+  _memory:Object.create(null),
+  _api(){return window.GameBoxSDK?.storage||window.StudioSDK?.storage||window.NativeBridge?.storage||null},
+  get(k,d){
+    const api=this._api();
+    try{
+      if(api&&typeof api.get==='function'){const v=api.get(k);if(v&&typeof v.then==='function')return d;return v==null?d:v}
+      if(Object.prototype.hasOwnProperty.call(this._memory,k))return this._memory[k];
+    }catch(e){}
+    return d;
+  },
+  set(k,v){
+    this._memory[k]=v;
+    const api=this._api();
+    try{if(api&&typeof api.set==='function'){const r=api.set(k,v);if(r&&typeof r.catch==='function')r.catch(()=>{});}}catch(e){}
+  }
 };
 function shade(hex,amt){
   const n=parseInt(hex.slice(1),16);let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
@@ -553,7 +597,15 @@ const AudioSys={
 
 /* ================= 04 · HAPTICS ================= */
 const Haptics={
-  _v(p){if(Settings.haptics&&navigator.vibrate)navigator.vibrate(p)},
+  _v(pattern){
+    if(!Settings.haptics)return;
+    try{
+      const api=window.GameBoxSDK?.haptics||window.StudioSDK?.haptics||window.NativeBridge?.haptics;
+      if(api&&typeof api.impact==='function'){api.impact(Array.isArray(pattern)?'medium':'light');return}
+      if(api&&typeof api.vibrate==='function'){api.vibrate(pattern);return}
+      /* No browser vibration fallback: shell haptics must go through the host SDK. */
+    }catch(e){}
+  },
   tap(){this._v(12)}, dice(){this._v([18,40,18])}, bounce(){this._v(30)},
   ladder(){this._v([15,50,15,50,40])}, snake(){this._v(70)}, win(){this._v([40,60,40,60,140])}
 };
@@ -1359,7 +1411,9 @@ class ActorLayer{
     const c=this.board.cell(to),fx=c.x,fy=c.y,sx=tk.x,sy=tk.y;
     const lift=this.board.w/10*.55,t0=performance.now();
     return new Promise(res=>{
-      const f=now=>{
+      const f=async now=>{
+        while(Game.active&&Game.paused)await sleep(60);
+        if(Game.active===false&&Game.runId>0){res();return}
         const t=Math.min(1,(now-t0)/dur);
         tk.x=sx+(fx-sx)*t;
         tk.y=sy+(fy-sy)*t-Math.sin(t*Math.PI)*lift;
@@ -1375,7 +1429,9 @@ class ActorLayer{
     for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i].x-pts[i-1].x,pts[i].y-pts[i-1].y));
     const total=cum[cum.length-1]||1,t0=performance.now();
     return new Promise(res=>{
-      const f=now=>{
+      const f=async now=>{
+        while(Game.active&&Game.paused)await sleep(60);
+        if(Game.active===false&&Game.runId>0){res();return}
         const t=Math.min(1,(now-t0)/dur),d=total*t;
         let i=1;while(i<cum.length-1&&cum[i]<d)i++;
         const a=(d-cum[i-1])/((cum[i]-cum[i-1])||1);
@@ -1506,12 +1562,14 @@ const Dice={
 const mainBoard=new BoardRenderer($('#boardCanvas'));
 const FX=new ActorLayer($('#fxCanvas'),mainBoard);
 
+async function waitWhilePaused(run){while(Game.paused&&Game.active&&run===Game.runId)await sleep(80)}
+
 const Game={
-  active:false,busy:false,paused:false,cur:0,players:[],cfg:null,
+  active:false,busy:false,paused:false,cur:0,players:[],cfg:null,runId:0,
   COLORS:['#e8433f','#2f7fe0','#f5a623','#2eb85c','#8e5cd6'],
   start(cfg){
-    Demo.stop();
-    this.cfg={...cfg};this.players=[];this.paused=false;
+    this.runId++;Demo.stop();
+    this.cfg={...cfg};this.players=[];this.paused=false;this.active=false;this.busy=false;
     if(cfg.mode==='bot'){
       for(let i=0;i<=cfg.botCount;i++)
         this.players.push({i,name:i===0?'PLAYER 1':'BOT '+i,bot:i!==0,color:this.COLORS[i],pos:1});
@@ -1543,20 +1601,23 @@ const Game={
   async roll(){
     if(!this.active||this.busy||this.paused)return;
     if(this.players[this.cur].bot)return;
-    this.setBusy(true);
+    const run=this.runId;this.setBusy(true);
     const v=await Dice.roll();
-    await this.move(v);
+    if(run!==this.runId||!this.active)return;
+    await this.move(v,run);
   },
   async botRoll(){
-    await sleep(rnd(700,1150));
-    while(this.paused&&this.active)await sleep(200);
-    if(!this.active||this.busy)return;
+    const run=this.runId;await sleep(rnd(700,1150));
+    while(this.paused&&this.active&&run===this.runId)await sleep(100);
+    if(!this.active||this.busy||run!==this.runId)return;
     if(!this.players[this.cur].bot)return;
     this.setBusy(true);
     const v=await Dice.roll();
-    await this.move(v);
+    if(run!==this.runId||!this.active)return;
+    await this.move(v,run);
   },
-  async move(v){
+  async move(v,run=this.runId){
+    if(!this.active||run!==this.runId)return;
     const p=this.players[this.cur],tk=FX.tokens[p.i];
     const target=p.pos+v,bounced=target>100;
     const steps=[];let pos=p.pos;
@@ -1568,38 +1629,44 @@ const Game={
     }
     let i=0;
     for(const st of steps){
-      await FX.hop(tk,st);AudioSys.hop(i++);Haptics.tap();
-      p.pos=st;updateChips();await sleep(40);
+      await waitWhilePaused(run);if(!this.active||run!==this.runId)return;
+      await FX.hop(tk,st);if(!this.active||run!==this.runId)return;
+      AudioSys.hop(i++);Haptics.tap();p.pos=st;updateChips();await sleep(40);
     }
-    if(bounced){toast('TOO HIGH — BOUNCE BACK!');AudioSys.bounce();Haptics.bounce();await sleep(450)}
-    if(p.pos===100)return this.win();
+    if(!this.active||run!==this.runId)return;
+    if(bounced){showEvent('OVERSHOT!', 'Bounce back to '+(target-100),'↩','linear-gradient(135deg,#80521b,#d9912f)');toast('TOO HIGH — BOUNCE BACK!');AudioSys.bounce();Haptics.bounce();await sleep(450)}
+    if(!this.active||run!==this.runId)return;
+    if(p.pos===100)return this.win(run);
     if(LADDERS[p.pos]){
       const to=LADDERS[p.pos];
-      await sleep(320);
-      FX.highlight('ladder',p.pos,1100);AudioSys.ladder();Haptics.ladder();
-      await sleep(340);
-      await FX.glide(tk,mainBoard.paths.ladders[p.pos].pts,760);
+      await waitWhilePaused(run);if(!this.active||run!==this.runId)return;
+      await sleep(320);if(!this.active||run!==this.runId)return;
+      FX.highlight('ladder',p.pos,1100);showEvent('LADDER CLIMB!',p.pos+' → '+to,'↗','linear-gradient(135deg,#216c46,#43a05a)');AudioSys.ladder();Haptics.ladder();
+      await sleep(340);await waitWhilePaused(run);if(!this.active||run!==this.runId)return;
+      await FX.glide(tk,mainBoard.paths.ladders[p.pos].pts,760);if(!this.active||run!==this.runId)return;
       p.pos=to;FX.computeOffsets();updateChips();
       const c=mainBoard.cell(to);FX.burst(c.x,c.y,['#ffd166','#ffffff',p.color],22);
       await sleep(280);
     }
     else if(SNAKES[p.pos]){
       const to=SNAKES[p.pos];
-      await sleep(320);
-      FX.highlight('snake',p.pos,1100);AudioSys.snake();Haptics.snake();
-      await sleep(300);
-      await FX.glide(tk,mainBoard.paths.snakes[p.pos].pts,840);
+      await waitWhilePaused(run);if(!this.active||run!==this.runId)return;
+      await sleep(320);if(!this.active||run!==this.runId)return;
+      FX.highlight('snake',p.pos,1100);showEvent('SNAKE ATTACK!',p.pos+' → '+to,'↘','linear-gradient(135deg,#87303b,#d84b55)');AudioSys.snake();Haptics.snake();
+      await sleep(300);await waitWhilePaused(run);if(!this.active||run!==this.runId)return;
+      await FX.glide(tk,mainBoard.paths.snakes[p.pos].pts,840);if(!this.active||run!==this.runId)return;
       p.pos=to;FX.computeOffsets();updateChips();
       await sleep(280);
     }
-    if(p.pos===100)return this.win();
+    if(!this.active||run!==this.runId)return;
+    if(p.pos===100)return this.win(run);
     if(v===6){
-      toast('SIX! EXTRA TURN');AudioSys.turn();Haptics.tap();
-      await sleep(500);this.setBusy(false);this.updateTurnUI(false);
+      showEvent('SIX! EXTRA TURN','Roll again!','🎲');toast('SIX! EXTRA TURN');AudioSys.turn();Haptics.tap();
+      await sleep(500);if(!this.active||run!==this.runId)return;this.setBusy(false);this.updateTurnUI(false);
       if(p.bot)this.botRoll();
       return;
     }
-    await sleep(180);
+    await sleep(180);if(!this.active||run!==this.runId)return;
     this.nextTurn();
   },
   nextTurn(){
@@ -1609,7 +1676,8 @@ const Game={
     FX.activeIdx=this.cur;
     if(this.players[this.cur].bot)this.botRoll();
   },
-  async win(){
+  async win(run=this.runId){
+    if(run!==this.runId||!this.active)return;
     const p=this.players[this.cur];
     this.active=false;this.setBusy(true);
     AudioSys.win();Haptics.win();
@@ -1620,9 +1688,9 @@ const Game={
     $('#overName').style.color=p.color;
     $('#turnText').textContent=p.name+' WINS!';
     await sleep(1100);
-    showPanel('over');
+    if(run!==this.runId)return;showPanel('over');
   },
-  stop(){this.active=false}
+  stop(){this.runId++;this.active=false;this.busy=false;this.paused=false;this.setBusy(false)}
 };
 Dice.btn.addEventListener('click',()=>Game.roll());
 
@@ -1631,14 +1699,14 @@ function buildChips(){
   Game.players.forEach(p=>{
     const d=document.createElement('div');d.className='chip';
     d.style.setProperty('--chipc',p.color);
-    d.title=p.name;
+    d.title=p.name+' — square '+p.pos;d.setAttribute('aria-label',d.title);
     d.textContent=p.pos;
     c.appendChild(d);
   });
 }
 function updateChips(){
   [...$('#playerChips').children].forEach((el,i)=>{
-    el.textContent=Game.players[i].pos;
+    el.textContent=Game.players[i].pos;el.title=Game.players[i].name+' — square '+Game.players[i].pos;el.setAttribute('aria-label',el.title);
   });
 }
 
@@ -1753,19 +1821,25 @@ document.addEventListener('pointerdown',()=>FS.retry(),{passive:true});
 /* ================= 14 · PANELS ================= */
 let curPanel='home';
 function hideAll(){$$('.wrap').forEach(w=>w.classList.remove('show'))}
-function closePanels(){hideAll();curPanel=null;Game.paused=false}
+function closePanels(){hideAll();curPanel=null;Game.paused=false;if(Game.active){Game.updateTurnUI(false);if(Game.players[Game.cur]?.bot&&!Game.busy)Game.botRoll()}}
 function setBack(id,target){
   const b=$('#wrap-'+id+' .back');
   if(b)b.dataset.back=target;
 }
 function showPanel(id,backTo){
   AudioSys.ensure();AudioSys.whoosh();
-  if(document.body.classList.contains('in-game')&&id!=='over')Game.paused=true;
+  if(document.body.classList.contains('in-game')&&id!=='over'){Game.paused=true;}
   if(backTo)setBack(id,backTo);
   $$('.wrap.main').forEach(w=>w.classList.remove('show'));
   $('#wrap-'+id).classList.add('show');
   curPanel=id;
   if(id==='themes')renderThemeGrid();
+}
+function showEvent(title,detail,icon='★',color){
+  const el=$('#eventBanner');if(!el)return;
+  $('#eventTitle').textContent=title;$('#eventDetail').textContent=detail||'';$('#eventIcon').textContent=icon;
+  el.style.background=color||'linear-gradient(135deg,#1d463a,#2b6a4d)';
+  el.classList.add('show');clearTimeout(showEvent._t);showEvent._t=setTimeout(()=>el.classList.remove('show'),1650);
 }
 function toast(t){
   const el=$('#toast');el.textContent=t;
@@ -1774,6 +1848,7 @@ function toast(t){
   el.classList.add('show');
   clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),1700);
 }
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&Game.active){Game.paused=true;}else if(!document.hidden&&Game.active&&curPanel==null){Game.paused=false;}});
 document.addEventListener('pointerdown',()=>AudioSys.ensure());
 document.addEventListener('click',e=>{
   const b=e.target.closest('button');
@@ -1851,36 +1926,42 @@ function renderThemeGrid(){
   }
 }
 const AdManager={
-  pendingTheme:null,
+  pendingTheme:null,requestId:0,
   offer(themeId){
     this.pendingTheme=themeId;
-    const theme=THEMES.find(t=>t.id===themeId);
-    if(!theme)return;
-    $('#unlockText').textContent='Watch an ad to unlock "'+theme.name+'" for 24 hours.';
+    const theme=THEMES.find(t=>t.id===themeId);if(!theme)return;
+    $('#unlockText').textContent='Watch a rewarded ad to unlock “'+theme.name+'” for 24 hours.';
     $('#wrap-unlock').classList.add('show');
   },
-  /* No fake loading/reward screen: pressing WATCH AD unlocks immediately.
-     A real rewarded-ad SDK can call onReward() after the ad completes later. */
-  watch(){
-    this.onReward();
+  async watch(){
+    const id=this.pendingTheme;if(!id)return;
+    const api=window.GameBoxSDK?.ads||window.StudioSDK?.ads||window.NativeBridge?.ads;
+    const show=api&&(api.showRewardedAd||api.showRewarded||api.rewardedAd);
+    if(typeof show!=='function'){
+      toast('REWARDED AD UNAVAILABLE — TRY AGAIN LATER');return;
+    }
+    const req=++this.requestId;$('#btnWatchAd').disabled=true;
+    try{
+      let rewarded=false;
+      const result=await show.call(api,{
+        placement:'theme_unlock',
+        onReward:()=>{rewarded=true},
+        onComplete:()=>{rewarded=true}
+      });
+      if(req!==this.requestId)return;
+      rewarded=rewarded||result===true||result?.rewarded===true||result?.status==='rewarded';
+      if(rewarded)this.onReward();
+      else toast('AD NOT COMPLETED — THEME STILL LOCKED');
+    }catch(e){toast('AD COULD NOT LOAD — TRY AGAIN LATER')}
+    finally{$('#btnWatchAd').disabled=false}
   },
-  cancel(){
-    this.pendingTheme=null;
-    $('#wrap-unlock').classList.remove('show');
-  },
+  cancel(){this.requestId++;this.pendingTheme=null;$('#wrap-unlock').classList.remove('show')},
   onReward(){
-    const id=this.pendingTheme;
-    this.pendingTheme=null;
-    $('#wrap-unlock').classList.remove('show');
+    const id=this.pendingTheme;this.pendingTheme=null;$('#wrap-unlock').classList.remove('show');
     if(!id)return;
-    const unlocks=getThemeUnlocks();
-    unlocks[id]=Date.now()+THEME_UNLOCK_MS;
-    store.set('sl_unlocked',unlocks);
-    applyTheme(id);
-    renderThemeGrid();
-    AudioSys.unlock();
-    Haptics.tap();
-    toast(THEMES.find(t=>t.id===id).name.toUpperCase()+' THEME UNLOCKED FOR 24H!');
+    const unlocks=getThemeUnlocks();unlocks[id]=Date.now()+THEME_UNLOCK_MS;store.set('sl_unlocked',unlocks);
+    applyTheme(id);renderThemeGrid();AudioSys.unlock();Haptics.tap();
+    const theme=THEMES.find(t=>t.id===id);if(theme)toast(theme.name.toUpperCase()+' THEME UNLOCKED FOR 24H!');
   }
 };
 
