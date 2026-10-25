@@ -78,6 +78,7 @@ GLYPHS = {
     'daadi': '\u26AB',               # black circle (stone)
     'board-game': '\U0001F3E0',      # house (property game)
     'carroms': '\u26AA',             # white circle (the striker)
+    'quick-draw': '\U0001F58D',      # pencil (drawing tool)
 }
 
 # Playable games that are not bundled in the shell yet -- no manifest to read,

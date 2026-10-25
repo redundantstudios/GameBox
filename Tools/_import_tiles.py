@@ -36,6 +36,7 @@ TILES = {
     'magnet-pull':        'magnet_pull_tile_img.png',
     'kiro':               'kiro_tile_img.jpeg',
     'root-io':            'root.io_tile_img.jpeg',
+    'undercover':         'Undercover_tile_img.png',
 }
 
 

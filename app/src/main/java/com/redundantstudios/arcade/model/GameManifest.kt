@@ -190,5 +190,6 @@ val NEW_GAME_IDS: Set<String> = setOf(
     "magnet-pull",
     "kiro",
     "root-io",
-    "carroms"        // re-integrated 2026-10-11: new art, new gameplay, now 4P
+    "carroms",        // re-integrated 2026-10-11: new art, new gameplay, now 4P
+    "quick-draw"
 )

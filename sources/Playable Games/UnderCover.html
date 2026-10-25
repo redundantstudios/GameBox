@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0D0D12">
 <title>Undercover</title>
+<!-- STUDIO_GAME_MANIFEST
+id: undercover
+title: Undercover
+orientation: portrait
+minPlayers: 3
+maxPlayers: 10
+aiSupport: none
+online: false
+tileColor: #F2B33D
+version: 2
+-->
 <style>
 :root{
   --bg:#0D0D12; --panel:#1A1A23; --panel2:#22222D; --line:#2E2E3B;
@@ -18,7 +29,7 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{
-  font-family:ui-rounded,"SF Pro Rounded","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
+  font-family:"Baloo 2",ui-rounded,"SF Pro Rounded","Segoe UI",system-ui,-apple-system,Roboto,sans-serif;
   background:var(--bg);color:var(--ink);
   background-image:
     radial-gradient(560px 380px at 50% -10%,var(--amber-glow),transparent 62%),
@@ -61,6 +72,11 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
 .icon-btn:active{transform:translateY(2px)}
 .icon-btn.sm{width:40px;height:40px}
 .corner-btn{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:5}
+/* The shell's BACK button is pinned at top:max(10px, env(safe-area-inset-top)).
+   On Home the settings gear sits beside it, so it uses the same expression and
+   the two centres line up on every screen size. Only the vertical position is
+   shared; the gear stays right:14px at 44x44. */
+#scrHome .corner-btn{top:max(10px,env(safe-area-inset-top))}
 
 .badge{width:44px;height:44px;flex:none;border-radius:11px;display:grid;place-items:center;
   color:var(--ink);font-weight:900;font-size:15px;background:var(--c,#555);
@@ -77,7 +93,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
   font-size:10px;letter-spacing:.24em;color:var(--faint)}
 
 /* ---------- setup ---------- */
-.top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px 0}
+/* The shell runs the game edge-to-edge and does NOT pad the WebView (verified
+   in GameActivity: no setPadding / inset CSS is applied), so this is the only
+   owner of the top inset - adding env() here cannot double-apply it. */
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(20px + env(safe-area-inset-top)) 16px 0}
 .top .ttl{font-size:17px;font-weight:900;letter-spacing:.06em}
 .sec{padding:10px 16px 0}
 .sec-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
@@ -160,9 +179,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
 .tbl-body::-webkit-scrollbar{display:none}
 .tbl-cat-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.34em;
   color:var(--faint);text-transform:uppercase;margin-bottom:10px}
-.cat-big{font-family:var(--mono);font-size:clamp(20px,6.4vw,28px);font-weight:700;
-  letter-spacing:.3em;color:var(--amber);text-transform:uppercase;max-width:92%;line-height:1.5;
-  text-shadow:0 0 26px rgba(242,179,61,.3)}
+.cat-big{font-family:var(--mono);font-size:clamp(17px,5.4vw,26px);font-weight:700;
+  letter-spacing:.2em;color:var(--amber);text-transform:uppercase;max-width:94%;line-height:1.45;
+  overflow-wrap:anywhere;text-shadow:0 0 26px rgba(242,179,61,.3)}
 .pat-title{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.3em;color:var(--dim);
   text-transform:uppercase;margin-top:26px;margin-bottom:12px}
 .pat-list{width:100%;max-width:280px;display:flex;flex-direction:column;gap:7px}
@@ -203,25 +222,81 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
 .v-card.picked .tick svg{opacity:1}
 .vote-actions{padding:10px 16px calc(16px + env(safe-area-inset-bottom))}
 
-/* ---------- ELIMINATION / TIE ---------- */
-#scrElim{align-items:center;justify-content:center;text-align:center;padding:24px}
-.el-stage{width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center}
-.el-tag{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.34em;text-transform:uppercase;
-  animation:elFade .5s var(--eo) .1s both}
-.el-tag.out{color:var(--red)}
-.el-tag.tie{color:var(--amber)}
-@keyframes elFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-.el-person{margin-top:26px;animation:elFade .55s var(--eo) .35s both}
-.el-person + .el-person{margin-top:30px}
-.el-role{font-family:var(--mono);display:inline-block;font-size:11px;font-weight:700;letter-spacing:.28em;
-  padding:4px 12px;border-radius:6px;border:1.5px solid currentColor;text-transform:uppercase}
-.el-role.uc{color:var(--red)}
-.el-role.civ{color:var(--green)}
-.el-name{font-size:clamp(34px,11vw,48px);font-weight:900;letter-spacing:.02em;margin-top:10px}
-.el-big{font-size:clamp(36px,11vw,50px);font-weight:900;color:var(--amber)}
-.el-sub{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.24em;color:var(--dim);
-  text-transform:uppercase;margin-top:16px;line-height:2.1}
-.el-btn{margin-top:34px;animation:elFade .5s var(--eo) .8s both}
+/* ---------- VOTE RESULT · DOSSIER REVEAL ---------- */
+#scrElim{align-items:center;justify-content:center;text-align:center;padding:16px 18px calc(16px + env(safe-area-inset-bottom));overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+#scrElim::-webkit-scrollbar{display:none}
+.el-stage{width:100%;max-width:360px;display:flex;flex-direction:column;align-items:stretch;margin:auto}
+.elim-file{position:relative;width:100%;padding:20px 16px 12px;overflow:hidden;
+  background:linear-gradient(145deg,rgba(242,179,61,.035),transparent 46%),var(--panel);
+  border:1.5px solid var(--line);border-radius:15px;
+  box-shadow:0 15px 36px rgba(0,0,0,.38);animation:caseIn .45s var(--eo) both}
+.elim-file::before{content:"";position:absolute;inset:6px;border:1px dashed rgba(142,138,150,.22);border-radius:10px;pointer-events:none}
+.elim-file::after{content:"";position:absolute;top:0;left:24px;width:64px;height:3px;background:var(--amber);opacity:.8}
+@keyframes caseIn{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.elim-kicker{position:relative;font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:.3em;color:var(--dim);margin-bottom:13px}
+.el-tag{position:relative;display:inline-block;font-family:var(--mono);font-size:clamp(19px,6vw,25px);font-weight:900;
+  letter-spacing:.15em;padding:6px 12px;border:2px solid currentColor;border-radius:4px;
+  text-transform:uppercase;transform:rotate(-2deg);animation:stampIn .48s var(--eo) .12s both}
+.el-tag.out{color:var(--red);text-shadow:0 0 18px rgba(229,72,77,.12)}
+.el-tag.tie{color:var(--amber);text-shadow:0 0 18px rgba(242,179,61,.12)}
+@keyframes stampIn{0%{opacity:0;transform:rotate(-7deg) scale(1.18)}72%{opacity:1;transform:rotate(-1deg) scale(.98)}100%{opacity:1;transform:rotate(-2deg) scale(1)}}
+.el-people{position:relative;width:100%;display:flex;flex-direction:column;margin-top:12px}
+.el-person{display:flex;align-items:center;gap:10px;min-height:48px;width:100%;padding:7px 2px;
+  border-bottom:1px solid rgba(46,46,59,.9);text-align:left;animation:rowIn .36s var(--eo) both}
+.el-person:last-child{border-bottom:0}
+@keyframes rowIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.el-avatar{width:32px;height:32px;flex:none;display:grid;place-items:center;border-radius:9px;
+  background:var(--player-color,#F2B33D);border:1px solid rgba(237,232,220,.22);
+  color:#15141A;font-family:var(--mono);font-size:10px;font-weight:900}
+.el-name{flex:1;min-width:0;text-align:left;font-size:15px;font-weight:850;letter-spacing:.005em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.el-role{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;
+  font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:.075em;
+  padding:5px 7px;border-radius:5px;border:1.5px solid currentColor;text-transform:uppercase;white-space:nowrap}
+.el-role::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.el-role.uc{color:var(--red);background:rgba(229,72,77,.07)}
+.el-role.civ{color:var(--green);background:rgba(63,181,107,.07)}
+.el-tie-state{position:relative;display:flex;align-items:center;justify-content:center;gap:12px;padding:22px 8px 16px;margin-top:4px}
+.el-tie-mark{width:44px;height:44px;flex:none;display:grid;place-items:center;border:1.5px solid var(--amber);
+  border-radius:12px;color:var(--amber);font-size:24px;font-weight:900;transform:rotate(-3deg);background:rgba(242,179,61,.06)}
+.el-tie-copy{text-align:left}
+.el-big{font-size:21px;line-height:1.1;font-weight:900;letter-spacing:.03em;color:var(--amber)}
+.el-sub{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.16em;color:var(--dim);
+  text-transform:uppercase;margin-top:7px;line-height:1.65}
+.vote-tally{position:relative;margin-top:12px;padding:11px 10px 7px;background:rgba(0,0,0,.16);
+  border:1px solid var(--line);border-radius:9px;text-align:left}
+.vote-tally[hidden]{display:none}
+.tally-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px;
+  color:var(--dim);font-family:var(--mono);font-size:9px;font-weight:800;letter-spacing:.22em}
+.tally-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px 8px;
+  padding:6px 1px;border-bottom:1px solid rgba(46,46,59,.62);animation:rowIn .28s var(--eo) both}
+.tally-row:last-child{border-bottom:0}
+.tally-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:800;color:var(--ink)}
+.tally-row.out .tally-name{color:var(--red)}
+.tally-count{font-family:var(--mono);font-size:10px;font-weight:900;letter-spacing:.04em;white-space:nowrap;color:var(--amber)}
+.tally-row.out .tally-count{color:var(--red)}
+.tally-track{grid-column:1/-1;height:3px;overflow:hidden;border-radius:4px;background:var(--panel2)}
+.tally-fill{height:100%;width:var(--vote-width,0%);border-radius:4px;background:var(--amber);opacity:.88}
+.tally-row.out .tally-fill{background:var(--red)}
+.el-btn{margin-top:16px;min-height:54px;animation:rowIn .4s var(--eo) .28s both}
+@media(max-width:350px){
+  #scrElim{padding-left:12px;padding-right:12px}
+  .elim-file{padding:17px 12px 10px}
+  .el-person{gap:7px;min-height:44px}
+  .el-avatar{width:29px;height:29px;border-radius:8px}
+  .el-name{font-size:14px}
+  .el-role{font-size:8px;letter-spacing:.035em;padding:4px 5px}
+  .vote-tally{margin-top:9px;padding:9px 8px 5px}
+  .tally-row{padding:5px 1px}
+}
+@media(max-height:620px){
+  #scrElim{justify-content:flex-start;padding-top:12px}
+  .elim-file{padding-top:15px;padding-bottom:8px}
+  .elim-kicker{margin-bottom:9px}
+  .el-people{margin-top:8px}
+  .el-person{min-height:42px;padding:5px 2px}
+  .el-btn{margin-top:10px;min-height:48px}
+}
 
 /* ---------- WIN ---------- */
 #scrWin{align-items:center;justify-content:center;text-align:center;padding:24px}
@@ -247,15 +322,20 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
 .win-btns{margin-top:30px;width:100%;display:flex;flex-direction:column;gap:10px;animation:winSec .45s var(--eo) .95s both}
 
 /* ---------- overlays ---------- */
-.ovl{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;
-  background:rgba(5,5,9,.6);opacity:0;pointer-events:none;transition:opacity .35s ease}
-.ovl.show{opacity:1;pointer-events:auto}
+.ovl{position:fixed;inset:0;z-index:150;display:grid;place-items:center;padding:20px;
+  background:rgba(5,5,9,.72);opacity:0;pointer-events:none;visibility:hidden;transition:opacity .25s ease,visibility .25s ease}
+.ovl.show{opacity:1;pointer-events:auto;visibility:visible}
 .panel-ovl{background:var(--panel);border:1.5px solid var(--line);border-radius:16px;
   box-shadow:0 18px 40px rgba(0,0,0,.55);
   padding:22px 20px;width:min(360px,100%);max-height:84dvh;overflow-y:auto;text-align:center;position:relative;
   transform:translateY(24px) scale(.97);opacity:0;
   transition:transform .5s var(--eo),opacity .32s ease;scrollbar-width:none}
 .panel-ovl::-webkit-scrollbar{display:none}
+.ovl.show .panel-ovl{transform:translateY(0) scale(1);opacity:1}
+.settings-head{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative}
+.settings-close{width:34px;height:34px;display:grid;place-items:center;flex:none;border:1.5px solid var(--line);
+  border-radius:9px;color:var(--dim);font:500 23px/1 system-ui;background:var(--panel2)}
+.settings-close:active{transform:scale(.94);color:var(--amber);border-color:var(--amber)}
 .hstep{display:flex;gap:12px;text-align:left;margin-bottom:14px;position:relative}
 .hstep .n{width:28px;height:28px;flex:none;border-radius:8px;border:1.5px solid var(--amber);color:var(--amber);
   display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px}
@@ -276,6 +356,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
 .cat-grid{display:flex;flex-wrap:wrap;gap:7px}
 .cat-chip{display:inline-flex;align-items:center;gap:6px;padding:9px 12px;border-radius:9px;background:var(--panel);
   font-weight:900;font-size:11px;letter-spacing:.06em;border:1.5px solid var(--line);color:var(--dim);min-height:38px;
+  max-width:100%;text-align:left;overflow-wrap:anywhere;white-space:normal;
   transition:background .25s var(--es),color .25s var(--es),border-color .25s var(--es),transform .1s}
 .cat-chip .ic{width:13px;height:13px}
 .cat-chip .cd{font-family:var(--mono);font-size:10px;color:var(--amber);letter-spacing:.05em}
@@ -299,6 +380,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
   <symbol id="i-q" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 1 1 4.6 2.5c-.9.6-1.8 1.2-1.8 2.5"/><path d="M12 17.5h.01"/></symbol>
   <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></symbol>
@@ -434,11 +516,18 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
     </div>
   </section>
 
-  <!-- ============ ELIMINATION / TIE ============ -->
+  <!-- ============ VOTE RESULT ============ -->
   <section id="scrElim" class="screen">
     <div class="el-stage" id="elStage">
-      <div class="el-tag out" id="elimTag">ELIMINATED</div>
-      <div id="elimPeople"></div>
+      <div class="elim-file" id="elimFile">
+        <div class="elim-kicker">VOTE RESULT</div>
+        <div class="el-tag out" id="elimTag">ELIMINATED</div>
+        <div class="el-people" id="elimPeople"></div>
+        <div class="vote-tally" id="voteTally" hidden>
+          <div class="tally-head"><span>VOTE TALLY</span></div>
+          <div id="voteTallyRows"></div>
+        </div>
+      </div>
       <button class="btn amber el-btn" id="elimContinue">CONTINUE</button>
     </div>
   </section>
@@ -472,7 +561,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
 
 <!-- ============ SETTINGS ============ -->
 <div class="ovl" id="ovSettings"><div class="panel-ovl">
-  <span class="eyebrow" style="position:relative">SETTINGS</span>
+  <div class="settings-head">
+    <span class="eyebrow">SETTINGS</span>
+    <button class="settings-close" id="btnCloseSettings" aria-label="Close settings">×</button>
+  </div>
   <div style="margin-top:8px;position:relative">
     <div class="s-row">
       <div class="s-lbl">Sound</div>
@@ -508,7 +600,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;tou
     <svg class="ic"><use href="#i-lock"/></svg>
   </div>
   <div style="font-size:20px;font-weight:900;position:relative" id="ulName">CATEGORY</div>
-  <div style="font-size:12px;font-weight:700;color:var(--dim);margin-top:6px;position:relative">ONE AD UNLOCKS IT FOR 30 MINUTES</div>
+  <div style="font-size:12px;font-weight:700;color:var(--dim);margin-top:6px;position:relative">WATCH AD TO UNLOCK IT FOR 30 MINUTES</div>
   <button class="btn amber" id="ulAd" style="margin-top:16px;position:relative"><svg class="ic"><use href="#i-tv"/></svg>WATCH AD · UNLOCK</button>
   <button class="mini" id="ulNo" style="margin-top:6px;position:relative">NOT NOW</button>
 </div></div>
@@ -537,228 +629,2339 @@ function bind(id, fn){
 }
 
 /* ================================================================
-   SECTION · GAMEBOX SDK INTEGRATION
+   SECTION · GAMEBOX / STUDIO SDK INTEGRATION
+   Supports the QuickDraw-style window.GameBox contract and the shell's
+   documented Studio / NativeBridge contract. Ads are never reported as
+   completed unless the bridge says so; storage stays behind this shim.
    ================================================================ */
 const GameBoxSDK = (() => {
-  const bridge = (typeof window !== 'undefined' && window.GameBox) || null;
+  const gb = (typeof window !== 'undefined' && window.GameBox) || null;
+  const studio = (typeof window !== 'undefined' && window.Studio) || null;
+  const native = (typeof window !== 'undefined' && window.NativeBridge) || null;
   const mem = {};
+  let adSeq = 0;
+
+  function parseMaybe(raw){
+    if (typeof raw !== 'string') return raw;
+    try{ return JSON.parse(raw); }catch(e){ return raw; }
+  }
+  function hapticMs(pattern){
+    if (Array.isArray(pattern)) return pattern.reduce((sum, n) => sum + (Number(n) || 0), 0) || 12;
+    const n = Number(pattern);
+    return isFinite(n) && n > 0 ? n : 12;
+  }
+  function hapticKind(pattern){
+    const ms = hapticMs(pattern);
+    if (ms <= 18) return 'light';
+    if (ms <= 40) return 'medium';
+    return 'heavy';
+  }
+
   const storage = {
     get(key){
+      const k = 'uc_' + key;
       try{
-        if (bridge && bridge.storage && typeof bridge.storage.get === 'function')
-          return bridge.storage.get('uc_' + key);
-        const raw = localStorage.getItem('uc_' + key);
+        if (gb && gb.storage && typeof gb.storage.get === 'function')
+          return parseMaybe(gb.storage.get(k));
+        if (studio && typeof studio.load === 'function')
+          return parseMaybe(studio.load(k));
+        if (native && typeof native.load === 'function')
+          return parseMaybe(native.load(k));
+        const raw = (typeof localStorage !== 'undefined') ? localStorage.getItem(k) : null; // SDK mock path only
         return raw == null ? null : JSON.parse(raw);
       }catch(e){ return (key in mem) ? mem[key] : null; }
     },
     set(key, val){
+      const k = 'uc_' + key;
       try{
-        if (bridge && bridge.storage && typeof bridge.storage.set === 'function'){
-          bridge.storage.set('uc_' + key, val); return;
+        if (gb && gb.storage && typeof gb.storage.set === 'function'){
+          gb.storage.set(k, val); return;
         }
-        localStorage.setItem('uc_' + key, JSON.stringify(val));
+        if (studio && typeof studio.save === 'function'){
+          studio.save(k, JSON.stringify(val)); return;
+        }
+        if (native && typeof native.save === 'function'){
+          native.save(k, JSON.stringify(val)); return;
+        }
+        if (typeof localStorage !== 'undefined') localStorage.setItem(k, JSON.stringify(val)); // SDK mock path only
       }catch(e){ mem[key] = val; }
     }
   };
+
   function haptic(pattern){
     try{
-      if (bridge && typeof bridge.haptic === 'function'){ bridge.haptic(pattern); return; }
-      if (navigator.vibrate) navigator.vibrate(pattern);
+      if (gb && typeof gb.haptic === 'function'){ gb.haptic(pattern); return; }
+      if (studio && typeof studio.haptic === 'function'){ studio.haptic(hapticKind(pattern)); return; }
+      if (native && typeof native.haptic === 'function'){ native.haptic(hapticMs(pattern)); return; }
+      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(pattern);
     }catch(e){}
   }
+
   function ad(type, cb){
-    try{
-      if (bridge && typeof bridge.ad === 'function'){ bridge.ad(type, cb || function(){}); return; }
-    }catch(e){}
-    if (cb) cb(true);
+    const done = typeof cb === 'function' ? cb : function(){};
+    function fail(reason){
+      setTimeout(() => done(false, reason || 'unavailable'), 0);
+      return false;
+    }
+    if (gb && typeof gb.ad === 'function'){
+      try{ gb.ad(type, done); return true; }
+      catch(e){ return fail('bridge_error'); }
+    }
+    if (studio && studio.ads){
+      try{
+        if (type === 'rewarded' && typeof studio.ads.rewarded === 'function'){
+          studio.ads.rewarded('undercover.unlock', () => done(true), (reason) => done(false, reason || 'closed'));
+          return true;
+        }
+        if (type === 'interstitial' && typeof studio.ads.interstitial === 'function'){
+          studio.ads.interstitial(() => done(true), 'undercover.transition');
+          return true;
+        }
+      }catch(e){ return fail('bridge_error'); }
+    }
+    if (native){
+      try{
+        if (type === 'rewarded' && typeof native.showRewardedAd === 'function'){
+          const name = '__ucRewardCb' + (++adSeq);
+          window[name] = function(result){
+            try{ delete window[name]; }catch(e){}
+            done(result === 'granted', result || 'closed');
+          };
+          native.showRewardedAd(name, 'undercover.unlock', 'unlock');
+          return true;
+        }
+        if (type === 'interstitial' && typeof native.showInterstitial === 'function'){
+          const name = '__ucInterCb' + (++adSeq);
+          window[name] = function(){
+            try{ delete window[name]; }catch(e){}
+            done(true);
+          };
+          native.showInterstitial(name, 'undercover.transition');
+          return true;
+        }
+      }catch(e){ return fail('bridge_error'); }
+    }
+    /* Never report a completed ad when no bridge can show one. */
+    return fail('unavailable');
   }
-  return { storage, haptic, ad, hasBridge: !!bridge };
+
+  function shellSettings(){
+    try{
+      if (studio && studio.settings && typeof studio.settings === 'object'){
+        return { sound: studio.settings.sound, haptics: studio.settings.haptics };
+      }
+    }catch(e){}
+    return null;
+  }
+  function pushSettings(patch){
+    try{
+      if (studio && typeof studio.pushSettings === 'function'){
+        studio.pushSettings(patch || {});
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
+
+  return { storage, haptic, ad, shellSettings, pushSettings, hasBridge: !!(gb || studio || native) };
 })();
 
 /* ================================================================
-   SECTION · WORD PAIR DATABASE  ("civilian|imposter")
+   SECTION · WORD PAIR DATABASE
+   Generated by Tools/build_undercover.js from
+   Undercover_Production_Curated_Pairs.json. Do not edit this block
+   by hand: edit the JSON and run the build script.
+   Source schema: {id, name, free, pairs}.
+   Pair order is [civilian(normal), imposter] and is never reversed.
+   No fallback, invented or translated pairs exist in this file.
    ================================================================ */
-const P_TOLLYWOOD = [
-'Kalki 2898 AD|Hanu-Man','Salaar|Devara','Pushpa 2: The Rule|Game Changer','Baahubali: The Beginning|Baahubali 2: The Conclusion',
-'RRR|Magadheera','Pokiri|Athadu','Jalsa|Julayi','Arjun Reddy|Baby','Bommarillu|Happy Days','Jersey|Majili',
-'DJ Tillu|Tillu Square','Ala Vaikunthapurramuloo|Sarileru Neekevvaru','Attarintiki Daredi|Srimanthudu','Geetha Govindam|Uppena',
-'Sitaramam|Hi Nanna','Jaathiratnalu|Samajavaragamana','Guntur Kaaram|Aravinda Sametha','Virupaksha|Mangalavaaram',
-'Chatrapathi|Simhadri','Indra|Tagore','Kushi|Thammudu','Eega|Maryada Ramanna','Pelli Choopulu|Ee Nagaraniki Emaindi',
-'Waltair Veerayya|Veera Simha Reddy','Akhanda|Skanda','Mahanati|Syeraa Narasimha Reddy','Brochevarevarura|Agent Sai Srinivasa Athreya',
-'HIT: The First Case|Goodachari','Fidaa|Shatamanam Bhavati','Keedaa Cola|Mathu Vadalara','iSmart Shankar|Double iSmart',
-'Darling|Mr. Perfect','Arya|Arya 2','Race Gurram|Kick','Venky|Dhee','Ready|King','Gabbar Singh|Mirchi','Manam|Oopiri',
-'Bimbisara|Kalyanram Amigos','Eagle|Saindhav','Nuvvu Naaku Nachav|Malliswari','Kshanam|Evaru','Leader|Prasthanam',
-'Happy|Bunny','Devadasu|Desamuduru','Varsham|Chatrapathi','Okkadu|Arjun','Athadu|Khaleja','Oye!|Orange','Devara|Acharya',
-'Rangasthalam|Dasara','Saripodhaa Sanivaaram|Ante Sundaraniki','Sarkaru Vaari Paata|Guntur Kaaram','Shyam Singha Roy|Dasara',
-'Yevadu|Dhruva','Dhamaka|Nela Ticket','Vakeel Saab|Bheemla Nayak','Temper|Pataas','Janatha Garage|Nannaku Prematho',
-'Srimanthudu|Bharat Ane Nenu','Spyder|Agnyaathavaasi','Katamarayudu|Sardar Gabbar Singh','Nenu Local|Cinema Choopistha Mava',
-'Bhagavanth Kesari|Veera Simha Reddy','Karthikeya|Karthikeya 2','U-Turn|Bhaagamathie','Nenokkadine|Spyder','Sahoo|Radhe Shyam',
-'Radhe Shyam|Adipurush','Dear Comrade|Kushi (2023)','Taxiwala|Ekkadiki Pothavu Chinnavada','Chalo|Bheeshma','Bheeshma|Rang De',
-'Most Eligible Bachelor|Mr. Majnu','Solo Brathuke So Better|Chitralahari','Major|Karthikeya 2','Naandhi|Writer Padmabhushan',
-'Balagam|Intinti Ramayanam','Committee Kurrollu|Aay','Ye Maaya Chesave|Oka Laila Kosam','Chirutha|Desamuduru','Mirchi|Badri',
-'Magadheera|Yamadonga','Yamadonga|Kantri','Kantri|Billa','Billa|Shadow','Kanche|Gautamiputra Satakarni','Nannaku Prematho|Dhruva',
-'Darling|Bujjigadu','Varsham|Pournami','Vikramarkudu|Yamadonga','Arundhati|Bhaagamathie','C/o Kancharapalem|Balagam',
-'Baby|Color Photo','Hi Nanna|Ninnu Kori','Nenu Local|MCA','Bhale Bhale Magadivoy|F2','Oohalu Gusagusalade|Ashta Chamma',
-'Ala Modalaindi|Ishq','Manam|24','Gunde Jaari Gallanthayyinde|Oka Laila Kosam','Ye Maaya Chesave|100% Love',
-'Seethamma Vakitlo Sirimalle Chettu|Brahmotsavam','Maharshi|Bharat Ane Nenu','Gamyam|Vedam','Godavari|Anand',
-'Tholiprema|Suswagatham','Badri|Tammudu','Akhanda|Legend','Sarileru Neekevvaru|Aagadu','Tillu Square|Mad','Palasa 1978|George Reddy',
-'Rakshasudu|Ratsasan','Uyyala Jampala|Cinema Bandi','Nuvvu Nenu|Jayam','Idiot|Amma Nanna O Tamila Ammayi','Badrinath|Shakti',
-'Khaidi No. 150|Sye Raa Narasimha Reddy','Manmadhudu|Santhosham','Ninne Pelladatha|Murari','Aditya 369|Bhairava Dweepam',
-'Gaami|Kalki 2898 AD','Aithe|Anukokunda Oka Roju','Mayabazar|Nartanasala','Geethanjali|Shiva','Kshana Kshanam|Govinda Govinda',
-'Missamma|Gundamma Katha','Shankar Dada MBBS|Tagore','Nuvvostanante Nenoddantana|Pournami','Gabbar Singh|Dookudu',
-'Happy Days|Life is Beautiful','Geetha Govindam|Chalo','Mahanati|Sita Ramam','Goodachari|Spyder','Khaleja|1: Nenokkadine',
-'Oosaravelli|Temper','Aravinda Sametha|Janatha Garage','Race Gurram|S/O Satyamurthy','DJ Tillu|Jathi Ratnalu',
-'Mathu Vadalara|Keedaa Cola','Ee Nagaraniki Emaindi|Pelli Choopulu','Kushi|Tholi Prema','Indra|Samarasimha Reddy',
-'Simhadri|Aadi','Desamuduru|Bunny','Kushi (2023)|Thammudu'
+/* WORD_CATEGORIES_START */
+const WORD_CATEGORIES = [
+  { id: "telugu-cinema", name: "TELUGU CINEMA & CHARACTERS", free: false, pairs: [
+    ["Kalki 2898 AD", "Hanu-Man"],
+    ["Salaar", "Devara"],
+    ["Pushpa 2: The Rule", "Game Changer"],
+    ["Baahubali: The Beginning", "Baahubali 2: The Conclusion"],
+    ["RRR", "Magadheera"],
+    ["Pokiri", "Athadu"],
+    ["Jalsa", "Julayi"],
+    ["Arjun Reddy", "Baby"],
+    ["Bommarillu", "Happy Days"],
+    ["Jersey", "Majili"],
+    ["DJ Tillu", "Tillu Square"],
+    ["Ala Vaikunthapurramuloo", "Sarileru Neekevvaru"],
+    ["Attarintiki Daredi", "Srimanthudu"],
+    ["Geetha Govindam", "Uppena"],
+    ["Sitaramam", "Hi Nanna"],
+    ["Jaathiratnalu", "Samajavaragamana"],
+    ["Guntur Kaaram", "Aravinda Sametha"],
+    ["Virupaksha", "Mangalavaaram"],
+    ["Chatrapathi", "Simhadri"],
+    ["Indra", "Tagore"],
+    ["Kushi", "Thammudu"],
+    ["Eega", "Maryada Ramanna"],
+    ["Pelli Choopulu", "Ee Nagaraniki Emaindi"],
+    ["Waltair Veerayya", "Veera Simha Reddy"],
+    ["Akhanda", "Skanda"],
+    ["Mahanati", "Syeraa Narasimha Reddy"],
+    ["Brochevarevarura", "Agent Sai Srinivasa Athreya"],
+    ["HIT: The First Case", "Goodachari"],
+    ["Fidaa", "Shatamanam Bhavati"],
+    ["Keedaa Cola", "Mathu Vadalara"],
+    ["Sye", "Bheemili Kabaddi Jattu"],
+    ["iSmart Shankar", "Double iSmart"],
+    ["Darling", "Mr. Perfect"],
+    ["Arya", "Arya 2"],
+    ["Race Gurram", "Kick"],
+    ["Venky", "Dhee"],
+    ["Ready", "King"],
+    ["Gabbar Singh", "Mirchi"],
+    ["Manam", "Oopiri"],
+    ["Bimbisara", "Kalyanram Amigos"],
+    ["Eagle", "Saindhav"],
+    ["Nuvvu Naaku Nachav", "Malliswari"],
+    ["Kshanam", "Evaru"],
+    ["Leader", "Prasthanam"],
+    ["Happy", "Bunny"],
+    ["Devadasu", "Desamuduru"],
+    ["Amma Nanna O Tamila Ammayi", "Sivamani"],
+    ["Pokiri", "Businessman"],
+    ["Varsham", "Chatrapathi"],
+    ["Okkadu", "Arjun"],
+    ["Athadu", "Khaleja"],
+    ["Maryada Ramanna", "Poola Rangadu"],
+    ["Oye!", "Orange"],
+    ["Devara", "Acharya"],
+    ["Rangasthalam", "Dasara"],
+    ["Saripodhaa Sanivaaram", "Ante Sundaraniki"],
+    ["Sarkaru Vaari Paata", "Guntur Kaaram"],
+    ["Shyam Singha Roy", "Dasara"],
+    ["Yevadu", "Dhruva"],
+    ["Brindavanam", "Attarintiki Daredi"],
+    ["Dhamaka", "Nela Ticket"],
+    ["Vakeel Saab", "Bheemla Nayak"],
+    ["Temper", "Pataas"],
+    ["Janatha Garage", "Nannaku Prematho"],
+    ["Srimanthudu", "Bharat Ane Nenu"],
+    ["Spyder", "Agnyaathavaasi"],
+    ["Katamarayudu", "Sardar Gabbar Singh"],
+    ["Nenu Local", "Cinema Choopistha Mava"],
+    ["Shatamanam Bhavati", "Prati Roju Pandage"],
+    ["Bhagavanth Kesari", "Veera Simha Reddy"],
+    ["Bro", "Gopala Gopala"],
+    ["Karthikeya", "Karthikeya 2"],
+    ["Awe!", "Manu"],
+    ["U-Turn", "Bhaagamathie"],
+    ["Anasuya", "Amaravathi"],
+    ["Nenokkadine", "Spyder"],
+    ["Sahoo", "Radhe Shyam"],
+    ["Radhe Shyam", "Adipurush"],
+    ["Dear Comrade", "Kushi (2023)"],
+    ["Taxiwala", "Ekkadiki Pothavu Chinnavada"],
+    ["Chalo", "Bheeshma"],
+    ["Bheeshma", "Rang De"],
+    ["Most Eligible Bachelor", "Mr. Majnu"],
+    ["Solo Brathuke So Better", "Chitralahari"],
+    ["Major", "Karthikeya 2"],
+    ["Naandhi", "Writer Padmabhushan"],
+    ["Balagam", "Intinti Ramayanam"],
+    ["Committee Kurrollu", "Aay"],
+    ["Ye Maaya Chesave", "Oka Laila Kosam"],
+    ["Chirutha", "Desamuduru"],
+    ["Mirchi", "Badri"],
+    ["Magadheera", "Yamadonga"],
+    ["Yamadonga", "Kantri"],
+    ["Kantri", "Billa"],
+    ["Billa", "Shadow"],
+    ["Sainikudu", "Bobby"],
+    ["Subash Chandra Bose", "Alluri Seetharama Raju"],
+    ["Baahubali", "RRR"],
+    ["Pushpa", "Rangasthalam"],
+    ["Arjun Reddy", "RX 100"],
+    ["Sye", "Chatrapathi"],
+    ["Bommarillu", "Nuvvostanante Nenoddantana"],
+    ["Uppena", "Fidaa"],
+    ["Ala Vaikunthapurramuloo", "Sarrainodu"],
+    ["Gabbar Singh", "Dookudu"],
+    ["Happy Days", "Life is Beautiful"],
+    ["Geetha Govindam", "Chalo"],
+    ["Mahanati", "Sita Ramam"],
+    ["Goodachari", "Spyder"],
+    ["Khaleja", "1 Nenokkadine"],
+    ["Mirchi", "Srimanthudu"],
+    ["Oosaravelli", "Temper"],
+    ["Aravinda Sametha", "Janatha Garage"],
+    ["Race Gurram", "S/O Satyamurthy"],
+    ["DJ Tillu", "Jathi Ratnalu"],
+    ["Kushi", "Tholi Prema"],
+    ["Indra", "Samarasimha Reddy"],
+    ["Simhadri", "Aadi"],
+    ["Desamuduru", "Bunny"],
+    ["Shankar Dada MBBS", "Tagore"],
+    ["Kanche", "Gautamiputra Satakarni"],
+    ["Nannaku Prematho", "Dhruva"],
+    ["Brindavanam", "Mr. Perfect"],
+    ["Darling", "Bujjigadu"],
+    ["Varsham", "Pournami"],
+    ["Vikramarkudu", "Yamadonga"],
+    ["Arundhati", "Bhaagamathie"],
+    ["C/o Kancharapalem", "Balagam"],
+    ["Baby", "Color Photo"],
+    ["Hi Nanna", "Ninnu Kori"],
+    ["Nenu Local", "MCA"],
+    ["Bhale Bhale Magadivoy", "F2"],
+    ["Oohalu Gusagusalade", "Ashta Chamma"],
+    ["Ala Modalaindi", "Ishq"],
+    ["Manam", "24"],
+    ["Gunde Jaari Gallanthayyinde", "Oka Laila Kosam"],
+    ["Ye Maaya Chesave", "100% Love"],
+    ["Business Man", "Temper"],
+    ["Seethamma Vakitlo Sirimalle Chettu", "Brahmotsavam"],
+    ["Maharshi", "Bharat Ane Nenu"],
+    ["Gamyam", "Vedam"],
+    ["Kotha Bangaru Lokam", "Kalisundam Raa"],
+    ["Godavari", "Anand"],
+    ["Tholiprema", "Suswagatham"],
+    ["Badri", "Tammudu"],
+    ["Akhanda", "Legend"],
+    ["Sarileru Neekevvaru", "Aagadu"],
+    ["Tillu Square", "Mad"],
+    ["Palasa 1978", "George Reddy"],
+    ["Hit: The First Case", "Hit: The Second Case"],
+    ["Rakshasudu", "Ratsasan"],
+    ["Uyyala Jampala", "Cinema Bandi"],
+    ["Nuvvu Nenu", "Jayam"],
+    ["Idiot", "Amma Nanna O Tamila Ammayi"],
+    ["Badrinath", "Shakti"],
+    ["Khaidi No. 150", "Sye Raa Narasimha Reddy"],
+    ["Swayamvaram", "Nuvve Kavali"],
+    ["Manmadhudu", "Santhosham"],
+    ["Ninne Pelladatha", "Murari"],
+    ["Okkadu", "Varsham"],
+    ["Aditya 369", "Bhairava Dweepam"],
+    ["Awe", "Prasanth Varma Cinematic Universe"],
+    ["Bhaagamathie", "Anushka Shetty Movies"],
+    ["Chirutha", "Ram Charan Debut"],
+    ["Gargi", "Virata Parvam"],
+    ["Gowtam SSC", "Student No. 1"],
+    ["Preminchukundam Raa", "Kalisundam Raa"],
+    ["Gharshana", "Kaakha Kaakha"],
+    ["Nuvvostanante Nenoddantana", "Pournami"],
+    ["Missamma", "Gundamma Katha"],
+    ["Mayabazar", "Nartanasala"],
+    ["Geethanjali", "Shiva"],
+    ["Kshana Kshanam", "Govinda Govinda"],
+    ["Aithe", "Anukokunda Oka Roju"],
+    ["Gaami", "Kalki 2898 AD"],
+    ["Amarendra Baahubali", "Bhallaladeva"],
+    ["Pushpa Raj", "Bhanwar Singh Shekhawat"],
+    ["Arjun Reddy", "Kabir Singh"],
+    ["DJ Tillu", "Radhika (Tillu)"],
+    ["Bhairava (Kalki)", "Commander Manas"],
+    ["Raju (RRR)", "Bheem (RRR)"],
+    ["Chari (DJ)", "Adhurs Chari"],
+    ["Adhurs Chari", "Adhurs Bhattu"],
+    ["Bhattu (Adhurs)", "Chari (Adhurs)"],
+    ["Kanchana", "Chandramukhi"],
+    ["Suriya Bhai (Businessman)", "Pandu (Pokiri)"],
+    ["Chitti Babu (Rangasthalam)", "Kumar Babu"],
+    ["Ramuloo (Gamyam)", "Abhiram (Gamyam)"],
+    ["Ganesh (Venky)", "Gajala (Venky)"],
+    ["Gajala from Washington DC", "Train Master (Venky)"],
+    ["Siddharth (Bommarillu)", "Hasini (Bommarillu)"],
+    ["Hasini (Bommarillu)", "Sravani (Majili)"],
+    ["Sravani (Majili)", "Poorvi (Majili)"],
+    ["Sita (Sita Ramam)", "Ram (Sita Ramam)"],
+    ["Aravinda (Aravinda Sametha)", "Veera Raghava"],
+    ["Balu (Jalsa)", "Sanjay Sahu"],
+    ["Sanjay Sahu", "Ravindra Narayan (Julayi)"],
+    ["Ravindra Narayan (Julayi)", "Bittu (Julayi)"],
+    ["Kattappa", "Bijjaladeva"],
+    ["Sivagami", "Devasena"],
+    ["Devasena", "Avantika"],
+    ["Srimanthudu Harsha", "Bharat (Bharat Ane Nenu)"],
+    ["Raja (Happy Days)", "Tyson (Happy Days)"],
+    ["Sye Shashank", "Sye Prudhvi"],
+    ["Anji", "Devi (Devi)"],
+    ["Subhash Chandra Bose", "Tagore"],
+    ["Shankar Dada", "Atmalingam (Shankar Dada)"],
+    ["Agent Sai Srinivasa Athreya", "Bobby (Brochevarevarura)"],
+    ["Ranga (Dhee)", "Chari (Adhurs)"],
+    ["Malli (Eega)", "Sudeep (Eega)"],
+    ["Radhika (Tillu)", "Lilly (Tillu Square)"],
+    ["Kittu (Kick)", "Kalyan (Kick)"],
+    ["Nandu (Athadu)", "Pardhu (Athadu)"],
+    ["Bujjigadu", "Chirutha Charan"],
+    ["Siddhu (Happy Days)", "Madhu (Happy Days)"],
+    ["Giri (Venky)", "Bokaro (Venky)"],
+    ["Abhi (Manmadhudu)", "Mahesh (Manmadhudu)"]
+  ] },
+  { id: "telugu-celebrities", name: "TELUGU CELEBRITIES", free: false, pairs: [
+    ["Prabhas", "Allu Arjun"],
+    ["Mahesh Babu", "Pawan Kalyan"],
+    ["NTR Jr", "Ram Charan"],
+    ["Chiranjeevi", "Balakrishna"],
+    ["Nagarjuna", "Venkatesh"],
+    ["Nani", "Vijay Deverakonda"],
+    ["Ravi Teja", "Gopichand"],
+    ["Sandeep Reddy Vanga", "S S Rajamouli"],
+    ["Trivikram Srinivas", "Sukumar"],
+    ["S S Rajamouli", "Prashanth Neel"],
+    ["Anushka Shetty", "Nayanthara"],
+    ["Samantha Ruth Prabhu", "Rashmika Mandanna"],
+    ["Keerthy Suresh", "Sai Pallavi"],
+    ["Sreeleela", "Krithi Shetty"],
+    ["Pooja Hegde", "Kiara Advani"],
+    ["Kajal Aggarwal", "Tamannaah Bhatia"],
+    ["Rana Daggubati", "Adivi Sesh"],
+    ["Satyadev", "Suhaas"],
+    ["Nikhil Siddharth", "Vishwak Sen"],
+    ["Vishwak Sen", "Siddhu Jonnalagadda"],
+    ["Siddhu Jonnalagadda", "Priyadarshi"],
+    ["Priyadarshi", "Rahul Ramakrishna"],
+    ["Ali", "Brahmanandam"],
+    ["Brahmanandam", "M S Narayana"],
+    ["Vennela Kishore", "Sapthagiri"],
+    ["Sunil", "Brahmanandam"],
+    ["Koratala Siva", "Boyapati Sreenu"],
+    ["Sekhar Kammula", "Tharun Bhascker"],
+    ["Maruthi", "Anil Ravipudi"],
+    ["Anil Ravipudi", "Srinu Vaitla"],
+    ["K Raghavendra Rao", "Dasari Narayana Rao"],
+    ["Dil Raju", "Mythri Movie Makers"],
+    ["Allu Aravind", "Suresh Babu"],
+    ["Murli Sharma", "Rao Ramesh"],
+    ["Rao Ramesh", "Prakash Raj"],
+    ["Prakash Raj", "Jagapathi Babu"],
+    ["Sai Kumar", "Samuthirakani"],
+    ["Sree Vishnu", "Satyadev"],
+    ["Teja Sajja", "Raj Tarun"],
+    ["Manchu Manoj", "Manchu Vishnu"],
+    ["Nandamuri Kalyan Ram", "Nandamuri Taraka Ratna"],
+    ["Suhas", "Kiran Abbavaram"],
+    ["Kiran Abbavaram", "Sree Vishnu"],
+    ["Nabha Natesh", "Payal Rajput"],
+    ["Anupama Parameswaran", "Niveda Thomas"],
+    ["Meenakshi Chaudhary", "Sreeleela"]
+  ] },
+  { id: "telugu-food", name: "TELUGU FOOD", free: false, pairs: [
+    ["Pesarattu", "Upma"],
+    ["Gongura Pickle", "Avakaya Pickle"],
+    ["Avakaya Pickle", "Thokkuudu Pickle"],
+    ["Pulihora", "Daddojanam"],
+    ["Mirchi Bajji", "Punugulu"],
+    ["Ariselu", "Boorelu"],
+    ["Pootharekulu", "Kakinada Kaja"],
+    ["Kakinada Kaja", "Madugula Halwa"],
+    ["Garelu", "Vada"],
+    ["Bobbatlu", "Kudumulu"],
+    ["Ragi Sangati", "Jonna Rotte"],
+    ["Natu Kodi Pulusu", "Talakaya Kura"],
+    ["Hyderabadi Chicken Biryani", "Mutton Kheema Biryani"],
+    ["Ulavacharu", "Pachi Pulusu"],
+    ["Pachi Pulusu", "Majjiga Pulusu"],
+    ["Majjiga Pulusu", "Pappu Charu"],
+    ["Pappu Charu", "Rasam"],
+    ["Tomato Pappu", "Dosakaya Pappu"],
+    ["Gongura Mutton", "Boti Curry"],
+    ["Chepala Pulusu", "Peethala Kura"],
+    ["Bambino Upma", "Semiya Payasam"],
+    ["Idli", "Dibba Rottu"],
+    ["Dibba Rottu", "Minapa Rottu"],
+    ["Allam Chutney", "Kobbari Chutney"],
+    ["Kobbari Chutney", "Palli Chutney"],
+    ["Palli Chutney", "Tomato Chutney"],
+    ["Challa Punugulu", "Mysore Bajji"],
+    ["Mysore Bajji", "Aloo Bonda"],
+    ["Onion Pakoda", "Palak Pakoda"],
+    ["Saggubiyyam Punugulu", "Minapa Punugulu"],
+    ["Bellam Gavvalu", "Sakinalu"],
+    ["Sakinalu", "Sarva Pindi"],
+    ["Sarva Pindi", "Sajja Rotte"],
+    ["Sunnundalu", "Malidu Laddoo"],
+    ["Chitti Gaarelu", "Dahi Vada"],
+    ["Double Ka Meetha", "Qubani Ka Meetha"],
+    ["Qubani Ka Meetha", "Kaddu Ka Kheer"],
+    ["Irani Chai", "Osmania Biscuit"],
+    ["Osmania Biscuit", "Tie Biscuit"],
+    ["Nalla Karam", "Karampodi"],
+    ["Chintakaya Tokku", "Usirikaya Tokku"],
+    ["Pandu Mirapakaya Pachadi", "Gongura Pachadi"],
+    ["Gongura Pachadi", "Kandi Podi"],
+    ["Kandi Podi", "Senaga Podi"],
+    ["Nethi Beerakaya Tokku Pachadi", "Vankaya Bajji Pachadi"],
+    ["Vankaya Bajji Pachadi", "Dondakaya Fry"],
+    ["Dondakaya Fry", "Bendakaya Fry"],
+    ["Chikkudukaya Fry", "Goruchikkudu Curry"],
+    ["Kakarakaya Vepudu", "Aratikaya Vepudu"],
+    ["Aratikaya Bajji", "Aloo Bajji"],
+    ["Gobi Manchurian", "Baby Corn Manchurian"],
+    ["Egg Bonda", "Bread Omlette"],
+    ["Samosa", "Onion Samosa"],
+    ["Dilpasand", "Coconut Bun"],
+    ["Kala Jamun", "Gulab Jamun"],
+    ["Jalebi", "Imarti"],
+    ["Kulfi", "Matka Kulfi"],
+    ["Badam Milk", "Rose Milk"],
+    ["Sugandhi Drink", "Nannari Sharbat"],
+    ["Kobbari Bondam", "Sugandhi Drink"],
+    ["Panasa Thonalu", "Madatha Kaja"],
+    ["Gongura Pickle", "Tomato Pickle"],
+    ["Pulihora", "Lemon Rice"],
+    ["Natukodi Pulusu", "Chepala Pulusu"],
+    ["Hyderabadi Biryani", "Mandi"],
+    ["Gutti Vankaya", "Bendakaya Fry"],
+    ["Bobbatlu", "Pootharekulu"],
+    ["Haleem", "Harees"],
+    ["Ulavacharu", "Pappu Charu"],
+    ["Dosa", "Idli"],
+    ["Mysore Bonda", "Minapa Garelu"],
+    ["Kakinada Kaja", "Tapeswaram Kaja"],
+    ["Poori", "Chapathi"],
+    ["Royyala Iguru", "Peethala Iguru"],
+    ["Chicken 65", "Chilli Chicken"],
+    ["Mutton Kheema", "Mutton Curry"],
+    ["Boti Curry", "Thalakaya Kura"],
+    ["Ragi Sankati", "Jonna Rotte"],
+    ["Gongura Mutton", "Gongura Chicken"],
+    ["Bellam Gavvalu", "Chegodilu"],
+    ["Murukulu", "Janthikalu"],
+    ["Pachadi", "Podi"],
+    ["Kandi Podi", "Karivepaku Podi"],
+    ["Nallakaram", "Guntur Karam"],
+    ["Mudda Pappu", "Palakura Pappu"],
+    ["Rasam", "Sambar"],
+    ["Majjiga Pulusu", "Mukkala Pulusu"],
+    ["Kothimeera Pachadi", "Pudina Pachadi"],
+    ["Usirikaya Pachadi", "Nimmakaya Pachadi"],
+    ["Sorakaya Pulusu", "Beerakaya Kura"],
+    ["Ariselu", "Sunnundalu"],
+    ["Rava Laddu", "Boondi Laddu"],
+    ["Bandar Laddu", "Tirupati Laddu"],
+    ["Payasam", "Paramannam"],
+    ["Kajjikayalu", "Madugula Halwa"],
+    ["Kalakand", "Kova"],
+    ["Irani Chai", "Filter Coffee"],
+    ["Sugandhi", "Nannari"],
+    ["Kulfi", "Falooda"],
+    ["Shawarma", "Franky"],
+    ["Egg Bonda", "Aloo Bonda"],
+    ["Onion Pakodi", "Corn Bajji"],
+    ["Tomato Bajji", "Aratikaya Bajji"],
+    ["Gara", "Vada"],
+    ["Dibba Rotti", "Dosa"],
+    ["Paniyaram", "Gunta Ponganalu"],
+    ["MLA Pesarattu", "Onion Dosa"],
+    ["Rava Dosa", "Masala Dosa"],
+    ["Set Dosa", "Sponge Dosa"],
+    ["Mutton Pulao", "Raju Gari Kodi Pulao"],
+    ["Kodi Vepudu", "Mutton Vepudu"],
+    ["Chintakaya Pachadi", "Pandu Mirapakaya Pachadi"],
+    ["Malai Khaja", "Kaja"],
+    ["Jeedipappu Pakam", "Palli Chikki"],
+    ["Bonda", "Bajji"]
+  ] },
+  { id: "telugu-culture", name: "TELUGU CULTURE & SLANG", free: false, pairs: [
+    ["Sankranti", "Ugadi"],
+    ["Bathukamma", "Bonalu"],
+    ["Ugadi", "Sri Rama Navami"],
+    ["Bonalu", "Sammakka Saralamma Jatara"],
+    ["RTC Bus", "Share Auto"],
+    ["Auto Rickshaw", "RTC Bus"],
+    ["Coconut Oil", "Sesame Oil"],
+    ["Mosquito Coil", "Mosquito Net"],
+    ["Panchalu", "Lungi"],
+    ["Lungi", "Kanduva"],
+    ["Kanduva", "Pancha"],
+    ["Steel Plate", "Pattal (Leaf Plate)"],
+    ["Leaf Plate (Vistaraku)", "Steel Plate"],
+    ["Kappu (Teacup)", "Steel Glass"],
+    ["Coffee Filter", "Tea Strainer"],
+    ["Pooja Room", "Tulasi Kota"],
+    ["Muggu (Rangoli)", "Chalk Piece"],
+    ["Gold Haramu", "Gold Kasulaperu"],
+    ["Mangalasutram", "Black Beads (Nallapusalu)"],
+    ["Nallapusalu", "Mettelu"],
+    ["Mettelu", "Vaddanam"],
+    ["Saree", "Langa Voni"],
+    ["Langa Voni", "Chudidar"],
+    ["Dhoti", "Kurta Pyjama"],
+    ["Marbles (Goti)", "Bongaram (Spinning Top)"],
+    ["Kite (Patang)", "Thread Reel (Manja)"],
+    ["Manja (Thread)", "Sada Thread"],
+    ["Hand Fan (Visanakarra)", "Table Fan"],
+    ["Clay Pot (Kunda)", "Water Filter"],
+    ["Axe (Goddali)", "Sickle (Koduva)"],
+    ["Sickle (Kodavali)", "Crowbar (Gaddapara)"],
+    ["Pestle (Rokali)", "Grinding Stone (Rubburaayi)"],
+    ["Chaddiannam", "Perugannam"],
+    ["Majjiga", "Lassi"],
+    ["Nimmakaya Soda", "Goli Soda"],
+    ["Goli Soda", "Sugandhi Soda"],
+    ["Panasapandu (Jackfruit)", "Regupandu (Jujube)"],
+    ["Kobbari Chippa", "Kobbari Bondam"],
+    ["Ambali", "Ragi Malt"],
+    ["Dasara", "Diwali"],
+    ["Ganesh Chaturthi", "Krishnashtami"],
+    ["Share Auto", "Ola Cab"],
+    ["Two Wheeler", "Activa"],
+    ["Local Train", "Metro"],
+    ["Saree", "Half Saree"],
+    ["Bindi", "Sindoor"],
+    ["Cheepuru", "Mop"],
+    ["Muggu", "Gobbemmalu"],
+    ["Bhogi", "Kanuma"],
+    ["Sammakka Sarakka Jatara", "Medaram Jatara"],
+    ["Tank Bund", "Necklace Road"],
+    ["Ramoji Film City", "Wonderla"],
+    ["Shilparamam", "Lumbini Park"],
+    ["Telugu Talli Flyover", "Cable Bridge"],
+    ["JNTU", "Osmania University"],
+    ["RTC Cross Roads", "Ameerpet"],
+    ["Kirana Shop", "Supermarket"],
+    ["Pan Dabba", "Tea Stall"],
+    ["Ration Shop", "MeeSeva"],
+    ["Current Bill", "Water Bill"],
+    ["Vepa Chettu", "Marri Chettu"],
+    ["Mamidi Aakulu", "Arati Aakulu"],
+    ["Pasupu", "Kumkuma"],
+    ["Agarbathi", "Karpooram"],
+    ["Roolu", "Rokali"],
+    ["Kunkudukai", "Shampoo"],
+    ["Katora", "Kancham"],
+    ["Chettu", "Mokka"],
+    ["Veedhi Kukka", "Pempudu Kukka"],
+    ["Gali Pataalu", "Manja"],
+    ["BSNL", "Jio"],
+    ["Aadhaar Card", "PAN Card"],
+    ["Voter ID", "Driving License"],
+    ["Nanna", "Babi"],
+    ["Nanna", "Thandri"],
+    ["Amma", "Thalli"],
+    ["Thammudu", "Annayya"],
+    ["Akka", "Chellelu"],
+    ["Mavayya", "Babai"],
+    ["Babai", "Peddananna"],
+    ["Pinni", "Peddamma"],
+    ["Bava", "Bavamaridi"],
+    ["Vadina", "Maradalu"],
+    ["Thatha", "Nana Thatha"],
+    ["Ammamma", "Nayanamma"],
+    ["Alludu", "Menalludu"],
+    ["Kodalu", "Menakodalu"],
+    ["Bava", "Macha"],
+    ["Macha", "Mama"],
+    ["Mama", "Bava"],
+    ["Chicha", "Macha"],
+    ["Abbe", "Abba"],
+    ["Ammo", "Baboi"],
+    ["Baboi", "Oreye"],
+    ["Oreye", "Osey"],
+    ["Osey", "Abbe"],
+    ["Pilla", "Pilladu"],
+    ["Mowa", "Bro"],
+    ["Mowa", "Chicha"],
+    ["Gantalu", "Nimishalu"],
+    ["Yama", "Bhibhatsam"],
+    ["Kiraak", "Bekaar"],
+    ["Kiraak", "Suththi (Nonsense)"],
+    ["Suththi", "Sodhi"],
+    ["Kompa", "Illu"],
+    ["Arey", "Orey"],
+    ["Orey", "Abbi"],
+    ["Pora", "Pove"],
+    ["Thikka", "Pogaru"],
+    ["Pogaru", "Thimiri"],
+    ["Gumpu", "Mandha"],
+    ["Doola", "Gula"],
+    ["Bokka", "Nastam"],
+    ["Galata", "Gola"],
+    ["Gola", "Allari"],
+    ["Allari", "Galata"],
+    ["Dhadha", "Bhayyam"]
+  ] },
+  { id: "indian-cinema", name: "INDIAN CINEMA", free: false, pairs: [
+    ["KGF", "Salaar"],
+    ["Vikram", "Beast"],
+    ["Enthiran", "2.0"],
+    ["Premam", "Bangalore Days"],
+    ["Jailer", "Vikram"],
+    ["Leo", "Master"],
+    ["Kaithi", "Vikram"],
+    ["Manjummel Boys", "Premalu"],
+    ["Premalu", "Hridayam"],
+    ["Kantara", "KGF"],
+    ["Lucifer", "Empuraan"],
+    ["Avesham", "Romancham"],
+    ["Leo", "Beast"],
+    ["Sivaji: The Boss", "Enthiran"],
+    ["Chandramukhi", "Anniyan"],
+    ["Anniyan", "Sivaji: The Boss"],
+    ["Ghajini", "7aum Arivu"],
+    ["7aum Arivu", "24"],
+    ["24", "Indru Netru Naalai"],
+    ["Maanaadu", "24"],
+    ["Thuppakki", "Kaththi"],
+    ["Kaththi", "Mersal"],
+    ["Mersal", "Sarkar"],
+    ["Bigil", "Mersal"],
+    ["Vada Chennai", "Asuran"],
+    ["Asuran", "Karnan"],
+    ["Karnan", "Sarpatta Parambarai"],
+    ["Super Deluxe", "Kumbalangi Nights"],
+    ["Kumbalangi Nights", "Angamaly Diaries"],
+    ["Angamaly Diaries", "Ayyappanum Koshiyum"],
+    ["Ayyappanum Koshiyum", "Bramayugam"],
+    ["Bramayugam", "Manjummel Boys"],
+    ["Minnal Murali", "Hanu-Man"],
+    ["Charlie", "Bangalore Days"],
+    ["Kirik Party", "Kantara"],
+    ["Charlie 777", "Kirik Party"],
+    ["Mufti", "KGF"],
+    ["Kabali", "Kaala"],
+    ["Kaala", "Vada Chennai"],
+    ["Pithamagan", "Sethu"],
+    ["I (Movie)", "Anniyan"],
+    ["Thani Oruvan", "Velaikkaran"],
+    ["Vikram Vedha", "Kaithi"],
+    ["Doctor", "Beast"],
+    ["Soodhu Kavvum", "Kadhalum Kadandhu Pogum"],
+    ["Love Today", "Comali"],
+    ["Dada", "Hridayam"],
+    ["Joe", "Love Today"],
+    ["Petta", "Darbar"],
+    ["Darbar", "Jailer"],
+    ["Soorarai Pottru", "Jai Bhim"],
+    ["Jai Bhim", "Asuran"],
+    ["Theri", "Mersal"],
+    ["Singam", "Singam 2"],
+    ["Saamy", "Singam"],
+    ["Vettaiyan", "Jailer"],
+    ["Amaran", "Major"],
+    ["Kantara", "KGF Chapter 2"],
+    ["Master", "Varisu"],
+    ["Jailer", "Leo"],
+    ["Ponniyin Selvan 1", "Ponniyin Selvan 2"],
+    ["Mankatha", "Billa"],
+    ["Karnan", "Mariyan"],
+    ["Drishyam", "Drishyam 2"],
+    ["Kumbalangi Nights", "Maheshinte Prathikaaram"],
+    ["Minnal Murali", "Joji"],
+    ["Ayyappanum Koshiyum", "Driving Licence"],
+    ["Charlie", "Kali"],
+    ["Trance", "Ustad Hotel"],
+    ["Manjummel Boys", "Aavesham"],
+    ["Romancham", "Bramayugam"],
+    ["The Goat Life", "Lucifer"],
+    ["Bheeshma Parvam", "Big B"],
+    ["Mungaru Male", "Gaalipata"],
+    ["Ugramm", "KGF Chapter 1"],
+    ["RangiTaranga", "Ulidavaru Kandanthe"],
+    ["Lucia", "Garuda Gamana Vrishabha Vahana"],
+    ["Sapta Sagaradaache Ello", "Mufti"],
+    ["Ghajini", "7G Rainbow Colony"],
+    ["Nayan", "Thalapathi"],
+    ["Roja", "Bombay"],
+    ["Ok Kanmani", "Alaipayuthey"],
+    ["Vinnaithaandi Varuvaayaa", "Minnale"],
+    ["Boys", "Jeans"],
+    ["Indian", "Mudhalvan"],
+    ["Vettaiyaadu Vilaiyaadu", "Yennai Arindhaal"],
+    ["Dheena", "Ramanaa"],
+    ["Padayappa", "Arunachalam"],
+    ["Ratsasan", "Pizza"],
+    ["Super Deluxe", "Aaranya Kaandam"],
+    ["Jigarthanda", "Iraivi"],
+    ["Viswasam", "Vedalam"],
+    ["Don", "Doctor"],
+    ["Maharaja", "Chittha"],
+    ["Garuda Gamana Vrishabha Vahana", "Richard Antony"],
+    ["Tagaru", "Salaga"],
+    ["Kanthaswamy", "Ayan"],
+    ["Ko", "Rangam"],
+    ["Dasavathaaram", "Vishwaroopam"],
+    ["Hey Ram", "Aalavandhan"],
+    ["Thani Oruvan", "Bogan"],
+    ["Dilwale Dulhania Le Jayenge", "Kuch Kuch Hota Hai"],
+    ["3 Idiots", "PK"],
+    ["Dangal", "Sultan"],
+    ["Sholay", "Deewaar"],
+    ["Kabhi Khushi Kabhie Gham", "Kal Ho Naa Ho"],
+    ["Zindagi Na Milegi Dobara", "Yeh Jawaani Hai Deewani"],
+    ["Gangs of Wasseypur", "Satya"],
+    ["Satya", "Company"],
+    ["Chak De! India", "Lagaan"],
+    ["Lagaan", "Swades"],
+    ["Swades", "Chak De! India"],
+    ["Koi... Mil Gaya", "Krrish"],
+    ["Krrish", "Ra.One"],
+    ["Dhoom", "Dhoom 2"],
+    ["Dhoom 2", "Dhoom 3"],
+    ["Bajrangi Bhaijaan", "Sultan"],
+    ["Kabir Singh", "Animal"],
+    ["Animal", "Jawan"],
+    ["Jawan", "Pathaan"],
+    ["Pathaan", "Tiger Zinda Hai"],
+    ["Tiger Zinda Hai", "War"],
+    ["War", "Fighter"],
+    ["Uri: The Surgical Strike", "Shershaah"],
+    ["Shershaah", "Fighter"],
+    ["Gully Boy", "Rockstar"],
+    ["Rockstar", "Tamasha"],
+    ["Tamasha", "Barfi!"],
+    ["Barfi!", "Ae Dil Hai Mushkil"],
+    ["Queen", "Tanu Weds Manu"],
+    ["Tanu Weds Manu", "Tanu Weds Manu Returns"],
+    ["Stree", "Stree 2"],
+    ["Stree 2", "Munjya"],
+    ["Munjya", "Bhediya"],
+    ["Bhediya", "Roohi"],
+    ["Andhadhun", "Drishyam"],
+    ["Article 15", "Pink"],
+    ["Pink", "Badla"],
+    ["Super 30", "Chhichhore"],
+    ["Chhichhore", "3 Idiots"],
+    ["Bajirao Mastani", "Padmaavat"],
+    ["Padmaavat", "Ram-Leela"],
+    ["Ram-Leela", "Devdas"],
+    ["Devdas", "Hum Dil De Chuke Sanam"],
+    ["Munna Bhai M.B.B.S.", "Lage Raho Munna Bhai"],
+    ["Welcome", "Singh Is Kinng"],
+    ["Hera Pheri", "Phir Hera Pheri"],
+    ["Phir Hera Pheri", "Welcome"],
+    ["Garam Masala", "Bhool Bhulaiyaa"],
+    ["Bhool Bhulaiyaa", "Bhool Bhulaiyaa 2"],
+    ["Bhool Bhulaiyaa 2", "Bhool Bhulaiyaa 3"],
+    ["Crew", "Veere Di Wedding"],
+    ["Fukrey", "Fukrey Returns"],
+    ["Delhi Belly", "Go Goa Gone"],
+    ["Go Goa Gone", "Stree"],
+    ["Laapataa Ladies", "12th Fail"],
+    ["12th Fail", "Super 30"],
+    ["Om Shanti Om", "Chennai Express"],
+    ["Chennai Express", "Happy New Year"],
+    ["Karan Arjun", "Koyla"],
+    ["Chak De! India", "Bhaag Milkha Bhaag"],
+    ["Dil Chahta Hai", "Lakshya"],
+    ["Welcome", "Dhamaal"],
+    ["Golmaal", "Housefull"],
+    ["Kahaani", "Pink"],
+    ["Bajrangi Bhaijaan", "Ek Tha Tiger"],
+    ["War", "Bang Bang"],
+    ["Don", "Don 2"],
+    ["Om Shanti Om", "Main Hoon Na"],
+    ["Zindagi Na Milegi Dobara", "Dil Dhadakne Do"],
+    ["Tamasha", "Highway"],
+    ["Jab We Met", "Love Aaj Kal"],
+    ["Barfi!", "Jagga Jasoos"],
+    ["Badrinath Ki Dulhania", "Humpty Sharma Ki Dulhania"],
+    ["2 States", "Half Girlfriend"],
+    ["Aashiqui 2", "Ek Villain"],
+    ["Sanju", "MS Dhoni: The Untold Story"],
+    ["Jodhaa Akbar", "Devdas"],
+    ["Gangubai Kathiawadi", "Raazi"],
+    ["Article 15", "Mulk"],
+    ["Badhaai Ho", "Dream Girl"],
+    ["Andhadhun", "Monica O My Darling"],
+    ["Animal", "Rocky Aur Rani Kii Prem Kahaani"],
+    ["Rocky Aur Rani Kii Prem Kahaani", "Tu Jhoothi Main Makkaar"],
+    ["Brahmastra", "Ra.One"],
+    ["Taare Zameen Par", "Secret Superstar"],
+    ["Rang De Basanti", "Lakshya"],
+    ["Guru", "Yuva"],
+    ["Lagaan", "Mangal Pandey"],
+    ["Jab We Met", "Tanu Weds Manu Returns"],
+    ["Piku", "Dear Zindagi"],
+    ["Kapoor & Sons", "Neerja"],
+    ["Hindi Medium", "English Vinglish"],
+    ["Gadar", "Border"],
+    ["Agneepath", "Don"],
+    ["Gangs of Wasseypur", "Shootout at Lokhandwala"]
+  ] },
+  { id: "indian-celebrities", name: "INDIAN CELEBRITIES", free: false, pairs: [
+    ["Rajinikanth", "Kamal Haasan"],
+    ["Thalapathy Vijay", "Ajith Kumar"],
+    ["Suriya", "Karthi"],
+    ["Fahadh Faasil", "Dulquer Salmaan"],
+    ["Yash", "Rishab Shetty"],
+    ["Dhanush", "Simbhu"],
+    ["Vijay Sethupathi", "Sivakarthikeyan"],
+    ["Lokesh Kanagaraj", "Nelson Dilipkumar"],
+    ["Nelson Dilipkumar", "Atlee"],
+    ["Atlee", "Lokesh Kanagaraj"],
+    ["Nayanthara", "Trisha Krishnan"],
+    ["Trisha Krishnan", "Keerthy Suresh"],
+    ["Sai Pallavi", "Nazriya Nazim"],
+    ["Nazriya Nazim", "Kalyani Priyadarshan"],
+    ["Mammootty", "Mohanlal"],
+    ["Dulquer Salmaan", "Prithviraj Sukumaran"],
+    ["Prithviraj Sukumaran", "Fahadh Faasil"],
+    ["Tovino Thomas", "Unni Mukundan"],
+    ["Shivarajkumar", "Sudeep"],
+    ["Sudeep", "Upendra"],
+    ["Upendra", "Puneeth Rajkumar"],
+    ["Rishab Shetty", "Rakshit Shetty"],
+    ["Rakshit Shetty", "Raj B Shetty"],
+    ["Dhanush", "Vijay Sethupathi"],
+    ["Siddharth", "Madhavan"],
+    ["Madhavan", "Arvind Swamy"],
+    ["Arvind Swamy", "Suryah"],
+    ["S J Suryah", "Vijay Sethupathi"],
+    ["Rashmika Mandanna", "Srinidhi Shetty"],
+    ["Srinidhi Shetty", "Rukmini Vasanth"],
+    ["Shah Rukh Khan", "Salman Khan"],
+    ["Salman Khan", "Aamir Khan"],
+    ["Ranbir Kapoor", "Ranveer Singh"],
+    ["Akshay Kumar", "Ajay Devgn"],
+    ["Amitabh Bachchan", "Dharmendra"],
+    ["Deepika Padukone", "Alia Bhatt"],
+    ["Alia Bhatt", "Katrina Kaif"],
+    ["Katrina Kaif", "Kareena Kapoor"],
+    ["Priyanka Chopra", "Anushka Sharma"],
+    ["Vicky Kaushal", "Kartik Aaryan"],
+    ["Kartik Aaryan", "Ayushmann Khurrana"],
+    ["Ayushmann Khurrana", "Rajkummar Rao"],
+    ["Rajkummar Rao", "Pankaj Tripathi"],
+    ["Pankaj Tripathi", "Nawazuddin Siddiqui"],
+    ["Nawazuddin Siddiqui", "Manoj Bajpayee"],
+    ["Karan Johar", "Sanjay Leela Bhansali"],
+    ["Sanjay Leela Bhansali", "Rajkumar Hirani"],
+    ["Rajkumar Hirani", "Anurag Kashyap"],
+    ["Hrithik Roshan", "Tiger Shroff"],
+    ["Shraddha Kapoor", "Kriti Sanon"],
+    ["Kriti Sanon", "Kiara Advani"],
+    ["Varun Dhawan", "Sidharth Malhotra"],
+    ["Saif Ali Khan", "Abhishek Bachchan"],
+    ["John Abraham", "Vidyut Jammwal"],
+    ["Tiger Shroff", "Vidyut Jammwal"],
+    ["Sunny Deol", "Bobby Deol"],
+    ["Bobby Deol", "Sanjay Dutt"],
+    ["Sanjay Dutt", "Suniel Shetty"],
+    ["Anil Kapoor", "Jackie Shroff"],
+    ["Tabu", "Kajol"],
+    ["Kajol", "Rani Mukerji"],
+    ["Sridevi", "Madhuri Dixit"]
+  ] },
+  { id: "hollywood", name: "HOLLYWOOD", free: false, pairs: [
+    ["Avengers: Endgame", "Justice League"],
+    ["Titanic", "Avatar"],
+    ["Inception", "Interstellar"],
+    ["The Dark Knight", "Batman Begins"],
+    ["The Matrix", "Inception"],
+    ["Spider-Man: No Way Home", "Doctor Strange in the Multiverse of Madness"],
+    ["The Lion King", "Aladdin"],
+    ["Toy Story", "Monsters, Inc."],
+    ["Shrek", "Madagascar"],
+    ["Finding Nemo", "Shark Tale"],
+    ["Frozen", "Tangled"],
+    ["The Lord of the Rings: The Fellowship of the Ring", "The Hobbit: An Unexpected Journey"],
+    ["Gladiator", "Troy"],
+    ["Braveheart", "Gladiator"],
+    ["Jurassic Park", "King Kong"],
+    ["Avatar: The Way of Water", "Aquaman"],
+    ["Iron Man", "Man of Steel"],
+    ["Captain America: The Winter Soldier", "Black Panther"],
+    ["Thor: Ragnarok", "Guardians of the Galaxy"],
+    ["Deadpool", "Logan"],
+    ["Zack Snyder's Justice League", "The Avengers"],
+    ["The Dark Knight Rises", "The Batman"],
+    ["Joker", "The Batman"],
+    ["Dune", "Interstellar"],
+    ["Dune: Part Two", "Star Wars: The Force Awakens"],
+    ["Oppenheimer", "Barbie"],
+    ["Interstellar", "Gravity"],
+    ["The Martian", "Gravity"],
+    ["Ready Player One", "Free Guy"],
+    ["Mission: Impossible - Fallout", "Skyfall"],
+    ["John Wick", "The Equalizer"],
+    ["Fast & Furious 7", "The Fate of the Furious"],
+    ["Top Gun: Maverick", "Mission: Impossible - Dead Reckoning"],
+    ["Mad Max: Fury Road", "Dune"],
+    ["The Conjuring", "Insidious"],
+    ["Insidious", "Annabelle"],
+    ["A Quiet Place", "Bird Box"],
+    ["Get Out", "Us"],
+    ["Knives Out", "Glass Onion"],
+    ["The Hangover", "We're the Millers"],
+    ["Now You See Me", "Knives Out"],
+    ["Baby Driver", "Drive"],
+    ["Ford v Ferrari", "Rush"],
+    ["The Wolf of Wall Street", "The Big Short"],
+    ["Django Unchained", "The Hateful Eight"],
+    ["Inglourious Basterds", "Django Unchained"],
+    ["Home Alone 2: Lost in New York", "Jumanji"],
+    ["Jumanji: Welcome to the Jungle", "Night at the Museum"],
+    ["Pirates of the Caribbean: The Curse of the Black Pearl", "Sherlock Holmes"],
+    ["Logan", "X-Men: Days of Future Past"],
+    ["Black Widow", "Captain Marvel"],
+    ["Wonder Woman", "Aquaman"],
+    ["Shazam!", "Black Adam"],
+    ["Godzilla vs. Kong", "Pacific Rim"],
+    ["Pacific Rim", "Transformers"],
+    ["Transformers: Dark of the Moon", "Real Steel"],
+    ["The Terminator", "RoboCop"],
+    ["Terminator 2: Judgment Day", "The Matrix"],
+    ["Alien", "Predator"],
+    ["Dawn of the Planet of the Apes", "Rise of the Planet of the Apes"],
+    ["Speed", "Die Hard"],
+    ["Die Hard", "Lethal Weapon"],
+    ["Avengers", "Justice League"],
+    ["Spider-Man", "Iron Man"],
+    ["Thor", "Captain America"],
+    ["Harry Potter", "Lord of the Rings"],
+    ["Star Wars", "Star Trek"],
+    ["Jurassic Park", "Godzilla"],
+    ["The Matrix", "Terminator"],
+    ["Mission: Impossible", "James Bond"],
+    ["Fast & Furious", "Transformers"],
+    ["The Godfather", "Goodfellas"],
+    ["Pulp Fiction", "Fight Club"],
+    ["Forrest Gump", "The Shawshank Redemption"],
+    ["Pirates of the Caribbean", "Indiana Jones"],
+    ["Dune", "Blade Runner 2049"],
+    ["Mad Max: Fury Road", "John Wick"],
+    ["The Avengers", "Avengers: Endgame"],
+    ["Black Panther", "Doctor Strange"],
+    ["Guardians of the Galaxy", "Suicide Squad"],
+    ["Deadpool", "Wolverine"],
+    ["Man of Steel", "Aquaman"],
+    ["Toy Story", "Shrek"],
+    ["Finding Nemo", "The Lion King"],
+    ["Despicable Me", "Minions"],
+    ["Up", "Inside Out"],
+    ["Spider-Man: Into the Spider-Verse", "The Incredibles"],
+    ["Kung Fu Panda", "How to Train Your Dragon"],
+    ["IT", "A Quiet Place"],
+    ["Scream", "Halloween"],
+    ["The Exorcist", "The Shining"],
+    ["Avatar: The Way of Water", "Avengers: Infinity War"],
+    ["Top Gun: Maverick", "Mission: Impossible - Fallout"],
+    ["Rocky", "Creed"],
+    ["Rambo", "Die Hard"],
+    ["The Lord of the Rings", "The Hobbit"],
+    ["Interstellar", "The Martian"],
+    ["Gravity", "Arrival"],
+    ["Se7en", "The Silence of the Lambs"],
+    ["The Wolf of Wall Street", "Catch Me If You Can"],
+    ["The Social Network", "Steve Jobs"],
+    ["Tenet", "Dunkirk"],
+    ["Memento", "The Prestige"],
+    ["Kill Bill", "Reservoir Dogs"],
+    ["The Terminator", "Predator"],
+    ["Alien", "The Thing"],
+    ["E.T. the Extra-Terrestrial", "Close Encounters of the Third Kind"],
+    ["Jaws", "King Kong"],
+    ["The Hunger Games", "The Maze Runner"],
+    ["Twilight", "The Vampire Diaries"],
+    ["La La Land", "A Star is Born"],
+    ["The Grand Budapest Hotel", "Parasite"],
+    ["Everything Everywhere All at Once", "Spider-Man: No Way Home"]
+  ] },
+  { id: "global-celebrities", name: "GLOBAL CELEBRITIES", free: false, pairs: [
+    ["Robert Downey Jr.", "Chris Evans"],
+    ["Tom Cruise", "Brad Pitt"],
+    ["Leonardo DiCaprio", "Johnny Depp"],
+    ["Dwayne Johnson", "John Cena"],
+    ["Cillian Murphy", "Robert Downey Jr."],
+    ["Justin Bieber", "Shawn Mendes"],
+    ["Neymar Jr", "Kylian Mbappe"],
+    ["LeBron James", "Stephen Curry"],
+    ["Bill Gates", "Elon Musk"],
+    ["Elon Musk", "Mark Zuckerberg"],
+    ["Jeff Bezos", "Bill Gates"],
+    ["Christopher Nolan", "James Cameron"],
+    ["James Cameron", "Steven Spielberg"],
+    ["Margot Robbie", "Emma Stone"],
+    ["Scarlett Johansson", "Elizabeth Olsen"],
+    ["Zendaya", "Sydney Sweeney"],
+    ["Tom Holland", "Timothee Chalamet"],
+    ["Timothee Chalamet", "Austin Butler"],
+    ["Keanu Reeves", "Tom Cruise"],
+    ["Will Smith", "Denzel Washington"],
+    ["Ryan Reynolds", "Hugh Jackman"],
+    ["Hugh Jackman", "Christian Bale"],
+    ["Christian Bale", "Ben Affleck"],
+    ["Jackie Chan", "Bruce Lee"],
+    ["Angelina Jolie", "Charlize Theron"],
+    ["Selena Gomez", "Ariana Grande"],
+    ["Dua Lipa", "Taylor Swift"],
+    ["Shakira", "Jennifer Lopez"]
+  ] },
+  { id: "screen-streaming", name: "WEB SERIES, OTT & ANIME", free: false, pairs: [
+    ["Mirzapur", "Sacred Games"],
+    ["The Family Man", "Farzi"],
+    ["Panchayat", "Gullak"],
+    ["Kota Factory", "Aspirants"],
+    ["Sacred Games", "Paatal Lok"],
+    ["Rana Naidu", "Mirzapur"],
+    ["Scam 1992: The Harshad Mehta Story", "Scam 2003: The Telgi Story"],
+    ["Delhi Crime", "Paatal Lok"],
+    ["Made in Heaven", "Four More Shots Please!"],
+    ["Aarya", "Saas Bahu Aur Flamingo"],
+    ["Breathe", "Asur"],
+    ["Asur", "The Family Man"],
+    ["Game of Thrones", "House of the Dragon"],
+    ["Stranger Things", "Dark"],
+    ["Money Heist", "Squid Game"],
+    ["Breaking Bad", "Better Call Saul"],
+    ["Better Call Saul", "Ozark"],
+    ["Ozark", "Narcos"],
+    ["Narcos", "Narcos: Mexico"],
+    ["The Boys", "Invincible"],
+    ["The Last of Us", "Fallout"],
+    ["Wednesday", "Stranger Things"],
+    ["Squid Game", "Alice in Borderland"],
+    ["Dark", "1899"],
+    ["The Crown", "Peaky Blinders"],
+    ["Peaky Blinders", "Sherlock"],
+    ["Sherlock", "Lupin"],
+    ["Black Mirror", "Love, Death & Robots"],
+    ["Lucifer", "The Sandman"],
+    ["Euphoria", "Sex Education"],
+    ["Sex Education", "Elite"],
+    ["You", "Dexter"],
+    ["Modern Love Hyderabad", "Anger Tales"],
+    ["Save The Tigers", "90's - A Middle Class Biopic"],
+    ["90's - A Middle Class Biopic", "Kumari Srimathi"],
+    ["Yakshini", "Vyooham"],
+    ["Scam 1992", "Rocket Boys"],
+    ["Dhootha", "Save the Tigers"],
+    ["Loser", "Vyavastha"],
+    ["Kumari Srimathi", "9 Hours"],
+    ["The Boys", "Gen V"],
+    ["The Office", "Friends"],
+    ["How I Met Your Mother", "The Big Bang Theory"],
+    ["Brooklyn Nine-Nine", "Parks and Recreation"],
+    ["Wednesday", "The Umbrella Academy"],
+    ["Loki", "WandaVision"],
+    ["Daredevil", "The Punisher"],
+    ["True Detective", "Mindhunter"],
+    ["Chernobyl", "Band of Brothers"],
+    ["The Witcher", "The Sandman"],
+    ["Suzhal", "Vadhandhi"],
+    ["Vilangu", "Ayali"],
+    ["Delhi Crime", "Criminal Justice"],
+    ["Hostages", "Special Ops"],
+    ["Naruto Uzumaki", "Sasuke Uchiha"],
+    ["Monkey D. Luffy", "Roronoa Zoro"],
+    ["Goku", "Vegeta"],
+    ["Light Yagami", "L Lawliet"],
+    ["Tanjiro Kamado", "Nezuko Kamado"],
+    ["Eren Yeager", "Levi Ackerman"],
+    ["Satoru Gojo", "Ryomen Sukuna"],
+    ["Izuku Midoriya", "Katsuki Bakugo"],
+    ["Ichigo Kurosaki", "Uryu Ishida"],
+    ["Saitama", "Genos"],
+    ["Naruto", "One Piece"],
+    ["Death Note", "Code Geass"],
+    ["Attack on Titan", "Demon Slayer"],
+    ["Jujutsu Kaisen", "Chainsaw Man"],
+    ["My Hero Academia", "Black Clover"],
+    ["Dragon Ball Z", "Naruto Shippuden"],
+    ["Hunter x Hunter", "Yu Yu Hakusho"],
+    ["Fullmetal Alchemist: Brotherhood", "Attack on Titan"],
+    ["Demon Slayer", "Jujutsu Kaisen"],
+    ["Solo Leveling", "Bleach"],
+    ["Bleach", "One Piece"],
+    ["Kakashi Hatake", "Itachi Uchiha"],
+    ["Itachi Uchiha", "Sasuke Uchiha"],
+    ["Yuji Itadori", "Megumi Fushiguro"],
+    ["Gojo Satoru", "Kakashi Hatake"],
+    ["Roronoa Zoro", "Sanji"],
+    ["Luffy", "Naruto"],
+    ["Gon Freecss", "Killua Zoldyck"],
+    ["Mikasa Ackerman", "Armin Arlert"],
+    ["Ash Ketchum", "Pikachu"],
+    ["Pikachu", "Charizard"],
+    ["Spirited Away", "Your Name"],
+    ["Your Name", "Weathering With You"]
+  ] },
+  { id: "music", name: "MUSIC", free: false, pairs: [
+    ["Devi Sri Prasad", "S S Thaman"],
+    ["S S Thaman", "M M Keeravani"],
+    ["M M Keeravani", "A R Rahman"],
+    ["A R Rahman", "Harris Jayaraj"],
+    ["Anirudh Ravichander", "G V Prakash"],
+    ["Sid Sriram", "Anurag Kulkarni"],
+    ["Anurag Kulkarni", "Armaan Malik"],
+    ["Arijit Singh", "Atif Aslam"],
+    ["Atif Aslam", "Jubin Nautiyal"],
+    ["Jubin Nautiyal", "Sonu Nigam"],
+    ["Shreya Ghoshal", "Sunidhi Chauhan"],
+    ["Sunidhi Chauhan", "Neha Kakkar"],
+    ["Neha Kakkar", "Dhvani Bhanushali"],
+    ["Naatu Naatu", "Buttabomma"],
+    ["Buttabomma", "Ramuloo Ramulaa"],
+    ["Ramuloo Ramulaa", "Samajavaragamana"],
+    ["Samajavaragamana", "Srivalli"],
+    ["Srivalli", "Saami Saami"],
+    ["Naatu Naatu", "Dosti (RRR)"],
+    ["Kala Chashma", "Kar Gayi Chull"],
+    ["Tum Hi Ho", "Channa Mereya"],
+    ["Channa Mereya", "Kesariya"],
+    ["Kesariya", "Apna Bana Le"],
+    ["Diljit Dosanjh", "Badshah"],
+    ["Badshah", "Yo Yo Honey Singh"],
+    ["Yo Yo Honey Singh", "Raftaar"],
+    ["Sidhu Moose Wala", "AP Dhillon"],
+    ["AP Dhillon", "Gurinder Gill"],
+    ["Shreya Ghoshal", "Chinmayi Sripada"],
+    ["Chinmayi Sripada", "Jonita Gandhi"],
+    ["Karthik (Singer)", "Haricharan"],
+    ["Vijay Yesudas", "Unni Krishnan"],
+    ["Devi Sri Prasad", "Thaman S"],
+    ["Sid Sriram", "Anirudh Ravichander"],
+    ["Mickey J Meyer", "Gopi Sundar"],
+    ["Mani Sharma", "Harris Jayaraj"],
+    ["Ilaiyaraaja", "SP Balasubrahmanyam"],
+    ["KS Chithra", "Shreya Ghoshal"],
+    ["Sunitha", "Geetha Madhuri"],
+    ["Anurag Kulkarni", "Ram Miriyala"],
+    ["Mangli", "Chinmayi Sripaada"],
+    ["Karthik", "Haricharan"],
+    ["Arijit Singh", "Jubin Nautiyal"],
+    ["Sonu Nigam", "Udit Narayan"],
+    ["Shaan", "KK"],
+    ["Badshah", "Honey Singh"],
+    ["Pritam", "Vishal-Shekhar"],
+    ["Amit Trivedi", "Shankar-Ehsaan-Loy"],
+    ["Samajavaragamana", "Inkem Inkem Kaavaale"],
+    ["Srivalli", "Oo Antava"],
+    ["Ramuloo Ramulaa", "Vachinde"],
+    ["Chammak Challo", "Sheila Ki Jawani"],
+    ["Carnatic Music", "Hindustani Music"],
+    ["Veena", "Sitar"],
+    ["Tabla", "Mridangam"],
+    ["Flute", "Harmonium"],
+    ["Pallavi", "Charanam"],
+    ["Ed Sheeran", "Justin Bieber"],
+    ["Taylor Swift", "Ariana Grande"],
+    ["Billie Eilish", "Olivia Rodrigo"],
+    ["The Weeknd", "Bruno Mars"],
+    ["Drake", "Kendrick Lamar"],
+    ["Eminem", "Snoop Dogg"],
+    ["Coldplay", "Imagine Dragons"],
+    ["One Direction", "5 Seconds of Summer"],
+    ["Justin Timberlake", "Usher"],
+    ["Beyonce", "Rihanna"],
+    ["Lady Gaga", "Katy Perry"],
+    ["Adele", "Sia"],
+    ["Dua Lipa", "Bebe Rexha"],
+    ["Post Malone", "Travis Scott"],
+    ["Harry Styles", "Zayn Malik"],
+    ["Shawn Mendes", "Charlie Puth"],
+    ["Maroon 5", "OneRepublic"],
+    ["Linkin Park", "Green Day"],
+    ["Queen", "The Beatles"],
+    ["Michael Jackson", "Prince"],
+    ["Pop Music", "R&B"],
+    ["Hip Hop", "Rap"],
+    ["Rock Music", "Heavy Metal"],
+    ["EDM", "House Music"],
+    ["Jazz", "Blues"],
+    ["Country Music", "Folk Music"],
+    ["Spotify", "Apple Music"],
+    ["SoundCloud", "Bandcamp"],
+    ["Grammy Awards", "Billboard Music Awards"],
+    ["Coachella", "Tomorrowland"],
+    ["DJ Snake", "Marshmello"],
+    ["Alan Walker", "Martin Garrix"],
+    ["David Guetta", "Calvin Harris"],
+    ["Taylor Swift", "Selena Gomez"],
+    ["Ariana Grande", "Dua Lipa"],
+    ["Eminem", "Jay-Z"],
+    ["Adele", "Sam Smith"],
+    ["One Direction", "BTS"],
+    ["Blackpink", "Twice"],
+    ["Michael Jackson", "Elvis Presley"],
+    ["Madonna", "Whitney Houston"],
+    ["Pop", "R&B"],
+    ["Rock", "Heavy Metal"],
+    ["EDM", "House"],
+    ["Country", "Folk"],
+    ["Album", "Single"],
+    ["Concert", "Music Festival"],
+    ["Grammy Award", "Billboard Music Award"],
+    ["Guitar", "Piano"],
+    ["Drum Kit", "Bass Guitar"],
+    ["DJ", "Producer"]
+  ] },
+  { id: "cricket", name: "CRICKET", free: false, pairs: [
+    ["Sachin Tendulkar", "Rahul Dravid"],
+    ["Virat Kohli", "Rohit Sharma"],
+    ["M S Dhoni", "Suresh Raina"],
+    ["Hardik Pandya", "Ravindra Jadeja"],
+    ["Jasprit Bumrah", "Mohammed Shami"],
+    ["Ravichandran Ashwin", "Ravindra Jadeja"],
+    ["Yuvraj Singh", "Suresh Raina"],
+    ["Gautam Gambhir", "Virender Sehwag"],
+    ["Virender Sehwag", "Sachin Tendulkar"],
+    ["K L Rahul", "Shreyas Iyer"],
+    ["Rishabh Pant", "Sanju Samson"],
+    ["Shubman Gill", "Yashasvi Jaiswal"],
+    ["Yashasvi Jaiswal", "Rinku Singh"],
+    ["Rinku Singh", "Shivam Dube"],
+    ["Suryakumar Yadav", "Rinku Singh"],
+    ["IPL", "WPL"],
+    ["World Cup", "Champions Trophy"],
+    ["T20 World Cup", "ODI World Cup"],
+    ["Test Match", "One Day International"],
+    ["Mumbai Indians", "Chennai Super Kings"],
+    ["Royal Challengers Bengaluru", "Kolkata Knight Riders"],
+    ["Kolkata Knight Riders", "Sunrisers Hyderabad"],
+    ["Sunrisers Hyderabad", "Mumbai Indians"],
+    ["Delhi Capitals", "Punjab Kings"],
+    ["Rajasthan Royals", "Gujarat Titans"],
+    ["Lucknow Super Giants", "Gujarat Titans"],
+    ["Cover Drive", "Pull Shot"],
+    ["Sweep Shot", "Reverse Sweep"],
+    ["Helicopter Shot", "Scoop Shot"],
+    ["Scoop Shot", "Switch Hit"],
+    ["Yorker", "Full Toss"],
+    ["Bouncer", "Beamer"],
+    ["Leg Spinner", "Off Spinner"],
+    ["Googly", "Doosra"],
+    ["Doosra", "Carrom Ball"],
+    ["Outswinger", "Inswinger"],
+    ["Wicketkeeper", "First Slip"],
+    ["Powerplay", "Free Hit"],
+    ["Free Hit", "Super Over"],
+    ["Super Over", "Bowl Out"],
+    ["Leg Before Wicket", "Caught Behind"],
+    ["Run Out", "Stumped"],
+    ["Stumped", "Hit Wicket"],
+    ["Duck", "Golden Duck"],
+    ["Century", "Half Century"],
+    ["Hat-trick", "Five-Wicket Haul"],
+    ["Pat Cummins", "Mitchell Starc"],
+    ["Steve Smith", "Marnus Labuschagne"],
+    ["Kane Williamson", "Joe Root"],
+    ["Babar Azam", "Mohammad Rizwan"],
+    ["Glenn Maxwell", "Marcus Stoinis"],
+    ["Rashid Khan", "Mujeeb Ur Rahman"],
+    ["Four", "Six"],
+    ["MS Dhoni", "Yuvraj Singh"],
+    ["Sourav Ganguly", "VVS Laxman"],
+    ["Hardik Pandya", "KL Rahul"],
+    ["Suryakumar Yadav", "Shreyas Iyer"],
+    ["Kapil Dev", "Sunil Gavaskar"],
+    ["Anil Kumble", "Harbhajan Singh"],
+    ["Zaheer Khan", "Ashish Nehra"],
+    ["Ricky Ponting", "Steve Waugh"],
+    ["Shane Warne", "Glenn McGrath"],
+    ["Brett Lee", "Shoaib Akhtar"],
+    ["Adam Gilchrist", "Matthew Hayden"],
+    ["Brian Lara", "Vivian Richards"],
+    ["Chris Gayle", "AB de Villiers"],
+    ["Jacques Kallis", "Shaun Pollock"],
+    ["Dale Steyn", "Morne Morkel"],
+    ["Wasim Akram", "Waqar Younis"],
+    ["Muttiah Muralitharan", "Lasith Malinga"],
+    ["Kumar Sangakkara", "Mahela Jayawardene"],
+    ["Kane Williamson", "Ross Taylor"],
+    ["Ben Stokes", "Joe Root"],
+    ["Royal Challengers Bangalore", "Kolkata Knight Riders"],
+    ["Sunrisers Hyderabad", "Rajasthan Royals"],
+    ["T20 World Cup", "Asia Cup"],
+    ["World Test Championship", "Border-Gavaskar Trophy"],
+    ["Ashes", "IPL"],
+    ["Straight Drive", "Flick"],
+    ["Sweep", "Reverse Sweep"],
+    ["Square Cut", "Hook Shot"],
+    ["Yorker", "Bouncer"],
+    ["Inswing", "Outswing"],
+    ["Off Spin", "Leg Spin"],
+    ["LBW", "Caught Behind"],
+    ["Powerplay", "Death Overs"],
+    ["Free Hit", "No Ball"],
+    ["Wicket Keeper", "Slip Fielder"],
+    ["Umpire", "Third Umpire"]
+  ] },
+  { id: "sports", name: "SPORTS & GAMES", free: false, pairs: [
+    ["Kabaddi", "Kho Kho"],
+    ["Badminton", "Tennis"],
+    ["Football", "Hockey"],
+    ["Cricket Bat", "Tennis Racket"],
+    ["Table Tennis", "Lawn Tennis"],
+    ["Basketball", "Volleyball"],
+    ["Volleyball", "Throwball"],
+    ["Chess", "Checkers"],
+    ["Carrom", "Ludo"],
+    ["Snooker", "Billiards"],
+    ["Golf", "Mini Golf"],
+    ["Boxing", "Wrestling"],
+    ["Kabaddi", "Wrestling"],
+    ["Javelin Throw", "Discus Throw"],
+    ["Discus Throw", "Shot Put"],
+    ["High Jump", "Long Jump"],
+    ["Running Race", "Hurdles Race"],
+    ["Relay Race", "Marathon"],
+    ["Swimming", "Diving"],
+    ["Water Polo", "Swimming"],
+    ["Archery", "Shooting"],
+    ["Weightlifting", "Powerlifting"],
+    ["Gymnastics", "Aerobics"],
+    ["Cycling", "Skating"],
+    ["Ice Hockey", "Figure Skating"],
+    ["Formula 1", "MotoGP"],
+    ["Baseball", "Softball"],
+    ["Rugby", "American Football"],
+    ["Shuttlecock", "Tennis Ball"],
+    ["Hockey Stick", "Golf Club"],
+    ["Football Boots", "Spikes (Shoes)"],
+    ["Goalpost", "Net (Sports)"],
+    ["Pitch", "Court (Sports)"],
+    ["Umpire", "Referee"],
+    ["Gold Medal", "Silver Medal"],
+    ["Olympics", "Commonwealth Games"],
+    ["Asian Games", "National Games"],
+    ["Neeraj Chopra", "Abhinav Bindra"],
+    ["P V Sindhu", "Saina Nehwal"],
+    ["Sunil Chhetri", "Bhaichung Bhutia"],
+    ["Mary Kom", "Nikhat Zareen"],
+    ["Praggnanandhaa", "Viswanathan Anand"],
+    ["Table Tennis", "Squash"],
+    ["Chess", "Carrom"],
+    ["Ludo", "Snakes and Ladders"],
+    ["Athletics", "Gymnastics"],
+    ["Cycling", "Marathon"],
+    ["Golf", "Polo"],
+    ["Mary Kom", "Vinesh Phogat"],
+    ["Viswanathan Anand", "Magnus Carlsen"],
+    ["Lionel Messi", "Cristiano Ronaldo"],
+    ["Roger Federer", "Rafael Nadal"],
+    ["Novak Djokovic", "Andy Murray"],
+    ["Serena Williams", "Maria Sharapova"],
+    ["Usain Bolt", "Michael Phelps"],
+    ["Lebron James", "Michael Jordan"],
+    ["Tiger Woods", "Lewis Hamilton"],
+    ["FIFA World Cup", "UEFA Champions League"],
+    ["Wimbledon", "French Open"],
+    ["US Open", "Australian Open"],
+    ["Pro Kabaddi League", "Indian Super League"],
+    ["Referee", "Line Judge"],
+    ["Goalkeeper", "Defender"],
+    ["Striker", "Midfielder"],
+    ["Penalty", "Free Kick"],
+    ["Red Card", "Yellow Card"],
+    ["Football", "Basketball"],
+    ["Wrestling", "Judo"],
+    ["Judo", "Karate"],
+    ["Karate", "Taekwondo"],
+    ["Diving", "Surfing"],
+    ["Snowboarding", "Skiing"],
+    ["Boxing", "Judo"],
+    ["Wrestling", "Karate"],
+    ["Judo", "Taekwondo"],
+    ["Swimming", "Surfing"],
+    ["Boxing", "Karate"],
+    ["Wrestling", "Taekwondo"],
+    ["Pictionary", "Charades"],
+    ["Poker", "Blackjack"],
+    ["Blackjack", "Rummy"],
+    ["Poker", "Rummy"]
+  ] },
+  { id: "indian-food", name: "INDIAN FOOD", free: false, pairs: [
+    ["Butter Chicken", "Dal Makhani"],
+    ["Pani Puri", "Bhel Puri"],
+    ["Biryani", "Pulao"],
+    ["Rasgulla", "Gulab Jamun"],
+    ["Samosa", "Kachori"],
+    ["Chole Bhature", "Poori Masala"],
+    ["Paneer Butter Masala", "Kadai Paneer"],
+    ["Dal Tadka", "Dal Fry"],
+    ["Jeera Rice", "Fried Rice"],
+    ["Naan", "Tandoori Roti"],
+    ["Tandoori Roti", "Rumali Roti"],
+    ["Rumali Roti", "Parotta"],
+    ["Malabar Parotta", "Aloo Paratha"],
+    ["Aloo Paratha", "Paneer Paratha"],
+    ["Pav Bhaji", "Vada Pav"],
+    ["Vada Pav", "Misal Pav"],
+    ["Dahi Puri", "Sev Puri"],
+    ["Papdi Chaat", "Aloo Tikki Chaat"],
+    ["Khaman Dhokla", "Khandvi"],
+    ["Medu Vada", "Sambar Vada"],
+    ["Uttapam", "Appam"],
+    ["Malpua", "Rabri"],
+    ["Rabri", "Kulfi"],
+    ["Ras Malai", "Rasgulla"],
+    ["Kaju Katli", "Milk Cake"],
+    ["Motichoor Laddoo", "Besan Laddoo"],
+    ["Mysore Pak", "Dharwad Pedha"],
+    ["Pedha", "Barfi"],
+    ["Gajar Ka Halwa", "Moong Dal Halwa"],
+    ["Lassi", "Buttermilk"],
+    ["Shrikhand", "Amrakhand"],
+    ["Matar Paneer", "Alu Matar"],
+    ["Bhindi Masala", "Baingan Bharta"],
+    ["Palak Paneer", "Sarson Ka Saag"],
+    ["Makki Di Roti", "Missi Roti"],
+    ["Kadhi Pakoda", "Rajma Chawal"],
+    ["Rajma Chawal", "Chole Chawal"],
+    ["Aloo Gobi", "Aloo Jeera"],
+    ["Methi Thepla", "Khakhra"],
+    ["Fafda", "Jalebi"],
+    ["Modak", "Puran Poli"],
+    ["Puran Poli", "Karanji"],
+    ["Sandesh", "Mishti Doi"],
+    ["Soan Papdi", "Mysore Pak"],
+    ["Chikki", "Gajak"],
+    ["Murukku", "Chakli"],
+    ["Kheer", "Payasam"],
+    ["Chicken Tikka", "Tandoori Chicken"],
+    ["Chicken Biryani", "Mutton Biryani"],
+    ["Fish Fry", "Prawns Fry"],
+    ["Chole Bhature", "Pav Bhaji"],
+    ["Masala Dosa", "Idli"],
+    ["Vada Pav", "Dabeli"],
+    ["Aloo Paratha", "Gobi Paratha"],
+    ["Paneer Butter Masala", "Palak Paneer"],
+    ["Chicken Tikka Masala", "Tandoori Chicken"],
+    ["Rogan Josh", "Mutton Korma"],
+    ["Rajma Chawal", "Kadhi Pakora"],
+    ["Dhokla", "Khandvi"],
+    ["Misal Pav", "Usal"],
+    ["Poha", "Upma"],
+    ["Kaju Katli", "Barfi"],
+    ["Rasmalai", "Rabdi"],
+    ["Ladoo", "Peda"],
+    ["Halwa", "Sheera"],
+    ["Filter Coffee", "Masala Chai"],
+    ["Lassi", "Chaas"],
+    ["Thali", "Meals"],
+    ["Naan", "Roti"],
+    ["Kulcha", "Bhatura"],
+    ["Malai Kofta", "Navratan Korma"],
+    ["Aloo Gobi", "Jeera Aloo"],
+    ["Fish Curry", "Prawn Curry"],
+    ["Keema Pav", "Egg Bhurji"],
+    ["Kati Roll", "Franky"],
+    ["Momos", "Spring Rolls"],
+    ["Hakka Noodles", "Fried Rice"],
+    ["Manchurian", "Chilli Chicken"],
+    ["Ghevar", "Phirni"],
+    ["Kulfi", "Ice Cream"],
+    ["Papad", "Khakhra"],
+    ["Raita", "Curd"],
+    ["Pickle", "Chutney"],
+    ["Coconut Chutney", "Tomato Chutney"],
+    ["Mint Chutney", "Tamarind Chutney"],
+    ["Aloo Tikki", "Ragda Pattice"],
+    ["Chana Masala", "Matar Paneer"],
+    ["Vada Pav", "Chole Bhature"],
+    ["Pesarattu", "Uttapam"]
+  ] },
+  { id: "world-food", name: "WORLD FOOD & FRUIT", free: true, pairs: [
+    ["Pizza", "Burger"],
+    ["Paella", "Lasagna"],
+    ["Lasagna", "Risotto"],
+    ["Falafel", "Hummus"],
+    ["Hummus", "Shawarma"],
+    ["Burrito", "Nachos"],
+    ["Pancakes", "Waffles"],
+    ["Dumplings", "Kimchi"],
+    ["Kimchi", "Bibimbap"],
+    ["Bibimbap", "Pho"],
+    ["Sushi", "Ramen"],
+    ["Paella", "Risotto"],
+    ["Falafel", "Shawarma"],
+    ["Dumplings", "Bibimbap"],
+    ["Kimchi", "Pho"],
+    ["Dumplings", "Pho"],
+    ["Papaya", "Guava"],
+    ["Strawberry", "Blueberry"],
+    ["Blueberry", "Raspberry"],
+    ["Raspberry", "Blackberry"],
+    ["Pear", "Peach"],
+    ["Peach", "Plum"],
+    ["Lemon", "Lime"],
+    ["Lime", "Grapefruit"],
+    ["Pineapple", "Papaya"],
+    ["Strawberry", "Raspberry"],
+    ["Blueberry", "Blackberry"],
+    ["Pear", "Plum"],
+    ["Plum", "Apricot"],
+    ["Lemon", "Grapefruit"],
+    ["Mango", "Pineapple"],
+    ["Pineapple", "Guava"],
+    ["Strawberry", "Blackberry"],
+    ["Peach", "Apricot"]
+  ] },
+  { id: "animals", name: "ANIMALS & NATURE", free: true, pairs: [
+    ["Cobra", "Krait"],
+    ["Viper", "Cobra"],
+    ["Peacock", "Parrot"],
+    ["Tiger", "Leopard"],
+    ["Leopard", "Cheetah"],
+    ["Cheetah", "Jaguar"],
+    ["Lion", "Tiger"],
+    ["Elephant", "Rhinoceros"],
+    ["Crow", "Myna"],
+    ["Myna", "Koel"],
+    ["Koel", "Bulbul"],
+    ["Pigeon", "Dove"],
+    ["Eagle", "Hawk"],
+    ["Falcon", "Eagle"],
+    ["Owl", "Bat"],
+    ["Deer", "Antelope"],
+    ["Sambar Deer", "Chital (Spotted Deer)"],
+    ["Wild Boar", "Pig"],
+    ["Sloth Bear", "Black Bear"],
+    ["Gaur (Indian Bison)", "Buffalo"],
+    ["Langur", "Macaque (Monkey)"],
+    ["Squirrel", "Chipmunk"],
+    ["Mango Tree", "Neem Tree"],
+    ["Banyan Tree", "Peepal Tree"],
+    ["Tulsi Plant", "Mint Plant"],
+    ["Rose", "Hibiscus"],
+    ["Lotus", "Water Lily"],
+    ["Jasmine", "Mogra"],
+    ["Marigold", "Sunflower"],
+    ["Cobra", "Python"],
+    ["Crocodile", "Alligator"],
+    ["Turtle", "Tortoise"],
+    ["Frog", "Toad"],
+    ["Rat", "Bandicoot"],
+    ["Lion", "Cheetah"],
+    ["Cow", "Buffalo"],
+    ["Goat", "Sheep"],
+    ["Horse", "Donkey"],
+    ["Camel", "Zebra"],
+    ["Monkey", "Chimpanzee"],
+    ["Dog", "Cat"],
+    ["Rabbit", "Rat"],
+    ["Squirrel", "Mongoose"],
+    ["Sparrow", "Woodpecker"],
+    ["Dolphin", "Whale"],
+    ["Shark", "Octopus"],
+    ["Mosquito", "Housefly"],
+    ["Ant", "Termite"],
+    ["Butterfly", "Moth"],
+    ["Spider", "Scorpion"],
+    ["Mango Tree", "Coconut Tree"],
+    ["River", "Lake"],
+    ["Mountain", "Hill"],
+    ["Wolf", "Fox"],
+    ["Fox", "Hyena"],
+    ["Bear", "Panda"],
+    ["Panda", "Polar Bear"],
+    ["Rhinoceros", "Hippopotamus"],
+    ["Hippopotamus", "Giraffe"],
+    ["Giraffe", "Zebra"],
+    ["Kangaroo", "Koala"],
+    ["Chimpanzee", "Gorilla"],
+    ["Gorilla", "Orangutan"],
+    ["Deer", "Moose"],
+    ["Camel", "Horse"],
+    ["Donkey", "Zebra"],
+    ["Rabbit", "Hare"],
+    ["Hare", "Squirrel"],
+    ["Otter", "Beaver"],
+    ["Lion", "Leopard"],
+    ["Tiger", "Cheetah"],
+    ["Leopard", "Jaguar"],
+    ["Wolf", "Hyena"],
+    ["Bear", "Polar Bear"],
+    ["Elephant", "Hippopotamus"],
+    ["Rhinoceros", "Giraffe"],
+    ["Hippopotamus", "Zebra"],
+    ["Chimpanzee", "Orangutan"],
+    ["Camel", "Donkey"],
+    ["Horse", "Zebra"],
+    ["Rabbit", "Squirrel"],
+    ["Squirrel", "Otter"],
+    ["Tiger", "Jaguar"],
+    ["Elephant", "Giraffe"],
+    ["Rhinoceros", "Zebra"],
+    ["Hare", "Otter"],
+    ["Squirrel", "Beaver"],
+    ["Falcon", "Hawk"],
+    ["Parrot", "Macaw"],
+    ["Macaw", "Cockatoo"],
+    ["Penguin", "Ostrich"],
+    ["Ostrich", "Emu"],
+    ["Swan", "Goose"],
+    ["Goose", "Duck"],
+    ["Crow", "Raven"],
+    ["Raven", "Magpie"],
+    ["Parrot", "Cockatoo"],
+    ["Penguin", "Emu"],
+    ["Swan", "Duck"],
+    ["Crow", "Magpie"],
+    ["Octopus", "Squid"],
+    ["Seal", "Sea Lion"],
+    ["Sea Lion", "Walrus"],
+    ["Lobster", "Crab"],
+    ["Crab", "Shrimp"],
+    ["Shrimp", "Prawn"],
+    ["Dolphin", "Orca"],
+    ["Seal", "Walrus"],
+    ["Lobster", "Shrimp"],
+    ["Crab", "Prawn"],
+    ["Lobster", "Prawn"],
+    ["Hurricane", "Tornado"],
+    ["Tornado", "Cyclone"],
+    ["Avalanche", "Landslide"],
+    ["Lake", "Pond"],
+    ["Hurricane", "Cyclone"],
+    ["Earthquake", "Avalanche"],
+    ["River", "Stream"]
+  ] },
+  { id: "technology", name: "TECHNOLOGY & GADGETS", free: false, pairs: [
+    ["Instagram", "Snapchat"],
+    ["WhatsApp", "Telegram"],
+    ["iPhone", "Samsung Galaxy"],
+    ["YouTube", "Netflix"],
+    ["iPad", "Samsung Tab"],
+    ["MacBook", "Dell XPS"],
+    ["Windows", "macOS"],
+    ["Android", "iOS"],
+    ["Facebook", "Twitter"],
+    ["Twitter", "Threads"],
+    ["Threads", "Bluesky"],
+    ["TikTok", "Instagram Reels"],
+    ["ChatGPT", "Google Gemini"],
+    ["Google Gemini", "Claude AI"],
+    ["ChatGPT", "Copilot"],
+    ["PlayStation 5", "Xbox Series X"],
+    ["Nintendo Switch", "Steam Deck"],
+    ["PUBG Mobile", "Free Fire"],
+    ["Free Fire", "Call of Duty Mobile"],
+    ["Grand Theft Auto V", "Red Dead Redemption 2"],
+    ["Valorant", "Counter-Strike 2"],
+    ["Minecraft", "Roblox"],
+    ["Discord", "Slack"],
+    ["Spotify", "YouTube Music"],
+    ["YouTube Music", "Amazon Music"],
+    ["Netflix", "Amazon Prime Video"],
+    ["Disney+ Hotstar", "JioCinema"],
+    ["JioCinema", "Zee5"],
+    ["Airtel", "Jio"],
+    ["Google Pay", "PhonePe"],
+    ["PhonePe", "Paytm"],
+    ["Paytm", "Amazon Pay"],
+    ["Uber", "Ola"],
+    ["Zomato", "Swiggy"],
+    ["Swiggy", "Zepto"],
+    ["Blinkit", "Zepto"],
+    ["Amazon", "Flipkart"],
+    ["Smartwatch", "Fitness Band"],
+    ["Apple Watch", "Galaxy Watch"],
+    ["AirPods", "Galaxy Buds"],
+    ["Smart TV", "Projector"],
+    ["Kindle", "Tablet"],
+    ["Hard Disk Drive", "Solid State Drive"],
+    ["Wi-Fi Router", "Modem"],
+    ["iPhone", "Samsung"],
+    ["Laptop", "Desktop"],
+    ["Tablet", "iPad"],
+    ["Earbuds", "Headphones"],
+    ["Power Bank", "Charger"],
+    ["Bluetooth Speaker", "Soundbar"],
+    ["PlayStation", "Xbox"],
+    ["Google Chrome", "Safari"],
+    ["Gmail", "Outlook"],
+    ["Google Maps", "Apple Maps"],
+    ["LinkedIn", "Naukri"],
+    ["Reddit", "Quora"],
+    ["Spotify", "Wynk Music"],
+    ["Myntra", "Ajio"],
+    ["Google Pay", "BHIM UPI"],
+    ["Wi-Fi", "Mobile Data"],
+    ["5G", "4G"],
+    ["Router", "Modem"],
+    ["Pen Drive", "Hard Disk"],
+    ["SSD", "HDD"],
+    ["RAM", "ROM"],
+    ["Processor", "Motherboard"],
+    ["Monitor", "Keyboard"],
+    ["Mouse", "Trackpad"],
+    ["Web Camera", "Microphone"],
+    ["VR Headset", "AR Glasses"],
+    ["BGMI", "Free Fire"],
+    ["Call of Duty", "Valorant"],
+    ["Smartphone", "Tablet"],
+    ["Laptop", "Desktop PC"],
+    ["Earbuds", "Bluetooth Speaker"],
+    ["Keyboard", "Mouse"],
+    ["Mouse", "Webcam"],
+    ["Webcam", "Microphone"],
+    ["Printer", "Scanner"],
+    ["Hard Drive", "SSD"],
+    ["SSD", "USB Drive"],
+    ["Graphics Card", "Processor"],
+    ["Motherboard", "RAM"],
+    ["Headphones", "Bluetooth Speaker"],
+    ["Keyboard", "Webcam"],
+    ["Mouse", "Microphone"],
+    ["Hard Drive", "USB Drive"],
+    ["Graphics Card", "Motherboard"],
+    ["Processor", "RAM"],
+    ["Keyboard", "Microphone"],
+    ["Graphics Card", "RAM"]
+  ] },
+  { id: "professions", name: "PROFESSIONS & JOBS", free: false, pairs: [
+    ["Software Engineer", "Data Scientist"],
+    ["Data Scientist", "Data Analyst"],
+    ["Doctor", "Nurse"],
+    ["Dentist", "Orthodontist"],
+    ["Teacher", "Lecturer"],
+    ["Lecturer", "Professor"],
+    ["Farmer", "Fisherman"],
+    ["Civil Engineer", "Architect"],
+    ["Mechanical Engineer", "Electrical Engineer"],
+    ["Chartered Accountant", "Financial Analyst"],
+    ["Bank Manager", "Cashier"],
+    ["Lawyer", "Judge"],
+    ["Police Officer", "Security Guard"],
+    ["Traffic Police", "Home Guard"],
+    ["Postman", "Courier Delivery Boy"],
+    ["Electrician", "Plumber"],
+    ["Carpenter", "Mason"],
+    ["Tailor", "Fashion Designer"],
+    ["Barber", "Hairstylist"],
+    ["Chef", "Cook"],
+    ["Waiter", "Bartender"],
+    ["Pilot", "Flight Attendant"],
+    ["Loco Pilot (Train Driver)", "Bus Driver"],
+    ["Bus Conductor", "Ticket Collector"],
+    ["Journalist", "News Reporter"],
+    ["Photographer", "Videographer"],
+    ["Graphic Designer", "UI/UX Designer"],
+    ["Content Writer", "Copywriter"],
+    ["Digital Marketer", "SEO Analyst"],
+    ["Real Estate Agent", "Broker"],
+    ["Shopkeeper", "Salesman"],
+    ["Police Officer", "Traffic Police"],
+    ["Politician", "IAS Officer"],
+    ["Chartered Accountant", "Bank Manager"],
+    ["Pilot", "Air Hostess"],
+    ["Train Loco Pilot", "Ticket Collector"],
+    ["Bus Driver", "Conductor"],
+    ["Journalist", "News Anchor"],
+    ["Actor", "Director"],
+    ["Singer", "Music Director"],
+    ["Youtuber", "Instagram Influencer"],
+    ["Chef", "Waiter"],
+    ["Tailor", "Weaver"],
+    ["Carpenter", "Plumber"],
+    ["Electrician", "Mechanic"],
+    ["Security Guard", "Watchman"],
+    ["Postman", "Courier Boy"],
+    ["Swiggy Delivery Boy", "Rapido Captain"],
+    ["Real Estate Agent", "Insurance Agent"],
+    ["HR Manager", "Recruiter"],
+    ["Graphic Designer", "Video Editor"],
+    ["Pharmacist", "Lab Technician"],
+    ["Dentist", "Physiotherapist"],
+    ["Nurse", "Surgeon"],
+    ["Surgeon", "Dentist"],
+    ["Dentist", "Pharmacist"],
+    ["Teacher", "Professor"],
+    ["Professor", "Principal"],
+    ["Scientist", "Biologist"],
+    ["Biologist", "Chemist"],
+    ["Chemist", "Physicist"],
+    ["Physicist", "Astronomer"],
+    ["Engineer", "Architect"],
+    ["Architect", "Electrician"],
+    ["Carpenter", "Mechanic"],
+    ["Chef", "Baker"],
+    ["Baker", "Waiter"],
+    ["Flight Attendant", "Astronaut"],
+    ["Firefighter", "Police Officer"],
+    ["Police Officer", "Detective"],
+    ["Journalist", "Photographer"],
+    ["Doctor", "Surgeon"],
+    ["Nurse", "Dentist"],
+    ["Surgeon", "Pharmacist"],
+    ["Teacher", "Principal"],
+    ["Scientist", "Chemist"],
+    ["Biologist", "Physicist"],
+    ["Chemist", "Astronomer"],
+    ["Engineer", "Electrician"],
+    ["Architect", "Plumber"],
+    ["Electrician", "Carpenter"],
+    ["Plumber", "Mechanic"],
+    ["Pilot", "Astronaut"],
+    ["Firefighter", "Detective"],
+    ["Doctor", "Dentist"],
+    ["Nurse", "Pharmacist"],
+    ["Scientist", "Physicist"],
+    ["Biologist", "Astronomer"],
+    ["Engineer", "Plumber"],
+    ["Architect", "Carpenter"]
+  ] },
+  { id: "india-places", name: "INDIA: PLACES & CITIES", free: false, pairs: [
+    ["Delhi", "Mumbai"],
+    ["Bangalore", "Hyderabad"],
+    ["Chennai", "Kolkata"],
+    ["Pune", "Ahmedabad"],
+    ["Jaipur", "Udaipur"],
+    ["Goa", "Gokarna"],
+    ["Ooty", "Kodaikanal"],
+    ["Manali", "Shimla"],
+    ["Darjeeling", "Gangtok"],
+    ["Amritsar", "Chandigarh"],
+    ["Agra", "Fatehpur Sikri"],
+    ["Varanasi", "Haridwar"],
+    ["Rishikesh", "Haridwar"],
+    ["Kedarnath", "Badrinath"],
+    ["Puri", "Bhubaneswar"],
+    ["Kochi", "Trivandrum"],
+    ["Munnar", "Wayanad"],
+    ["Mysore", "Hampi"],
+    ["Hampi", "Badami"],
+    ["Shirdi", "Pandharpur"],
+    ["Rameshwaram", "Kanyakumari"],
+    ["Madurai", "Thanjavur"],
+    ["Coorg", "Chikmagalur"],
+    ["Pondicherry", "Mahabalipuram"],
+    ["Leh", "Srinagar"],
+    ["Srinagar", "Gulmarg"],
+    ["Dehradun", "Mussoorie"],
+    ["Lonavala", "Khandala"],
+    ["Mahabaleshwar", "Panchgani"],
+    ["Nainital", "Bhimtal"],
+    ["Guwahati", "Shillong"],
+    ["Taj Mahal", "Qutub Minar"],
+    ["Red Fort", "India Gate"],
+    ["Gateway of India", "Marine Drive"],
+    ["Golden Temple", "Wagah Border"],
+    ["Ajanta Caves", "Ellora Caves"],
+    ["Sanchi Stupa", "Khajuraho Temples"],
+    ["Vaishno Devi", "Amarnath Cave"],
+    ["Tirupati Temple", "Meenakshi Temple"],
+    ["Sabarimala", "Guruvayur Temple"],
+    ["Konark Sun Temple", "Jagannath Temple Puri"],
+    ["Char Dham", "Vaishno Devi"],
+    ["Rajahmundry", "Kakinada"],
+    ["Guntur", "Nellore"],
+    ["Kurnool", "Kadapa"],
+    ["Anantapur", "Chittoor"],
+    ["Warangal", "Karimnagar"],
+    ["Nizamabad", "Khammam"],
+    ["Amaravati", "Secunderabad"],
+    ["Araku Valley", "Lambasingi"],
+    ["Papikondalu", "Maredumilli"],
+    ["Srisailam", "Bhadrachalam"],
+    ["Simhachalam", "Annavaram"],
+    ["Kanaka Durga Temple", "Yadadri"],
+    ["Chennai", "Coimbatore"],
+    ["Kochi", "Thiruvananthapuram"],
+    ["Delhi", "Noida"],
+    ["Kolkata", "Bhubaneswar"],
+    ["Ahmedabad", "Surat"],
+    ["Taj Mahal", "Red Fort"],
+    ["Qutub Minar", "India Gate"],
+    ["Gateway of India", "Charminar"],
+    ["Hampi", "Mahabalipuram"],
+    ["Andaman Islands", "Lakshadweep"],
+    ["Rishikesh", "Kedarnath"],
+    ["Rameswaram", "Kanyakumari"],
+    ["Bengaluru", "Chennai"],
+    ["Jaipur", "Lucknow"],
+    ["Bhopal", "Indore"],
+    ["Patna", "Ranchi"],
+    ["Ranchi", "Guwahati"],
+    ["Guwahati", "Bhubaneswar"],
+    ["Amritsar", "Varanasi"],
+    ["Varanasi", "Agra"],
+    ["Mysuru", "Coimbatore"],
+    ["Coimbatore", "Madurai"],
+    ["Madurai", "Visakhapatnam"],
+    ["Visakhapatnam", "Vijayawada"],
+    ["Vijayawada", "Thiruvananthapuram"],
+    ["Dehradun", "Shimla"],
+    ["Shimla", "Srinagar"],
+    ["Srinagar", "Jodhpur"],
+    ["Jodhpur", "Udaipur"],
+    ["Chennai", "Hyderabad"],
+    ["Patna", "Guwahati"],
+    ["Ranchi", "Bhubaneswar"],
+    ["Chandigarh", "Varanasi"],
+    ["Amritsar", "Agra"],
+    ["Mysuru", "Madurai"],
+    ["Coimbatore", "Visakhapatnam"],
+    ["Madurai", "Vijayawada"],
+    ["Visakhapatnam", "Thiruvananthapuram"],
+    ["Dehradun", "Srinagar"],
+    ["Shimla", "Jodhpur"],
+    ["Srinagar", "Udaipur"],
+    ["Bengaluru", "Hyderabad"],
+    ["Patna", "Bhubaneswar"],
+    ["Chandigarh", "Agra"],
+    ["Mysuru", "Visakhapatnam"],
+    ["Coimbatore", "Vijayawada"],
+    ["Madurai", "Thiruvananthapuram"],
+    ["Dehradun", "Jodhpur"],
+    ["Shimla", "Udaipur"],
+    ["Tirupati", "Srikalahasti"],
+    ["Vijayawada", "Guntur"],
+    ["Vizag", "Kakinada"],
+    ["Hyderabad", "Warangal"],
+    ["Secunderabad", "Hyderabad"],
+    ["Nellore", "Ongole"],
+    ["Kurnool", "Anantapur"],
+    ["Kadapa", "Chittoor"],
+    ["Rajahmundry", "Eluru"],
+    ["Bhimavaram", "Amalapuram"],
+    ["Tenali", "Mangalagiri"],
+    ["Araku Valley", "Ananthagiri Hills"],
+    ["Srisailam", "Mahanandi"],
+    ["Yadagirigutta", "Vemulawada"],
+    ["Kondapalli Fort", "Udayagiri Fort"],
+    ["Ramappa Temple", "Thousand Pillar Temple"],
+    ["Bhadrachalam", "Parnashala"],
+    ["Basara", "Dharmapuri"],
+    ["Laknavaram Lake", "Pakhal Lake"],
+    ["Nagarjuna Sagar", "Srisailam Dam"],
+    ["Charminar", "Golconda Fort"],
+    ["Golconda Fort", "Warangal Fort"],
+    ["Birla Mandir", "Sanghi Temple"],
+    ["Chilkur Balaji Temple", "Karmanghat Hanuman Temple"],
+    ["Rishikonda Beach", "Yarada Beach"],
+    ["Yarada Beach", "Bheemili Beach"],
+    ["Ramakrishna Beach", "Rushikonda Beach"],
+    ["Horsley Hills", "Lambasingi"],
+    ["Lambasingi", "Maredumilli"],
+    ["Maredumilli", "Araku Valley"],
+    ["Lepakshi Temple", "Tadipatri Temple"],
+    ["Ahobilam", "Yaganti"],
+    ["Yaganti", "Gandikota"],
+    ["Gandikota", "Belum Caves"],
+    ["Belum Caves", "Borra Caves"],
+    ["Borra Caves", "Araku Valley"],
+    ["Kanaka Durga Temple", "Mangalagiri Temple"],
+    ["Dwaraka Tirumala", "Annavaram"],
+    ["Simhachalam", "Arasavalli"],
+    ["Srikurmam", "Mukhalingam"],
+    ["Kotappakonda", "Amaravathi Temple"],
+    ["Narasimha Konda", "Jonnavada"],
+    ["Ramoji Film City", "Wonderla Hyderabad"],
+    ["Salar Jung Museum", "Nizam Museum"],
+    ["Husain Sagar", "Durgam Cheruvu"],
+    ["Durgam Cheruvu", "Osman Sagar"],
+    ["KBR Park", "Lumbini Park"]
+  ] },
+  { id: "festivals", name: "FESTIVALS OF INDIA", free: false, pairs: [
+    ["Diwali", "Holi"],
+    ["Dussehra", "Durga Puja"],
+    ["Durga Puja", "Ganesh Chaturthi"],
+    ["Ganesh Chaturthi", "Krishna Janmashtami"],
+    ["Janmashtami", "Rama Navami"],
+    ["Raksha Bandhan", "Bhai Dooj"],
+    ["Makar Sankranti", "Pongal"],
+    ["Pongal", "Onam"],
+    ["Onam", "Vishu"],
+    ["Baisakhi", "Lohri"],
+    ["Karwa Chauth", "Teej"],
+    ["Chhath Puja", "Durga Puja"],
+    ["Maha Shivaratri", "Karthika Deepam"],
+    ["Eid ul-Fitr", "Eid al-Adha"],
+    ["Christmas", "Good Friday"],
+    ["Good Friday", "Easter"],
+    ["Guru Nanak Jayanti", "Mahavir Jayanti"],
+    ["Buddha Purnima", "Ambedkar Jayanti"],
+    ["Republic Day", "Independence Day"],
+    ["Children's Day", "Teacher's Day"],
+    ["Eid", "Christmas"],
+    ["Navratri", "Dussehra"],
+    ["Maha Shivaratri", "Krishnashtami"],
+    ["Ram Navami", "Hanuman Jayanti"],
+    ["Makar Sankranti", "Gudi Padwa"],
+    ["Bakrid", "Ramadan"],
+    ["Guru Nanak Jayanti", "Rath Yatra"],
+    ["Makar Vilakku", "Thrissur Pooram"],
+    ["Kumbh Mela", "Pushkaralu"],
+    ["Vasant Panchami", "Saraswati Puja"],
+    ["Chhath Puja", "Bihu"],
+    ["Karthika Purnima", "Guru Purnima"],
+    ["Ratha Saptami", "Varalakshmi Vratam"]
+  ] },
+  { id: "everyday", name: "EVERYDAY OBJECTS", free: true, pairs: [
+    ["Bicycle", "Motorcycle"],
+    ["Motorcycle", "Scooter"],
+    ["Bus", "Coach"],
+    ["Truck", "Tractor"],
+    ["Train", "Metro"],
+    ["Metro", "Tram"],
+    ["Tram", "Monorail"],
+    ["Ferry", "Cruise Ship"],
+    ["Airplane", "Helicopter"],
+    ["Helicopter", "Hot Air Balloon"],
+    ["Hot Air Balloon", "Glider"],
+    ["Bicycle", "Scooter"],
+    ["Train", "Tram"],
+    ["Metro", "Monorail"],
+    ["Airplane", "Hot Air Balloon"],
+    ["Helicopter", "Glider"],
+    ["Train", "Monorail"],
+    ["Cruise Ship", "Submarine"],
+    ["Airplane", "Glider"],
+    ["T-shirt", "Shirt"],
+    ["Jeans", "Trousers"],
+    ["Trousers", "Shorts"],
+    ["Blazer", "Jacket"],
+    ["Jacket", "Hoodie"],
+    ["Hoodie", "Sweater"],
+    ["Salwar Kameez", "Kurta"],
+    ["Kurta", "Lehenga"],
+    ["Lehenga", "Dhoti"],
+    ["Sneakers", "Boots"],
+    ["Boots", "Sandals"],
+    ["Sandals", "Slippers"],
+    ["Jeans", "Shorts"],
+    ["Blazer", "Hoodie"],
+    ["Jacket", "Sweater"],
+    ["Sweater", "Coat"],
+    ["Salwar Kameez", "Lehenga"],
+    ["Kurta", "Dhoti"],
+    ["Sneakers", "Sandals"],
+    ["Boots", "Slippers"],
+    ["Blazer", "Sweater"],
+    ["Hoodie", "Coat"],
+    ["Salwar Kameez", "Dhoti"],
+    ["Sneakers", "Slippers"],
+    ["Sofa", "Armchair"],
+    ["Bed", "Bunk Bed"],
+    ["Refrigerator", "Freezer"],
+    ["Toaster", "Blender"],
+    ["Ceiling Fan", "Table Fan"],
+    ["Steel Tumbler", "Plastic Cup"],
+    ["Water Mug", "Steel Tumbler"],
+    ["Chalk Piece", "Slate Pencil"],
+    ["Slate", "Notebook"],
+    ["Water Pot", "Copper Bottle"],
+    ["Broomstick", "Mop Stick"],
+    ["Matchbox", "Gas Lighter"],
+    ["Mortar and Pestle", "Mixer Grinder"],
+    ["Bucket", "Mug"],
+    ["Gas Stove", "Cylinder"],
+    ["Mixer Grinder", "Wet Grinder"]
+  ] },
+  { id: "colors", name: "COLORS & SHAPES", free: false, pairs: [
+    ["Black", "White"],
+    ["White", "Gray"],
+    ["Circle", "Oval"],
+    ["Square", "Rectangle"],
+    ["Pentagon", "Hexagon"],
+    ["Hexagon", "Octagon"],
+    ["Black", "Gray"],
+    ["Pentagon", "Octagon"],
+    ["Turquoise", "Cyan"],
+    ["Triangle", "Pentagon"]
+  ] },
+  { id: "space", name: "SPACE", free: false, pairs: [
+    ["Earth", "Mars"],
+    ["Mars", "Jupiter"],
+    ["Jupiter", "Saturn"],
+    ["Saturn", "Venus"],
+    ["Venus", "Mercury"],
+    ["Mercury", "Neptune"],
+    ["Neptune", "Uranus"],
+    ["Europa", "Titan"],
+    ["Titan", "Ganymede"],
+    ["Ganymede", "Io"],
+    ["Io", "Enceladus"],
+    ["Enceladus", "Phobos"],
+    ["Phobos", "Deimos"],
+    ["Neutron Star", "White Dwarf"],
+    ["White Dwarf", "Red Giant"],
+    ["Asteroid", "Comet"],
+    ["Comet", "Meteor"],
+    ["Meteor", "Meteorite"],
+    ["Earth", "Jupiter"],
+    ["Mars", "Saturn"],
+    ["Jupiter", "Venus"],
+    ["Saturn", "Mercury"],
+    ["Venus", "Neptune"],
+    ["Mercury", "Uranus"],
+    ["Europa", "Ganymede"],
+    ["Titan", "Io"],
+    ["Ganymede", "Enceladus"],
+    ["Io", "Phobos"],
+    ["Enceladus", "Deimos"],
+    ["Neutron Star", "Red Giant"],
+    ["Asteroid", "Meteor"],
+    ["Comet", "Meteorite"],
+    ["Earth", "Saturn"],
+    ["Mars", "Venus"],
+    ["Jupiter", "Mercury"],
+    ["Saturn", "Neptune"],
+    ["Venus", "Uranus"],
+    ["Europa", "Io"],
+    ["Titan", "Enceladus"],
+    ["Ganymede", "Phobos"],
+    ["Io", "Deimos"],
+    ["Asteroid", "Meteorite"]
+  ] }
 ];
-const P_TCELEBS = [
-'Prabhas|Allu Arjun','Mahesh Babu|Pawan Kalyan','NTR Jr|Ram Charan','Chiranjeevi|Balakrishna','Nagarjuna|Venkatesh',
-'Nani|Vijay Deverakonda','Ravi Teja|Gopichand','Sandeep Reddy Vanga|S S Rajamouli','Trivikram Srinivas|Sukumar',
-'S S Rajamouli|Prashanth Neel','Anushka Shetty|Nayanthara','Samantha Ruth Prabhu|Rashmika Mandanna',
-'Keerthy Suresh|Sai Pallavi','Sreeleela|Krithi Shetty','Pooja Hegde|Kiara Advani','Kajal Aggarwal|Tamannaah Bhatia',
-'Rana Daggubati|Adivi Sesh','Satyadev|Suhas','Nikhil Siddharth|Vishwak Sen','Vishwak Sen|Siddhu Jonnalagadda',
-'Siddhu Jonnalagadda|Priyadarshi','Priyadarshi|Rahul Ramakrishna','Ali|Brahmanandam','Brahmanandam|M S Narayana',
-'Vennela Kishore|Sapthagiri','Sunil|Brahmanandam','Koratala Siva|Boyapati Sreenu','Sekhar Kammula|Tharun Bhascker',
-'Maruthi|Anil Ravipudi','Anil Ravipudi|Srinu Vaitla','K Raghavendra Rao|Dasari Narayana Rao','Dil Raju|Mythri Movie Makers',
-'Allu Aravind|Suresh Babu','Murli Sharma|Rao Ramesh','Rao Ramesh|Prakash Raj','Prakash Raj|Jagapathi Babu',
-'Sai Kumar|Samuthirakani','Sree Vishnu|Satyadev','Teja Sajja|Raj Tarun','Manchu Manoj|Manchu Vishnu',
-'Nandamuri Kalyan Ram|Nandamuri Taraka Ratna','Suhas|Kiran Abbavaram','Kiran Abbavaram|Sree Vishnu',
-'Nabha Natesh|Payal Rajput','Anupama Parameswaran|Niveda Thomas','Meenakshi Chaudhary|Sreeleela'
-];
-const P_TCHARS = [
-'Amarendra Baahubali|Bhallaladeva','Pushpa Raj|Bhanwar Singh Shekhawat','Arjun Reddy|Kabir Singh',
-'Raju (RRR)|Bheem (RRR)','Kattappa|Bijjaladeva','Sivagami|Devasena','Devasena|Avantika','Sita (Sita Ramam)|Ram (Sita Ramam)',
-'Chitti Babu (Rangasthalam)|Kumar Babu','Suriya Bhai (Businessman)|Pandu (Pokiri)','Balu (Jalsa)|Sanjay Sahu',
-'Malli (Eega)|Sudeep (Eega)','Nandu (Athadu)|Pardhu (Athadu)','Siddharth (Bommarillu)|Hasini (Bommarillu)',
-'Ranga (Dhee)|Chari (Adhurs)','Kittu (Kick)|Kalyan (Kick)','Siddhu (Happy Days)|Madhu (Happy Days)',
-'Tagore|Shankar Dada MBBS','Subhash Chandra Bose|Tagore','Agent Sai Srinivasa Athreya|Bobby (Brochevarevarura)',
-'Kanchana|Chandramukhi','Bhairava (Kalki)|Commander Manas','Ganesh (Venky)|Giri (Venky)','Abhi (Manmadhudu)|Mahesh (Manmadhudu)'
-];
-const P_TFOOD = [
-'Pesarattu|Upma','Gongura Pickle|Avakaya Pickle','Pulihora|Daddojanam','Mirchi Bajji|Punugulu','Ariselu|Boorelu',
-'Pootharekulu|Kakinada Kaja','Kakinada Kaja|Madugula Halwa','Garelu|Vada','Ragi Sangati|Jonna Rotte',
-'Hyderabadi Chicken Biryani|Mutton Kheema Biryani','Ulavacharu|Pachi Pulusu','Pachi Pulusu|Majjiga Pulusu',
-'Majjiga Pulusu|Pappu Charu','Pappu Charu|Rasam','Tomato Pappu|Dosakaya Pappu','Gongura Mutton|Boti Curry',
-'Chepala Pulusu|Peethala Kura','Idli|Dibba Rottu','Allam Chutney|Kobbari Chutney','Palli Chutney|Tomato Chutney',
-'Double Ka Meetha|Qubani Ka Meetha','Irani Chai|Osmania Biscuit','Nalla Karam|Karampodi','Gobi Manchurian|Baby Corn Manchurian',
-'Samosa|Onion Samosa','Kala Jamun|Gulab Jamun','Jalebi|Imarti','Kulfi|Matka Kulfi','Badam Milk|Rose Milk',
-'Panasa Thonalu|Madatha Kaja','Hyderabadi Biryani|Mandi','Gutti Vankaya|Bendakaya Fry','Haleem|Harees','Dosa|Idli',
-'Chicken 65|Chilli Chicken','Rava Laddu|Boondi Laddu','Payasam|Paramannam','Rasam|Sambar','Shawarma|Franky',
-'MLA Pesarattu|Onion Dosa','Rava Dosa|Masala Dosa','Mutton Pulao|Raju Gari Kodi Pulao','Murukulu|Janthikalu',
-'Avakaya Pickle|Thokkuudu Pickle','Bobbatlu|Kudumulu','Natu Kodi Pulusu|Talakaya Kura','Mysore Bajji|Aloo Bonda',
-'Sakinalu|Sarva Pindi','Sunnundalu|Malidu Laddoo','Osmania Biscuit|Tie Biscuit','Bandar Laddu|Tirupati Laddu',
-'Kalakand|Kova','Sugandhi Drink|Nannari Sharbat','Poori|Chapathi','Royyala Iguru|Peethala Iguru','Kodi Vepudu|Mutton Vepudu'
-];
-const P_TPLACES = [
-'Tirupati|Srikalahasti','Vijayawada|Guntur','Vizag|Kakinada','Hyderabad|Warangal','Secunderabad|Hyderabad',
-'Nellore|Ongole','Kurnool|Anantapur','Kadapa|Chittoor','Rajahmundry|Eluru','Bhimavaram|Amalapuram','Tenali|Mangalagiri',
-'Araku Valley|Ananthagiri Hills','Srisailam|Mahanandi','Yadagirigutta|Vemulawada','Ramappa Temple|Thousand Pillar Temple',
-'Bhadrachalam|Parnashala','Nagarjuna Sagar|Srisailam Dam','Charminar|Golconda Fort','Golconda Fort|Warangal Fort',
-'Birla Mandir|Sanghi Temple','Rishikonda Beach|Yarada Beach','Horsley Hills|Lambasingi','Lambasingi|Maredumilli',
-'Lepakshi Temple|Ahobilam','Ahobilam|Yaganti','Yaganti|Gandikota','Gandikota|Belum Caves','Belum Caves|Borra Caves',
-'Borra Caves|Araku Valley','Kanaka Durga Temple|Mangalagiri Temple','Dwaraka Tirumala|Annavaram','Annavaram|Simhachalam',
-'Ramoji Film City|Wonderla Hyderabad','Salar Jung Museum|Nizam Museum','Husain Sagar|Durgam Cheruvu','KBR Park|Lumbini Park'
-];
-const P_TCULTURE = [
-'Sankranti|Ugadi','Bathukamma|Bonalu','Ugadi|Sri Rama Navami','Bonalu|Sammakka Saralamma Jatara',
-'RTC Bus|Share Auto','Auto Rickshaw|RTC Bus','Ceiling Fan|Table Fan','Steel Tumbler|Plastic Cup',
-'Coconut Oil|Sesame Oil','Mosquito Coil|Mosquito Net','Panchalu|Lungi','Lungi|Kanduva','Kanduva|Pancha',
-'Steel Plate|Leaf Plate','Leaf Plate (Vistaraku)|Steel Plate','Water Mug|Steel Tumbler','Irani Chai|Filter Coffee',
-'Coffee Filter|Tea Strainer','Pooja Room|Tulasi Kota','Muggu (Rangoli)|Chalk Piece','Slate|Notebook',
-'Gold Haramu|Gold Kasulaperu','Mangalasutram|Nallapusalu','Nallapusalu|Mettelu','Mettelu|Vaddanam',
-'Saree|Langa Voni','Langa Voni|Chudidar','Dhoti|Kurta Pyjama','Marbles (Goti)|Bongaram',
-'Kite (Patang)|Thread Reel (Manja)','Hand Fan (Visanakarra)|Table Fan'
-];
-const P_EVERYDAY = [
-'BEACH|SWIMMING POOL','PIZZA|BURGER','COFFEE|TEA','DOG|CAT','CAR|BUS','PHONE|LAPTOP','HOTEL|HOSPITAL',
-'BIRTHDAY|WEDDING','SCHOOL|OFFICE','RAINY DAY|SNOW DAY','MOVIE THEATER|CONCERT','GROCERY STORE|SHOPPING MALL',
-'BREAKFAST|DINNER','GARDEN|FOREST','AIRPORT|RAILWAY STATION','HOLIDAY|WEEKEND','SHOWER|BATH','BOOK|NEWSPAPER',
-'CHAIR|SOFA','MORNING|NIGHT'];
-const P_INDIA = [
-'CRICKET MATCH|FOOTBALL MATCH','BOLLYWOOD SONG|PUNJABI SONG','STREET FOOD|RESTAURANT FOOD','ARRANGED MARRIAGE|LOVE MARRIAGE',
-'OLD DELHI|MUMBAI','HIMALAYAS|GOA BEACHES','TEMPLE FESTIVAL|CRICKET STADIUM','TRAIN JOURNEY|FLIGHT JOURNEY',
-'LOCAL MARKET|MALL','FESTIVAL LIGHTS|DIWALI CRACKERS'];
-const P_FOOD = [
-'PASTA|NOODLES','BREAD|RICE','ICE CREAM|FROZEN YOGURT','SALAD|SOUP','BARBECUE|PICNIC','CHOCOLATE|CANDY',
-'FRUIT JUICE|SODA','SANDWICH|BURGER','COOKING|BAKING','SPICY|SWEET','HONEY|JAM','POPCORN|CHIPS'];
-const P_PLACES = [
-'LIBRARY|MUSEUM','GYM|STADIUM','ZOO|AQUARIUM','MOUNTAIN|BEACH','VILLAGE|CITY','PARK|PLAYGROUND',
-'CASTLE|PALACE','DESERT|JUNGLE','FARM|FACTORY','AMUSEMENT PARK|WATER PARK','BRIDGE|TUNNEL','MARKET|MALL'];
-const P_LIFE = [
-'WEDDING|FUNERAL','BABY|TEENAGER','TEACHER|PRINCIPAL','DOCTOR|NURSE','BEST FRIEND|SIBLING',
-'RETIREMENT|GRADUATION','INTERVIEW|EXAM','NEIGHBOR|STRANGER','CEO|MANAGER','TWINS|COUSINS',
-'TOURIST|LOCAL','MORNING PERSON|NIGHT OWL'];
-const P_SCREEN = [
-'CRICKET|BASEBALL','FOOTBALL|RUGBY','HORROR MOVIE|THRILLER','COMEDY SHOW|STAND-UP','REALITY SHOW|GAME SHOW',
-'NETFLIX|YOUTUBE','SUPERHERO MOVIE|ANIME','TENNIS|BADMINTON','OLYMPICS|WORLD CUP','GAMER|STREAMER','CHESS|CHECKERS'];
-const P_FEELS = [
-'NERVOUS|EXCITED','FIRST KISS|PROPOSAL','NOSTALGIA|DEJA VU','MONDAY MORNING|FRIDAY EVENING','STAGE FRIGHT|ADRENALINE',
-'DREAM|NIGHTMARE','VACATION|STAYCATION','GOODBYE|SEE YOU LATER','LOVE|CRUSH','PANIC|CALM','PROUD|JEALOUS'];
-
-const UNLOCK_MINUTES = 30;
-const CATS = [
-  {id:'tollywood',  name:'TOLLYWOOD',        free:true,  pairs:P_TOLLYWOOD},
-  {id:'everyday',   name:'EVERYDAY',         free:true,  pairs:P_EVERYDAY},
-  {id:'india',      name:'INDIA',            free:true,  pairs:P_INDIA},
-  {id:'tcelebs',    name:'TOLLYWOOD CELEBS', free:false, pairs:P_TCELEBS},
-  {id:'tchars',     name:'TELUGU CHARACTERS',free:false, pairs:P_TCHARS},
-  {id:'tfood',      name:'TELUGU FOOD',      free:false, pairs:P_TFOOD},
-  {id:'tplaces',    name:'TELUGU PLACES',    free:false, pairs:P_TPLACES},
-  {id:'tculture',   name:'TELUGU CULTURE',   free:false, pairs:P_TCULTURE},
-  {id:'food',       name:'FOOD',             free:false, pairs:P_FOOD},
-  {id:'places',     name:'PLACES',           free:false, pairs:P_PLACES},
-  {id:'life',       name:'LIFE & PEOPLE',    free:false, pairs:P_LIFE},
-  {id:'screen',     name:'SCREEN & SPORTS',  free:false, pairs:P_SCREEN},
-  {id:'feels',      name:'FEELINGS & MOMENTS',free:false,pairs:P_FEELS}
-];
-CATS.forEach(c => {
-  const seen = new Set(); const out = [];
-  c.pairs.forEach(s => {
-    const i = s.indexOf('|'); if (i < 0) return;
-    const a = s.slice(0,i).trim(), b = s.slice(i+1).trim();
-    if (!a || !b) return;
-    const k = (a+'||'+b).toUpperCase();
-    if (seen.has(k)) return;
-    seen.add(k); out.push([a,b]);
+/* WORD_CATEGORIES_END */
+/* Category ids used to be derived from the display name. These are the ids
+   that earlier builds persisted in the shell storage. Renamed and merged
+   categories are redirected here so a saved selection or unlock survives an
+   update instead of being silently discarded. */
+const LEGACY_CATEGORY_MAP = {
+  "telugu-cinema": "telugu-cinema",
+  "tollywood-celebrities": "telugu-celebrities",
+  "telugu-movie-characters": "telugu-cinema",
+  "andhra-telangana-food": "telugu-food",
+  "andhra-telangana-places": "india-places",
+  "telugu-states-culture-and-daily-life": "telugu-culture",
+  "telugu-relations-and-slang": "telugu-culture",
+  "south-indian-cinema": "indian-cinema",
+  "south-indian-celebrities": "indian-celebrities",
+  "bollywood": "indian-cinema",
+  "bollywood-celebrities": "indian-celebrities",
+  "hollywood": "hollywood",
+  "foreign-celebrities": "global-celebrities",
+  "web-series-and-ott": "screen-streaming",
+  "anime": "screen-streaming",
+  "cricket": "cricket",
+  "sports-general": "sports",
+  "indian-food-general": "indian-food",
+  "technology-and-gadgets": "technology",
+  "indian-music": "music",
+  "western-music": "music",
+  "animals-and-nature": "animals",
+  "professions": "professions",
+  "places-in-india": "india-places",
+  "festivals-india": "festivals",
+  "indian-cities": "india-places",
+  "indian-food": "indian-food",
+  "global-food": "world-food",
+  "fruits": "world-food",
+  "animals": "animals",
+  "birds": "animals",
+  "ocean-animals": "animals",
+  "technology": "technology",
+  "board-and-party-games": "sports",
+  "sports": "sports",
+  "space": "space",
+  "weather-and-nature": "animals",
+  "transport": "everyday",
+  "home-objects": "everyday",
+  "clothing": "everyday",
+  "colors-and-shapes": "colors"
+};
+function migrateCatId(id){
+  if (typeof id !== 'string') return null;
+  const mapped = LEGACY_CATEGORY_MAP[id] || id;
+  return CATS.some(c => c.id === mapped) ? mapped : null;
+}
+const CATS = WORD_CATEGORIES.map(raw => {
+  const id = raw.id;
+  const seen = new Set();
+  const pairs = [];
+  (raw.pairs || []).forEach(p => {
+    if (!Array.isArray(p) || p.length < 2) return;
+    const civ = typeof p[0] === 'string' ? p[0].trim() : '';
+    const imp = typeof p[1] === 'string' ? p[1].trim() : '';
+    if (!civ || !imp) return;
+    const key = civ + '\u0000' + imp;
+    if (seen.has(key)) return;
+    seen.add(key);
+    pairs.push([civ, imp]);
   });
-  c.pairs = out;
+  return { id, name: raw.name, free: !!raw.free, pairs };
 });
+const HAS_VALID_PAIRS = CATS.some(c => c.pairs.length > 0);
+const UNLOCK_MINUTES = 30;
 
 /* ================================================================
    SECTION · AUDIO
    ================================================================ */
 const AudioFX = (() => {
-  let ctx = null;
+  let ctx = null, master = null;
+  /* The one-shots are deliberately short, but their raw gains were mixed for
+     headphones and vanished on a phone speaker. Route everything through a
+     master boost and a limiter so the taps and the word-reveal are clearly
+     audible without clipping when a chord lands. */
+  const MASTER_GAIN = 5.0;
   function ensure(){
     try{
-      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (ctx.state === 'suspended') ctx.resume();
+      if (!ctx){
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        master = ctx.createGain();
+        master.gain.value = MASTER_GAIN;
+        const limiter = ctx.createDynamicsCompressor();
+        limiter.threshold.value = -6;
+        limiter.knee.value = 12;
+        limiter.ratio.value = 12;
+        limiter.attack.value = .002;
+        limiter.release.value = .2;
+        master.connect(limiter); limiter.connect(ctx.destination);
+      }
+      if (ctx.state === 'suspended') {
+        const resume = ctx.resume();
+        if (resume && typeof resume.catch === 'function') resume.catch(()=>{});
+      }
       return ctx;
     }catch(e){ return null; }
   }
-  function tone(f, {t=0, d=.12, type='sine', v=.14, slide}={}){
+  function tone(f, {t=0, d=.12, type='sine', v=.08, slide}={}){
     if (!state.settings.sound) return;
     const c = ensure(); if (!c) return;
     try{
       const at = c.currentTime + t;
       const o = c.createOscillator(), g = c.createGain();
-      o.type = type; o.frequency.setValueAtTime(f, at);
+      o.type = type;
+      o.frequency.setValueAtTime(f, at);
       if (slide) o.frequency.exponentialRampToValueAtTime(slide, at + d);
       g.gain.setValueAtTime(.0001, at);
-      g.gain.exponentialRampToValueAtTime(v, at + .012);
+      g.gain.exponentialRampToValueAtTime(v, at + Math.min(.022, d * .22));
       g.gain.exponentialRampToValueAtTime(.0001, at + d);
-      o.connect(g); g.connect(c.destination);
-      o.start(at); o.stop(at + d + .05);
+      o.connect(g); g.connect(master);
+      o.start(at); o.stop(at + d + .025);
+    }catch(e){}
+  }
+  function softWhoosh(){
+    if (!state.settings.sound) return;
+    const c = ensure(); if (!c) return;
+    try{
+      const duration = .48;
+      const length = Math.max(1, Math.floor(c.sampleRate * duration));
+      const buffer = c.createBuffer(1, length, c.sampleRate);
+      const data = buffer.getChannelData(0);
+      for(let i=0;i<length;i++){
+        // Short, filtered noise sweep — a soft classified-file / paper swipe.
+        const envelope = Math.sin(Math.PI * i / length);
+        data[i] = (Math.random() * 2 - 1) * envelope;
+      }
+      const src = c.createBufferSource();
+      const filter = c.createBiquadFilter();
+      const gain = c.createGain();
+      const at = c.currentTime;
+      src.buffer = buffer;
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(2400, at);
+      filter.frequency.exponentialRampToValueAtTime(520, at + duration);
+      gain.gain.setValueAtTime(.0001, at);
+      gain.gain.exponentialRampToValueAtTime(.095, at + .055);
+      gain.gain.exponentialRampToValueAtTime(.0001, at + duration);
+      src.connect(filter); filter.connect(gain); gain.connect(master);
+      src.start(at); src.stop(at + duration);
     }catch(e){}
   }
   return {
     ensure,
-    tap(){ tone(480,{d:.05,type:'triangle',v:.08,slide:300}); },
-    stamp(){ tone(150,{d:.12,type:'square',v:.14,slide:90}); },
-    accuse(){ tone(392,{d:.14,type:'triangle',v:.12}); tone(311,{d:.2,type:'triangle',v:.12,at:.12}); },
-    caught(){ [523,659,784,988].forEach((f,i)=>tone(f,{t:i*.1,d:.16,type:'triangle',v:.15})); },
-    escaped(){ [311,277,247,220].forEach((f,i)=>tone(f,{t:i*.14,d:.22,type:'sawtooth',v:.1,slide:f*.85})); },
-    win(){ [392,523,659,784,1047].forEach((f,i)=>tone(f,{t:i*.11,d:.16,type:'triangle',v:.14})); }
+    // Undercover dossier: muted mechanical ticks, low evidence thuds, and a reveal swipe.
+    tap(){ tone(430,{d:.055,type:'triangle',v:.052,slide:285}); },
+    stamp(){ tone(105,{d:.12,type:'triangle',v:.105,slide:66}); tone(760,{t:.018,d:.045,type:'square',v:.025,slide:480}); },
+    reveal(){
+      if (!state.settings.sound) return;
+      softWhoosh();
+      tone(132,{d:.34,type:'sine',v:.052,slide:92});
+      // Small warm chime lands just as the final redaction strip clears.
+      tone(392,{t:.70,d:.17,type:'sine',v:.065,slide:440});
+      tone(587,{t:.78,d:.22,type:'sine',v:.048,slide:523});
+    },
+    accuse(){ tone(210,{d:.12,type:'triangle',v:.065,slide:155}); tone(145,{t:.085,d:.15,type:'sine',v:.052,slide:105}); },
+    caught(){ [294,370,440].forEach((f,i)=>tone(f,{t:i*.09,d:.14,type:'triangle',v:.065})); },
+    escaped(){ tone(174,{d:.15,type:'triangle',v:.065,slide:130}); tone(116,{t:.09,d:.19,type:'sine',v:.055,slide:87}); },
+    win(){ [262,330,392].forEach((f,i)=>tone(f,{t:i*.1,d:.15,type:'triangle',v:.07})); tone(523,{t:.34,d:.22,type:'sine',v:.055,slide:587}); }
   };
 })();
 function buzz(p){ if (state.settings.haptics) GameBoxSDK.haptic(p); }
@@ -772,35 +2975,50 @@ const state = {
   wordPair: null,
   dealOrder: [],
   dealIdx: 0,
-  usedPairs: new Set(),
   votesNeeded: 1,
   voteOrder: [], voteIdx: 0, votes: {}, picked: null,
   imposterCount: 1,
   settings: { sound:true, haptics:true },
   unlockExpiry: {},
-  enabledCats: CATS.filter(c=>c.free).map(c=>c.id),
+  enabledCats: CATS.filter(c=>c.free && c.pairs.length).map(c=>c.id),
   setupDraft: [],
-  pendingCat: null
+  pendingCat: null,
+  recentPairs: [],
+  adBusy: false,
+  exiting: false,
+  completionAdRequested: false
 };
 let cdTick = null;
+let interstitialInFlight = false;
+let interstitialWaiters = [];
 
 const PLAYER_COLORS = ['#F2B33D','#5A7BD8','#3FB56B','#E5484D','#9B6FF0','#38BDB8','#F0793A','#FF6FA5','#7CB342','#A78BFA'];
 const MAX_PLAYERS = 10, MIN_PLAYERS = 3, DEFAULT_PLAYERS = 3;
 const IN_GAME = ['PASS_PHONE','WORD','TABLE','VOTE','ELIM','WIN'];
 
 function maxImposters(){ return Math.max(1, Math.floor((state.setupDraft.length - 1) / 2)); }
+function freeCatIds(){ return CATS.filter(c => c.free && c.pairs.length).map(c=>c.id); }
 function pruneUnlocks(){
   const now = Date.now();
   let changed = false;
   for (const id in state.unlockExpiry){
-    if (state.unlockExpiry[id] <= now){ delete state.unlockExpiry[id]; changed = true; }
+    if (!(state.unlockExpiry[id] > now)){ delete state.unlockExpiry[id]; changed = true; }
   }
+  const allowed = new Set(CATS.filter(c => c.pairs.length && (c.free || state.unlockExpiry[c.id] > now)).map(c=>c.id));
+  const nextEnabled = state.enabledCats.filter(id => allowed.has(id));
+  if (nextEnabled.length !== state.enabledCats.length){ state.enabledCats = nextEnabled; changed = true; }
+  if (!state.enabledCats.length){ state.enabledCats = freeCatIds(); changed = true; }
   if (changed) persistCats();
   return changed;
 }
 function activeUnlocked(){
+  const now = Date.now();
+  return CATS.filter(c => c.pairs.length && (c.free || state.unlockExpiry[c.id] > now)).map(c=>c.id);
+}
+function activeEnabledCats(){
   pruneUnlocks();
-  return CATS.filter(c => c.free || state.unlockExpiry[c.id] > Date.now()).map(c=>c.id);
+  const allowed = new Set(activeUnlocked());
+  return state.enabledCats.filter(id => allowed.has(id));
 }
 
 /* ================================================================
@@ -837,11 +3055,44 @@ function mmss(ms){
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   $('#'+id).classList.add('active');
+  /* The shell's BACK button lives outside this file and used to learn about a
+     screen change from a 250 ms poll, so it stayed drawn over the screen we
+     had just opened. This runs in the SAME task as the class swap, so the
+     browser never paints the new screen with the old chrome on top. */
+  try{ document.dispatchEvent(new Event('studiofrontchange')); }catch(e){}
 }
 function setPhase(p){ state.phase = p; }
-function goHome(){ setPhase('HOME'); showScreen('scrHome'); }
+function goHome(){ setPhase('HOME'); state.exiting = false; showScreen('scrHome'); }
 function openOvl(id){ $('#'+id).classList.add('show'); }
 function closeOvl(id){ $('#'+id).classList.remove('show'); }
+
+/* One interstitial per transition. Waiters queue behind a completion ad
+   instead of firing a second one, and a short watchdog means a missing
+   native callback can never strand navigation. */
+function showInterstitial(done){
+  const cb = typeof done === 'function' ? done : function(){};
+  if (interstitialInFlight){ interstitialWaiters.push(cb); return; }
+  interstitialInFlight = true;
+  let settled = false, timer = null;
+  const settle = () => {
+    if (settled) return;
+    settled = true;
+    if (timer) clearTimeout(timer);
+    interstitialInFlight = false;
+    const waiters = interstitialWaiters;
+    interstitialWaiters = [];
+    try{ cb(); }catch(e){}
+    waiters.forEach(fn => { try{ fn(); }catch(e){} });
+  };
+  timer = setTimeout(settle, 30000);
+  try{ GameBoxSDK.ad('interstitial', settle); }
+  catch(e){ settle(); }
+}
+function waitForInterstitial(done){
+  const cb = typeof done === 'function' ? done : function(){};
+  if (interstitialInFlight) interstitialWaiters.push(cb);
+  else cb();
+}
 
 /* ================================================================
    SECTION · SETTINGS
@@ -851,10 +3102,19 @@ function syncSettingsUI(){
   $('#swHaptics').dataset.on = state.settings.haptics;
   $('#btnExitMenu').style.display = IN_GAME.includes(state.phase) ? 'flex' : 'none';
 }
-function openSettings(){ AudioFX.tap(); syncSettingsUI(); openOvl('ovSettings'); }
+function openSettings(){ AudioFX.ensure(); AudioFX.tap(); syncSettingsUI(); openOvl('ovSettings'); }
+ $('#btnCloseSettings').onclick = () => { AudioFX.tap(); closeOvl('ovSettings'); };
  $('#swSound').onclick = () => { state.settings.sound = !state.settings.sound; syncSettingsUI(); saveAll(); AudioFX.tap(); };
  $('#swHaptics').onclick = () => { state.settings.haptics = !state.settings.haptics; syncSettingsUI(); saveAll(); AudioFX.tap(); buzz(20); };
- $('#btnExitMenu').onclick = () => { AudioFX.tap(); closeOvl('ovSettings'); goHome(); toast('Back to menu'); };
+ $('#btnExitMenu').onclick = () => {
+  if (state.exiting) return;
+  AudioFX.tap(); closeOvl('ovSettings');
+  state.exiting = true;
+  const finish = () => { state.exiting = false; goHome(); toast('Back to menu'); };
+  if (state.phase === 'WIN' && state.completionAdRequested){ waitForInterstitial(finish); return; }
+  if (state.phase === 'WIN') state.completionAdRequested = true;
+  showInterstitial(finish);
+};
 document.querySelectorAll('.gearBtn').forEach(b => b.onclick = openSettings);
  $('#btnHelp').onclick = () => { AudioFX.tap(); openOvl('ovHelp'); };
  $('#btnCloseHelp').onclick = () => { AudioFX.tap(); closeOvl('ovHelp'); };
@@ -866,6 +3126,7 @@ document.querySelectorAll('.gearBtn').forEach(b => b.onclick = openSettings);
    SECTION · SETUP
    ================================================================ */
 function renderSetup(){
+  pruneUnlocks();
   const list = $('#pList'); list.innerHTML = '';
   state.setupDraft.forEach((p,i) => {
     const row = document.createElement('div'); row.className='p-row';
@@ -923,11 +3184,13 @@ function catChip(c){
   const on = state.enabledCats.includes(c.id);
   const b = document.createElement('button');
   b.className = 'cat-chip' + (!unlockedNow ? ' lock' : on ? ' on' : '');
+  if (!unlockedNow) b.title = 'Watch ad to unlock';
   let label = c.name;
   if (!c.free && unlockedNow) label += ' · ' + mmss(state.unlockExpiry[c.id] - Date.now());
-  b.innerHTML = (!unlockedNow ? '<svg class="ic"><use href="#i-lock"/></svg>' : '') + label;
+  b.innerHTML = (!unlockedNow ? '<svg class="ic"><use href="#i-lock"/></svg>' : '') + esc(label);
   b.onclick = () => {
     if (!unlockedNow){
+      if (state.adBusy) return;
       state.pendingCat = c.id;
       $('#ulName').textContent = c.name;
       AudioFX.tap(); openOvl('ovUnlock');
@@ -941,12 +3204,13 @@ function catChip(c){
   return b;
 }
 function renderCatSheets(){
+  pruneUnlocks();
   const free = $('#catFreeGrid'), prem = $('#catPremGrid');
   free.innerHTML=''; prem.innerHTML='';
   CATS.forEach(c => (c.free ? free : prem).appendChild(catChip(c)));
   $('#catSummary').textContent = state.enabledCats.length + ' OF ' + CATS.length + ' ON';
 }
-function syncCatButton(){ $('#catCount').textContent = state.enabledCats.length + ' ON'; }
+function syncCatButton(){ $('#catCount').textContent = activeEnabledCats().length + ' ON'; }
 function startCdTick(){
   if (cdTick) return;
   cdTick = setInterval(() => {
@@ -958,19 +3222,38 @@ function startCdTick(){
 function stopCdTick(){ if (cdTick){ clearInterval(cdTick); cdTick = null; } }
  $('#btnChooseCats').onclick = () => { AudioFX.tap(); renderCatSheets(); startCdTick(); openOvl('ovCats'); };
  $('#btnCloseCats').onclick = () => { AudioFX.tap(); closeOvl('ovCats'); stopCdTick(); };
- $('#ulAd').onclick = () => {
-  const id = state.pendingCat; if (!id) return;
+$('#ulAd').onclick = () => {
+  const id = state.pendingCat;
+  if (!id || state.adBusy) return;
+  const cat = CATS.find(x => x.id === id);
+  if (!cat) { state.pendingCat = null; closeOvl('ovUnlock'); return; }
   AudioFX.tap();
-  GameBoxSDK.ad('rewarded', () => {
-    const base = state.unlockExpiry[id] && state.unlockExpiry[id] > Date.now() ? state.unlockExpiry[id] : Date.now();
-    state.unlockExpiry[id] = base + UNLOCK_MINUTES * 60000;
+  state.adBusy = true;
+  const btn = $('#ulAd'); btn.disabled = true;
+  let settled = false;
+  let watchdog = null;
+  const finish = (success) => {
+    if (settled) return;
+    settled = true;
+    if (watchdog) clearTimeout(watchdog);
+    state.adBusy = false;
+    state.pendingCat = null;
+    btn.disabled = false;
+    closeOvl('ovUnlock');
+    if (success !== true){
+      toast('AD NOT COMPLETED · CATEGORY LOCKED');
+      AudioFX.escaped(); buzz(50);
+      return;
+    }
+    state.unlockExpiry[id] = Date.now() + UNLOCK_MINUTES * 60000;
     if (!state.enabledCats.includes(id)) state.enabledCats.push(id);
     persistCats(); renderCatSheets(); syncCatButton();
-    closeOvl('ovUnlock');
-    toast(CATS.find(x=>x.id===id).name + ' UNLOCKED · 30 MIN');
+    toast(cat.name + ' UNLOCKED · 30 MIN');
     AudioFX.caught(); buzz([15,25,15]);
-    state.pendingCat = null;
-  });
+  };
+  watchdog = setTimeout(() => finish(false), 90000);
+  try{ GameBoxSDK.ad('rewarded', (success) => finish(success === true)); }
+  catch(e){ finish(false); }
 };
  $('#ulNo').onclick = () => { AudioFX.tap(); closeOvl('ovUnlock'); state.pendingCat = null; };
 
@@ -982,31 +3265,56 @@ function stopCdTick(){ if (cdTick){ clearInterval(cdTick); cdTick = null; } }
  $('#btnStart').onclick = () => {
   if (state.phase !== 'SETUP') return;
   if (state.setupDraft.length < MIN_PLAYERS){ toast('Need at least 3 players'); return; }
+  if (!HAS_VALID_PAIRS){ toast('WORD DATA UNAVAILABLE'); return; }
   AudioFX.tap(); buzz([15,30,15]);
+  state.completionAdRequested = false;
+  state.exiting = false;
+  if (!pickPair()){ toast('NO WORD PAIRS IN SELECTED CATEGORIES'); return; }
   state.players = state.setupDraft.map((p,i)=>({
     name:(p.name.trim()||('Player '+(i+1))).toUpperCase(), color:p.color, alive:true, role:'civ'
   }));
-  state.usedPairs = new Set();
-  pickPair();
   assignRoles();
   state.dealOrder = shuffle(state.players.map((_,i)=>i));
   state.dealIdx = 0;
   state.votesNeeded = state.imposterCount;
   startDealPass();
 };
+const RECENT_LIMIT = 12;
+function normalizedWord(s){ return String(s).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function pairKey(pair){ return normalizedWord(pair[0]) + '|' + normalizedWord(pair[1]); }
+function persistRecent(){
+  GameBoxSDK.storage.set('recent', state.recentPairs.slice(0, RECENT_LIMIT));
+}
+function pairCandidates(cats, recentSet){
+  const out = [];
+  cats.forEach(c => {
+    const pairs = c.pairs.filter(p => !recentSet.has(pairKey(p)));
+    if (pairs.length) out.push({ cat:c, pairs });
+  });
+  return out;
+}
 function pickPair(){
-  const cats = CATS.filter(c => state.enabledCats.includes(c.id));
-  let pool = [];
-  cats.forEach(c => c.pairs.forEach(p => {
-    if (!state.usedPairs.has(c.id + ':' + p[0])) pool.push({ civ:p[0], uc:p[1], cat:c.name, key:c.id+':'+p[0] });
-  }));
-  if (!pool.length){
-    state.usedPairs.clear();
-    cats.forEach(c => c.pairs.forEach(p => pool.push({ civ:p[0], uc:p[1], cat:c.name, key:c.id+':'+p[0] })));
+  const enabled = activeEnabledCats();
+  const cats = CATS.filter(c => enabled.includes(c.id) && c.pairs.length);
+  if (!cats.length) return false;
+  /* Category first, then a pair inside it. The key is category-free, so a
+     pair that used to live in two categories is still excluded. */
+  let allowed = state.recentPairs.slice(0, RECENT_LIMIT);
+  let candidates = pairCandidates(cats, new Set(allowed));
+  while (!candidates.length && allowed.length){
+    /* Small pool: forget the oldest half first, then retry. */
+    allowed = allowed.slice(0, Math.floor(allowed.length / 2));
+    candidates = pairCandidates(cats, new Set(allowed));
   }
-  const pick = pool[Math.floor(Math.random()*pool.length)];
-  state.usedPairs.add(pick.key);
-  state.wordPair = { civ:pick.civ, uc:pick.uc, cat:pick.cat };
+  if (!candidates.length) candidates = pairCandidates(cats, new Set());
+  if (!candidates.length) return false;
+  const bucket = candidates[Math.floor(Math.random() * candidates.length)];
+  const pair = bucket.pairs[Math.floor(Math.random() * bucket.pairs.length)];
+  const key = pairKey(pair);
+  state.recentPairs = [key].concat(state.recentPairs.filter(k => k !== key)).slice(0, RECENT_LIMIT);
+  persistRecent();
+  state.wordPair = { civ:pair[0], uc:pair[1], cat:bucket.cat.name };
+  return true;
 }
 function assignRoles(){
   const n = state.players.length;
@@ -1066,7 +3374,8 @@ function showDossier(){
   showScreen('scrWord');
   /* measure only after the screen is laid out */
   requestAnimationFrame(() => fitWord(word));
-  AudioFX.stamp(); buzz([10,20,10]);
+  /* Sound begins with the redaction animation; its soft chime lands as the word clears. */
+  setTimeout(() => { if (state.phase === 'WORD') AudioFX.reveal(); }, 550);
 }
  $('#btnWordDone').onclick = () => {
   if (state.phase !== 'WORD') return;
@@ -1088,7 +3397,8 @@ function showTable(){
   setPhase('TABLE');
   $('#tableCat').textContent = state.wordPair.cat;
   const list = $('#patList'); list.innerHTML = '';
-  state.dealOrder.forEach((pi,k) => {
+  // Keep the original shuffled clue order, but remove players already eliminated.
+  state.dealOrder.filter(pi => state.players[pi].alive).forEach((pi,k) => {
     const p = state.players[pi];
     const row = document.createElement('div'); row.className='pat-row';
     row.innerHTML = '<span class="pn">'+(k+1)+'</span><span class="pname">'+esc(p.name)+'</span>'+
@@ -1100,8 +3410,22 @@ function showTable(){
 }
  $('#btnOpenVote').onclick = () => {
   if (state.phase !== 'TABLE') return;
-  AudioFX.accuse(); buzz([12,20,12]);
   state.voteOrder = state.players.map((p,i)=>({i,alive:p.alive})).filter(o=>o.alive).map(o=>o.i);
+
+  // The number of suspects each person votes for follows the imposters still alive,
+  // not the number that were present at the start of the game.
+  const remainingImposters = state.players.filter(p => p.alive && p.role === 'uc').length;
+  if (remainingImposters === 0) {
+    showWin(true);
+    return;
+  }
+  if (state.voteOrder.length < 2) {
+    showWin(false);
+    return;
+  }
+  state.votesNeeded = Math.min(remainingImposters, state.voteOrder.length - 1);
+
+  AudioFX.accuse(); buzz([12,20,12]);
   state.voteIdx = 0;
   state.votes = {};
   setPhase('VOTE');
@@ -1199,62 +3523,97 @@ function resolveVote(){
   const tied = elim.length === 0
     || elim[need-1].v === 0
     || elim[need-1].v === nextV;
-  if (tied){ showElim(null); return; }
+  if (tied){ showElim(null, 'tie', tally, aliveIdx); return; }
   const out = elim.map(e=>e.i);
   out.forEach(i => { state.players[i].alive = false; });
   const aliveUC = state.players.filter(x=>x.alive && x.role==='uc').length;
-  showElim(out, aliveUC === 0);
+  const aliveCiv = state.players.filter(x=>x.alive && x.role==='civ').length;
+  const outcome = aliveUC === 0 ? 'civ' : (aliveUC >= aliveCiv ? 'uc' : 'continue');
+  showElim(out, outcome, tally, aliveIdx);
 }
 
 /* ---------- elimination / tie page ---------- */
-function showElim(elimIdxs, civWin){
+function showElim(elimIdxs, outcome='continue', tally={}, eligibleIdxs=null){
   setPhase('ELIM');
   const tag = $('#elimTag');
   const people = $('#elimPeople');
   const btn = $('#elimContinue');
+  const tallyCard = $('#voteTally');
+  const tallyRows = $('#voteTallyRows');
   people.innerHTML = '';
+  tallyRows.innerHTML = '';
+
+  state._elimOutcome = elimIdxs == null ? 'tie' : outcome;
   if (elimIdxs == null){
     tag.className = 'el-tag tie';
-    tag.textContent = 'VOTE TIED';
-    const wrap = document.createElement('div');
-    wrap.className = 'el-person';
-    wrap.innerHTML = '<div class="el-big">NOBODY OUT</div>'+
-      '<div class="el-sub">EQUAL VOTES<br>DISCUSS AGAIN · VOTE AGAIN</div>';
-    people.appendChild(wrap);
-    btn.textContent = 'BACK TO TABLE';
+    tag.textContent = 'TIE VOTE';
+    people.innerHTML =
+      '<div class="el-tie-state">'+
+        '<div class="el-tie-mark" aria-hidden="true">=</div>'+
+        '<div class="el-tie-copy">'+
+          '<div class="el-big">NOBODY OUT</div>'+
+          '<div class="el-sub">SAME NUMBER OF VOTES</div>'+
+        '</div>'+
+      '</div>';
+    btn.textContent = 'VOTE AGAIN';
   } else {
     tag.className = 'el-tag out';
     tag.textContent = 'ELIMINATED';
     elimIdxs.forEach((i,k) => {
       const p = state.players[i];
       const wrap = document.createElement('div');
+      const isUc = p.role === 'uc';
       wrap.className = 'el-person';
-      wrap.style.animationDelay = (300 + k*180) + 'ms';
-      wrap.innerHTML = '<div class="el-role '+(p.role==='uc'?'uc':'civ')+'">'+(p.role==='uc'?'UNDERCOVER':'CIVILIAN')+'</div>'+
-        '<div class="el-name">'+esc(p.name)+'</div>';
+      wrap.style.animationDelay = (220 + k*90) + 'ms';
+      wrap.innerHTML =
+        '<div class="el-avatar" style="--player-color:'+p.color+'">'+esc(initials(p.name))+'</div>'+
+        '<div class="el-name">'+esc(p.name)+'</div>'+
+        '<div class="el-role '+(isUc?'uc':'civ')+'">'+(isUc?'IMPOSTER':'CIVILIAN')+'</div>';
       people.appendChild(wrap);
     });
-    btn.textContent = 'SEE RESULT';
+    btn.textContent = state._elimOutcome === 'continue' ? 'CONTINUE' : 'SEE RESULT';
   }
-  Array.from($('#elStage').children).forEach(el => {
+
+  // Show vote counts for every player who could be targeted in this round,
+  // sorted by highest votes first. Keep this separate from role reveals.
+  const eligible = eligibleIdxs || state.players.map((p,i)=>i).filter(i=>state.players[i].alive);
+  const rankedVotes = eligible
+    .map(i => ({i, v: tally[i] || 0}))
+    .sort((a,b) => b.v - a.v || a.i - b.i);
+  const maxVotes = Math.max(1, ...rankedVotes.map(x=>x.v));
+  rankedVotes.forEach(({i,v},k) => {
+    const p = state.players[i];
+    const row = document.createElement('div');
+    const isOut = Array.isArray(elimIdxs) && elimIdxs.includes(i);
+    row.className = 'tally-row' + (isOut ? ' out' : '');
+    row.style.animationDelay = (80 + Math.min(k,8)*35) + 'ms';
+    row.innerHTML =
+      '<div class="tally-name">'+esc(p.name)+(isOut?' · OUT':'')+'</div>'+
+      '<div class="tally-count">'+v+' '+(v===1?'VOTE':'VOTES')+'</div>'+
+      '<div class="tally-track"><div class="tally-fill" style="--vote-width:'+((v/maxVotes)*100)+'%"></div></div>';
+    tallyRows.appendChild(row);
+  });
+  tallyCard.hidden = rankedVotes.length === 0;
+
+  $('#elStage').querySelectorAll('.elim-file,.el-tag,.el-person,.el-tie-state,.el-btn').forEach(el => {
     el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
   });
   btn.disabled = true;
-  setTimeout(() => { if (state.phase === 'ELIM') btn.disabled = false; }, 1400);
+  setTimeout(() => { if (state.phase === 'ELIM') btn.disabled = false; }, 850);
   showScreen('scrElim');
-  if (elimIdxs == null){ AudioFX.tap(); buzz([20,20,20]); }
-  else if (civWin){ AudioFX.caught(); buzz([25,35,25]); }
-  else { AudioFX.escaped(); buzz([60,50,60]); }
-  state._civWin = civWin;
+
+  if (state._elimOutcome === 'tie'){ AudioFX.tap(); buzz([12,18]); }
+  else if (state._elimOutcome === 'civ'){ AudioFX.caught(); buzz([18,24]); }
+  else if (state._elimOutcome === 'uc'){ AudioFX.escaped(); buzz([25,18]); }
+  else { AudioFX.stamp(); buzz(12); }
 }
- $('#elimContinue').onclick = () => {
+$('#elimContinue').onclick = () => {
   if (state.phase !== 'ELIM') return;
   AudioFX.tap(); buzz(10);
-  if (state._civWin === true || state._civWin === false){
-    showWin(state._civWin);
-  } else {
-    showTable();
-  }
+  const outcome = state._elimOutcome;
+  if (outcome === 'civ') showWin(true);
+  else if (outcome === 'uc') showWin(false);
+  else showTable();
 };
 
 /* ---------- win panel ---------- */
@@ -1280,50 +3639,116 @@ function showWin(civWin){
   else { AudioFX.escaped(); buzz([60,50,60]); }
   const c = icon.getBoundingClientRect();
   if (civWin) confetti(c.left + c.width/2, c.top + c.height/2);
+
+  /* Completion placement: one interstitial per finished game. The win
+     buttons wait for this attempt instead of firing a second one. */
+  state.completionAdRequested = false;
+  setTimeout(() => {
+    if (state.phase !== 'WIN' || state.completionAdRequested) return;
+    state.completionAdRequested = true;
+    showInterstitial();
+  }, 500);
 }
 /* PLAY AGAIN → setup page with everything preserved; start is manual */
- $('#winAgain').onclick = () => {
+$('#winAgain').onclick = () => {
+  if (state.phase !== 'WIN' || state.exiting) return;
   AudioFX.tap(); buzz(12);
-  GameBoxSDK.ad('interstitial');
-  setPhase('SETUP');
-  state.players.forEach(p => { p.alive = true; p.role = 'civ'; });
-  renderSetup(); showScreen('scrSetup');
+  state.exiting = true;
+  const finish = () => {
+    state.exiting = false;
+    setPhase('SETUP');
+    state.players.forEach(p => { p.alive = true; p.role = 'civ'; });
+    renderSetup(); showScreen('scrSetup');
+  };
+  if (state.completionAdRequested){ waitForInterstitial(finish); return; }
+  state.completionAdRequested = true;
+  showInterstitial(finish);
 };
- $('#winMenu').onclick = () => { AudioFX.tap(); goHome(); };
+$('#winMenu').onclick = () => {
+  if (state.phase !== 'WIN' || state.exiting) return;
+  AudioFX.tap();
+  state.exiting = true;
+  const finish = () => { state.exiting = false; goHome(); };
+  if (state.completionAdRequested){ waitForInterstitial(finish); return; }
+  state.completionAdRequested = true;
+  showInterstitial(finish);
+};
 
 /* ================================================================
    SECTION · INITIALIZATION
    ================================================================ */
-function saveAll(){ GameBoxSDK.storage.set('settings', state.settings); }
+function saveAll(){
+  const patch = { sound: !!state.settings.sound, haptics: !!state.settings.haptics };
+  GameBoxSDK.storage.set('settings', patch);
+  GameBoxSDK.pushSettings(patch);
+}
 function loadSaved(){
   const s = GameBoxSDK.storage.get('settings');
-  if (s){
+  if (s && typeof s === 'object'){
     if (typeof s.sound === 'boolean') state.settings.sound = s.sound;
     if (typeof s.haptics === 'boolean') state.settings.haptics = s.haptics;
   }
+  /* The shell's settings are shared across every game. When the Studio
+     shim is present it is the current source of truth; in a plain browser
+     the per-game saved values above are all we have. */
+  const shell = GameBoxSDK.shellSettings();
+  if (shell){
+    if (typeof shell.sound === 'boolean') state.settings.sound = shell.sound;
+    if (typeof shell.haptics === 'boolean') state.settings.haptics = shell.haptics;
+  }
   const c = GameBoxSDK.storage.get('cats');
-  if (c){
+  if (c && typeof c === 'object'){
     if (c.expiry && typeof c.expiry === 'object'){
       const now = Date.now();
-      for (const id in c.expiry){
-        if (c.expiry[id] > now && CATS.some(x=>x.id===id && !x.free))
-          state.unlockExpiry[id] = c.expiry[id];
+      for (const savedId in c.expiry){
+        const until = Number(c.expiry[savedId]);
+        const id = migrateCatId(savedId);
+        if (!(until > now) || !id) continue;
+        const cat = CATS.find(x => x.id === id);
+        if (!cat || cat.free || !cat.pairs.length) continue;
+        state.unlockExpiry[id] = Math.max(state.unlockExpiry[id] || 0, until);
       }
     }
     if (Array.isArray(c.enabled) && c.enabled.length){
       const ok = activeUnlocked();
-      const valid = c.enabled.filter(id => ok.includes(id));
-      state.enabledCats = valid.length ? valid : CATS.filter(x=>x.free).map(x=>x.id);
+      const seen = new Set();
+      const valid = [];
+      c.enabled.forEach(savedId => {
+        const id = migrateCatId(savedId);
+        if (!id || seen.has(id) || !ok.includes(id)) return;
+        seen.add(id);
+        valid.push(id);
+      });
+      state.enabledCats = valid.length ? valid : freeCatIds();
     }
   }
+  const recent = GameBoxSDK.storage.get('recent');
+  if (Array.isArray(recent)){
+    const seen = new Set();
+    state.recentPairs = [];
+    recent.forEach(key => {
+      if (typeof key !== 'string' || !/^[a-z0-9]+\|[a-z0-9]+$/.test(key) || seen.has(key)) return;
+      seen.add(key);
+      if (state.recentPairs.length < RECENT_LIMIT) state.recentPairs.push(key);
+    });
+  }
+  if (!state.enabledCats.length) state.enabledCats = freeCatIds();
+  pruneUnlocks();
+  /* Write the filtered state back so expired unlock records do not linger. */
+  persistCats();
   const d = GameBoxSDK.storage.get('draft');
   if (d && Array.isArray(d.names) && d.names.length >= MIN_PLAYERS){
-    state.setupDraft = d.names.slice(0,MAX_PLAYERS).map((n,i)=>({ name:n, color:PLAYER_COLORS[i%PLAYER_COLORS.length] }));
+    state.setupDraft = d.names.slice(0,MAX_PLAYERS).map((n,i)=>({
+      name: typeof n === 'string' ? n : '',
+      color: PLAYER_COLORS[i%PLAYER_COLORS.length]
+    }));
   } else {
     state.setupDraft = [0,1,2].slice(0,DEFAULT_PLAYERS).map(i => ({ name:'', color:PLAYER_COLORS[i%PLAYER_COLORS.length] }));
   }
-  if (typeof d.uc === 'number' && d.uc >= 1) state.imposterCount = d.uc;
+  if (d && typeof d.uc === 'number' && d.uc >= 1) state.imposterCount = Math.floor(d.uc);
   if (state.imposterCount > maxImposters()) state.imposterCount = maxImposters();
+  if (state.imposterCount < 1) state.imposterCount = 1;
+  saveAll();
 }
 document.addEventListener('pointerdown', () => AudioFX.ensure(), { passive:true });
 document.addEventListener('keydown', e => {
@@ -1331,7 +3756,47 @@ document.addEventListener('keydown', e => {
 });
 loadSaved();
 syncSettingsUI();
+if (!HAS_VALID_PAIRS){
+  const start = $('#btnStart');
+  start.disabled = true;
+  start.textContent = 'WORD DATA UNAVAILABLE';
+}
 renderSetup();
+
+/* ================================================================
+   SHELL LIFECYCLE
+   The arcade can change sound/haptics while a game is paused. Apply
+   those values without disturbing the current round.
+   ================================================================ */
+(function(){
+  function applyShellSettings(s){
+    if (!s || typeof s !== 'object') return;
+    let changed = false;
+    if (typeof s.sound === 'boolean' && state.settings.sound !== s.sound){
+      state.settings.sound = s.sound; changed = true;
+    }
+    if (typeof s.haptics === 'boolean' && state.settings.haptics !== s.haptics){
+      state.settings.haptics = s.haptics; changed = true;
+    }
+    if (changed){ syncSettingsUI(); saveAll(); }
+  }
+  const previous = window.Game || {};
+  window.Game = {
+    pause(){ if (typeof previous.pause === 'function'){ try{ previous.pause(); }catch(e){} } },
+    resume(){
+      if (typeof previous.resume === 'function'){ try{ previous.resume(); }catch(e){} }
+      const s = GameBoxSDK.shellSettings();
+      if (s) applyShellSettings(s);
+    },
+    setMuted(m){ applyShellSettings({ sound: !m }); },
+    setSettings(s){ applyShellSettings(s); },
+    destroy(){ if (typeof previous.destroy === 'function'){ try{ previous.destroy(); }catch(e){} } }
+  };
+  window.__shellUndercover = {
+    applySettings: applyShellSettings,
+    playing: function(){ return IN_GAME.indexOf(state.phase) >= 0; }
+  };
+})();
 })();
 </script>
 </body>

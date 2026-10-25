@@ -894,8 +894,11 @@ val bannerEdge = currentGame?.bannerEdge
                 adMobManager.showRewardedAd(
                     onRewardEarned = {
                         AdPolicy.onRewardedEarned(
-                            if (kind.equals("revive", true)) AdPolicy.RewardKind.REVIVE
-                            else AdPolicy.RewardKind.NORMAL
+                            when {
+                                kind.equals("revive", true) -> AdPolicy.RewardKind.REVIVE
+                                kind.equals("unlock", true) -> AdPolicy.RewardKind.UNLOCK
+                                else -> AdPolicy.RewardKind.NORMAL
+                            }
                         )
                         NativeBridgeContext.callback?.invoke(callback, "granted")
                     },

@@ -41,9 +41,10 @@ class ModeActivity : ThemedActivity() {
          *
          * Party games are the pass-the-phone crowd, so they are NOT bucketed by
          * player count - they get their own tile and carry no "NP" tag (see
-         * GameAdapter). Last Balloon is here for that reason.
+         * GameAdapter). Last Balloon is here for that reason; UnderCover is a
+         * 3-10 player pass-the-phone deduction game and belongs here too.
          */
-        val PARTY_GAME_IDS = setOf("truth-or-dare", "last-balloon")
+        val PARTY_GAME_IDS = setOf("truth-or-dare", "last-balloon", "quick-draw", "undercover")
 
         /**
          * DEPRECATED - superseded by the manifests' own `released:` date.

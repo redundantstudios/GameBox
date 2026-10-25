@@ -576,5 +576,84 @@ module.exports = [
     "  };",
     "})();"
   ].join('\n')
+},
+
+/* ------------------------------------------------------------------ */
+{
+  id: 'quick-draw',
+  src: 'QuickDraw.html',
+  title: 'Quick Draw',
+  orientation: 'portrait',
+  min: 3, max: 10, ai: 'none',
+  color: '#E5533D',
+  front: "var e=document.getElementById('scrHome'); return !!(e&&e.classList.contains('active'));",
+  backLabel: 'BACK',
+  backBg: 'var(--card)',
+  backFg: '#3B3630',
+  backBd: 'rgba(59,54,48,.4)',
+  backR: '12px 14px 11px 15px/14px 11px 15px 12px',
+  backSh: 'rgba(59,54,48,.14)',
+  patches: [
+    [
+      "  const bridge = (typeof window !== 'undefined' && window.GameBox) || null;",
+      "  /* Bridge to NativeBridge - shell exposes window.NativeBridge, not window.GameBox. */\n  const bridge = (typeof window !== 'undefined' && (window.GameBox || window.NativeBridge)) || null;"
+    ],
+    [
+      "  function ad(type, cb){\n    try{\n      if (bridge && typeof bridge.ad === 'function'){ bridge.ad(type, cb || function(){}); return; }\n    }catch(e){}\n    if (cb) cb(true);\n  }",
+      "  /* Route ads through Studio.ads so interstitials/rewarded actually fire. */\n  function ad(type, cb){\n    try{ if (bridge && typeof bridge.ad === 'function'){ bridge.ad(type, cb || function(){}); return; }\n    }catch(e){}\n    if(type==='interstitial') Studio.ads.interstitial(function(){ if(cb) cb(true); }, 'quick-draw');\n    else if(type==='rewarded' && cb) Studio.ads.rewarded('quick-draw.unlock', function(){ if(cb) cb(true); }, function(){ if(cb) cb(false); });\n  }"
+    ]
+  ],
+  wiring: [
+    '(function(){',
+    '  var prev=window.Game||{};',
+    '  function applySettings(s){',
+    '    if(!s) return;',
+    '    try{',
+    '      if(typeof s.sound==="boolean"){',
+    '        state.settings.sound=s.sound; saveSettings(); AudioFX.click();',
+    '      }',
+    '    }catch(e){}',
+    '  };',
+    '  applySettings(Studio.settings);',
+    '  var want=false;',
+    '  setInterval(function(){',
+    '    var show=("WORD_REVEAL"===state.phase||"DRAW"===state.phase);',
+    '    if(show!==want){ want=show; Studio.ads.banner(show); }',
+    '  },400);',
+    '  window.__shellQuickDraw={',
+    '    applySettings:function(s){ applySettings(s); },',
+    '    playing:function(){ return IN_GAME.indexOf(state.phase)>=0; }',
+    '  };',
+    '  window.Game={',
+    '    pause:function(){ try{ if(prev.pause) prev.pause(); }catch(e){} },',
+    '    resume:function(){ try{ if(prev.resume) prev.resume(); }catch(e){} applySettings(Studio.settings); },',
+    '    setMuted:function(m){ try{ applySettings({sound:!!m}); }catch(e){} },',
+    '    setSettings:function(s){ try{ applySettings(s); }catch(e){}',
+    '      if(s) Studio.pushSettings({sound:s.sound,haptics:s.haptics});',
+    '      if(prev.setSettings) try{ prev.setSettings(s); }catch(e){};',
+    '    }catch(e){}',
+    '    destroy:function(){ try{ if(prev.destroy) prev.destroy(); }catch(e){} }',
+    '  };',
+    ")()",
+  ].join('\n')
+}
+,
+{
+  id: 'undercover',
+  src: 'UnderCover.html',
+  title: 'Undercover',
+  orientation: 'portrait',
+  min: 3, max: 10, ai: 'none',
+  color: '#F2B33D',
+  front: "var e=document.getElementById('scrHome'); return !!(e&&e.classList.contains('active'));",
+  backLabel: "BACK",
+  backBg: "rgba(26,26,35,.92)",
+  backFg: "#F2B33D",
+  backBd: "rgba(242,179,61,.55)",
+  backR: "12px",
+  backSh: "rgba(0,0,0,.35)",
+  version: 2,
+  patches: [],
+  wiring: []
 }
 ];

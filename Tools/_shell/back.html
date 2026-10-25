@@ -8,7 +8,7 @@
   function mount(){
     if(get()) return;
     var d=document.createElement('div'); d.id='studioBack';
-    d.textContent='@@LABEL@@';
+    d.innerHTML='<svg class="ic" style="width:22px;height:22px"><use href="#i-chevron-left"/></svg>';
     d.setAttribute('role','button'); d.setAttribute('aria-label','Back to the arcade');
     (document.body||document.documentElement).appendChild(d);
     /* touchend, not click: every one of these games sets touch-action:none on
@@ -22,10 +22,23 @@
   function tick(){
     var b=get();
     if(!b){ setTimeout(tick,250); return; }
-    var want=front();
-    if(want!==on){ on=want; b.classList.toggle('show',on); }
+    sync();
     setTimeout(tick,250);
   }
+  /* Re-read the game's front state and apply it NOW.
+     The poll above is only a fallback: it can be up to 250 ms late, and that is
+     long enough for the button to stay drawn over the screen the game just
+     opened (the reported "BACK flashes on the New Game page"). A game that
+     swaps screens itself dispatches `studiofrontchange` in the same task as the
+     swap, so the class is removed before the browser paints the new screen. */
+  function sync(){
+    var b=get();
+    if(!b) return;
+    on=front();
+    b.classList.toggle('show',on);
+  }
+  window.__shellSyncFront=sync;
+  document.addEventListener('studiofrontchange',sync);
   if(document.readyState==='loading'){
     document.addEventListener('DOMContentLoaded',function(){ mount(); tick(); });
   }else{ mount(); tick(); }

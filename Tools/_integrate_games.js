@@ -100,6 +100,12 @@ const only = process.argv.slice(2);
 let done = 0;
 for (const g of GAMES) {
   if (only.length && only.indexOf(g.id) < 0) continue;
+  if (g.id === 'undercover') {
+    /* The word-pair JSON is authoritative. Rebuild the embedded block before
+       integrating so a stale HTML snapshot can never be shipped. */
+    require('child_process').execFileSync(process.execPath,
+      [path.join(__dirname, 'build_undercover.js')], { stdio: 'inherit' });
+  }
   const from = path.join(SRC, g.src);
   if (!fs.existsSync(from)) throw new Error('missing source: ' + from);
   const out = path.join(OUT, g.id, 'index.html');
