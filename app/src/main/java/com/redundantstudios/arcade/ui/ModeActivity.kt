@@ -50,8 +50,10 @@ class ModeActivity : ThemedActivity() {
          * player count - they get their own tile and carry no "NP" tag (see
          * GameAdapter). Last Balloon is here for that reason; UnderCover is a
          * 3-10 player pass-the-phone deduction game and belongs here too.
+         * Reaction Royale is 2-10 players passing one phone, so it belongs here
+         * rather than on a seat-count page.
          */
-        val PARTY_GAME_IDS = setOf("truth-or-dare", "last-balloon", "quick-draw", "undercover")
+        val PARTY_GAME_IDS = setOf("truth-or-dare", "last-balloon", "quick-draw", "undercover", "reaction-royale")
 
         /**
          * DEPRECATED - superseded by the manifests' own `released:` date.
