@@ -236,10 +236,25 @@ private const val KEY_DAILY_MSG_DAY = "daily_msg_day"
     }
 
     fun applyTheme() {
-        AppCompatDelegate.setDefaultNightMode(
+        /* ONLY A CHANGE MAY PUSH.
+           setDefaultNightMode applies itself to every activity in the process,
+           and whatever activity it moves gets its configuration re-delivered,
+           which schedules a relaunch. This is called from EVERY activity's
+           onCreate, so an unconditional call was re-applying the same theme on
+           every open - and AppCompat answered with another relaunch of the
+           screen that was mid-launch: opening any game tore down the
+           GameActivity that was finishing its onCreate and built a SECOND
+           instance, whose own onCreate re-pins requestedOrientation to
+           portrait before setupOrientation turns it back to the game's
+           orientation. Land -> portrait -> land on one open - the jitter seen
+           at the start of every game (both player-facing flips and the
+           window-fit dance went with them). A no-op when the mode already
+           matches removes the whole cascade. */
+        val mode =
             if (appTheme == "Dark") AppCompatDelegate.MODE_NIGHT_YES
             else AppCompatDelegate.MODE_NIGHT_NO
-        )
+        if (AppCompatDelegate.getDefaultNightMode() == mode) return
+        AppCompatDelegate.setDefaultNightMode(mode)
     }
 
     fun getSettingsQueryString(): String {
