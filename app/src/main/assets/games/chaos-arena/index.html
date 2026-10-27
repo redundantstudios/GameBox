@@ -35,7 +35,7 @@ released: 2026-09-22
 @font-face{font-family:'Baloo 2';font-style:normal;font-weight:700;font-display:swap;src:url(../../fonts/web/Baloo2-700.ttf) format('truetype')}
 @font-face{font-family:'Baloo 2';font-style:normal;font-weight:800;font-display:swap;src:url(../../fonts/web/Baloo2-800.ttf) format('truetype')}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;background:#10162a;font-family:'Baloo 2',Verdana,Geneva,'DejaVu Sans',sans-serif;touch-action:none;overscroll-behavior:none}
+html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;background:#10162a;font-family:Verdana,Geneva,'DejaVu Sans',sans-serif;touch-action:none;overscroll-behavior:none}
 #cv{position:fixed;inset:0;display:block;touch-action:none}
 #vig{position:fixed;inset:0;pointer-events:none;z-index:5;box-shadow:inset 0 0 110px rgba(5,8,16,.55)}
 .screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:10;background:rgba(10,14,26,.82);padding:6px;overflow:hidden}
@@ -277,10 +277,7 @@ opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
 <script>
 'use strict';
 /* ============ shared font ============ */
-/* Baloo 2 (bundled, see @font-face at the top) carries the canvas HUD: it is
-   round enough for a party shooter but its digits stay crisp at 8-9px, which
-   Verdana never managed. */
-const FONT="'Baloo 2',Verdana,Geneva,'DejaVu Sans',sans-serif";
+const FONT="'Verdana',Geneva,'DejaVu Sans',sans-serif";
 function font(sz,w){return(w||'bold')+' '+sz+'px '+FONT;}
 
 /* ============ helpers ============ */
@@ -1111,7 +1108,7 @@ otextC('FIRST TO '+KTARGET,VW/2,49,8.5,'#93a5c9');
 /* Scores hug the header: the left half of the roster ends at the timer and the
    right half starts at the PAUSE button, so the strip reads symmetrically
    whatever the player count. */
-const n=ents.length,bw=30,gap=8,y0=58;
+const n=ents.length,bw=30,gap=8,y0=22;
 const leftN=n-(n>>1),edgeL=VW/2-73,edgeR=VW/2+73;
 function scoreChip(e,x){
 ctx.globalAlpha=e.alive?1:.35;
