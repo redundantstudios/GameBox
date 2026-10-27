@@ -19,60 +19,6 @@ import android.view.WindowInsetsController
  */
 object GameWindow {
 
-    /* WHERE THE WINDOW MEASURED RIGHT, KEPT FOR THE NEXT OPEN AND THE NEXT FIT.
-       The position of an oversized window is platform-specific (ColorOS
-       centres it, the ZTE obeys lp.x to the letter), so the correct offset is
-       measured after the layout - i.e. after frames are already on screen.
-       Playing it as "wrong offset now, correction after the first frame" was
-       the visible part of the jitter at every open: the window landed a
-       half-band off, then the correction snapped it - on the ZTE a 40px kick
-       over and after every rotation. The offset that measured good is
-       remembered per display size, in memory and in a prefs file, so it also
-       covers the first open of a fresh process. */
-    private const val FIT_PREFS = "game_window_fit"
-    private val goodOffsets = java.util.concurrent.ConcurrentHashMap<String, IntArray>()
-
-    @Volatile
-    private var rememberedLoaded = false
-
-    /** The key under which one display's good offset is remembered. */
-    private fun offsetKey(dw: Int, dh: Int): String = dw.toString() + " x " + dh
-
-    /** The good offsets remembered by previous sessions, once per process. */
-    private fun ensureOffsetsLoaded(ctx: android.content.Context) {
-        if (rememberedLoaded) return
-        synchronized(this) {
-            if (rememberedLoaded) return
-            try {
-                val prefs = ctx.getSharedPreferences(FIT_PREFS, android.content.Context.MODE_PRIVATE)
-                for ((key, value) in prefs.all) {
-                    val parts = (value as? String)?.split(",") ?: continue
-                    if (parts.size != 2) continue
-                    val x = parts[0].toIntOrNull() ?: continue
-                    val y = parts[1].toIntOrNull() ?: continue
-                    goodOffsets.putIfAbsent(key, intArrayOf(x, y))
-                }
-            } catch (_: Throwable) {
-                // A missing prefs file just means the offsets will be (re)measured.
-            }
-            rememberedLoaded = true
-        }
-    }
-
-    /** Store [x],[y] as the offset that rendered right for [dw]x[dh]. */
-    private fun rememberGoodOffset(dw: Int, dh: Int, x: Int, y: Int, ctx: android.content.Context) {
-        val prev = goodOffsets.put(offsetKey(dw, dh), intArrayOf(x, y))
-        if (prev != null && prev[0] == x && prev[1] == y) return
-        try {
-            ctx.getSharedPreferences(FIT_PREFS, android.content.Context.MODE_PRIVATE)
-                .edit()
-                .putString(offsetKey(dw, dh), x.toString() + "," + y.toString())
-                .apply()
-        } catch (_: Throwable) {
-            // The in-memory value above already covers this session.
-        }
-    }
-
     /**
      * Make the window's content span the WHOLE display, including behind the
      * status and navigation bars.
@@ -227,7 +173,9 @@ object GameWindow {
             val dm = ctx.resources.displayMetrics
             val bandW = (dw - dm.widthPixels).coerceAtLeast(0)
             val bandH = (dh - dm.heightPixels).coerceAtLeast(0)
-            ensureOffsetsLoaded(ctx)
+            val lp = window.attributes
+            lp.width = dw
+            lp.height = dh
             /* WHERE THE WINDOW LANDS IS PLATFORM-DEPENDENT, SO IT IS CORRECTED
                AFTERWARDS RATHER THAN GUESSED HERE.
                This used to be a fixed half-band shift (lp.x = -band/2), on the
@@ -254,35 +202,13 @@ object GameWindow {
                runs this again after the first layout and after every
                rotation, and each run puts the half-band guess back. So the
                correction is called from here, and every path that fits the
-               window (this one and applyCutoutModeToView) ends with it.
-
-               AND THE OFFSET THAT MEASURED GOOD IS REMEMBERED (offsetKey):
-               the first open of an orientation still starts from the half-band
-               guess and needs one correction, but the offset that ended up
-               right is fed back on every later open and fit, which then
-               becomes a no-op. Without the memory, every open re-did the
-               kick: the window flipped in sitting half a band off the edge,
-               drew, and snapped 40px sideways - on the screen the player is
-               watching, on every game. */
-            val remembered = goodOffsets[offsetKey(dw, dh)]
-            val wantX = remembered?.get(0) ?: -Math.round(bandW / 2f)
-            val wantY = remembered?.get(1) ?: -Math.round(bandH / 2f)
-            val lp = window.attributes
-            if (lp.width == dw && lp.height == dh && lp.x == wantX && lp.y == wantY) {
-                /* Already exactly where it has to be: leave the attributes
-                   alone. An assignment would still walk the view root, and a
-                   no-value-change traversal is the definition of buying
-                   nothing while the player is watching. */
-            } else {
-                lp.width = dw
-                lp.height = dh
-                lp.x = wantX
-                lp.y = wantY
-                window.attributes = lp
-                android.util.Log.i("GameJS", "[cutout] full display " + dw + "x" + dh +
-                    " band=" + bandW + "x" + bandH + " at=" + wantX + "," + wantY)
-            }
-            if (root != null) correctWindowOffset(root, dw, dh)
+               window (this one and applyCutoutModeToView) ends with it. */
+            lp.x = -Math.round(bandW / 2f)
+            lp.y = -Math.round(bandH / 2f)
+            window.attributes = lp
+            android.util.Log.i("GameJS", "[cutout] full display " + dw + "x" + dh +
+                " band=" + bandW + "x" + bandH + " at=" + lp.x + "," + lp.y)
+            if (root != null) correctWindowOffset(root)
         } catch (e: Throwable) {
             android.util.Log.i("GameJS", "[cutout] fit failed: " + e)
         }
@@ -300,14 +226,10 @@ object GameWindow {
      * (getLocationOnScreen) and the window is shifted by the difference.
      * Where the platform already did the right thing, this is a no-op.
      *
-     * The offset that measured good is remembered (offsetKey, in a prefs file
-     * per display size) and fed back by the next fit, so the window starts on
-     * the right edge instead of correcting its way there.
-     *
      * Without it, one of the two devices always ends up with a band of the
      * display that the app does not cover.
      */
-    fun correctWindowOffset(root: android.view.View, dw: Int, dh: Int) {
+    fun correctWindowOffset(root: android.view.View) {
         try {
             val wm = root.context.getSystemService(android.content.Context.WINDOW_SERVICE)
                     as? android.view.WindowManager ?: return
@@ -317,8 +239,8 @@ object GameWindow {
                     root.getLocationOnScreen(loc)
                     val dx = -loc[0]
                     val dy = -loc[1]
-                    val lp = root.layoutParams as? WindowManager.LayoutParams
                     if (dx != 0 || dy != 0) {
+                        val lp = root.layoutParams as? WindowManager.LayoutParams
                         if (lp != null) {
                             lp.x += dx
                             lp.y += dy
@@ -326,13 +248,7 @@ object GameWindow {
                             android.util.Log.i("GameJS",
                                 "[cutout] corrected from " + loc[0] + "," + loc[1] +
                                 " by " + dx + "," + dy)
-                            rememberGoodOffset(dw, dh, lp.x, lp.y, root.context)
                         }
-                    } else if (lp != null) {
-                        /* Landed exactly on the edge as-is: THIS window offset
-                           is the good one for this display - remember it so
-                           the next open starts there. */
-                        rememberGoodOffset(dw, dh, lp.x, lp.y, root.context)
                     }
                 } catch (e: Throwable) {
                     android.util.Log.i("GameJS", "[cutout] correction failed: " + e)
