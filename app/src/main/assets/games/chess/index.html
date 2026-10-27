@@ -10,16 +10,24 @@ online: false
 tileColor: #8A5A44
 banner: bottom
 bannerBg: #2b2723
-version: 0.7.1
+version: 0.8.0
 released: 2026-09-21
 -->
 <!--
 REDUNDANT STUDIOS — GAMEBOX MANIFEST
-game: Chess | version: 0.7.1
+game: Chess | version: 0.8.0
 tier: 1 (Vanilla JS + Canvas 2D) | ads: banner/bot+puzzle, interstitial/chess-end,
         rewarded every-5-solves -> Streak Shield. AdMob TEST ids per director;
         shell bridge serves real ads on device; labeled SIMULATED ads in-browser.
 modes: pass | VS BOT (live) | puzzles (EASY 202 live; NORMAL/HARD paste slots ready)
+changelog 0.8.0: BOT AI REBUILD — iterative deepening + principal-variation search on a
+        private engine instance, so the live board is never mutated mid-search.
+        Transposition table, killer/history move ordering, capture-only quiescence
+        (check evasions, mate/stalemate at the horizon), tapered midgame/endgame
+        evaluation (king safety, pawn structure, passed pawns, bishop pair, rook
+        files, endgame king). Search runs in ~10ms generator slices; a finished
+        iteration is always preferred over a half-searched one. EASY ~0.3s,
+        MEDIUM ~0.7s, HARD ~1.3s with no frame stalls.
 changelog 0.7.1: AUDIO OVERHAUL — replaced sliding sine/square/saw synthesis (read
         as "buzzy") with wooden percussion: bandpassed noise knocks + low thumps
         (no frequency slides anywhere), marimba-style mallet tones for UI, cached
@@ -824,7 +832,7 @@ const START_FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const FILES="abcdefgh";
 const PIECE_LETTER={2:"N",3:"B",4:"R",5:"Q",6:"K"};
 
-const Engine=(()=>{
+function makeEngine(){
   const bd=new Int8Array(64);
   let turn=1, castle=0, epSq=-1, half=0, full=1;
   let kw=60, kb=4;
@@ -839,6 +847,32 @@ const Engine=(()=>{
   const sqName=s=>FILES[s&7]+(8-(s>>3));
   const sqFromName=n=>(8-parseInt(n[1],10))*8+FILES.indexOf(n[0]);
   const kingSq=us=>us===1?kw:kb;
+
+  /* Zobrist keys: the search needs a cheap, incrementally-maintained position
+     identity for the transposition table and repetition checks. The old
+     posKey() (a joined board string) is still used by the game record and
+     persistence, but it is far too expensive inside a search. */
+  const ZP=new Int32Array(12*64);
+  const ZC=new Int32Array(16);
+  const ZE=new Int32Array(9);
+  let ZS=0;
+  (function initZobrist(){
+    let s=0x9e3779b9|0;
+    function rnd(){ s^=s<<13; s^=s>>>17; s^=s<<5; return s|0; }
+    for(let i=0;i<ZP.length;i++) ZP[i]=rnd();
+    for(let i=0;i<16;i++) ZC[i]=rnd();
+    for(let i=0;i<9;i++) ZE[i]=rnd();
+    ZS=rnd();
+  })();
+  const zIdx=p=>p>0?p-1:5-p;
+  let zHash=0;
+  function hashFromScratch(){
+    let h=0;
+    for(let s=0;s<64;s++){ const p=bd[s]; if(p!==0) h^=ZP[zIdx(p)*64+s]; }
+    h^=ZC[castle]^ZE[epSq>=0?(epSq&7):8];
+    if(turn===-1) h^=ZS;
+    return h;
+  }
 
   function attacked(sq,by){
     const r=sq>>3,c=sq&7;
@@ -936,14 +970,27 @@ const Engine=(()=>{
     const u={m,castle,ep:epSq,half,full,captured:0,capSq:-1};
     undoStack.push(u);
     const us=turn;
+    zHash^=ZC[castle]^ZE[epSq>=0?(epSq&7):8]^(us===-1?ZS:0);
     let captured=bd[m.to], capSq=m.to;
     if(m.flag===FL_EP){ capSq=m.to+(us===1?8:-8); captured=bd[capSq]; bd[capSq]=0; }
     u.captured=captured; u.capSq=capSq;
-    bd[m.to]=us*(m.promo?m.promo:m.piece);
+    if(captured!==0) zHash^=ZP[zIdx(captured)*64+capSq];
+    zHash^=ZP[zIdx(us*m.piece)*64+m.from];
+    const placed=us*(m.promo?m.promo:m.piece);
+    bd[m.to]=placed;
     bd[m.from]=0;
+    zHash^=ZP[zIdx(placed)*64+m.to];
     if(m.piece===K){ if(us===1){kw=m.to;castle&=~3;} else {kb=m.to;castle&=~12;} }
-    if(m.flag===FL_CK){ const rr=us===1?7:0; bd[rr*8+5]=us*R; bd[rr*8+7]=0; }
-    else if(m.flag===FL_CQ){ const rr=us===1?7:0; bd[rr*8+3]=us*R; bd[rr*8+0]=0; }
+    if(m.flag===FL_CK){
+      const rr=us===1?7:0, rFrom=rr*8+7, rTo=rr*8+5;
+      bd[rTo]=us*R; bd[rFrom]=0;
+      zHash^=ZP[zIdx(us*R)*64+rFrom]^ZP[zIdx(us*R)*64+rTo];
+    }
+    else if(m.flag===FL_CQ){
+      const rr=us===1?7:0, rFrom=rr*8+0, rTo=rr*8+3;
+      bd[rTo]=us*R; bd[rFrom]=0;
+      zHash^=ZP[zIdx(us*R)*64+rFrom]^ZP[zIdx(us*R)*64+rTo];
+    }
     if(m.from===63||m.to===63) castle&=~1;
     if(m.from===56||m.to===56) castle&=~2;
     if(m.from===7 ||m.to===7 ) castle&=~4;
@@ -952,18 +999,33 @@ const Engine=(()=>{
     half=(m.piece===P||captured!==0)?0:half+1;
     if(us===-1) full++;
     turn=-us;
+    zHash^=ZC[castle]^ZE[epSq>=0?(epSq&7):8]^(turn===-1?ZS:0);
   }
 
   function unmakeMove(){
     const u=undoStack.pop(); if(!u) return;
-    const m=u.m; turn=-turn; const us=turn;
+    const m=u.m;
+    zHash^=ZC[castle]^ZE[epSq>=0?(epSq&7):8]^(turn===-1?ZS:0);
+    turn=-turn; const us=turn;
     bd[m.from]=us*m.piece;
     bd[m.to]=0;
     if(u.captured!==0) bd[u.capSq]=u.captured;
     if(m.piece===K){ if(us===1) kw=m.from; else kb=m.from; }
-    if(m.flag===FL_CK){ const rr=us===1?7:0; bd[rr*8+7]=us*R; bd[rr*8+5]=0; }
-    else if(m.flag===FL_CQ){ const rr=us===1?7:0; bd[rr*8+0]=us*R; bd[rr*8+3]=0; }
+    if(m.flag===FL_CK){
+      const rr=us===1?7:0;
+      bd[rr*8+7]=us*R; bd[rr*8+5]=0;
+      zHash^=ZP[zIdx(us*R)*64+(rr*8+5)]^ZP[zIdx(us*R)*64+(rr*8+7)];
+    }
+    else if(m.flag===FL_CQ){
+      const rr=us===1?7:0;
+      bd[rr*8+0]=us*R; bd[rr*8+3]=0;
+      zHash^=ZP[zIdx(us*R)*64+(rr*8+3)]^ZP[zIdx(us*R)*64+(rr*8+0)];
+    }
+    zHash^=ZP[zIdx(us*m.piece)*64+m.from];
+    zHash^=ZP[zIdx(us*(m.promo?m.promo:m.piece))*64+m.to];
+    if(u.captured!==0) zHash^=ZP[zIdx(u.captured)*64+u.capSq];
     castle=u.castle; epSq=u.ep; half=u.half; full=u.full;
+    zHash^=ZC[castle]^ZE[epSq>=0?(epSq&7):8]^(turn===-1?ZS:0);
   }
 
   function genLegal(){
@@ -975,6 +1037,87 @@ const Engine=(()=>{
       unmakeMove();
     }
     return out;
+  }
+
+  /* Captures and promotions only. Quiescence uses this instead of building
+     and filtering the full legal move list, which was the search's hottest
+     allocation site. Legality is still verified by make/unmake. */
+  function genPseudoCaps(){
+    const ms=[], us=turn;
+    for(let s=0;s<64;s++){
+      const p=bd[s]; if(p===0||(p>0)!==(us>0)) continue;
+      const t=p>0?p:-p, r=s>>3, c=s&7;
+      if(t===P){
+        const dir=us===1?-1:1, promoR=us===1?0:7;
+        const r1=r+dir;
+        if(r1<0||r1>7) continue;
+        for(let dc=-1;dc<=1;dc+=2){
+          const cc=c+dc; if(cc<0||cc>7) continue;
+          const tsq=r1*8+cc, q=bd[tsq];
+          if(q!==0&&(q>0)!==(us>0)){
+            const capt=q<0?-q:q;
+            if(r1===promoR){
+              ms.push(mk(s,tsq,t,capt,Q,0),mk(s,tsq,t,capt,R,0),
+                      mk(s,tsq,t,capt,B,0),mk(s,tsq,t,capt,N,0));
+            } else ms.push(mk(s,tsq,t,capt,0,0));
+          } else if(q===0&&tsq===epSq){
+            ms.push(mk(s,tsq,t,P,0,FL_EP));
+          }
+        }
+        if(r1===promoR&&bd[r1*8+c]===0){
+          const tsq=r1*8+c;
+          ms.push(mk(s,tsq,t,0,Q,0),mk(s,tsq,t,0,R,0),
+                  mk(s,tsq,t,0,B,0),mk(s,tsq,t,0,N,0));
+        }
+      } else if(t===N||t===K){
+        const offs=t===N?KN:KG;
+        for(let i=0;i<8;i++){
+          const rr=r+offs[i][0],cc=c+offs[i][1];
+          if(rr<0||rr>7||cc<0||cc>7) continue;
+          const tsq=rr*8+cc,q=bd[tsq];
+          if(q!==0&&(q>0)!==(us>0)) ms.push(mk(s,tsq,t,q<0?-q:q,0,0));
+        }
+      } else {
+        const dirs=t===B?DIAG:t===R?ORTH:QDIR;
+        for(let i=0;i<dirs.length;i++){
+          let rr=r+dirs[i][0],cc=c+dirs[i][1];
+          while(rr>=0&&rr<8&&cc>=0&&cc<8){
+            const q=bd[rr*8+cc];
+            if(q!==0){
+              if((q>0)!==(us>0)) ms.push(mk(s,rr*8+cc,t,q<0?-q:q,0,0));
+              break;
+            }
+            rr+=dirs[i][0];cc+=dirs[i][1];
+          }
+        }
+      }
+    }
+    return ms;
+  }
+
+  function genLegalCaps(){
+    const us=turn, out=[], ps=genPseudoCaps();
+    for(let i=0;i<ps.length;i++){
+      const m=ps[i];
+      makeMove(m);
+      if(!attacked(us===1?kw:kb,-us)) out.push(m);
+      unmakeMove();
+    }
+    return out;
+  }
+
+  /* Used by quiescence to distinguish stalemate from a quiet leaf. Most
+     positions answer on the first pseudo move, so this is cheap. */
+  function hasLegalMove(){
+    const us=turn, ps=genPseudo();
+    for(let i=0;i<ps.length;i++){
+      const m=ps[i];
+      makeMove(m);
+      const ok=!attacked(us===1?kw:kb,-us);
+      unmakeMove();
+      if(ok) return true;
+    }
+    return false;
   }
 
   const inCheck=()=>attacked(turn===1?kw:kb,-turn);
@@ -1129,6 +1272,7 @@ const Engine=(()=>{
     full=ps[5]?(+ps[5]||1):1;
     undoStack.length=0;
     keys.length=0;
+    zHash=hashFromScratch();
   }
 
   function reset(){ loadFEN(START_FEN); keys.push(posKey()); }
@@ -1149,16 +1293,26 @@ const Engine=(()=>{
   return {
     reset, loadFEN, fen, make, perft, posKey,
     legalMoves: genLegal,
+    legalCaps: genLegalCaps,
+    hasLegalMove,
     makeFast: makeMove, unmakeFast: unmakeMove,
     inCheck, kingSq, sqName, sqFromName,
     turnOf: ()=>turn,
     boardArr: ()=>bd,
+    halfMove: ()=>half,
+    hashNow: ()=>zHash,
+    hashOf: hashFromScratch,
     keys,
     undoDepth: ()=>undoStack.length
   };
-})();
+}
 
-/* ═══ BOT — alpha-beta + quiescence, chunked between frames ═══ */
+/* Two independent boards. `Engine` is the live game the UI and persistence
+   mutate. `BotEngine` is a private copy the search makes and unmakes moves on,
+   so an interrupted search can never corrupt the game state. */
+const Engine=makeEngine(), BotEngine=makeEngine();
+
+/* ═══ BOT — iterative deepening + PVS + transposition table, chunked between frames ═══ */
 const MATE=100000;
 const VAL=[0,100,320,330,500,900,20000];
 const PST_P=[0,0,0,0,0,0,0,0, 50,50,50,50,50,50,50,50, 10,10,20,30,30,20,10,10,
@@ -1180,124 +1334,433 @@ const PST_K=[-30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30,
   -30,-40,-40,-50,-50,-40,-40,-30, -30,-40,-40,-50,-50,-40,-40,-30,
   -20,-30,-30,-40,-40,-30,-30,-20, -10,-20,-20,-20,-20,-20,-20,-10,
   20,20,0,0,0,0,20,20, 20,30,10,0,0,10,30,20];
+/* Endgame king: centralisation replaces castling shelter. */
+const PST_K_EG=[-50,-40,-30,-20,-20,-30,-40,-50, -30,-20,-10,0,0,-10,-20,-30,
+  -30,-10,20,30,30,20,-10,-30, -30,-10,30,40,40,30,-10,-30,
+  -30,-10,30,40,40,30,-10,-30, -30,-10,20,30,30,20,-10,-30,
+  -30,-30,0,0,0,0,-30,-30, -50,-30,-30,-30,-30,-30,-30,-50];
 const PSTS=[null,PST_P,PST_N,PST_B,PST_R,PST_Q,PST_K];
+/* extra advancement steps -> passed-pawn bonus (both sides use advancement) */
+const PASSED=[0,8,20,38,66,105,150];
+const PHASE_MAX=24;
+
+const wFileN=new Uint8Array(8), bFileN=new Uint8Array(8);
+const wMinR=new Int8Array(8), bMinR=new Int8Array(8);
+const wMaxR=new Int8Array(8), bMaxR=new Int8Array(8);
+
+function shieldPenalty(b,k,white){
+  const r=k>>3, c=k&7, dir=white?-1:1, pawn=white?P:-P;
+  let pen=0, r1=r+dir, r2=r+2*dir;
+  for(let df=-1;df<=1;df++){
+    const f=c+df; if(f<0||f>7) continue;
+    let ok=false;
+    if(r1>=0&&r1<8&&b[r1*8+f]===pawn) ok=true;
+    if(!ok&&r2>=0&&r2<8&&b[r2*8+f]===pawn) ok=true;
+    if(!ok) pen+=14;
+  }
+  const files=white?wFileN:bFileN;
+  if(files[c]===0) pen+=12;                 /* king on a half-open file */
+  return pen;
+}
 
 function evalBoard(){
-  const b=Engine.boardArr(); let s=0;
+  const b=BotEngine.boardArr();
+  wFileN.fill(0); bFileN.fill(0);
+  wMinR.fill(8); bMinR.fill(8); wMaxR.fill(-1); bMaxR.fill(-1);
+  let mg=0, eg=0, np=0, wB=0, bB=0, wK=60, bK=4;
   for(let i=0;i<64;i++){
     const p=b[i]; if(p===0) continue;
-    if(p>0) s+=VAL[p]+PSTS[p][i];
-    else s-=VAL[-p]+PSTS[-p][i^56];
+    const white=p>0, t=white?p:-p;
+    if(t===K){ if(white) wK=i; else bK=i; continue; }
+    if(t===P){
+      const f=i&7, r=i>>3;
+      if(white){ wFileN[f]++; if(r<wMinR[f])wMinR[f]=r; if(r>wMaxR[f])wMaxR[f]=r; }
+      else { bFileN[f]++; if(r<bMinR[f])bMinR[f]=r; if(r>bMaxR[f])bMaxR[f]=r; }
+      const pv=VAL[P]+PST_P[white?i:(i^56)];
+      if(white){ mg+=pv; eg+=pv; } else { mg-=pv; eg-=pv; }
+      continue;
+    }
+    np += (t===N||t===B)?1:(t===R?2:4);
+    if(t===B){ if(white) wB++; else bB++; }
+    const pv=VAL[t]+PSTS[t][white?i:(i^56)];
+    if(white){ mg+=pv; eg+=pv; } else { mg-=pv; eg-=pv; }
+  }
+  /* king PSTs are tapered separately from the king's material value */
+  mg += VAL[K]+PST_K[wK] - (VAL[K]+PST_K[bK^56]);
+  eg += VAL[K]+PST_K_EG[wK] - (VAL[K]+PST_K_EG[bK^56]);
+
+  /* pawn structure: doubled + isolated (passed handled per pawn below) */
+  let wDoubled=0,bDoubled=0,wIso=0,bIso=0;
+  for(let f=0;f<8;f++){
+    const wc=wFileN[f], bc=bFileN[f];
+    if(wc>1) wDoubled+=wc-1;
+    if(bc>1) bDoubled+=bc-1;
+    const wN=(f>0?wFileN[f-1]:0)+(f<7?wFileN[f+1]:0);
+    const bN=(f>0?bFileN[f-1]:0)+(f<7?bFileN[f+1]:0);
+    if(wc>0&&wN===0) wIso+=wc;
+    if(bc>0&&bN===0) bIso+=bc;
+  }
+  mg += -12*wDoubled-16*wIso+12*bDoubled+16*bIso;
+  eg += -18*wDoubled-12*wIso+18*bDoubled+12*bIso;
+
+  for(let i=0;i<64;i++){
+    const p=b[i]; if(p!==P&&p!==-P) continue;
+    const f=i&7, r=i>>3;
+    let passed=false, adv=0;
+    if(p===P){
+      passed=true;
+      for(let df=-1;df<=1;df++){
+        const ff=f+df; if(ff<0||ff>7) continue;
+        if(bFileN[ff]!==0&&bMinR[ff]<r){ passed=false; break; }
+      }
+      adv=6-r;
+      if(passed){ const bo=PASSED[adv]||0; mg+=bo; eg+=(bo*3)>>1; }
+    } else {
+      passed=true;
+      for(let df=-1;df<=1;df++){
+        const ff=f+df; if(ff<0||ff>7) continue;
+        if(wFileN[ff]!==0&&wMaxR[ff]>r){ passed=false; break; }
+      }
+      adv=r-1;
+      if(passed){ const bo=PASSED[adv]||0; mg-=bo; eg-=(bo*3)>>1; }
+    }
+  }
+
+  /* bishop pair */
+  if(wB>=2){ mg+=30; eg+=45; }
+  if(bB>=2){ mg-=30; eg-=45; }
+
+  /* rooks on open / half-open files */
+  for(let i=0;i<64;i++){
+    const p=b[i];
+    if(p===R){
+      if(wFileN[i&7]===0){ const bo=bFileN[i&7]===0; mg+=bo?22:12; eg+=bo?12:6; }
+    } else if(p===-R){
+      if(bFileN[i&7]===0){ const bo=wFileN[i&7]===0; mg-=bo?22:12; eg-=bo?12:6; }
+    }
+  }
+
+  /* king safety only matters while material is on the board */
+  mg -= shieldPenalty(b,wK,true);
+  mg += shieldPenalty(b,bK,false);
+
+  const ph=Math.min(PHASE_MAX,np);
+  const score=(mg*ph+eg*(PHASE_MAX-ph))/PHASE_MAX;
+  return score + (BotEngine.turnOf()===1?12:-12);
+}
+
+/* move encoding shared by TT / killers (from | to<<6 | promo<<12) */
+const encMove=m=>m.from|(m.to<<6)|((m.promo||0)<<12);
+
+function mvScore(m,ttMove,ply){
+  let s=0;
+  if(ttMove&&(m.from|(m.to<<6)|((m.promo||0)<<12))===ttMove) return 1e9;
+  if(m.capt) s=1000000+VAL[m.capt]*16-VAL[m.piece];
+  if(m.promo) s+=800000+VAL[m.promo];
+  if(!m.capt&&!m.promo){
+    if(ply>=0&&ply<96){
+      const e=encMove(m);
+      if(killers0[ply]===e) s+=700000;
+      else if(killers1[ply]===e) s+=690000;
+      else s+=history[m.from*64+m.to];
+    }
   }
   return s;
 }
-function mvScore(m){
-  let s=0;
-  if(m.capt) s=1000+VAL[m.capt]*10-VAL[m.piece];
-  if(m.promo) s+=900+VAL[m.promo];
-  return s;
-}
-function orderMoves(ms){
-  for(let i=0;i<ms.length;i++) ms[i]._s=mvScore(ms[i]);
+function orderMoves(ms,ttMove,ply){
+  for(let i=0;i<ms.length;i++) ms[i]._s=mvScore(ms[i],ttMove,ply);
   ms.sort(function(a,b){ return b._s-a._s; });
 }
-function quiesce(alpha,beta,qd){
-  const side=Engine.turnOf();
+
+/* ---------- transposition table (kept across moves; keys are position-exact) ---------- */
+const TT_BITS=16, TT_SIZE=1<<TT_BITS, TT_MASK=TT_SIZE-1;
+const ttKey=new Int32Array(TT_SIZE), ttMove=new Int32Array(TT_SIZE),
+      ttScore=new Int32Array(TT_SIZE), ttDepth=new Int8Array(TT_SIZE),
+      ttFlag=new Int8Array(TT_SIZE);   /* 0 empty, 1 exact, 2 lower, 3 upper */
+const killers0=new Int32Array(96), killers1=new Int32Array(96);
+const history=new Int32Array(4096);
+const HIST=160, histHash=new Int32Array(HIST);
+
+const SEARCH={nodes:0,deadline:0,chunkEnd:0,stop:false,slice:10};
+
+function levelConf(level){
+  if(level==="hard")   return {maxDepth:8, budget:980, qd:8, delay:300, exact:false};
+  if(level==="medium") return {maxDepth:5, budget:520, qd:6, delay:260, exact:false};
+  return {maxDepth:2, budget:260, qd:4, delay:210, exact:true};
+}
+
+/* Both search routines are generators. They run until the current slice is
+   spent, then yield back to the controller, which returns to the UI and
+   resumes on the next frame. Nothing outside the search ever sees a
+   half-explored tree. */
+
+function* quiesce(alpha,beta,qd,ply){
+  if(SEARCH.stop) return 0;
+  if((++SEARCH.nodes&127)===0&&performance.now()>=SEARCH.chunkEnd) yield;
+  if(SEARCH.stop) return 0;
+  if(ply>56) return evalBoard()*BotEngine.turnOf();
+
+  const inChk=BotEngine.inCheck();
+  if(inChk){
+    const ms=BotEngine.legalMoves();
+    if(!ms.length) return -(MATE-ply);
+    orderMoves(ms,0,ply);
+    let best=-Infinity;
+    for(let i=0;i<ms.length;i++){
+      const m=ms[i];
+      BotEngine.makeFast(m);
+      if(ply+1<HIST) histHash[ply+1]=BotEngine.hashNow();
+      const sc=-(yield* quiesce(-beta,-alpha,qd-1,ply+1));
+      BotEngine.unmakeFast();
+      if(SEARCH.stop) return 0;
+      if(sc>best) best=sc;
+      if(sc>alpha) alpha=sc;
+      if(alpha>=beta) break;
+    }
+    return best;
+  }
+
+  if(BotEngine.halfMove()>=100) return 0;
+
+  const side=BotEngine.turnOf();
   const stand=evalBoard()*side;
   if(stand>=beta) return stand;
   if(stand>alpha) alpha=stand;
+
+  const caps=BotEngine.legalCaps();
+  if(!caps.length){
+    /* No capture is legal. If there is no legal move at all this is
+       stalemate, not a quiet leaf. */
+    if(!BotEngine.hasLegalMove()) return 0;
+    return alpha;
+  }
   if(qd<=0) return alpha;
-  const ms=Engine.legalMoves();
-  const caps=[];
-  for(let i=0;i<ms.length;i++){ if(ms[i].capt||ms[i].promo) caps.push(ms[i]); }
-  orderMoves(caps);
+  orderMoves(caps,0,ply);
   for(let i=0;i<caps.length;i++){
-    Engine.makeFast(caps[i]);
-    const sc=-quiesce(-beta,-alpha,qd-1);
-    Engine.unmakeFast();
+    const m=caps[i];
+    BotEngine.makeFast(m);
+    if(ply+1<HIST) histHash[ply+1]=BotEngine.hashNow();
+    const sc=-(yield* quiesce(-beta,-alpha,qd-1,ply+1));
+    BotEngine.unmakeFast();
+    if(SEARCH.stop) return 0;
     if(sc>=beta) return sc;
     if(sc>alpha) alpha=sc;
   }
   return alpha;
 }
-function negamax(depth,alpha,beta,ply,qd){
-  if(depth<=0) return quiesce(alpha,beta,qd);
-  const ms=Engine.legalMoves();
-  if(ms.length===0) return Engine.inCheck()? -(MATE-ply):0;
-  orderMoves(ms);
-  let best=-Infinity;
+
+function* negamax(depth,alpha,beta,ply,qd){
+  if(SEARCH.stop) return 0;
+  if((++SEARCH.nodes&127)===0&&performance.now()>=SEARCH.chunkEnd) yield;
+  if(SEARCH.stop) return 0;
+
+  const hash=BotEngine.hashNow();
+  if(ply>0){
+    for(let i=ply-2;i>=0&&i>=ply-40;i-=2){
+      if(histHash[i]===hash) return 0;       /* repetition along the search path */
+    }
+  }
+
+  const inChk=BotEngine.inCheck();
+  if(inChk&&ply<40) depth++;                  /* check extension */
+
+  const tti=hash&TT_MASK;
+  let ttm=0;
+  if(ttFlag[tti]!==0&&ttKey[tti]===hash){
+    ttm=ttMove[tti];
+    if(ply>0&&ttDepth[tti]>=depth&&BotEngine.halfMove()<90){
+      const sc=ttScore[tti], fl=ttFlag[tti];
+      if(fl===1) return sc;
+      if(fl===2&&sc>=beta) return sc;
+      if(fl===3&&sc<=alpha) return sc;
+    }
+  }
+
+  if(depth<=0) return yield* quiesce(alpha,beta,qd,ply);
+
+  const ms=BotEngine.legalMoves();
+  if(!ms.length) return inChk?-(MATE-ply):0;
+  if(BotEngine.halfMove()>=100) return 0;
+
+  orderMoves(ms,ttm,ply);
+  const alphaOrig=alpha;
+  let best=-Infinity, bestMove=0;
   for(let i=0;i<ms.length;i++){
-    Engine.makeFast(ms[i]);
-    const sc=-negamax(depth-1,-beta,-alpha,ply+1,qd);
-    Engine.unmakeFast();
-    if(sc>best) best=sc;
-    if(best>alpha) alpha=best;
-    if(alpha>=beta) break;
+    const m=ms[i];
+    BotEngine.makeFast(m);
+    if(ply+1<HIST) histHash[ply+1]=BotEngine.hashNow();
+    let sc;
+    if(i===0){
+      sc=-(yield* negamax(depth-1,-beta,-alpha,ply+1,qd));
+    } else {
+      sc=-(yield* negamax(depth-1,-alpha-1,-alpha,ply+1,qd));
+      if(!SEARCH.stop&&sc>alpha&&sc<beta){
+        sc=-(yield* negamax(depth-1,-beta,-alpha,ply+1,qd));
+      }
+    }
+    BotEngine.unmakeFast();
+    if(SEARCH.stop) return 0;
+    if(sc>best){ best=sc; bestMove=encMove(m); }
+    if(sc>alpha) alpha=sc;
+    if(alpha>=beta){
+      if(!m.capt&&!m.promo&&ply<96){
+        const e=encMove(m);
+        if(killers0[ply]!==e){ killers1[ply]=killers0[ply]; killers0[ply]=e; }
+        const hi=m.from*64+m.to;
+        history[hi]+=depth;
+        if(history[hi]>1000000) history[hi]=1000000;
+      }
+      break;
+    }
+  }
+  if(!SEARCH.stop&&Math.abs(best)<MATE-1000){
+    ttKey[tti]=hash;
+    ttScore[tti]=best;
+    ttDepth[tti]=depth>127?127:depth;
+    ttFlag[tti]=best<=alphaOrig?3:(best>=beta?2:1);
+    ttMove[tti]=bestMove;
   }
   return best;
 }
+
 let think=null;
+
 function startThink(){
   if(!thinking) return;
-  const level=setup.level;
-  if(level==="easy"){
-    const ms=Engine.legalMoves();
-    if(!ms.length){ finishThink(null); return; }
-    const mover=Engine.turnOf();
-    let best=null,bs=-Infinity;
-    for(let i=0;i<ms.length;i++){
-      Engine.makeFast(ms[i]);
-      const sc=evalBoard()*mover+(Math.random()*240-120);
-      Engine.unmakeFast();
-      if(sc>bs){ bs=sc; best=ms[i]; }
-    }
-    after(260,function(){ finishThink(best); });
-    return;
-  }
-  const conf=(level==="hard")
-    ? {maxDepth:3, budget:1300, qd:6, noise:0}
-    : {maxDepth:2, budget:520,  qd:4, noise:25};
-  const rootMoves=Engine.legalMoves();
+  const conf=levelConf(setup.level);
+  /* Search a private copy of the position: the live board below is only
+     touched once a finished move has been chosen. */
+  BotEngine.loadFEN(Engine.fen());
+  const rootMoves=BotEngine.legalMoves();
   if(!rootMoves.length){ finishThink(null); return; }
-  orderMoves(rootMoves);
-  think={moves:rootMoves, scores:[], idx:0, depth:1, maxDepth:conf.maxDepth,
-    deadline:performance.now()+conf.budget, qd:conf.qd, noise:conf.noise,
-    best:null, bestScore:-Infinity};
+  for(let i=0;i<rootMoves.length;i++) rootMoves[i]._s=mvScore(rootMoves[i],0,0);
+  rootMoves.sort(function(a,b){ return b._s-a._s; });
+  SEARCH.nodes=0;
+  SEARCH.stop=false;
+  SEARCH.deadline=performance.now()+conf.budget;
+  SEARCH.chunkEnd=SEARCH.deadline;
+  histHash[0]=BotEngine.hashNow();
+  killers0.fill(0); killers1.fill(0); history.fill(0);
+  think={moves:rootMoves, scores:[], exactFlags:[], idx:0, depth:2, maxDepth:conf.maxDepth,
+    qd:conf.qd, exact:conf.exact, level:setup.level,
+    best:null, bestScore:-Infinity,
+    completedBest:null, completedScore:-Infinity, completedDepth:0,
+    conf:conf, gen:null};
+  think.gen=rootSearch(think);
   after(0,thinkChunk);
 }
+
+/* Choose a completed-iteration result. Ties (and, for EASY, deliberate small
+   mistakes) are picked among moves that scored within a narrow margin, never
+   among genuinely bad moves and never over a forced mate. */
+function pickCompleted(t){
+  const sc=t.scores, ex=t.exactFlags, ms=t.moves;
+  let bi=-1;
+  for(let i=0;i<sc.length;i++){
+    if(ex[i]&&(bi<0||sc[i]>sc[bi])) bi=i;
+  }
+  if(bi<0) bi=0;
+  const best=sc[bi];
+  if(best>=MATE-1000) return ms[bi];
+  let eps=0;
+  if(t.level==="easy") eps=(Math.random()<0.30)?85:15;
+  else if(t.level==="medium") eps=4;
+  /* Only exactly-scored moves may be considered ties. Fail-low scores are
+     upper bounds, not values, and must never win a tie-break. */
+  const pool=[];
+  for(let i=0;i<sc.length;i++) if(ex[i]&&sc[i]>=best-eps) pool.push(i);
+  if(!pool.length) return ms[bi];
+  return ms[pool[Math.floor(Math.random()*pool.length)]];
+}
+
+/* Root driver. Each iteration scores every root move, then reorders and
+   deepens. It runs as a generator so the controller can stop between root
+   moves (or anywhere inside a subtree) without leaving a partial result. */
+function* rootSearch(t){
+  for(;;){
+    yield;
+    if(SEARCH.stop) return t.completedBest||t.moves[0];
+
+    if(t.idx>=t.moves.length){
+      /* A depth is only usable once every root move has a score. */
+      t.completedDepth=t.depth;
+      t.completedScore=t.bestScore;
+      t.completedBest=pickCompleted(t);
+      if(t.completedScore>=MATE-1000||t.depth>=t.maxDepth||
+         performance.now()>=SEARCH.deadline-20) return t.completedBest;
+      const paired=t.moves.map(function(m,i){
+        const s=(t.scores[i]!==undefined)?t.scores[i]:-Infinity;
+        return {m:m, s:s, ex:t.exactFlags[i]?1:0};
+      });
+      /* Exact scores first: the proven best move leads the next iteration. */
+      paired.sort(function(a,b){ return (b.ex-a.ex)||(b.s-a.s); });
+      t.moves=paired.map(function(x){ return x.m; });
+      t.scores=[]; t.exactFlags=[]; t.idx=0; t.depth++;
+      t.best=null; t.bestScore=-Infinity;
+      continue;
+    }
+
+    const m=t.moves[t.idx];
+    const mover=BotEngine.turnOf();
+    BotEngine.makeFast(m);
+    if(1<HIST) histHash[1]=BotEngine.hashNow();
+    let sc, exactScore=false;
+    if(t.depth<=1){
+      sc=evalBoard()*mover; exactScore=true;
+    } else if(t.exact){
+      /* EASY explores every root move with a full window so its deliberate
+         mistakes are chosen only among moves whose scores are exact. */
+      sc=-(yield* negamax(t.depth-1,-Infinity,Infinity,1,t.qd)); exactScore=true;
+    } else if(t.idx===0){
+      sc=-(yield* negamax(t.depth-1,-Infinity,Infinity,1,t.qd)); exactScore=true;
+    } else {
+      sc=-(yield* negamax(t.depth-1,-t.bestScore-1,-t.bestScore,1,t.qd));
+      if(!SEARCH.stop&&sc>t.bestScore){
+        sc=-(yield* negamax(t.depth-1,-Infinity,Infinity,1,t.qd)); exactScore=true;
+      }
+    }
+    BotEngine.unmakeFast();
+    if(SEARCH.stop) return t.completedBest||t.moves[0];
+    t.scores[t.idx]=sc;
+    t.exactFlags[t.idx]=exactScore;
+    if(sc>t.bestScore){ t.bestScore=sc; t.best=m; }
+    t.idx++;
+  }
+}
+
 function thinkChunk(){
   if(!thinking||!think) return;
   const t=think;
-  if(performance.now()>t.deadline){ finishThink(t.best||t.moves[0]); return; }
-  if(t.idx>=t.moves.length){
-    if(t.depth>=t.maxDepth||performance.now()>t.deadline-80){
-      finishThink(t.best||t.moves[0]); return;
-    }
-    const paired=t.moves.map(function(m,i){ return {m:m,s:(t.scores[i]!==undefined)?t.scores[i]:0}; });
-    paired.sort(function(a,b){ return b.s-a.s; });
-    t.moves=paired.map(function(x){ return x.m; });
-    t.scores=[]; t.idx=0; t.depth++;
-    after(0,thinkChunk); return;
+  const now=performance.now();
+  SEARCH.chunkEnd=Math.min(now+SEARCH.slice,SEARCH.deadline);
+
+  /* Pump the resumable search until it yields (slice spent) or finishes. */
+  for(;;){
+    const r=t.gen.next();
+    if(r.done){ finishThink(r.value); return; }
+    if(performance.now()>=SEARCH.chunkEnd) break;
   }
-  const m=t.moves[t.idx];
-  const mover=Engine.turnOf();
-  Engine.makeFast(m);
-  let sc;
-  if(t.depth<=1) sc=evalBoard()*mover;
-  else sc=-negamax(t.depth-1,-Infinity,Infinity,1,t.qd);
-  Engine.unmakeFast();
-  if(t.noise) sc+=(Math.random()*2-1)*t.noise;
-  t.scores[t.idx]=sc;
-  if(sc>t.bestScore){ t.bestScore=sc; t.best=m; }
-  t.idx++;
+
+  if(!thinking||!think) return;            /* cancelled while suspended */
+
+  if(performance.now()>=SEARCH.deadline){
+    /* Out of time. Abandon the unfinished iteration and unwind the private
+       board before handing the move over. */
+    SEARCH.stop=true;
+    let guard=0;
+    while(!t.gen.next().done&&guard++<200000){}
+    finishThink(t.completedBest||t.moves[0]);
+    return;
+  }
   after(0,thinkChunk);
 }
+
 function finishThink(mv){
   think=null;
   if(!thinking) return;
   thinking=false;
   setBotBadge(false);
-  snapPre=null;   /* bot move takes NO undo snapshot — one undo = player+bot pair */
+  snapPre=null;   /* bot move takes NO undo snapshot - one undo = player+bot pair */
   if(mv&&mode==="chess"&&setup.opp==="bot"&&!result&&Engine.turnOf()===aiColor){
     doMove(mv);
   } else {
@@ -1307,6 +1770,7 @@ function finishThink(mv){
 function cancelThink(){
   thinking=false;
   think=null;
+  SEARCH.stop=true;
   setBotBadge(false);
 }
 function setBotBadge(on){
@@ -1318,7 +1782,7 @@ function maybeBotMove(){
   thinking=true;
   setBotBadge(true);
   updateStatus(); updateCtlBars();
-  after(320, startThink);
+  after(levelConf(setup.level).delay,startThink);
 }
 
 /* ═══ AUDIO — wooden percussion (v0.7.1 overhaul).
