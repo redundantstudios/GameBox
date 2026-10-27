@@ -18,6 +18,128 @@ released: 2026-09-22
 <script src="../../shell/fullscreen.js"></script>
 <script src="../../shell/canvaswatch.js"></script>
 <script src="../../shell/audiotracker.js"></script>
+<style id="studioBack">/* Shell chrome: BACK out of the game, to the arcade grid. */
+#studioBack{position:absolute;z-index:10;left:10px;top:max(10px,env(safe-area-inset-top));
+width:48px;height:48px;display:flex;align-items:center;justify-content:center;
+background:rgba(28,37,64,.94);color:#ffe3a8;
+border:2.5px solid #ffb545;border-radius:12px;
+box-shadow:0 3px 0 rgba(0,0,0,.5);cursor:pointer;
+-webkit-tap-highlight-color:transparent;padding:0;outline:none;box-sizing:border-box}
+#studioBack:active{transform:translateY(2px) rotate(1deg);box-shadow:0 1px 0 rgba(0,0,0,.5)}
+#studioBack svg{display:block;pointer-events:none}</style>
+<script>
+/* ============================================================
+   STUDIO SDK - shell bridge only. Every entry point degrades to
+   a no-op in a plain browser tab, so the game still runs from
+   file:// on its own.
+   ============================================================ */
+var __studioAdSeq=0;
+var Studio=(function(){
+  var bridge=function(){ return window.NativeBridge||null; };
+  var ls={get k(){ try{return window.localStorage;}catch(_){return null;} }};
+  var settings={sound:true,music:true,haptics:true};
+  try{ var raw=bridge()?bridge().load('shell:settings'):(ls.k?ls.k.getItem('shell:settings'):null);
+       if(raw) settings=Object.assign(settings,JSON.parse(raw)); }catch(_){}
+  try{ var q=new URLSearchParams(location.search);
+       if(q.has('sound')) settings.sound=q.get('sound')!=='0';
+       if(q.has('vibe')) settings.haptics=q.get('vibe')!=='0';
+  }catch(_){}
+  return {
+    settings:settings,
+    save:function(k,v){ var b=bridge(); if(b){ try{b.save(k,v); return;}catch(_){} }
+            try{ if(ls.k) ls.k.setItem(k,v); }catch(_){} },
+    load:function(k){ var b=bridge(); if(b) return b.load(k);
+            try{ return ls.k?ls.k.getItem(k):null; }catch(_){ return null; } },
+    haptic:function(kind){ if(settings.haptics===false) return; var b=bridge(); if(!b) return;
+      var map={light:15,medium:30,heavy:60,success:45};
+      try{ b.haptic(typeof map[kind]==='number'?map[kind]:0); }catch(_){} },
+    exitGame:function(){ var b=bridge(); if(b&&b.exitGame){ try{ b.exitGame(); }catch(_){} } },
+    pushSettings:function(patch){ Object.assign(settings,patch||{});
+      this.save('shell:settings',JSON.stringify({sound:!!settings.sound,music:!!settings.music,haptics:!!settings.haptics})); },
+    ads:{
+      rewarded:function(placement,onReward,onFail){
+        var b=bridge();
+        if(!b||!b.showRewardedAd){ if(onFail) onFail('unavailable'); return; }
+        var cb='__studioAdCb'+(++__studioAdSeq);
+        window[cb]=function(result){
+          try{ delete window[cb]; }catch(_){}
+          if(result==='granted'){ if(onReward) onReward(); }
+          else if(onFail) onFail(result||'closed');
+        };
+        try{ b.showRewardedAd(cb, placement||'', null); }
+        catch(err){
+          try{ console.error('[Studio] rewarded bridge call failed: '+((err&&err.message)||err)); }catch(_){}
+          try{ delete window[cb]; }catch(_){}
+          if(onFail) onFail('bridge_error');
+        }
+      },
+      interstitial:function(onDone,placement){
+        var b=bridge();
+        if(b&&b.showInterstitial){
+          window.__studioInterCb=function(){ if(onDone) onDone(); };
+          try{ b.showInterstitial('__studioInterCb', placement||''); return; }
+          catch(err){
+            try{ console.error('[Studio] interstitial bridge call failed: '+((err&&err.message)||err)); }catch(_){}
+          }
+        }
+        if(onDone) onDone();
+      },
+      banner:function(){}
+    }
+  };
+})();
+window.Studio=Studio;
+window.CrazyGames=window.CrazyGames||{SDK:{}};
+(function(){
+  var S=window.CrazyGames.SDK;
+  S.game=S.game||{};
+  S.game.settings={muteAudio:!Studio.settings.sound};
+  S.game.gameplayStart=function(){};
+  S.game.gameplayStop=function(){};
+  S.game.addSettingsChangeListener=function(){};
+  S.init=function(){ return Promise.resolve(true); };
+  S.environment='shell';
+  S.ad=S.ad||{};
+  S.ad.requestAd=function(type,h){
+    h=h||{};
+    function started(){try{if(h.adStarted)h.adStarted();}catch(_){}}
+    function finished(){try{if(h.adFinished)h.adFinished();}catch(_){}}
+    function failed(msg){ try{ if(h.adError) h.adError('error',{reason:msg}); }catch(_){} }
+    if(type==='rewarded'){
+      Studio.ads.rewarded('continue',function(){started();finished();},function(){started();failed('closed');});
+    }else{
+      Studio.ads.interstitial(function(){started();finished();});
+    }
+  };
+})();
+/* Shell BACK button - attaches click handler to the static button in s-menu */
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function attach(){
+    var b=byId('studioBack');
+    if(!b)return;
+    if(b.__attached)return;
+    b.__attached=true;
+    function go(e){
+      e.preventDefault();
+      try{
+        if(window.NativeBridge && typeof window.NativeBridge.exitGame === 'function'){
+          window.NativeBridge.exitGame();
+        }else{
+          console.log('[BACK] NativeBridge not available');
+        }
+      }catch(err){
+        console.error('[BACK] Exit failed:',err);
+      }
+    }
+    b.addEventListener('click',go,{passive:false});
+    b.addEventListener('touchend',go,{passive:false});
+  }
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',attach);
+  }else{ attach(); }
+})();
+</script>
 
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover,interactive-widget=resizes-content"/>
@@ -46,9 +168,9 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;backgrou
 /* Fixed PC design sizes — fitUI() zooms the whole panel to fit any screen */
 .panel{position:relative;background:#1c2540;border:2px solid #0a0f1e;border-radius:20px;box-shadow:0 18px 48px rgba(0,0,0,.55);padding:16px 20px 14px;width:640px;color:#eef2ff}
 .panel.narrow{width:380px;text-align:center}
-.ptitle{font-size:18px;font-weight:900;font-style:italic;letter-spacing:3px;color:#ffb545;margin-bottom:10px;text-align:center}
+.ptitle{font-size:22px;font-weight:800;font-style:italic;letter-spacing:3px;color:#ffb545;margin-bottom:10px;text-align:center}
 .ptitle em{font-style:italic;color:#ff5c48}
-.btn{display:inline-block;font-family:inherit;font-weight:bold;letter-spacing:1.5px;text-transform:uppercase;color:#231a05;background:#ffb545;border:2px solid #0a0f1e;border-radius:14px;box-shadow:0 4px 0 #0a0f1e;padding:12px 24px;font-size:13.5px;cursor:pointer;transition:transform .05s}
+.btn{display:inline-block;font-family:inherit;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#231a05;background:#ffb545;border:2px solid #0a0f1e;border-radius:14px;box-shadow:0 4px 0 #0a0f1e;padding:14px 26px;font-size:17px;cursor:pointer;transition:transform .05s}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #0a0f1e}
 .btn.ghost{background:#2b3654;color:#d6e1fa}
 .btn.teal{background:#37d3b8;color:#05271f}
@@ -59,22 +181,22 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;backgrou
 .logo em{color:#ffb545;font-style:italic;text-shadow:0 4px 0 #0a0f1e,0 4px 22px rgba(255,181,69,.35)}
 .underline{width:200px;height:5px;margin:10px auto 0;border-radius:3px;border:2px solid #0a0f1e;display:flex;overflow:hidden;background:#0a0f1e}
 .underline i{flex:1}.underline i:first-child{background:#ff5c48}.underline i:last-child{background:#3f8cff}
-.tag{display:inline-block;margin-top:10px;background:#273250;border:2px solid #0a0f1e;border-radius:20px;padding:4px 14px;font-size:9px;letter-spacing:2.5px;color:#8fa2c8;font-weight:bold}
+.tag{display:none}
 .tankrow{display:flex;gap:12px;justify-content:center;margin:20px 0 22px}
 .tankrow svg{width:50px;height:auto;filter:drop-shadow(0 3px 0 #0a0f1e);animation:bob 1.4s ease-in-out infinite}
 .tankrow svg:nth-child(2){animation-delay:.18s}.tankrow svg:nth-child(3){animation-delay:.36s}.tankrow svg:nth-child(4){animation-delay:.54s}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
 .menu-btns{display:flex;flex-direction:column;gap:12px;align-items:center}
 .menu-btns .btn{width:224px}
-.lbl{font-size:9px;letter-spacing:2px;color:#7e8fb3;margin-bottom:7px;font-weight:bold}
+.lbl{font-size:12px;letter-spacing:2px;color:#7e8fb3;margin-bottom:7px;font-weight:bold}
 .pcount{display:flex;gap:9px}
-.pc{flex:1;padding:12px 0;background:#273250;border:2px solid #0a0f1e;border-radius:13px;box-shadow:0 3px 0 #0a0f1e;font-weight:bold;font-size:14px;color:#b9c6e6;font-family:inherit;cursor:pointer;letter-spacing:1px;transition:transform .05s}
+.pc{flex:1;padding:14px 0;background:#273250;border:2px solid #0a0f1e;border-radius:13px;box-shadow:0 3px 0 #0a0f1e;font-weight:800;font-size:16px;color:#b9c6e6;font-family:inherit;cursor:pointer;letter-spacing:1px;transition:transform .05s}
 .pc:active{transform:translateY(2px)}
 .pc.sel{background:#ffb545;color:#231a05}
 .slots2{display:flex;gap:9px}
 .pslot{flex:1;background:#273250;border:2px solid #0a0f1e;border-radius:16px;padding:8px 6px 9px;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;box-shadow:0 3px 0 #0a0f1e}
 .pslot canvas{width:110px;height:88px}
-.pname{font-size:9.5px;font-weight:bold;letter-spacing:1px}
+.pname{font-size:11px;font-weight:800;letter-spacing:1px}
 .hbt{display:flex;gap:3px;width:100%;background:#141b30;border:2px solid #0a0f1e;border-radius:10px;padding:3px}
 .hb{flex:1;padding:6px 0;font-size:9px;font-weight:bold;letter-spacing:.5px;border:none;border-radius:7px;background:transparent;color:#7e8fb3;font-family:inherit;cursor:pointer}
 .hb.hu.on{background:#ff5c48;color:#fff}
@@ -95,20 +217,20 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;backgrou
 .hdots i{width:9px;height:9px;border-radius:50%;background:#39456b;border:1.5px solid #0a0f1e;cursor:pointer}
 .hdots i.on{background:#ffb545}
 .setrow{display:flex;justify-content:space-between;align-items:center;background:#273250;border:2px solid #0a0f1e;border-radius:13px;padding:10px 14px;margin-bottom:9px;box-shadow:0 3px 0 #0a0f1e}
-.setrow b{font-size:12px;letter-spacing:1px;color:#eef2ff}
-.tog{min-width:70px;text-align:center;font-family:inherit}
+.setrow b{font-size:14px;letter-spacing:1px;color:#eef2ff}
+.tog{min-width:80px;text-align:center;font-family:inherit;font-size:13px;font-weight:800}
 .tog.on{background:#37d3b8;color:#05271f}.tog.off{background:#39456b;color:#a9b8d8}
 .bigmsg{font-size:30px;font-weight:900;font-style:italic;color:#ffb545;text-shadow:0 3px 0 #0a0f1e;text-align:center}
 .stbl{margin:10px 0 2px}
-.trow{display:grid;grid-template-columns:24px 1fr 52px 52px 52px;align-items:center;padding:6px 10px;border-radius:12px;background:#273250;margin-bottom:6px;border:2px solid #0a0f1e;font-size:12px;color:#eef2ff}
-.trow.th{background:transparent;border:none;font-size:8.5px;letter-spacing:1.5px;color:#7e8fb3;padding-bottom:1px;margin-bottom:2px}
+.trow{display:grid;grid-template-columns:24px 1fr 56px 56px 56px;align-items:center;padding:6px 10px;border-radius:12px;background:#273250;margin-bottom:6px;border:2px solid #0a0f1e;font-size:13px;color:#eef2ff}
+.trow.th{background:transparent;border:none;font-size:9.5px;letter-spacing:1.5px;color:#7e8fb3;padding-bottom:1px;margin-bottom:2px}
 .trow .chip{width:14px;height:14px;border-radius:5px;border:2px solid #0a0f1e}
 .trow.winrow{border-color:#ffb545;background:#2d3a60}
 .trow span,.trow b{text-align:center}.trow b{text-align:left}
 /* Timer and PAUSE are one centred pair: the timer is drawn 23px left of
    centre, the button sits 23px right of it, so the pair straddles the middle
    exactly and both score columns can mirror outwards from it. */
-#pauseBtn{position:fixed;top:7px;left:calc(50% + 23px);z-index:9;display:none;width:40px;height:30px;background:rgba(14,20,38,.92);border:2px solid rgba(255,255,255,.14);border-radius:10px;color:#eef2ff;font-weight:bold;font-size:12px;font-family:'Baloo 2',sans-serif;letter-spacing:1px}
+#pauseBtn{position:fixed;top:4px;right:10px;z-index:9;display:none;width:56px;height:40px;background:rgba(14,20,38,.92);border:2px solid rgba(255,255,255,.14);border-radius:14px;color:#eef2ff;font-weight:800;font-size:15px;font-family:'Baloo 2',sans-serif;letter-spacing:1px}
 #rotate{display:none;position:fixed;inset:0;background:#10162a;z-index:100;color:#eef2ff;align-items:center;justify-content:center;text-align:center;flex-direction:column;gap:14px}
 #rotate svg{width:58px;height:58px;color:#ff5c48;animation:rot 1.6s ease-in-out infinite}
 @keyframes rot{0%,20%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
@@ -159,7 +281,7 @@ padding:1px 4px 2px;letter-spacing:.3px;pointer-events:none}
 .ulock{margin:2px 0 8px}
 .ulock svg{width:42px;height:42px;fill:none;stroke:#ffb545;stroke-width:1.7;
 stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 0 #0a0f1e)}
-.ubody{font-size:12px;line-height:1.5;color:#c3cfe8}
+.ubody{font-size:13px;line-height:1.5;color:#c3cfe8}
 .ubody b{color:#ffe3a8}
 .ubody .mins{color:#37d3b8}
 
@@ -185,7 +307,7 @@ opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
 <div id="vig"></div>
 <button id="pauseBtn">II</button>
 
-<div class="screen on" id="s-menu"><div class="menu-wrap">
+<div class="screen on" id="s-menu"><button id="studioBack" role="button" aria-label="Back to the arcade"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="menu-wrap">
 <div class="logo">CHAOS<br><em>ARENA</em></div>
 <div class="underline"><i></i><i></i></div>
 <div class="tag">TANK PARTY SHOOTER &middot; ONE DEVICE</div>
@@ -277,8 +399,8 @@ opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
 <script>
 'use strict';
 /* ============ shared font ============ */
-const FONT="'Verdana',Geneva,'DejaVu Sans',sans-serif";
-function font(sz,w){return(w||'bold')+' '+sz+'px '+FONT;}
+const FONT="'Baloo 2',Geneva,'DejaVu Sans',sans-serif";
+function font(sz,w){return(w||'800')+' '+sz+'px '+FONT;}
 
 /* ============ helpers ============ */
 const TAU=Math.PI*2;
@@ -375,7 +497,7 @@ const DIFFS=[{react:.45,err:.26,speed:.88,lead:0,view:760},{react:.24,err:.13,sp
 
 /* ============ maps (spawns & pickups pulled inward for full-screen view) ============ */
 function pointFreeOn(m,x,y,r){for(const o of m.rects){if(x>o.x-r&&x<o.x+o.w+r&&y>o.y-r&&y<o.y+o.h+r)return false;}for(const o of m.circles){if(dist(x,y,o.x,o.y)<o.r+r)return false;}return true;}
-function buildNav(m){m.nav=[];for(let x=70;x<=1130;x+=72)for(let y=70;y<=730;y+=72)if(pointFreeOn(m,x,y,20))m.nav.push({x,y});}
+function buildNav(m){m.nav=[];for(let x=70;x<=1130;x+=85)for(let y=70;y<=730;y+=85)if(pointFreeOn(m,x,y,20))m.nav.push({x,y});}
 function makeMaps(){
 const maps=[];
 {const m={name:'WAREHOUSE',rects:[],circles:[],spawns:[[],[],[],[]],spL:[],spR:[],wp:[],hp:[],theme:{floor:'#5a616b',pat:'plate',patCol:'#4d545e',wall:'#454c57',crate:'#b0823f',container:'#3f7d74',block:'#525a66',barrel:'#7d5a2e',pillar:'#6a717c',rock:'#6a717c'}};
@@ -528,7 +650,7 @@ function adWhy(why){
 
 /* ============ resize ============ */
 function resize(){
-DPR=Math.min(2,window.devicePixelRatio||1);
+DPR=Math.min(1.5,window.devicePixelRatio||1);
 VW=(window.visualViewport?Math.round(window.visualViewport.width):innerWidth);
 VH=(window.visualViewport?Math.round(window.visualViewport.height):innerHeight);
 VW=Math.max(320,VW);VH=Math.max(200,VH);
@@ -786,7 +908,7 @@ const gate=Math.sin((tGlob+e.i*1.7)*3.4)>-.35;
 wantFire=aligned&&gate&&d<w.range+80;}}
 if(!attacking){
 if(e.goal){
-if(e.navT<=0){e.navT=.4;navTo(e,e.goal.x,e.goal.y);}
+if(e.navT<=0){e.navT=.6;navTo(e,e.goal.x,e.goal.y);}
 const dg=dist(e.x,e.y,e.wx,e.wy);
 if(dg<28){
 if(dist(e.x,e.y,e.goal.x,e.goal.y)<34){e.goal=null;if(e.state==='search'){e.lastSeen=null;e.state='wander';}}
@@ -851,7 +973,7 @@ if(p.t==='H'){if(e.hp<e.maxHp){e.hp=Math.min(e.maxHp,e.hp+35);p.on=false;p.cd=9;
 else{e.weapon=p.key;e.ammo=WEAPONS[p.key].ammo;p.on=false;p.cd=12;p.key=WEAPON_KEYS[irand(0,3)];fxPickupBig(p.x,p.y,WCOL[e.weapon],WEAPONS[e.weapon].name);if(!demo)Sfx.pickup();}}}}
 function updateBullets(dt){
 for(const b of bl){if(!b.on)continue;
-const steps=2,sdt=dt/steps;
+const steps=1,sdt=dt;
 for(let s=0;s<steps&&b.on;s++){
 const nx=b.x+b.vx*sdt,ny=b.y+b.vy*sdt;
 if(hitObst(nx,ny)||hitObst((b.x+nx)/2,(b.y+ny)/2)){
@@ -1094,22 +1216,19 @@ ctx.fillStyle=WCOL[e.weapon];ctx.fillText(''+e.ammo,c.jx+8,ty+1);}
 ctx.globalAlpha=1;}}
 function drawHUD(){
 const m2=Math.floor(matchT/60),s2=Math.floor(matchT%60);
-/* The timer and PAUSE are one centred pair: the timer is drawn 23px left of
-   centre, and #pauseBtn sits 23px right of it (see its CSS), so together they
-   straddle the middle exactly. Both score columns mirror outwards from them. */
-const cx=VW/2-23;
+/* Timer centered at top; PAUSE button at top-right via CSS; scores straddle the timer */
+const cx=VW/2;
+const Y=14;
 ctx.globalAlpha=.96;
-ctx.fillStyle='rgba(13,18,34,.92)';rr2(cx-40,7,80,30,10);ctx.fill();
-ctx.strokeStyle='rgba(255,255,255,.14)';ctx.lineWidth=1.5;rr2(cx-40,7,80,30,10);ctx.stroke();
+ctx.fillStyle='rgba(13,18,34,.94)';rr2(cx-50,Y,100,32,10);ctx.fill();
+ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1.5;rr2(cx-50,Y,100,32,10);ctx.stroke();
 ctx.globalAlpha=1;
-ctx.font=font(15);ctx.textAlign='center';ctx.textBaseline='middle';
-ctx.fillStyle='#ffe3a8';ctx.fillText(m2+':'+(s2<10?'0':'')+s2,cx,22.5);
-otextC('FIRST TO '+KTARGET,VW/2,49,8.5,'#93a5c9');
-/* Scores hug the header: the left half of the roster ends at the timer and the
-   right half starts at the PAUSE button, so the strip reads symmetrically
-   whatever the player count. */
-const n=ents.length,bw=30,gap=8,y0=22;
-const leftN=n-(n>>1),edgeL=VW/2-73,edgeR=VW/2+73;
+ctx.font=font(22);ctx.textAlign='center';ctx.textBaseline='middle';
+ctx.fillStyle='#ffe3a8';ctx.fillText(m2+':'+(s2<10?'0':'')+s2,cx,Y+16);
+otextC('FIRST TO '+KTARGET,VW/2,Y+38,10.5,'#93a5c9');
+/* Score chips at top, same row as timer, straddling it */
+const n=ents.length,bw=34,gap=8,y0=Y+14;
+const leftN=n-(n>>1);
 function scoreChip(e,x){
 ctx.globalAlpha=e.alive?1:.35;
 rr2(x,y0,bw,bw,8);
@@ -1119,10 +1238,10 @@ ctx.fillStyle='rgba(255,255,255,.28)';rr2(x+3,y0+3,bw-6,7,4);ctx.fill();
 ctx.font=font(13);ctx.textAlign='center';ctx.textBaseline='middle';
 ctx.fillStyle='#fff';ctx.fillText(''+e.kills,x+bw/2,y0+bw/2+3);
 ctx.globalAlpha=1;}
-let x0=edgeL-(leftN*bw+(leftN-1)*gap);
+let x0=cx-50-(leftN*bw+(leftN-1)*gap)-gap;
 for(let i=0;i<leftN&&i<n;i++){scoreChip(ents[i],x0);x0+=bw+gap;}
-x0=edgeR;
-for(let i=leftN;i<n;i++){scoreChip(ents[i],x0);x0+=bw+gap;}
+let x0r=cx+50+gap;
+for(let i=leftN;i<n;i++){scoreChip(ents[i],x0r);x0r+=bw+gap;}
 if(ann.t>0){ctx.globalAlpha=clamp(ann.t,0,1);otextC(ann.txt,VW/2,VH*.28,28,'#ffb545');ctx.globalAlpha=1;}
 if(phase==='count'){const c=Math.min(3,Math.ceil(countT));otextC(''+c,VW/2,VH*.38,60,'#f4f7ff');}
 drawControls();}
@@ -1322,7 +1441,7 @@ showScreen('s-over');
 /* Game completed. The shell's interstitial is the natural break here, and the
    results screen is already painted, so leaving the ad lands on a finished
    board instead of an empty one. */
-Studio.ads.interstitial(function(){},'chaos-arena.match-end');
+try{Studio.ads.interstitial(function(){},'chaos-arena.match-end');}catch(e){}
 if(winEnt)Sfx.win();else Sfx.lose();}
 const screens=['s-menu','s-setup','s-howto','s-settings','s-pause','s-over','s-unlock'];
 /* Game completed interstitial - falls through to the over screen where
@@ -1330,7 +1449,8 @@ const screens=['s-menu','s-setup','s-howto','s-settings','s-pause','s-over','s-u
 function showScreen(id){
 for(const s of screens)$(s).classList.toggle('on',s===id);
  $('pauseBtn').style.display=(id===null&&state==='play')?'block':'none';
-fitUI();}
+fitUI();
+if(window.__shellSyncFront)try{window.__shellSyncFront();}catch(_){}}
 function drawPreviews(){
 const opts=document.querySelectorAll('#seg-map .opt.map');
 opts.forEach((el,i)=>{
@@ -1438,7 +1558,7 @@ addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='play'){state='pause';showScreen('s-pause');}});
 
 /* ============ ui wiring ============ */
-function on(id,fn){$(id).addEventListener('click',()=>{Sfx.unlock();goFull();Sfx.click();fn();});}
+function on(id,fn){$(id).addEventListener('click',e=>{e.preventDefault();e.stopPropagation();Sfx.unlock();Sfx.click();try{fn();}catch(err){console.error('ca-btn:',err);}});}
 on('b-play',()=>{state='menu';showScreen('s-setup');drawPreviews();});
 on('b-how',()=>{state='menu';showScreen('s-howto');refreshHow();});
 on('b-set',()=>{state='menu';showScreen('s-settings');});
@@ -1449,10 +1569,10 @@ on('b-start',()=>startMatch());
 on('b-resume',()=>{state='play';showScreen(null);});
 on('b-restart',()=>startMatch());
 on('b-quit',()=>{state='menu';startDemo();showScreen('s-menu');});
-on('b-rematch',()=>{Sfx.unlock();Sfx.click();Studio.ads.interstitial(function(){},'chaos-arena.over-rematch');startMatch();});
-on('b-mode',()=>{Sfx.unlock();Sfx.click();Studio.ads.interstitial(function(){},'chaos-arena.over-setup');state='menu';startDemo();showScreen('s-setup');drawPreviews();});
-on('b-menu2',()=>{Sfx.unlock();Sfx.click();Studio.ads.interstitial(function(){},'chaos-arena.over-menu');state='menu';startDemo();showScreen('s-menu');});
- $('pauseBtn').addEventListener('click',()=>{Sfx.unlock();if(state==='play'){Sfx.click();state='pause';showScreen('s-pause');Studio.ads.interstitial(function(){},'chaos-arena.pause-restart');}});
+on('b-rematch',()=>{Sfx.unlock();Sfx.click();try{Studio.ads.interstitial(function(){},'chaos-arena.over-rematch');}catch(e){}startMatch();});
+on('b-mode',()=>{Sfx.unlock();Sfx.click();try{Studio.ads.interstitial(function(){},'chaos-arena.over-setup');}catch(e){}state='menu';startDemo();showScreen('s-setup');drawPreviews();});
+on('b-menu2',()=>{Sfx.unlock();Sfx.click();try{Studio.ads.interstitial(function(){},'chaos-arena.over-menu');}catch(e){}state='menu';startDemo();showScreen('s-menu');});
+$('pauseBtn').addEventListener('click',()=>{Sfx.unlock();if(state==='play'){Sfx.click();state='pause';showScreen('s-pause');try{Studio.ads.interstitial(function(){},'chaos-arena.pause-restart');}catch(e){}}});
 function syncSeg(el,v){el.querySelectorAll('.opt').forEach(o=>o.classList.toggle('sel',+o.dataset.v===v));}
 const mapEl=$('seg-map');
 syncSeg(mapEl,cfg.map);
@@ -1474,7 +1594,14 @@ function frame(t){
 requestAnimationFrame(frame);
 const dt=Math.min(.045,(t-lastT)/1000||.016);lastT=t;
 tGlob+=dt;
-if(state==='play'||(state==='menu'&&demo))update(dt);
+const allowUpdate=state==='play'||(state==='menu'&&demo);
+if(allowUpdate){
+  /* In demo/menu mode, throttle the physics update to save CPU on mobile */
+  if(state==='menu'&&demo){
+    if(!(window.__demoFrameCount=!(window.__demoFrameCount)))return;
+  }
+  update(dt);
+}
 if(map&&mapCv)render();}
 buildSlots2();
 resize();
@@ -1484,10 +1611,11 @@ requestAnimationFrame(frame);
 window.Game={
   pause:function(){ if(state==='play'){ state='pause'; showScreen('s-pause'); } },
   resume:function(){ state='play'; showScreen(null); },
-  setMuted:function(m){ if(!m)Sfx.unlock(); muted=!m; CFG.muted=m; saveCFG(); document.getElementById('btnSound').classList.toggle('muted',m); if(!m)S.tick(); },
-  setSettings:function(st){ /* settings handled via CFG */ },
-  destroy:function(){ /* cleanup */ }
+  setMuted:function(m){ if(!m)Sfx.unlock(); muted=!!m; opt.sound=!m; },
+  setSettings:function(st){ /* sound toggle is in opt.sound, handled by setMuted */ },
+  destroy:function(){ /* no-op */ }
 };
 </script>
 </body>
 </html>
+
