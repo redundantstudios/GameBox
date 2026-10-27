@@ -1552,8 +1552,8 @@ function buildControls(){
     /* P1: bottom-left joystick, upper-left dash.
        P2: top-right joystick, lower-right dash. */
     specs=[
-      [ {t:'joy',a:'bl'}, {t:'dash',a:'l-side-top'} ],
-      [ {t:'joy',a:'tr'}, {t:'dash',a:'r-side'} ]
+      [ {t:'joy',a:'bl'}, {t:'dash',a:'l-side'} ],
+      [ {t:'joy',a:'tr'}, {t:'dash',a:'r-side-top'} ]
     ];
   }else{
     /* 3-player mode uses the same corner-based control placements as 4-player
@@ -1672,9 +1672,9 @@ function layoutControls(){
       if(pc.sp.t==='joy'){
         let o;
         const midTop=Math.round((vh-JD)/2);
-        if(a==='bl')   o={w:JD,h:JD, l:ml,               b:ml};
-        else if(a==='br')   o={w:JD,h:JD, r:mr,               b:ml};
-        else if(a==='tl')   o={w:JD,h:JD, l:ml,               t:ml};
+        if(a==='bl')   o={w:JD,h:JD, l:ml,                    b:ml};
+        else if(a==='br')   o={w:JD,h:JD, r:mr,                    b:ml};
+        else if(a==='tl')   o={w:JD,h:JD, l:ml,                    t:ml};
         else if(a==='lm')   o={w:JD,h:JD, l:ml,               t:midTop};
         else if(a==='rm')   o={w:JD,h:JD, r:mr,               t:midTop};
         else if(a==='bc'){
@@ -1684,8 +1684,8 @@ function layoutControls(){
           const centerY=Math.round(vh*0.67);
           o={w:JD,h:JD,l:Math.round(vw/2-(DD+gap)/2-JD/2),t:centerY-Math.round(JD/2)};
         }
-        else if(a==='tl')   o={w:JD,h:JD, l:ml,               t:ml};
-        else                o={w:JD,h:JD, r:mr,               t:ml};
+        else if(a==='tl')   o={w:JD,h:JD, l:ml,                    t:ml};
+        else                o={w:JD,h:JD, r:mr,                    t:ml};
         place(el,o);
         const joy=el.querySelector('.joy'), th=el.querySelector('.thumb');
         joy.style.width=joy.style.height=Math.round(jr*2)+'px';
@@ -1696,18 +1696,26 @@ function layoutControls(){
       }else{
         let o;
         const midTopDash=Math.round((vh-DD)/2);
-        const dashLaneOffset = Math.round((JD-DD)/2);
+        // Ensure dash button stays right of joystick with proper padding
+const minDashLaneOffset = JD + clamp(short * 0.03, 10, 30);  // joystick width + padding
+const dashLaneOffset = Math.max(minDashLaneOffset, Math.round((JD-DD)/2) * (modeCfg.count <= 2 ? 1 : modeCfg.count <= 3 ? 1.5 : 2));
         if(a==='lm') o={w:DD,h:DD,l:ml+JD+gap,t:midTopDash};
         else if(a==='rm') o={w:DD,h:DD,r:mr+JD+gap,t:midTopDash};
         else if(a==='bc'){
           const centerY=Math.round(vh*0.67);
           o={w:DD,h:DD,l:Math.round(vw/2+(JD+gap)/2-DD/2),t:centerY-Math.round(DD/2)};
         }
-        /* Four-player controls retain their basket-matched corner anchors. */
-        else if(a==='l-side')      o={w:DD,h:DD, l:ml+dashLaneOffset, t:Math.round(vh*0.76-DD/2)};
-        else if(a==='r-side')      o={w:DD,h:DD, r:mr+dashLaneOffset, t:Math.round(vh*0.76-DD/2)};
-        else if(a==='l-side-top')  o={w:DD,h:DD, l:ml+dashLaneOffset, t:Math.round(vh*0.27-DD/2)};
-        else if(a==='r-side-top')  o={w:DD,h:DD, r:mr+dashLaneOffset, t:Math.round(vh*0.27-DD/2)};
+        /* Keep the joystick AND DASH outside the fence in one side-by-side group.
+           The joystick occupies the outer lane; DASH sits immediately inward with
+           a clear gap. Their centers align at the same top/bottom corner station. */
+        /* Side DASH buttons occupy the outer side lanes between the corner
+           joysticks. Keep their centers on the same horizontal axis as the
+           corresponding joystick (same left/right lane), but leave a full
+           joystick-sized vertical clearance so the circular targets cannot overlap. */
+        else if(a==='l-side')      o={w:DD,h:DD, l:ml, t:Math.round(vh-ml-JD-gap-DD)};
+        else if(a==='r-side')      o={w:DD,h:DD, r:mr, t:Math.round(vh-ml-JD-gap-DD)};
+        else if(a==='l-side-top')  o={w:DD,h:DD, l:ml, t:Math.round(ml+JD+gap)};
+        else if(a==='r-side-top')  o={w:DD,h:DD, r:mr, t:Math.round(ml+JD+gap)};
         else if(a==='l-up')   o={w:DD,h:DD, l:ml,               b:ml+JD+gap};
         else if(a==='l-down') o={w:DD,h:DD, l:ml,               t:ml+JD+gap};
         else if(a==='r-up')   o={w:DD,h:DD, r:mr,               b:ml+JD+gap};
