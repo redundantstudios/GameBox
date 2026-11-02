@@ -891,8 +891,19 @@ val bannerEdge = currentGame?.bannerEdge
            handlers only have to load and show what was approved. */
         NativeBridgeContext.adHandler = { callback, placement, kind ->
             runAdOrExplainOffline(callback) {
+                /* AdMob reports "reward earned" while its full-screen ad is STILL
+                   ON SCREEN - the player has another beat before they tap X. We
+                   used to forward "granted" right then, so the game resumed its
+                   run BEHIND the ad: the player saw the game running before the
+                   ad had closed, and a long ad could outlive the game's own
+                   watchdog. Record the earn here, but tell the game only once
+                   the ad is actually dismissed - the X tap is the real "ad is
+                   over" signal. Nothing is lost: a dismissal without an earlier
+                   earn still reports "closed". */
+                var rewardEarned = false
                 adMobManager.showRewardedAd(
                     onRewardEarned = {
+                        rewardEarned = true
                         AdPolicy.onRewardedEarned(
                             when {
                                 kind.equals("revive", true) -> AdPolicy.RewardKind.REVIVE
@@ -900,10 +911,12 @@ val bannerEdge = currentGame?.bannerEdge
                                 else -> AdPolicy.RewardKind.NORMAL
                             }
                         )
-                        NativeBridgeContext.callback?.invoke(callback, "granted")
                     },
                     onAdClosed = {
-                        NativeBridgeContext.callback?.invoke(callback, "closed")
+                        NativeBridgeContext.callback?.invoke(
+                            callback,
+                            if (rewardEarned) "granted" else "closed"
+                        )
                     },
                     onAdUnavailable = {
                         // No ad to show (still loading, failed, or offline): the game

@@ -177,20 +177,50 @@ window.Studio=Studio;
    CrazyGames `S.ad.requestAd` shim, but no game calls that shim - they all
    call Studio.ads.* directly, so the score kept playing through every ad.
    Wrapping the two real entry points covers every call site at once. */
+/* ---------- freeze the run while an ad is on screen ----------
+   THE AD IS A SEPARATE ACTIVITY OVER THE WEBVIEW. The game loop used to keep
+   ticking underneath it, so a reward that arrived while the ad was still up
+   (or an ad opened from a live run) left the player watching the run happen
+   behind the ad. `adPending` stops the loop; it is released only when the
+   shell has answered the request AND the page is visible again, which is the
+   moment the ad Activity has actually gone away. `document.hidden` is the
+   primary signal; the timeout is only a safety net so a device that never
+   reports visibility can never freeze the game for good. */
+let adPending=false;
+let adResolved=true;
+let adSafetyT=0;
+function beginAd(){
+  adPending=true;adResolved=false;
+  input.hold=false;
+  try{Snd.setThrust(false);}catch(_){}
+  clearTimeout(adSafetyT);
+  adSafetyT=setTimeout(function(){adResolved=true;adPending=false;},180000);
+}
+function endAd(){
+  adResolved=true;
+  /* Still hidden means the ad is still on screen - hold the freeze until the
+     shell comes back to the foreground. */
+  if(!document.hidden){adPending=false;clearTimeout(adSafetyT);}
+}
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden&&adResolved){adPending=false;clearTimeout(adSafetyT);}
+});
 (function(){
   var rw=Studio.ads.rewarded, it=Studio.ads.interstitial;
   function duck(on){try{if(window.__audioDuck)window.__audioDuck(on);}catch(_){}}
   /* Duck on the way in, un-duck once the ad resolves EITHER way, so a skipped
      ad can never leave the game permanently silent. */
   Studio.ads.rewarded=function(placement,ok,fail){
+    beginAd();
     duck(true);
     return rw(placement,
-      function(){try{ok&&ok();}finally{duck(false);}},
-      function(m){try{fail&&fail(m);}finally{duck(false);}});
+      function(){try{ok&&ok();}finally{endAd();duck(false);}},
+      function(m){try{fail&&fail(m);}finally{endAd();duck(false);}});
   };
   Studio.ads.interstitial=function(ok){
+    beginAd();
     duck(true);
-    return it(function(){try{ok&&ok();}finally{duck(false);}});
+    return it(function(){try{ok&&ok();}finally{endAd();duck(false);}});
   };
 })();
 
@@ -1974,6 +2004,9 @@ let loopAlive=true;
 function frame(now){
   if(!loopAlive)return;
   requestAnimationFrame(frame);
+  /* An ad is on screen: hold the world still and keep `last` current so the
+     first frame after dismissal does not jump forward by the ad's length. */
+  if(adPending){last=now;return;}
   const dt=Math.min(0.033,(now-last)/1000);last=now;
   /* i-frames count down here, BEFORE the hit-stop early return. They used to
      tick inside updatePlay(), which this line skips - so every hit froze its

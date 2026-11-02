@@ -2015,7 +2015,12 @@ function requestRewardedAd(){
      "the buttons take time to do their job". The shell answers with
      granted/closed/unavailable, but an ad that never loads can leave the
      callback uncalled for good, so the game releases itself if nothing comes
-     back. */
+     back.
+     The shell now answers only when the ad is DISMISSED (the X tap), not when
+     the reward is earned, because resuming at earn time ran the game behind
+     the still-open ad. A rewarded ad can therefore stay up for a full minute
+     before the answer arrives, so this net has to outlast the longest ad -
+     15s used to fire mid-ad and throw the earned reward away. */
   let settled=false;
   const guard=setTimeout(function(){
     if(settled)return;
@@ -2024,7 +2029,7 @@ function requestRewardedAd(){
     rewardedUsed=false;
     refreshWatchAdBtn();
     gameplayStart();
-  },15000);
+  },90000);
   try{
     window.CrazyGames.SDK.ad.requestAd('rewarded',{
       adStarted:()=>{adInProgress=true;setCrazyMute(true);},
