@@ -395,7 +395,15 @@ object AdPolicy {
         onShellHomeShown(context)
         rewardedThisGame = 0
         revivesThisGame = 0
-        log( "Game opened - per-game caps reset")
+        /* THE SAME REASON AS onRunStarted BELOW.
+           A rewarded view from a PREVIOUS game (or from earlier in this session)
+           set the 60s revive cooldown. That clock survived opening a new game,
+           because only "Play Again" reset it - so the FIRST Continue tap of the
+           first run was refused with COOLDOWN while the SECOND run (which calls
+           onRunStarted) worked. The cooldown exists to absorb a mash-tap on one
+           screen; opening a new game is not a mash-tap. */
+        lastRewardedAt = 0L
+        log( "Game opened - per-game caps and revive cooldown reset")
     }
 
     /**

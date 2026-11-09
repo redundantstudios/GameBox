@@ -97,6 +97,10 @@ class UpdateCoordinator(private val activity: FragmentActivity) {
                 ArcadeNotifier.postUpdateComplete(activity)
             }
             .setNegativeButton(R.string.not_now, null)
+            /* Only the on-screen buttons may close this. A stray tap on the dim
+               area outside the panel (or the system back gesture) used to
+               dismiss the update conversation before the player had read it. */
+            .setCancelable(false)
             .show()
     }
 
@@ -132,6 +136,9 @@ class UpdateCoordinator(private val activity: FragmentActivity) {
                 startFlow()
             }
             .setNegativeButton(R.string.update_later, null)
+            /* Must be answered with a button. Touching outside the panel used to
+               silently cancel it; "Update" still opens the Play Store flow. */
+            .setCancelable(false)
             .show()
     }
 

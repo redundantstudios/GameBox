@@ -933,7 +933,13 @@ val bannerEdge = currentGame?.bannerEdge
             runAdOrExplainOffline(callback, explain = false) {
                 adMobManager.showInterstitialAd(
                     onAdClosed = {
-                        AdPolicy.onInterstitialShown()
+                        /* NOTE: the interstitial gap is recorded inside
+                           AdMobManager only when the ad's full-screen content
+                           actually appears. This callback ALSO runs on the
+                           same-tap guard and on a queued request that times
+                           out, and recording a "shown" there reset the 180s
+                           gap without an ad ever being seen - which is why a
+                           ready interstitial repeatedly failed to appear. */
                         NativeBridgeContext.callback?.invoke(callback, "closed")
                     }
                 )

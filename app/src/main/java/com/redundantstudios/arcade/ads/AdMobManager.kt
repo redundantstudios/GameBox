@@ -137,7 +137,13 @@ class AdMobManager(private val activity: Activity) {
     private fun request(): AdRequest = AdRequest.Builder().build()
 
     // Rewarded
+    /* TWO SLOTS. Fetching a rewarded ad takes several seconds, and loading the
+       replacement only after the previous ad was dismissed meant the NEXT
+       Continue tap sat on "LOADING AD..." for 5-10s. Now one ad is kept ready
+       while the other is on screen: the slot is refilled the moment an ad is
+       taken to be shown, so a tap almost always finds an ad already cached. */
     private var rewardedAd: RewardedInterstitialAd? = null
+    private var rewardedBackup: RewardedInterstitialAd? = null
     private var isRewardedLoading = false
 
     // A rewarded request can arrive before the ad finished loading (the game
@@ -187,7 +193,12 @@ class AdMobManager(private val activity: Activity) {
        race between "player tapped" and "SDK finished loading" - that race is
        exactly why no ad was appearing. */
     private var queuedInterstitial: (() -> Unit)? = null
-    private val QUEUED_INTERSTITIAL_TIMEOUT_MS = 6000L
+    /* A queued request waits for the in-flight load. 6s was shorter than a
+       normal ad fetch on a slow connection, so the request was released as
+       "done" moments before the ad arrived - the player saw nothing and the
+       180s policy gap was restarted. A longer net only delays the callback in
+       the genuine no-fill case; the game is not blocked on it. */
+    private val QUEUED_INTERSTITIAL_TIMEOUT_MS = 20000L
     private val queuedInterstitialTimeout = Runnable {
         val queued = queuedInterstitial ?: return@Runnable
         queuedInterstitial = null
@@ -221,7 +232,8 @@ class AdMobManager(private val activity: Activity) {
     private var destroyed = false
 
     fun loadRewardedAd() {
-        if (destroyed || isRewardedLoading || rewardedAd != null) return
+        if (destroyed || isRewardedLoading) return
+        if (rewardedAd != null && rewardedBackup != null) return
         isRewardedLoading = true
         val adRequest = request()
         /* REWARDED INTERSTITIAL - not a plain Rewarded ad.
@@ -253,7 +265,10 @@ class AdMobManager(private val activity: Activity) {
                     Log.d(TAG, "Rewarded ad loaded successfully")
                     isRewardedLoading = false
                     rewardedLoadRetries = 0
-                    rewardedAd = ad
+                    /* Back-fill the empty slot, not always the primary one: a
+                       tap may have already taken the ad that was cached. */
+                    if (rewardedAd == null) rewardedAd = ad
+                    else if (rewardedBackup == null) rewardedBackup = ad
                     // A tap arrived while we were fetching: honour it now.
                     val queued = pendingReward
                     if (queued != null) {
@@ -262,6 +277,8 @@ class AdMobManager(private val activity: Activity) {
                         Log.d(TAG, "Showing rewarded ad for the queued request")
                         showRewardedInternal(queued.onReward, queued.onClosed, queued.onUnavailable)
                     }
+                    // Prefetch the second slot so the next tap never waits.
+                    loadRewardedAd()
                 }
             })
     }
@@ -288,7 +305,9 @@ class AdMobManager(private val activity: Activity) {
         onAdUnavailable: () -> Unit
     ) {
         if (destroyed) return
-        val ad = rewardedAd
+        /* Prefer the primary slot, but a cached backup is just as good - the
+           player tapped, so show whatever is ready instead of fetching. */
+        val ad = rewardedAd ?: rewardedBackup
         if (ad == null) {
             Log.w(TAG, "Rewarded ad not loaded yet - queuing the request")
             pendingReward = PendingReward(onRewardEarned, onAdClosed, onUnavailable = onAdUnavailable)
@@ -297,7 +316,11 @@ class AdMobManager(private val activity: Activity) {
             loadRewardedAd()
             return
         }
-        rewardedAd = null
+        if (ad === rewardedAd) rewardedAd = null else rewardedBackup = null
+        /* Start fetching the replacement NOW, while this ad is being watched,
+           so the next Continue tap is instant instead of waiting for a load
+           that only began when this ad was dismissed. */
+        loadRewardedAd()
         // Register the callback BEFORE show(), otherwise early events are missed.
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdShowedFullScreenContent() {
@@ -457,6 +480,10 @@ class AdMobManager(private val activity: Activity) {
         // Register the callback BEFORE show(), otherwise early events are missed.
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdShowedFullScreenContent() {
+                /* THE one true "an interstitial was shown" signal. Recording
+                   it anywhere later (or on a suppression path) resets the
+                   frequency gap for an ad the player never saw. */
+                AdPolicy.onInterstitialShown()
                 activity.overridePendingTransition(
                     com.redundantstudios.arcade.R.anim.ad_fade_in,
                     com.redundantstudios.arcade.R.anim.ad_fade_out

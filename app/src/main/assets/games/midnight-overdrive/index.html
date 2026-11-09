@@ -5065,6 +5065,12 @@ function startGame(){
   if(screen.orientation && screen.orientation.lock){ screen.orientation.lock('landscape').catch(()=>{}); }
   $('menu').classList.add('hidden');
   $('hud').classList.remove('hidden');
+  /* A fresh run starts from the MENU too, not only from "Drive Again". Tell
+     the shell, exactly as restartRun does: without this the first run of a
+     game screen could still be living on the previous run's revive cooldown
+     and its Continue tap was refused while a later run worked. */
+  moReviveUsed=false;
+  try{ if(window.NativeBridge&&window.NativeBridge.newRun) window.NativeBridge.newRun(); }catch(e){}
   state='playing';
   AU.goSfx();
   resetRun(true);
@@ -5099,6 +5105,7 @@ function showAdOfferState(){
 }
 function continueFromAd(){
   const s=moCrashSnap; moCrashSnap=null; moReviveUsed=true;
+  const hint=$('oRetryHint'); if(hint) hint.textContent='';
   window.__continueInvulnUntil=performance.now()+1500;
   $('continueBtn').classList.add('hidden');
   if(!s){ restartRun(); return; }

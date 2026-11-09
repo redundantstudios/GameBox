@@ -8,25 +8,137 @@ maxPlayers: 4
 aiSupport: full
 online: false
 tileColor: #1c2540
-version: 1.1.0
+version: 1.2.0
 released: 2026-09-22
 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script src="../../shell/dpr.js"></script>
-<script src="../../shell/fullscreen.js"></script>
-<script src="../../shell/canvaswatch.js"></script>
-<script src="../../shell/audiotracker.js"></script>
-<style id="studioBack">/* Shell chrome: BACK out of the game, to the arcade grid. */
+
+
+
+
+<style id="studioBackStyles">/* Shell chrome: BACK out of the game, to the arcade grid. */
 #studioBack{position:absolute;z-index:10;left:10px;top:max(10px,env(safe-area-inset-top));
-width:48px;height:48px;display:flex;align-items:center;justify-content:center;
-background:rgba(28,37,64,.94);color:#ffe3a8;
+width:78px;height:44px;display:flex;align-items:center;justify-content:center;gap:6px;
+background:rgba(28,37,64,.96);color:#ffe3a8;
 border:2.5px solid #ffb545;border-radius:12px;
 box-shadow:0 3px 0 rgba(0,0,0,.5);cursor:pointer;
 -webkit-tap-highlight-color:transparent;padding:0;outline:none;box-sizing:border-box}
 #studioBack:active{transform:translateY(2px) rotate(1deg);box-shadow:0 1px 0 rgba(0,0,0,.5)}
-#studioBack svg{display:block;pointer-events:none}</style>
+#studioBack svg{display:block;pointer-events:none;flex:none}
+#studioBack .back-label{font:800 10px/1 Verdana,Geneva,sans-serif;letter-spacing:1px;pointer-events:none}
+
+/* ============ stable match setup + mobile theme list ============
+   Keep the setup panel at one design size for 2P, 3P and 4P. The player
+   cards use the available middle area, so fitUI() applies the same scale
+   regardless of the selected player count. */
+#s-setup .panel{
+  height:560px;
+  min-height:560px;
+  display:flex;
+  flex-direction:column;
+}
+#s-setup #slots2{
+  flex:1 1 auto;
+  min-height:0;
+}
+#s-setup #slots2:not(.four){
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+}
+#s-setup #slots2:not(.four) .pslot{
+  height:184px;
+  justify-content:center;
+}
+#s-setup #slots2.four{
+  grid-template-rows:repeat(2,minmax(0,1fr));
+  align-content:stretch;
+  min-height:0;
+}
+#s-setup #slots2.four .pslot{
+  min-height:0;
+  padding:6px 10px 7px;
+  gap:3px;
+  justify-content:center;
+}
+#s-setup #slots2.four .pslot canvas{
+  width:88px;
+  height:60px;
+  flex:none;
+}
+#s-setup #slots2.four .hbt{gap:5px;padding:4px}
+#s-setup #slots2.four .hb{
+  min-height:36px;
+  padding:6px 4px;
+  font-size:12px;
+}
+#s-setup .btnrow{flex:none}
+
+/* On phones in landscape, list arenas vertically instead of squeezing all
+   four map cards into a horizontal strip. Each row keeps a clear preview. */
+@media (max-width:1024px) and (orientation:landscape){
+  #s-theme .panel{
+    width:640px;
+    padding:10px 12px 9px;
+  }
+  #s-theme .ptitle{margin-bottom:6px}
+  #s-theme .stepnote{margin:-1px 0 7px}
+  #s-theme .maps{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    grid-template-rows:repeat(2,minmax(0,auto));
+    gap:8px;
+  }
+  #s-theme .opt.map{
+    display:grid;
+    grid-template-columns:96px minmax(0,1fr);
+    grid-template-rows:1fr auto;
+    align-items:center;
+    justify-items:stretch;
+    column-gap:10px;
+    row-gap:0;
+    min-height:62px;
+    padding:4px 8px;
+    border-radius:12px;
+    text-align:left;
+    font-size:11px;
+    letter-spacing:.6px;
+  }
+  #s-theme .opt.map canvas{
+    grid-column:1;
+    grid-row:1 / span 2;
+    width:96px;
+    height:54px;
+    aspect-ratio:auto;
+    object-fit:cover;
+  }
+  #s-theme .opt.map span{
+    grid-column:2;
+    grid-row:1;
+    align-self:end;
+  }
+  #s-theme .theme-sub{
+    display:block;
+    grid-column:2;
+    grid-row:2;
+    align-self:start;
+    font-size:8px;
+  }
+  #s-theme .mtimer{
+    top:5px;
+    right:6px;
+    min-width:68px;
+    font-size:12px;
+    padding:3px 7px;
+  }
+  #s-theme .mveil{flex-direction:row;gap:3px}
+  #s-theme .mveil svg{width:14px;height:14px}
+  #s-theme .mveil b{font-size:7px}
+  #s-theme .btnrow{margin-top:7px}
+}
+
+</style>
 <script>
 /* ============================================================
    STUDIO SDK - shell bridge only. Every entry point degrades to
@@ -53,7 +165,7 @@ var Studio=(function(){
     haptic:function(kind){ if(settings.haptics===false) return; var b=bridge(); if(!b) return;
       var map={light:15,medium:30,heavy:60,success:45};
       try{ b.haptic(typeof map[kind]==='number'?map[kind]:0); }catch(_){} },
-    exitGame:function(){ var b=bridge(); if(b&&b.exitGame){ try{ b.exitGame(); }catch(_){} } },
+    exitGame:function(){ var b=bridge(); if(b&&typeof b.exitGame==='function'){ try{ b.exitGame(); return true; }catch(err){ try{console.warn('[Studio] native exitGame failed',err);}catch(_){} } } return false; },
     pushSettings:function(patch){ Object.assign(settings,patch||{});
       this.save('shell:settings',JSON.stringify({sound:!!settings.sound,music:!!settings.music,haptics:!!settings.haptics})); },
     ads:{
@@ -112,32 +224,50 @@ window.CrazyGames=window.CrazyGames||{SDK:{}};
     }
   };
 })();
-/* Shell BACK button - attaches click handler to the static button in s-menu */
+/* Shell BACK button. Native builds use NativeBridge.exitGame(). For iframe
+   shells, the named postMessage/event below is the integration placeholder;
+   the host should listen for it and return to its arcade/game grid. */
 (function(){
   function byId(id){ return document.getElementById(id); }
+  function notifyShell(){
+    var detail={gameId:'chaos-arena',action:'exit'};
+    var sent=false;
+    try{
+      if(window.parent && window.parent!==window){
+        window.parent.postMessage({type:'CHAOS_ARENA_EXIT_REQUEST',gameId:'chaos-arena'},'*');
+        sent=true;
+      }
+    }catch(_){}
+    try{
+      window.dispatchEvent(new CustomEvent('chaos-arena:exit-requested',{detail:detail}));
+      sent=true;
+    }catch(_){}
+    return sent;
+  }
   function attach(){
     var b=byId('studioBack');
-    if(!b)return;
-    if(b.__attached)return;
+    if(!b || b.__attached)return;
     b.__attached=true;
-    function go(e){
+    b.addEventListener('click',function(e){
       e.preventDefault();
+      e.stopPropagation();
       try{
-        if(window.NativeBridge && typeof window.NativeBridge.exitGame === 'function'){
-          window.NativeBridge.exitGame();
-        }else{
-          console.log('[BACK] NativeBridge not available');
+        if(Studio && Studio.exitGame && Studio.exitGame())return;
+        if(notifyShell()){
+          if(typeof toast==='function')toast('RETURN REQUEST SENT TO ARCADE');
+          return;
         }
+        // Browser-only fallback for testing outside the game shell.
+        if(window.history && window.history.length>1){window.history.back();return;}
+        if(typeof toast==='function')toast('SHELL BACK IS READY · OPEN INSIDE THE ARCADE');
       }catch(err){
         console.error('[BACK] Exit failed:',err);
+        if(typeof toast==='function')toast('UNABLE TO RETURN TO ARCADE');
       }
-    }
-    b.addEventListener('click',go,{passive:false});
-    b.addEventListener('touchend',go,{passive:false});
+    });
   }
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',attach);
-  }else{ attach(); }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',attach);
+  else attach();
 })();
 </script>
 
@@ -194,17 +324,25 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;backgrou
 .pc:active{transform:translateY(2px)}
 .pc.sel{background:#ffb545;color:#231a05}
 .slots2{display:flex;gap:9px}
+.slots2.four{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:8px}
+.slots2.four .pslot{min-height:136px;padding:9px 12px 11px;gap:6px}
+.slots2.four .pslot canvas{width:138px;height:108px}
 .pslot{flex:1;background:#273250;border:2px solid #0a0f1e;border-radius:16px;padding:8px 6px 9px;display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0;box-shadow:0 3px 0 #0a0f1e}
 .pslot canvas{width:110px;height:88px}
 .pname{font-size:11px;font-weight:800;letter-spacing:1px}
-.hbt{display:flex;gap:3px;width:100%;background:#141b30;border:2px solid #0a0f1e;border-radius:10px;padding:3px}
-.hb{flex:1;padding:6px 0;font-size:9px;font-weight:bold;letter-spacing:.5px;border:none;border-radius:7px;background:transparent;color:#7e8fb3;font-family:inherit;cursor:pointer}
+.hbt{display:flex;gap:5px;width:100%;background:#141b30;border:2px solid #0a0f1e;border-radius:11px;padding:4px}
+.hb{flex:1;min-width:0;min-height:38px;padding:9px 3px;font-size:12px;font-weight:800;letter-spacing:.35px;border:none;border-radius:8px;background:transparent;color:#7e8fb3;font-family:inherit;cursor:pointer;touch-action:manipulation}
+.slots2.four .hbt{gap:6px;padding:5px}
+.slots2.four .hb{min-height:42px;padding:10px 4px;font-size:13px;letter-spacing:.5px}
 .hb.hu.on{background:#ff5c48;color:#fff}
 .hb.bo.on{background:#37d3b8;color:#05271f}
-.maps{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
-.opt.map{padding:6px 6px 7px;display:flex;flex-direction:column;gap:4px;align-items:center;background:#273250;border:2px solid #0a0f1e;border-radius:14px;cursor:pointer;box-shadow:0 3px 0 #0a0f1e;color:#8fa2c8;font-weight:bold;font-size:8.5px;letter-spacing:.5px}
-.opt.map canvas{width:100%;height:auto;border-radius:8px;border:2px solid #0a0f1e}
-.opt.map.sel{border-color:#ffb545;color:#ffe3a8;box-shadow:0 3px 0 #0a0f1e,inset 0 0 0 2px rgba(255,181,69,.3)}
+.maps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.opt.map{padding:9px 10px 10px;display:flex;flex-direction:column;gap:7px;align-items:center;background:linear-gradient(145deg,#2b3654,#202b47);border:2px solid #0a0f1e;border-radius:16px;cursor:pointer;box-shadow:0 4px 0 #0a0f1e;color:#b9c6e6;font-weight:800;font-size:12px;letter-spacing:1px;transition:border-color .12s,transform .12s,background .12s}
+.opt.map canvas{width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:10px;border:2px solid #0a0f1e;background:#141b30}
+.opt.map.sel{border-color:#ffb545;color:#ffe3a8;background:linear-gradient(145deg,#39486b,#293653);box-shadow:0 4px 0 #0a0f1e,inset 0 0 0 2px rgba(255,181,69,.3)}
+.opt.map:active{transform:translateY(2px)}
+.stepnote{text-align:center;color:#91a2c5;font:700 11px/1.4 'Baloo 2',Verdana,sans-serif;letter-spacing:.7px;margin:-2px 0 12px}
+.theme-sub{font:700 9px 'Baloo 2',Verdana,sans-serif;color:#8293b6;letter-spacing:.4px;text-transform:uppercase}
 .hwrap{background:#273250;border:2px solid #0a0f1e;border-radius:18px;padding:10px;box-shadow:0 3px 0 #0a0f1e}
 #hc{width:100%;height:auto;display:block;border-radius:11px;border:2px solid #0a0f1e}
 .hctl{display:flex;align-items:center;gap:10px;margin-top:9px}
@@ -237,6 +375,19 @@ html,body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;backgrou
 #rotate b{font-size:16px;letter-spacing:2px;font-style:italic}
 #rotate span{font-size:11px;color:#7e8fb3}
 @media(orientation:portrait){#rotate{display:flex}}
+/* Keep the two setup steps readable on short landscape phone screens. */
+@media(max-height:520px) and (orientation:landscape){
+.panel{padding:12px 16px 10px}
+.ptitle{font-size:19px;margin-bottom:5px}
+.stepnote{font-size:10px;margin:-1px 0 7px}
+#s-theme .panel{width:680px}
+#s-theme .maps{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,auto));gap:8px}
+#s-theme .opt.map{padding:6px 5px;gap:4px;border-radius:11px;font-size:9px;letter-spacing:.5px}
+#s-theme .theme-sub{display:none}
+.btnrow{margin-top:8px}
+.btn{padding:10px 18px;font-size:14px}
+.slots2.four .hb{min-height:38px;font-size:12px;padding:8px 3px}
+}
 .foot{font-size:9px;color:#5d6b8c;text-align:center;margin-top:8px}
 
 /* ============ font assignment ============
@@ -271,10 +422,12 @@ justify-content:center;gap:4px;border-radius:12px;background:rgba(10,14,26,.5);p
 .mveil b{font-family:'Baloo 2',sans-serif;font-size:7.5px;font-weight:800;letter-spacing:.5px;
 background:#ffb545;color:#231a05;border:1.5px solid #0a0f1e;border-radius:6px;
 padding:1px 6px 2px;box-shadow:0 2px 0 #0a0f1e}
-.mtimer{position:absolute;top:4px;right:4px;background:rgba(6,32,29,.95);
-border:1.5px solid rgba(55,211,184,.8);border-radius:6px;color:#7ff0dc;
-font-family:'Baloo 2',sans-serif;font-size:8px;font-weight:800;line-height:1.15;
-padding:1px 4px 2px;letter-spacing:.3px;pointer-events:none}
+.mtimer{position:absolute;top:7px;right:7px;z-index:4;min-width:72px;
+text-align:center;background:rgba(6,32,29,.97);
+border:2px solid rgba(55,211,184,.95);border-radius:10px;color:#9bffeb;
+font-family:'Baloo 2',sans-serif;font-size:12px;font-weight:900;line-height:1.2;
+padding:3px 8px 4px;letter-spacing:.45px;pointer-events:none;
+box-shadow:0 2px 0 rgba(0,0,0,.45),0 0 8px rgba(55,211,184,.22)}
 
 /* ============ unlock sheet ============ */
 #s-unlock{background:rgba(10,14,26,.88)}
@@ -294,6 +447,163 @@ padding:9px 15px;box-shadow:0 8px 22px rgba(0,0,0,.55);
 opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
 #caToast.on{opacity:1;transform:translate(-50%,0)}
 </style>
+<style id="themeGridTwoByTwoFinal">
+/* Keep all four arena cards in a stable 2 x 2 layout on desktop and mobile. */
+#s-theme .maps{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  grid-template-rows:repeat(2,minmax(0,auto));
+  align-items:stretch;
+  gap:8px;
+}
+#s-theme .opt.map{min-width:0;}
+@media (max-width:1024px) and (orientation:landscape){
+  #s-theme .maps{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+}
+</style>
+
+<style id="themeCardProportionFix">
+/* Balanced two-by-two arena cards for landscape screens. The fixed-size
+   thumbnail and taller tile give each option a card shape, not a stretched row. */
+#s-theme .panel{width:660px;max-width:calc(100vw - 20px)}
+#s-theme .maps{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  grid-template-rows:repeat(2,minmax(0,1fr));
+  gap:9px;
+  align-items:stretch;
+}
+#s-theme .opt.map{
+  display:grid !important;
+  grid-template-columns:90px minmax(0,1fr);
+  grid-template-rows:1fr auto;
+  align-items:center;
+  justify-items:stretch;
+  column-gap:9px;
+  row-gap:0;
+  width:100%;min-width:0;
+  min-height:86px;height:86px;
+  padding:7px 9px;
+  border-radius:13px;
+  text-align:left;
+  font-size:11px;letter-spacing:.5px;line-height:1.1;
+}
+#s-theme .opt.map canvas{
+  grid-column:1;grid-row:1 / span 2;
+  display:block;width:90px;height:60px;min-width:0;
+  aspect-ratio:3 / 2;object-fit:cover;border-radius:9px;
+}
+#s-theme .opt.map span{
+  grid-column:2;grid-row:1;align-self:center;
+  min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:11px;line-height:1.12;
+}
+#s-theme .opt.map .theme-sub{display:block;grid-column:2;grid-row:2;align-self:start;font-size:8px;line-height:1.1}
+#s-theme .opt.map .mveil{
+  position:absolute;inset:auto 7px 6px auto;
+  display:flex;flex-direction:row;align-items:center;justify-content:center;
+  gap:3px;width:auto;height:auto;padding:2px 4px;
+  border-radius:7px;background:rgba(10,14,26,.82);pointer-events:none;
+}
+#s-theme .opt.map .mveil svg{width:12px;height:12px;flex:none}
+#s-theme .opt.map .mveil b{font-size:7px;letter-spacing:.15px;padding:2px 4px;white-space:nowrap}
+#s-theme .opt.map .mtimer{
+  position:absolute;top:5px;right:6px;min-width:70px;
+  padding:3px 5px;font-size:10px;line-height:1.15;
+}
+@media (max-height:520px) and (orientation:landscape){
+  #s-theme .panel{padding:10px 14px 9px}
+  #s-theme .ptitle{font-size:19px;margin-bottom:4px}
+  #s-theme .stepnote{font-size:9px;margin:-1px 0 6px}
+  #s-theme .opt.map{min-height:86px;height:86px}
+  #s-theme .opt.map .theme-sub{display:none}
+  #s-theme .btnrow{margin-top:7px}
+  #s-theme .btn{padding:9px 17px;font-size:13px}
+}
+</style>
+
+
+<style id="mobile-ui-refinement">
+/* Mobile landscape refinements: larger navigation controls, compact/taller theme cards,
+   and a narrower pause sheet. These override only small landscape layouts. */
+@media (max-width:1024px) and (orientation:landscape){
+  #s-setup .btnrow{gap:14px;margin-top:12px}
+  #s-setup .btnrow .btn{
+    min-width:180px;
+    min-height:72px;
+    padding:14px 22px;
+    font-size:17px;
+    border-radius:15px;
+  }
+
+  #s-theme .panel{
+    width:540px !important;
+    max-width:calc(100vw - 28px);
+    padding:13px 16px 12px;
+  }
+  #s-theme .ptitle{font-size:20px;margin-bottom:5px}
+  #s-theme .stepnote{font-size:9.5px;margin:-1px 0 8px}
+  #s-theme .maps{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    grid-template-rows:repeat(2, minmax(0,1fr));
+    gap:10px;
+  }
+  #s-theme .opt.map{
+    height:126px !important;
+    min-height:126px !important;
+    padding:8px 9px;
+    grid-template-columns:96px minmax(0,1fr);
+    grid-template-rows:minmax(0,1fr) auto;
+    column-gap:9px;
+    border-radius:13px;
+  }
+  #s-theme .opt.map canvas{
+    width:96px !important;
+    height:72px !important;
+    aspect-ratio:4 / 3;
+  }
+  #s-theme .opt.map span{
+    align-self:center;
+    padding-top:0;
+    font-size:10.5px;
+    line-height:1.15;
+  }
+  #s-theme .opt.map .theme-sub{display:none !important;font-size:8px;line-height:1.15}
+  #s-theme .opt.map .mtimer{
+    top:5px;
+    right:6px;
+    min-width:72px;
+    font-size:10px;
+    padding:3px 5px;
+  }
+  #s-theme .btnrow{margin-top:9px;gap:12px}
+  #s-theme .btn{min-height:48px;padding:11px 20px;font-size:14px}
+
+  #s-pause .panel.narrow{
+    width:310px !important;
+    max-width:calc(100vw - 48px);
+    padding:18px 20px 16px;
+  }
+}
+</style>
+
+
+<style id="pause-panel-height">
+/* Give the pause sheet more vertical breathing room without widening it. */
+#s-pause .panel.narrow{
+  min-height:340px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:11px;
+  padding:30px 22px 28px;
+}
+#s-pause .panel.narrow .ptitle{margin-bottom:10px}
+#s-pause .panel.narrow .btn.wide{margin-bottom:0;min-height:48px}
+@media (max-width:1024px) and (orientation:landscape){
+  #s-pause .panel.narrow{min-height:330px;padding:26px 20px 25px;gap:10px}
+}
+</style>
 </head>
 <body oncontextmenu="return false">
 <!-- Icon sprite. The BACK chip is painted by the shell and finds its chevron
@@ -307,7 +617,7 @@ opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
 <div id="vig"></div>
 <button id="pauseBtn">II</button>
 
-<div class="screen on" id="s-menu"><button id="studioBack" role="button" aria-label="Back to the arcade"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><div class="menu-wrap">
+<div class="screen on" id="s-menu"><button id="studioBack" type="button" aria-label="Back to the arcade" title="Back to arcade"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span class="back-label">BACK</span></button><div class="menu-wrap">
 <div class="logo">CHAOS<br><em>ARENA</em></div>
 <div class="underline"><i></i><i></i></div>
 <div class="tag">TANK PARTY SHOOTER &middot; ONE DEVICE</div>
@@ -326,6 +636,7 @@ opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
 
 <div class="screen" id="s-setup"><div class="panel">
 <div class="ptitle">MATCH <em>SETUP</em></div>
+<div class="stepnote">STEP 1 OF 2 &nbsp;·&nbsp; SET YOUR PLAYERS</div>
 <div class="lbl">PLAYERS</div>
 <div class="pcount" id="pcount">
 <button class="pc" data-v="2">2P</button><button class="pc" data-v="3">3P</button><button class="pc" data-v="4">4P</button>
@@ -334,16 +645,21 @@ opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
 <div class="pcount" id="bcount1" style="display:none">
 <button class="pc" data-v="1">1</button><button class="pc" data-v="2">2</button><button class="pc" data-v="3">3</button>
 </div>
-<div class="lbl" style="margin-top:10px" id="lblTypes"></div>
+<div class="lbl" style="margin-top:12px" id="lblTypes"></div>
 <div class="slots2" id="slots2"></div>
-<div class="lbl" style="margin-top:11px">ARENA</div>
+<div class="btnrow"><button class="btn ghost" id="b-back1">BACK</button><button class="btn teal" id="b-next-theme">NEXT</button></div>
+</div></div>
+
+<div class="screen" id="s-theme"><div class="panel">
+<div class="ptitle">CHOOSE <em>THEME</em></div>
+<div class="stepnote">STEP 2 OF 2 &nbsp;·&nbsp; PICK YOUR BATTLE ARENA</div>
 <div class="maps" id="seg-map">
-<div class="opt map" data-v="0"><canvas width="120" height="80"></canvas><span>WAREHOUSE</span></div>
-<div class="opt map" data-v="1"><canvas width="120" height="80"></canvas><span>OUTPOST</span></div>
-<div class="opt map" data-v="2"><canvas width="120" height="80"></canvas><span>FACTORY</span></div>
-<div class="opt map" data-v="3"><canvas width="120" height="80"></canvas><span>RUINS</span></div>
+<div class="opt map" data-v="0"><canvas width="120" height="80"></canvas><span>WAREHOUSE</span><small class="theme-sub">Steel storage yard</small></div>
+<div class="opt map" data-v="1"><canvas width="120" height="80"></canvas><span>DESERT OUTPOST</span><small class="theme-sub">Open sandy battlefield</small></div>
+<div class="opt map" data-v="2"><canvas width="120" height="80"></canvas><span>FACTORY</span><small class="theme-sub">Industrial combat zone</small></div>
+<div class="opt map" data-v="3"><canvas width="120" height="80"></canvas><span>RUINS</span><small class="theme-sub">Ancient stone arena</small></div>
 </div>
-<div class="btnrow"><button class="btn ghost" id="b-back1">BACK</button><button class="btn" id="b-start">START MATCH</button></div>
+<div class="btnrow"><button class="btn ghost" id="b-theme-back">BACK</button><button class="btn" id="b-start">START MATCH</button></div>
 </div></div>
 
 <div class="screen" id="s-howto"><div class="panel">
@@ -387,8 +703,7 @@ opacity:0;pointer-events:none;transition:opacity .18s ease,transform .18s ease}
 <div class="screen" id="s-unlock"><div class="panel narrow">
 <div class="ptitle">ARENA <em>LOCKED</em></div>
 <div class="ulock"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-lock"/></svg></div>
-<div class="ubody" id="unlockBody"></div>
-<div class="btnrow"><button class="btn ghost" id="b-unlock-no">NOT NOW</button><button class="btn" id="b-unlock-yes">WATCH AD</button></div>
+<div class="btnrow"><button class="btn ghost" id="b-unlock-no">NOT NOW</button><button class="btn" id="b-unlock-yes">UNLOCK</button></div>
 </div></div>
 
 <div id="rotate">
@@ -480,14 +795,18 @@ lose(){[400,300,220,150].forEach((f,i)=>this.tone(f,.2,'sawtooth',.18,0,i*.15));
 
 /* ============ data ============ */
 const KTARGET=10;
-const TANK_SCALE=1.35;
+const RESPAWN_DELAY=1;
+const SPAWN_SHIELD_DURATION=1.5;
+const TANK_SCALE=1.62;
 const BULLET_SPAWN=Math.round(26*TANK_SCALE);
 const WEAPONS={
-PISTOL:{name:'PISTOL',dmg:12,rate:.3,spd:560,range:470,ammo:Infinity,spread:.05,pellets:1,pref:240,snd:'PISTOL'},
-SMG:{name:'SMG',dmg:7,rate:.095,spd:600,range:400,ammo:44,spread:.11,pellets:1,pref:190,snd:'SMG'},
-SHOTGUN:{name:'SHOTGUN',dmg:8,rate:.9,spd:520,range:255,ammo:12,spread:.3,pellets:6,pref:130,snd:'SHOTGUN'},
-RIFLE:{name:'RIFLE',dmg:19,rate:.44,spd:780,range:660,ammo:18,spread:.02,pellets:1,pref:320,snd:'RIFLE'},
-ROCKET:{name:'ROCKET',dmg:52,rate:1.15,spd:340,range:620,ammo:4,spread:0,pellets:1,rocket:true,pref:280,snd:'ROCKET'}};
+// All weapons now repeat-fire while FIRE is held. Heavy weapons remain
+// slightly slower so rapid firing stays readable and balanced.
+PISTOL:{name:'PISTOL',dmg:12,rate:.12,spd:560,range:470,ammo:Infinity,spread:.05,pellets:1,pref:240,snd:'PISTOL'},
+SMG:{name:'SMG',dmg:7,rate:.075,spd:600,range:400,ammo:80,spread:.11,pellets:1,pref:190,snd:'SMG'},
+SHOTGUN:{name:'SHOTGUN',dmg:8,rate:.22,spd:520,range:255,ammo:30,spread:.3,pellets:6,pref:130,snd:'SHOTGUN'},
+RIFLE:{name:'RIFLE',dmg:19,rate:.12,spd:780,range:660,ammo:40,spread:.02,pellets:1,pref:320,snd:'RIFLE'},
+ROCKET:{name:'ROCKET',dmg:52,rate:.32,spd:340,range:620,ammo:8,spread:0,pellets:1,rocket:true,pref:280,snd:'ROCKET'}};
 const WEAPON_KEYS=['SMG','SHOTGUN','RIFLE','ROCKET'];
 const WCOL={PISTOL:'#ffd23f',SMG:'#ff8a3d',SHOTGUN:'#ff5c48',RIFLE:'#7fd0ff',ROCKET:'#ff4571'};
 const PCOL=['#e5484d','#3f8cff','#3fbf5a','#f0b429'];
@@ -496,50 +815,90 @@ const PNAME=['RED','BLUE','GREEN','YELLOW'];
 const DIFFS=[{react:.45,err:.26,speed:.88,lead:0,view:760},{react:.24,err:.13,speed:1,lead:.5,view:950},{react:.12,err:.055,speed:1.08,lead:.85,view:1150}];
 
 /* ============ maps (spawns & pickups pulled inward for full-screen view) ============ */
-function pointFreeOn(m,x,y,r){for(const o of m.rects){if(x>o.x-r&&x<o.x+o.w+r&&y>o.y-r&&y<o.y+o.h+r)return false;}for(const o of m.circles){if(dist(x,y,o.x,o.y)<o.r+r)return false;}return true;}
-function buildNav(m){m.nav=[];for(let x=70;x<=1130;x+=85)for(let y=70;y<=730;y+=85)if(pointFreeOn(m,x,y,20))m.nav.push({x,y});}
+function pointFreeOn(m,x,y,r){
+  if(x<r||x>1200-r||y<r||y>800-r)return false;
+  for(const o of m.rects){
+    const nx=clamp(x,o.x,o.x+o.w),ny=clamp(y,o.y,o.y+o.h);
+    const dx=x-nx,dy=y-ny;
+    if(dx*dx+dy*dy<r*r-0.01)return false;
+  }
+  for(const o of m.circles){const rr=o.r+r,dx=x-o.x,dy=y-o.y;if(dx*dx+dy*dy<rr*rr-0.01)return false;}
+  return true;
+}
+function lineFreeOn(m,x0,y0,x1,y1,r){
+  const d=Math.hypot(x1-x0,y1-y0),steps=Math.max(1,Math.ceil(d/4));
+  for(let i=0;i<=steps;i++){const t=i/steps;if(!pointFreeOn(m,x0+(x1-x0)*t,y0+(y1-y0)*t,r))return false;}
+  return true;
+}
+function buildNav(m){
+  m.nav=[];
+  const step=40,byKey=new Map();
+  for(let x=60;x<=1140;x+=step)for(let y=60;y<=740;y+=step){
+    if(pointFreeOn(m,x,y,29)){const n={x,y,links:[]};m.nav.push(n);byKey.set(x+','+y,m.nav.length-1);}
+  }
+  // Connect only routes with enough clearance for a complete tank, including diagonals.
+  const dirs=[[-step,0],[step,0],[0,-step],[0,step],[-step,-step],[-step,step],[step,-step],[step,step]];
+  for(let i=0;i<m.nav.length;i++){
+    const n=m.nav[i];
+    for(const [dx,dy] of dirs){const j=byKey.get((n.x+dx)+','+(n.y+dy));if(j===undefined)continue;const q=m.nav[j];
+      if(lineFreeOn(m,n.x,n.y,q.x,q.y,29))n.links.push(j);
+    }
+  }
+  // Keep the largest connected walkable region. Tiny isolated graph islands
+  // are usually slivers between walls and should never become bot destinations.
+  const seen=new Uint8Array(m.nav.length),components=[];
+  for(let i=0;i<m.nav.length;i++)if(!seen[i]){
+    const stack=[i],part=[];seen[i]=1;
+    while(stack.length){const at=stack.pop();part.push(at);for(const j of m.nav[at].links)if(!seen[j]){seen[j]=1;stack.push(j);}}
+    components.push(part);
+  }
+  components.sort((a,b)=>b.length-a.length);
+  const keep=components[0]||[],remap=new Map();
+  keep.forEach((oldId,newId)=>remap.set(oldId,newId));
+  m.nav=keep.map(oldId=>({x:m.nav[oldId].x,y:m.nav[oldId].y,links:m.nav[oldId].links.filter(j=>remap.has(j)).map(j=>remap.get(j))}));
+}
 function makeMaps(){
 const maps=[];
 {const m={name:'WAREHOUSE',rects:[],circles:[],spawns:[[],[],[],[]],spL:[],spR:[],wp:[],hp:[],theme:{floor:'#5a616b',pat:'plate',patCol:'#4d545e',wall:'#454c57',crate:'#b0823f',container:'#3f7d74',block:'#525a66',barrel:'#7d5a2e',pillar:'#6a717c',rock:'#6a717c'}};
 m.rects.push({x:0,y:0,w:1200,h:26,t:'wall'},{x:0,y:774,w:1200,h:26,t:'wall'},{x:0,y:26,w:26,h:748,t:'wall'},{x:1174,y:26,w:26,h:748,t:'wall'});
-m.rects.push({x:500,y:300,w:200,h:200,t:'container'});
+m.rects.push({x:515,y:315,w:170,h:170,t:'container'});
 m.rects.push({x:300,y:180,w:26,h:200,t:'wall'},{x:874,y:420,w:26,h:200,t:'wall'},{x:420,y:594,w:200,h:26,t:'wall'},{x:580,y:180,w:200,h:26,t:'wall'});
 m.rects.push({x:150,y:150,w:58,h:58,t:'crate'},{x:992,y:150,w:58,h:58,t:'crate'},{x:150,y:592,w:58,h:58,t:'crate'},{x:992,y:592,w:58,h:58,t:'crate'},{x:380,y:320,w:52,h:52,t:'crate'},{x:768,y:428,w:52,h:52,t:'crate'},{x:860,y:80,w:52,h:52,t:'crate'},{x:288,y:668,w:52,h:52,t:'crate'});
-m.circles.push({x:320,y:540,r:20,t:'barrel'},{x:880,y:260,r:20,t:'barrel'},{x:600,y:660,r:20,t:'barrel'},{x:600,y:140,r:20,t:'barrel'},{x:250,y:320,r:22,t:'pillar'},{x:950,y:480,r:22,t:'pillar'});
+m.circles.push({x:340,y:560,r:24,t:'barrel'},{x:840,y:240,r:24,t:'barrel'},{x:520,y:680,r:20,t:'barrel'},{x:680,y:120,r:20,t:'barrel'},{x:240,y:360,r:22,t:'pillar'},{x:960,y:440,r:22,t:'pillar'});
 m.spawns=[[ [260,630],[350,635],[180,500] ],[ [260,170],[350,165],[180,300] ],[ [940,630],[850,635],[1020,500] ],[ [940,170],[850,165],[1020,300] ]];
 m.spL=[[160,400],[200,300],[200,500]];m.spR=[[1040,400],[1000,300],[1000,500]];
 m.wp=[[600,190],[600,610],[150,400],[1050,400],[440,500]];m.hp=[[180,400],[1020,400],[600,540]];
 buildNav(m);maps.push(m);}
 {const m={name:'DESERT OUTPOST',rects:[],circles:[],spawns:[[],[],[],[]],spL:[],spR:[],wp:[],hp:[],theme:{floor:'#c0a05e',pat:'sand',patCol:'#b1934f',wall:'#8f7443',crate:'#a97e42',container:'#9c8250',block:'#9c8250',barrel:'#7d5230',pillar:'#a08a5c',rock:'#8b7c62'}};
 m.rects.push({x:0,y:0,w:1200,h:26,t:'wall'},{x:0,y:774,w:1200,h:26,t:'wall'},{x:0,y:26,w:26,h:748,t:'wall'},{x:1174,y:26,w:26,h:748,t:'wall'});
-m.rects.push({x:430,y:300,w:140,h:26,t:'wall'},{x:630,y:300,w:140,h:26,t:'wall'},{x:430,y:474,w:140,h:26,t:'wall'},{x:630,y:474,w:140,h:26,t:'wall'},{x:430,y:300,w:26,h:200,t:'wall'},{x:744,y:300,w:26,h:200,t:'wall'});
-m.rects.push({x:140,y:387,w:170,h:26,t:'wall'},{x:890,y:387,w:170,h:26,t:'wall'},{x:300,y:120,w:26,h:150,t:'wall'},{x:874,y:530,w:26,h:150,t:'wall'});
-m.rects.push({x:180,y:640,w:56,h:56,t:'crate'},{x:964,y:104,w:56,h:56,t:'crate'},{x:560,y:380,w:70,h:70,t:'crate'},{x:120,y:120,w:50,h:50,t:'crate'},{x:1030,y:630,w:50,h:50,t:'crate'});
-m.circles.push({x:230,y:220,r:28,t:'rock'},{x:970,y:580,r:28,t:'rock'},{x:600,y:110,r:22,t:'rock'},{x:600,y:690,r:22,t:'rock'},{x:360,y:540,r:20,t:'barrel'},{x:840,y:260,r:20,t:'barrel'});
+m.rects.push({x:430,y:300,w:120,h:20,t:'wall'},{x:650,y:300,w:120,h:20,t:'wall'},{x:430,y:480,w:120,h:20,t:'wall'},{x:650,y:480,w:120,h:20,t:'wall'},{x:430,y:300,w:20,h:200,t:'wall'},{x:750,y:300,w:20,h:200,t:'wall'});
+m.rects.push({x:150,y:387,w:130,h:20,t:'wall'},{x:920,y:387,w:130,h:20,t:'wall'},{x:300,y:120,w:20,h:125,t:'wall'},{x:880,y:555,w:20,h:125,t:'wall'});
+m.rects.push({x:180,y:640,w:56,h:56,t:'crate'},{x:964,y:104,w:56,h:56,t:'crate'},{x:578,y:393,w:44,h:44,t:'crate'},{x:120,y:120,w:50,h:50,t:'crate'},{x:1030,y:630,w:50,h:50,t:'crate'});
+m.circles.push({x:380,y:220,r:26,t:'rock'},{x:820,y:560,r:26,t:'rock'},{x:520,y:140,r:23,t:'rock'},{x:680,y:660,r:23,t:'rock'},{x:340,y:600,r:19,t:'barrel'},{x:840,y:200,r:19,t:'barrel'});
 m.spawns=[[ [190,560],[260,620],[170,460] ],[ [190,260],[260,180],[170,340] ],[ [1010,540],[940,620],[1030,460] ],[ [1010,260],[940,180],[1030,340] ]];
-m.spL=[[160,400],[240,300],[240,500]];m.spR=[[1040,400],[960,300],[960,500]];
+m.spL=[[110,400],[110,300],[110,500]];m.spR=[[1090,400],[1090,300],[1090,500]];
 m.wp=[[600,160],[600,640],[150,330],[1050,330],[400,400],[800,400]];m.hp=[[180,540],[1020,260],[600,560]];
 buildNav(m);maps.push(m);}
 {const m={name:'FACTORY',rects:[],circles:[],spawns:[[],[],[],[]],spL:[],spR:[],wp:[],hp:[],theme:{floor:'#414750',pat:'grid',patCol:'#373d45',wall:'#30353d',crate:'#a9823f',container:'#59636f',block:'#59636f',barrel:'#6e4f2a',pillar:'#4c545e',rock:'#4c545e'}};
 m.rects.push({x:0,y:0,w:1200,h:26,t:'wall'},{x:0,y:774,w:1200,h:26,t:'wall'},{x:0,y:26,w:26,h:748,t:'wall'},{x:1174,y:26,w:26,h:748,t:'wall'});
-m.rects.push({x:240,y:300,w:300,h:26,t:'wall'},{x:660,y:300,w:300,h:26,t:'wall'},{x:240,y:474,w:300,h:26,t:'wall'},{x:660,y:474,w:300,h:26,t:'wall'},{x:240,y:300,w:26,h:200,t:'wall'},{x:934,y:300,w:26,h:200,t:'wall'});
-m.rects.push({x:330,y:346,w:110,h:108,t:'block'},{x:760,y:346,w:110,h:108,t:'block'});
-m.rects.push({x:110,y:100,w:120,h:80,t:'block'},{x:970,y:100,w:120,h:80,t:'block'},{x:110,y:620,w:120,h:80,t:'block'},{x:970,y:620,w:120,h:80,t:'block'});
+m.rects.push({x:240,y:300,w:260,h:20,t:'wall'},{x:700,y:300,w:260,h:20,t:'wall'},{x:240,y:480,w:260,h:20,t:'wall'},{x:700,y:480,w:260,h:20,t:'wall'},{x:240,y:300,w:20,h:200,t:'wall'},{x:940,y:300,w:20,h:200,t:'wall'});
+m.rects.push({x:345,y:352,w:78,h:96,t:'block'},{x:777,y:352,w:78,h:96,t:'block'});
+m.rects.push({x:110,y:108,w:92,h:64,t:'block'},{x:998,y:108,w:92,h:64,t:'block'},{x:110,y:628,w:92,h:64,t:'block'},{x:998,y:628,w:92,h:64,t:'block'});
 m.rects.push({x:150,y:470,w:50,h:50,t:'crate'},{x:1000,y:280,w:50,h:50,t:'crate'},{x:438,y:600,w:52,h:52,t:'crate'},{x:710,y:148,w:52,h:52,t:'crate'});
-m.circles.push({x:600,y:400,r:26,t:'pillar'},{x:420,y:160,r:20,t:'pillar'},{x:780,y:640,r:20,t:'pillar'},{x:600,y:64,r:20,t:'barrel'},{x:600,y:736,r:20,t:'barrel'},{x:160,y:300,r:20,t:'barrel'},{x:1040,y:500,r:20,t:'barrel'});
-m.spawns=[[ [300,630],[370,660],[210,560] ],[ [300,170],[370,140],[210,340] ],[ [900,630],[830,660],[990,460] ],[ [900,170],[830,140],[990,340] ]];
-m.spL=[[170,400],[170,220],[170,560]];m.spR=[[1030,400],[1030,220],[1030,560]];
+m.circles.push({x:600,y:400,r:22,t:'pillar'},{x:455,y:175,r:19,t:'pillar'},{x:745,y:625,r:19,t:'pillar'},{x:600,y:80,r:18,t:'barrel'},{x:600,y:720,r:18,t:'barrel'},{x:180,y:280,r:21,t:'barrel'},{x:1020,y:520,r:21,t:'barrel'});
+m.spawns=[[ [300,630],[370,660],[210,560] ],[ [300,170],[370,140],[210,340] ],[ [900,630],[830,660],[990,460] ],[ [900,170],[830,140],[1080,340] ]];
+m.spL=[[170,400],[170,220],[170,560]];m.spR=[[1030,400],[1030,220],[1090,560]];
 m.wp=[[600,170],[600,630],[170,400],[1030,400],[600,340]];m.hp=[[150,210],[1050,590],[600,470]];
 buildNav(m);maps.push(m);}
 {const m={name:'RUINS',rects:[],circles:[],spawns:[[],[],[],[]],spL:[],spR:[],wp:[],hp:[],theme:{floor:'#958b7c',pat:'stone',patCol:'#887f70',wall:'#6e6759',crate:'#a97e42',container:'#7d7466',block:'#7d7466',barrel:'#7d5a2e',pillar:'#a59b87',rock:'#8b8172'}};
 m.rects.push({x:0,y:0,w:1200,h:26,t:'wall'},{x:0,y:774,w:1200,h:26,t:'wall'},{x:0,y:26,w:26,h:748,t:'wall'},{x:1174,y:26,w:26,h:748,t:'wall'});
-m.rects.push({x:460,y:120,w:120,h:26,t:'wall'},{x:640,y:120,w:120,h:26,t:'wall'},{x:460,y:654,w:120,h:26,t:'wall'},{x:640,y:654,w:120,h:26,t:'wall'},{x:540,y:340,w:120,h:120,t:'block'});
-m.rects.push({x:150,y:300,w:26,h:180,t:'wall'},{x:1024,y:320,w:26,h:180,t:'wall'});
+m.rects.push({x:450,y:120,w:110,h:20,t:'wall'},{x:640,y:120,w:110,h:20,t:'wall'},{x:450,y:660,w:110,h:20,t:'wall'},{x:640,y:660,w:110,h:20,t:'wall'},{x:555,y:355,w:90,h:90,t:'block'});
+m.rects.push({x:150,y:310,w:20,h:160,t:'wall'},{x:1030,y:330,w:20,h:160,t:'wall'});
 m.rects.push({x:180,y:120,w:50,h:50,t:'crate'},{x:970,y:630,w:50,h:50,t:'crate'},{x:240,y:700,w:44,h:44,t:'crate'},{x:916,y:100,w:44,h:44,t:'crate'});
-const cols=[350,850];for(const cx of cols)for(const cy of[180,340,500,660])m.circles.push({x:cx,y:cy,r:20,t:'pillar'});
-m.circles.push({x:500,y:320,r:16,t:'rock'},{x:700,y:480,r:16,t:'rock'},{x:704,y:316,r:14,t:'rock'},{x:496,y:484,r:14,t:'rock'},{x:220,y:420,r:16,t:'rock'},{x:980,y:380,r:16,t:'rock'});
-m.spawns=[[ [180,560],[260,640],[190,440] ],[ [180,260],[260,170],[190,380] ],[ [990,560],[940,640],[990,460] ],[ [990,260],[940,170],[980,420] ]];
-m.spL=[[200,400],[260,300],[260,500]];m.spR=[[1000,400],[940,300],[940,500]];
+m.circles.push({x:300,y:220,r:17,t:'pillar'},{x:360,y:360,r:20,t:'pillar'},{x:280,y:580,r:17,t:'pillar'},{x:900,y:220,r:20,t:'pillar'},{x:840,y:460,r:17,t:'pillar'},{x:880,y:640,r:17,t:'pillar'});
+m.circles.push({x:485,y:285,r:15,t:'rock'},{x:715,y:515,r:15,t:'rock'},{x:735,y:300,r:14,t:'rock'},{x:465,y:500,r:14,t:'rock'},{x:240,y:480,r:17,t:'rock'},{x:980,y:360,r:17,t:'rock'});
+m.spawns=[[ [180,560],[260,640],[225,420] ],[ [180,260],[260,170],[225,360] ],[ [990,560],[940,640],[990,460] ],[ [990,260],[940,170],[980,420] ]];
+m.spL=[[200,400],[260,300],[200,600]];m.spR=[[1000,400],[940,300],[940,500]];
 m.wp=[[600,190],[600,610],[200,400],[1000,400],[600,270]];m.hp=[[600,530],[250,470],[970,340]];
 buildNav(m);maps.push(m);}
 return maps;}
@@ -549,6 +908,12 @@ const MAPS=makeMaps();
 const cv=$('cv'),ctx=cv.getContext('2d');
 let VW=0,VH=0,DPR=1;
 let state='menu',phase='run',demo=false;
+/* Set only when the SHELL paused a live match (app backgrounded). Game.resume
+   must never force a new run on its own: the shell calls it on every return to
+   the Activity - including the moment a rewarded/interstitial ad closes - and
+   an unconditional resume used to drop the player out of the theme panel into
+   the 4-bot demo arena. */
+let shellPaused=false;
 let cfg={n:2,bots1:3,map:0,players:1};
 let types=['human','bot','bot','bot'];
 let opt={sound:true,shake:true,aim:true};
@@ -563,16 +928,19 @@ const getB=()=>{for(const b of bl)if(!b.on)return b;return null;};
 const getP=()=>{for(const p of pt)if(!p.on)return p;return null;};
 
 /* ============ arena rentals ============
-   The WAREHOUSE is free. OUTPOST, FACTORY and RUINS are opened for 30 minutes
-   by a rewarded ad - the same rental deal Kiro gives on its islands - and the
-   unlock is persisted, so leaving setup (or the app) does not throw it away.
-   A locked tile stays greyed out under a WATCH AD chip; a rented one wears a
-   live countdown, so the player always knows how long is left on it. */
-const AD_UNLOCK_MS=30*60*1000;
+   WAREHOUSE is the free starter arena. OUTPOST, FACTORY and RUINS are rented
+   for three hours after a rewarded unlock. Expiration is stored as an
+   absolute timestamp, so the countdown continues while the game is closed. */
+const AD_UNLOCK_MS=3*60*60*1000;
 const FREE_MAPS=1;
 const MAPKEY='chaos-arena:maps';
 let mapUntil={};
 try{const raw=Studio.load(MAPKEY);if(raw){const o=JSON.parse(raw);if(o&&typeof o==='object')mapUntil=o;}}catch(e){mapUntil={};}
+/* Migrate older 6-hour test rentals: retain any shorter remaining time, but cap longer rentals at 3 hours. */
+const mapExpiryCap=Date.now()+AD_UNLOCK_MS;
+let mapExpiryMigrated=false;
+for(const k of Object.keys(mapUntil)){const expiry=+mapUntil[k]||0;if(expiry>Date.now()+AD_UNLOCK_MS){mapUntil[k]=mapExpiryCap;mapExpiryMigrated=true;}}
+if(mapExpiryMigrated){try{Studio.save(MAPKEY,JSON.stringify(mapUntil));}catch(e){}}
 function mapLeft(i){return Math.max(0,(+mapUntil[i]||0)-Date.now());}
 function mapUnlocked(i){return i<FREE_MAPS||mapLeft(i)>0;}
 function saveMaps(){
@@ -580,7 +948,11 @@ function saveMaps(){
   for(const k of Object.keys(mapUntil))if(+mapUntil[k]>Date.now())out[k]=+mapUntil[k];
   mapUntil=out;
   try{Studio.save(MAPKEY,JSON.stringify(out));}catch(e){}}
-function mmss(ms){const t=Math.ceil(ms/1000);return Math.floor(t/60)+':'+('0'+(t%60)).slice(-2);}
+function mmss(ms){
+  const total=Math.max(0,Math.ceil(ms/1000));
+  const h=Math.floor(total/3600),m=Math.floor((total%3600)/60),sec=total%60;
+  return (h? h+':'+('0'+m).slice(-2):m)+':'+('0'+sec).slice(-2);
+}
 function mapName(i){
   const el=document.querySelector('#seg-map .opt.map[data-v="'+i+'"]');
   return el?el.querySelector('span').textContent:(MAPS[i]?MAPS[i].name:'ARENA');}
@@ -596,6 +968,11 @@ function mapSigNow(){
   return s;}
 let mapSig='';
 function refreshMapTiles(){
+  if(cfg.map>=FREE_MAPS&&!mapUnlocked(cfg.map)){
+    cfg.map=0;
+    if(typeof mapEl!=='undefined'&&mapEl)syncSeg(mapEl,cfg.map);
+    if(demo&&state==='menu')startDemo();
+  }
   document.querySelectorAll('#seg-map .opt.map').forEach((el,i)=>{
     const locked=!mapUnlocked(i);
     el.classList.toggle('locked',locked);
@@ -603,13 +980,13 @@ function refreshMapTiles(){
     let veil=el.querySelector('.mveil');
     if(locked&&!veil){
       veil=document.createElement('div');veil.className='mveil';
-      veil.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-lock"/></svg><b>WATCH AD</b>';
+      veil.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-lock"/></svg><b>UNLOCK · 3H</b>';
       el.appendChild(veil);}
     else if(!locked&&veil)veil.remove();
     let tm=el.querySelector('.mtimer');
     if(!locked&&mapLeft(i)>0){
       if(!tm){tm=document.createElement('div');tm.className='mtimer';el.appendChild(tm);}
-      tm.textContent='AD '+mmss(mapLeft(i));}
+      tm.textContent=mmss(mapLeft(i));}
     else if(tm)tm.remove();
   });
   mapSig=mapSigNow();}
@@ -620,27 +997,46 @@ function tickMapTimers(){if(mapSigNow()!==mapSig)refreshMapTiles();}
 let unlockIdx=-1;
 function askMapUnlock(i){
   unlockIdx=i;
-  $('unlockBody').innerHTML='<b>'+mapName(i)+'</b> is locked. Watch an ad to play it for '+
-    '<b class="mins">30 minutes</b>.<br>The countdown keeps running while you play.';
   showScreen('s-unlock');}
-function closeUnlock(){unlockIdx=-1;showScreen('s-setup');}
+function closeUnlock(){unlockIdx=-1;showScreen('s-theme');}
+let unlockAdBusy=false;
+function applyMapUnlock(i){
+  /* Add the reward to any time already remaining instead of replacing it. */
+  mapUntil[i]=Math.max(Date.now(),+mapUntil[i]||0)+AD_UNLOCK_MS;saveMaps();
+  cfg.map=i;syncSeg(mapEl,cfg.map);
+  unlockIdx=-1;refreshMapTiles();showScreen('s-theme');
+  Sfx.unlockChime();
+  toast(mapName(i)+' UNLOCKED \u00B7 3 HOURS');
+  if(demo)startDemo();}
+function onUnlockAdResult(ok,why){
+  unlockAdBusy=false;
+  const i=unlockIdx;
+  if(i<0)return;
+  /* Only a COMPLETED rewarded view unlocks the map. The shell reports
+     'granted' once the player dismisses the ad, so the unlock lands after
+     the ad has gone away - never behind it. */
+  if(!ok){ toast(adWhy(why||'closed')); return; }
+  applyMapUnlock(i);}
 function runMapUnlockAd(){
   const i=unlockIdx;
-  if(i<0||window.__caAdBusy)return;
-  window.__caAdBusy=true;
-  const release=function(){window.__caAdBusy=false;};
-  /* The placement carries "unlock", which is what puts this on the shell's
-     unlock cadence instead of the uncapped cosmetic path. */
-  Studio.ads.rewarded('chaos-arena.map-unlock-'+i,
-    function(){
-      release();
-      mapUntil[i]=Date.now()+AD_UNLOCK_MS;saveMaps();
-      cfg.map=i;syncSeg(mapEl,cfg.map);
-      unlockIdx=-1;refreshMapTiles();showScreen('s-setup');
-      Sfx.unlockChime();
-      toast(mapName(i)+' UNLOCKED \u00B7 30 MIN');
-      if(demo)startDemo();},
-    function(why){release();toast(adWhy(why));});}
+  if(i<0||unlockAdBusy)return;
+  unlockAdBusy=true;
+  /* Rewarded ad BEFORE the theme unlock. Studio.ads.rewarded fires onReward
+     only when the shell reports 'granted', which it defers until the ad is
+     dismissed. A tap on X before the reward is earned reports 'closed', so
+     the arena stays locked and the player can try again.
+     Placement is "theme", NOT "unlock": AdPolicy treats a word containing
+     "unlock" as LEVEL PROGRESSION and enforces a 120s floor between them, so
+     renting a second arena theme straight after the first would be silently
+     refused. A cosmetic theme rental is a NORMAL reward - no total, no wait. */
+  try{
+    Studio.ads.rewarded('chaos-arena.theme',
+      function(){onUnlockAdResult(true);},
+      function(why){onUnlockAdResult(false,why);});
+  }catch(err){
+    unlockAdBusy=false;
+    onUnlockAdResult(false,'bridge_error');
+  }}
 function adWhy(why){
   if(why==='unavailable')return 'NO AD AVAILABLE \u00B7 TRY AGAIN LATER';
   if(why==='limit_reached')return 'AD LIMIT REACHED \u00B7 TRY AGAIN SOON';
@@ -664,15 +1060,24 @@ if(window.visualViewport)visualViewport.addEventListener('resize',resize);
 addEventListener('orientationchange',()=>setTimeout(()=>{resize();fitUI();},300));
 
 /* ============ control layout ============ */
-/* 1P: stick BL + fire BR (large). 2P: side-stacked - P1 stick BL + fire TL, P2 stick TR + fire BR (large). 3-4P: compact corner clusters. */
+/* 1P and 2P keep their familiar layouts. 3P uses corner clusters. In 4P,
+   each player owns one screen corner: P1 bottom-left, P2 bottom-right,
+   P3 top-left and P4 top-right. The FIRE button sits inward from the
+   joystick, keeping all four stations distinct and easy to reach. */
 const ctl=[null,null,null,null];
 function layoutControls(){
 const H=Math.max(1,cfg.players);
-let jr=clamp(VW*.038,26,36),fr=clamp(VW*.032,22,32);
-if(H===1){jr=clamp(VW*.062,40,58);fr=clamp(VW*.054,34,50);}
-else if(H===2){jr=clamp(VW*.058,38,52);fr=clamp(VW*.058,38,52);}
-/* 3P/4P: keep the corner layout but give each player a much larger joystick/fire area. */
-else if(H>=3){jr=clamp(VW*.045,34,46);fr=clamp(VW*.038,30,40);}
+let jr=clamp(VW*.044,30,42),fr=clamp(VW*.032,22,32);
+/* Larger virtual joysticks for touch play. Fire buttons retain their current
+   dimensions so the joystick remains the primary movement target. */
+if(H===1){jr=clamp(VW*.072,48,66);fr=clamp(VW*.054,34,50);}
+else if(H===2){jr=clamp(VW*.067,44,60);fr=clamp(VW*.058,38,52);}
+else if(H===3){jr=clamp(VW*.052,39,52);fr=clamp(VW*.038,30,40);}
+else if(H>=4){
+  /* Bigger sticks, limited by viewport height to preserve the four corner stations. */
+  jr=clamp(Math.min(VW*.058,VH*.116),35,52);
+  fr=clamp(Math.min(VW*.042,VH*.09),24,40);
+}
 const mg=Math.round(jr*.55)+12;
 const bottom=VH-jr-mg,top=jr+mg;
 const eg=Math.round(jr*.8)+12;
@@ -688,8 +1093,27 @@ P[0]={jx:VW*.09,jy:bottom,fx:VW*.91,fy:bottom,jr,fr};}
 else if(H===2){
 P[0]={jx:VW*.09,jy:bottom,fx:VW*.09,fy:top,jr,fr};
 P[1]={jx:VW*.91,jy:top,fx:VW*.91,fy:bottom,jr,fr};}
-else if(H===3){P[0]=cluster('l','b','r');P[1]=cluster('l','t','r');P[2]=cluster('r','b','l');}
-else{P[0]=cluster('l','b','r');P[1]=cluster('l','t','r');P[2]=cluster('r','b','l');P[3]=cluster('r','t','l');}
+else if(H===3){
+  /* Three players use three of the same corner stations as 4P:
+     P1 bottom-left, P2 bottom-right, P3 top-left. FIRE faces inward. */
+  const edge=clamp(VH*.04,12,18);
+  const innerGap=clamp(VH*.03,10,14);
+  const leftX=edge+jr,rightX=VW-edge-jr;
+  const topY=edge+jr,bottomY=VH-edge-jr;
+  P[0]={jx:leftX,jy:bottomY,fx:leftX,fy:bottomY-jr-fr-innerGap,jr,fr};
+  P[1]={jx:rightX,jy:bottomY,fx:rightX,fy:bottomY-jr-fr-innerGap,jr,fr};
+  P[2]={jx:leftX,jy:topY,fx:leftX,fy:topY+jr+fr+innerGap,jr,fr};
+}
+else{
+  const edge=clamp(VH*.04,12,18);
+  const innerGap=clamp(VH*.03,10,14);
+  const leftX=edge+jr,rightX=VW-edge-jr;
+  const topY=edge+jr,bottomY=VH-edge-jr;
+  P[0]={jx:leftX,jy:bottomY,fx:leftX,fy:bottomY-jr-fr-innerGap,jr,fr};
+  P[1]={jx:rightX,jy:bottomY,fx:rightX,fy:bottomY-jr-fr-innerGap,jr,fr};
+  P[2]={jx:leftX,jy:topY,fx:leftX,fy:topY+jr+fr+innerGap,jr,fr};
+  P[3]={jx:rightX,jy:topY,fx:rightX,fy:topY+jr+fr+innerGap,jr,fr};
+}
 for(let i=0;i<4;i++)ctl[i]=P[i]||null;}
 
 /* ============ fixed camera: map fills the whole screen, never moves ============ */
@@ -715,6 +1139,106 @@ for(const o of map.rects){const nx=clamp(e.x,o.x,o.x+o.w),ny=clamp(e.y,o.y,o.y+o
 if(d2<e.r*e.r){if(d2===0){const l=e.x-o.x,ri=o.x+o.w-e.x,t=e.y-o.y,b=o.y+o.h-e.y,m=Math.min(l,ri,t,b);if(m===l)e.x=o.x-e.r;else if(m===ri)e.x=o.x+o.w+e.r;else if(m===t)e.y=o.y-e.r;else e.y=o.y+o.h+e.r;}else{const d=Math.sqrt(d2);e.x=nx+dx/d*e.r;e.y=ny+dy/d*e.r;}}}
 for(const o of map.circles){const dx=e.x-o.x,dy=e.y-o.y,d=Math.hypot(dx,dy),mn=e.r+o.r;if(d<mn&&d>0){e.x=o.x+dx/d*mn;e.y=o.y+dy/d*mn;}}
 e.x=clamp(e.x,e.r,1200-e.r);e.y=clamp(e.y,e.r,800-e.r);}
+function collideTankAxis(e,axis,dir){
+if(axis==='x'){
+for(const o of map.rects){const cy=clamp(e.y,o.y,o.y+o.h),dy=e.y-cy;if(Math.abs(dy)>=e.r)continue;
+const pad=Math.sqrt(Math.max(0,e.r*e.r-dy*dy));
+if(dir>0&&e.x>o.x-pad&&e.x<o.x+o.w+pad)e.x=o.x-pad;
+else if(dir<0&&e.x<o.x+o.w+pad&&e.x>o.x-pad)e.x=o.x+o.w+pad;}
+for(const o of map.circles){const dy=e.y-o.y,mn=e.r+o.r;if(Math.abs(dy)>=mn)continue;
+const reach=Math.sqrt(mn*mn-dy*dy),dx=e.x-o.x;
+if(Math.abs(dx)<reach)e.x=o.x+(dx===0?(dir>=0?reach:-reach):Math.sign(dx)*reach);}
+e.x=clamp(e.x,e.r,1200-e.r);
+}else{
+for(const o of map.rects){const cx=clamp(e.x,o.x,o.x+o.w),dx=e.x-cx;if(Math.abs(dx)>=e.r)continue;
+const pad=Math.sqrt(Math.max(0,e.r*e.r-dx*dx));
+if(dir>0&&e.y>o.y-pad&&e.y<o.y+o.h+pad)e.y=o.y-pad;
+else if(dir<0&&e.y<o.y+o.h+pad&&e.y>o.y-pad)e.y=o.y+o.h+pad;}
+for(const o of map.circles){const dx=e.x-o.x,mn=e.r+o.r;if(Math.abs(dx)>=mn)continue;
+const reach=Math.sqrt(mn*mn-dx*dx),dy=e.y-o.y;
+if(Math.abs(dy)<reach)e.y=o.y+(dy===0?(dir>=0?reach:-reach):Math.sign(dy)*reach);}
+e.y=clamp(e.y,e.r,800-e.r);
+}}
+function tankBlockedAt(x,y,r){
+  if(x<r||x>1200-r||y<r||y>800-r)return true;
+  for(const o of map.rects){
+    const nx=clamp(x,o.x,o.x+o.w),ny=clamp(y,o.y,o.y+o.h);
+    const dx=x-nx,dy=y-ny;
+    if(dx*dx+dy*dy<r*r-0.01)return true;
+  }
+  for(const o of map.circles){const rr=r+o.r,dx=x-o.x,dy=y-o.y;if(dx*dx+dy*dy<rr*rr-0.01)return true;}
+  return false;
+}
+function collisionNormalAt(x,y,r){
+  for(const o of map.rects){
+    const nx=clamp(x,o.x,o.x+o.w),ny=clamp(y,o.y,o.y+o.h),dx=x-nx,dy=y-ny,d=Math.hypot(dx,dy);
+    if(d<r&&d>.001)return{x:dx/d,y:dy/d};
+    if(d<=.001){const sides=[{d:Math.abs(x-o.x),x:-1,y:0},{d:Math.abs(o.x+o.w-x),x:1,y:0},{d:Math.abs(y-o.y),x:0,y:-1},{d:Math.abs(o.y+o.h-y),x:0,y:1}].sort((a,b)=>a.d-b.d);return{x:sides[0].x,y:sides[0].y};}
+  }
+  for(const o of map.circles){const dx=x-o.x,dy=y-o.y,d=Math.hypot(dx,dy),rr=r+o.r;if(d<rr&&d>.001)return{x:dx/d,y:dy/d};}
+  return null;
+}
+function moveTank(e,dx,dy){
+  // Tiny swept increments avoid crossing an obstacle between frames. Rounded
+  // obstacles are followed along their circumference instead of pinning the
+  // tank against the first blocked point.
+  const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/1.5));
+  const sx=dx/steps,sy=dy/steps;
+  for(let i=0;i<steps;i++){
+    const nx=e.x+sx,ny=e.y+sy;
+    if(!tankBlockedAt(nx,ny,e.r)){e.x=nx;e.y=ny;continue;}
+
+    let moved=false;
+    // Slide around circles using a short arc on the tank-expanded radius.
+    for(const o of map.circles){
+      const minR=e.r+o.r+.35;
+      const rx=e.x-o.x,ry=e.y-o.y;
+      const d=Math.hypot(rx,ry)||.001;
+      const tx=nx-o.x,ty=ny-o.y;
+      if(tx*tx+ty*ty>=minR*minR)continue;
+      if(d<minR-2)continue; // overlapping contacts are handled by recovery below
+      const ux=rx/d,uy=ry/d;
+      const tangent=sx*(-uy)+sy*ux;
+      const preferred=Math.abs(tangent)>.015?Math.sign(tangent):(e.slideSign||1);
+      const radial=sx*ux+sy*uy;
+      const stepAngle=Math.max(.001,Math.abs(tangent)/minR);
+      const base=Math.atan2(uy,ux);
+      const choices=[preferred,-preferred];
+      let chosen=null,bestScore=Infinity;
+      for(const sign of choices){
+        const a=base+sign*stepAngle;
+        const rr=Math.max(minR,d+Math.max(0,radial));
+        const cx=o.x+Math.cos(a)*rr,cy=o.y+Math.sin(a)*rr;
+        if(tankBlockedAt(cx,cy,e.r))continue;
+        // Prefer the tangent direction that best preserves the requested travel.
+        const score=dist(cx,cy,nx,ny);
+        if(score<bestScore){bestScore=score;chosen={x:cx,y:cy,sign};}
+      }
+      if(chosen){e.x=chosen.x;e.y=chosen.y;e.slideSign=chosen.sign;moved=true;break;}
+    }
+    if(moved)continue;
+
+    // Axis fallback works well against straight walls and square corners.
+    const tryX=Math.abs(sx)>=Math.abs(sy);
+    const candidates=tryX?[[sx,0],[0,sy]]:[[0,sy],[sx,0]];
+    for(const [ax,ay] of candidates){
+      if((ax||ay)&&!tankBlockedAt(e.x+ax,e.y+ay,e.r)){
+        e.x+=ax;e.y+=ay;moved=true;
+      }
+    }
+    if(moved)continue;
+
+    // Last-resort contact projection for overlapping rounded/rectangular edges.
+    const normal=collisionNormalAt(nx,ny,e.r);
+    if(normal){
+      const into=sx*normal.x+sy*normal.y;
+      const slideX=sx-into*normal.x,slideY=sy-into*normal.y;
+      if(Math.hypot(slideX,slideY)>.01&&!tankBlockedAt(e.x+slideX,e.y+slideY,e.r)){
+        e.x+=slideX;e.y+=slideY;
+      }
+    }
+  }
+}
 function resolveTankCollisions(){
 for(let i=0;i<ents.length;i++)for(let j=i+1;j<ents.length;j++){
 const a=ents[i],b=ents[j];
@@ -754,9 +1278,7 @@ for(const o of m.circles){
 if(o.t==='barrel'){c.fillStyle=t.barrel;c.beginPath();c.arc(o.x,o.y,o.r,0,TAU);c.fill();c.strokeStyle='#14171c';c.lineWidth=3;c.stroke();c.strokeStyle='rgba(0,0,0,.3)';c.beginPath();c.arc(o.x,o.y,o.r*.62,0,TAU);c.stroke();c.fillStyle='rgba(255,255,255,.18)';c.beginPath();c.arc(o.x-o.r*.3,o.y-o.r*.3,o.r*.3,0,TAU);c.fill();}
 else if(o.t==='pillar'){c.fillStyle=t.pillar;c.beginPath();c.arc(o.x,o.y,o.r,0,TAU);c.fill();c.strokeStyle='#14171c';c.lineWidth=3;c.stroke();c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.arc(o.x,o.y,o.r*.45,0,TAU);c.fill();c.fillStyle='rgba(255,255,255,.2)';c.beginPath();c.arc(o.x-o.r*.35,o.y-o.r*.35,o.r*.22,0,TAU);c.fill();}
 else{c.fillStyle=t.rock;c.beginPath();for(let i=0;i<7;i++){const a=i/7*TAU,r2=o.r*(i%2?.85:1);const px=o.x+Math.cos(a)*r2,py=o.y+Math.sin(a)*r2;i?c.lineTo(px,py):c.moveTo(px,py);}c.closePath();c.fill();c.strokeStyle='#14171c';c.lineWidth=3;c.stroke();}}
-for(let i=0;i<4;i++)for(const s of m.spawns[i]){c.strokeStyle=PCOL[i]+'55';c.lineWidth=3;c.beginPath();c.arc(s[0],s[1],22,0,TAU);c.stroke();}
-for(const s of m.spL){c.strokeStyle=PCOL[0]+'40';c.lineWidth=3;c.beginPath();c.arc(s[0],s[1],22,0,TAU);c.stroke();}
-for(const s of m.spR){c.strokeStyle=PCOL[1]+'40';c.lineWidth=3;c.beginPath();c.arc(s[0],s[1],22,0,TAU);c.stroke();}
+// Spawn positions are intentionally invisible in the arena; keep them as gameplay data only.
 c.setTransform(1,0,0,1,0,0);
 c.beginPath();
 c.rect(0,0,W,H);
@@ -767,13 +1289,26 @@ c.strokeStyle='rgba(0,0,0,.4)';c.lineWidth=10;
 c.strokeRect(MAP_PAD-5,MAP_PAD-5,1210,810);}
 
 /* ============ entities ============ */
-function makeEnt(i,human){return{i,human,team:i,name:PNAME[i],col:PCOL[i],x:600,y:400,r:19,hp:100,maxHp:100,alive:false,dir:0,tdir:0,weapon:'PISTOL',ammo:Infinity,fireCd:0,flash:0,recoil:0,hitT:0,kills:0,deaths:0,respT:0,ix:0,iy:0,imag:0,fireHeld:false,fAim:false,mCount:0,fCount:0,walk:0,moving:false,bot:!human,diff:1,aiT:0,navT:0,state:'wander',tgt:null,goal:null,lastSeen:null,wx:600,wy:400,bx:0,by:0,wantsFire:false,strafe:Math.random()<.5?1:-1,strafeT:rnd(1,3),vx:0,vy:0,cover:0,covT:0,spz:0,lx:600,ly:400,stuck:0};}
+function makeEnt(i,human){return{i,human,team:i,name:PNAME[i],col:PCOL[i],x:600,y:400,r:22,slideSign:(i%2?1:-1),hp:100,maxHp:100,alive:false,dir:0,tdir:0,weapon:'PISTOL',ammo:Infinity,fireCd:0,flash:0,recoil:0,hitT:0,spawnShield:0,kills:0,deaths:0,respT:0,ix:0,iy:0,imag:0,fireHeld:false,fAim:false,mCount:0,fCount:0,walk:0,moving:false,bot:!human,diff:1,aiT:0,navT:0,state:'wander',tgt:null,goal:null,lastSeen:null,wx:600,wy:400,bx:0,by:0,wantsFire:false,strafe:Math.random()<.5?1:-1,strafeT:rnd(1,3),vx:0,vy:0,cover:0,covT:0,spz:0,lx:600,ly:400,stuck:0};}
 function zonePoints(z){return z==='L'?map.spL:z==='R'?map.spR:map.spawns[z];}
 function placeEnt(e){
 const zone=zonePoints(e.spz);
-let best=null,bs=-1;
-for(const s of zone){let m=1e9;for(const o of ents)if(o!==e&&o.alive)m=Math.min(m,dist(s[0],s[1],o.x,o.y));if(m>bs){bs=m;best=s;}}
-e.x=best[0];e.y=best[1];e.hp=e.maxHp;e.alive=true;e.fireCd=.5;e.flash=0;e.hitT=0;e.recoil=0;
+let candidates=zone.filter(s=>pointFreeOn(map,s[0],s[1],e.r+4));
+// Never use an unsafe authored spawn as a fallback. If a theme has no free
+// point in that spawn lane, scan for a clear nearby arena position instead.
+if(!candidates.length){
+  let bestD=-Infinity,bestP=null;
+  for(let y=55;y<=745;y+=35)for(let x=55;x<=1145;x+=35){
+    if(!pointFreeOn(map,x,y,e.r+4))continue;
+    let nearest=9999;for(const o of ents)if(o!==e&&o.alive)nearest=Math.min(nearest,dist(x,y,o.x,o.y));
+    const score=nearest-dist(x,y,zone[0]?.[0]||600,zone[0]?.[1]||400)*.08;
+    if(score>bestD){bestD=score;bestP=[x,y];}
+  }
+  if(bestP)candidates=[bestP];
+}
+let best=candidates[0]||[600,400],bs=-1;
+for(const s of candidates){let nearest=1e9;for(const o of ents)if(o!==e&&o.alive)nearest=Math.min(nearest,dist(s[0],s[1],o.x,o.y));if(nearest>bs){bs=nearest;best=s;}}
+e.x=best[0];e.y=best[1];e.hp=e.maxHp;e.alive=true;e.fireCd=.5;e.flash=0;e.hitT=0;e.recoil=0;e.spawnShield=SPAWN_SHIELD_DURATION;
 e.dir=Math.atan2(400-e.y,600-e.x);e.tdir=e.dir;
 e.ix=0;e.iy=0;e.imag=0;e.mCount=0;e.fCount=0;e.fireHeld=false;e.fAim=false;e.walk=0;e.moving=false;
 e.tgt=null;e.lastSeen=null;e.goal=null;e.state='wander';e.aiT=rnd(0,.3);e.navT=0;e.cover=0;e.covT=0;
@@ -839,99 +1374,153 @@ if(o===e||!o.alive||!o.bot||o.state==='attack'||o.state==='pickup'||o.state==='f
 if(dist(o.x,o.y,e.x,e.y)<560){
 o.lastSeen={x:e.x,y:e.y};
 if(o.state==='wander'||o.state==='search'){o.state='search';o.goal={x:e.x,y:e.y};o.navT=0;}}}}
-function damage(e,amt,atk){if(!e.alive)return;e.hp-=amt;e.hitT=.12;fxSparks(e.x,e.y,5,'#fff');if(!demo)Sfx.hit();if(e.hp<=0){e.hp=0;killEnt(e,atk);}}
-function killEnt(e,atk){e.alive=false;e.deaths++;fxDeath(e);if(!demo)Sfx.death();shake(5,.25);
+function damage(e,amt,atk){if(!e.alive||e.spawnShield>0)return false;e.hp-=amt;e.hitT=.12;fxSparks(e.x,e.y,5,'#fff');if(!demo)Sfx.hit();if(e.hp<=0){e.hp=0;killEnt(e,atk);}return true;}
+function killEnt(e,atk){e.alive=false;e.spawnShield=0;e.respT=RESPAWN_DELAY;e.deaths++;fxDeath(e);if(!demo)Sfx.death();shake(5,.25);
 if(atk&&atk!==e){atk.kills++;if(atk.kills>=KTARGET){endMatch(atk);return;}}}
 function explode(x,y,own){fxExplosion(x,y);if(!demo)Sfx.explode();
 for(const e of ents){if(!e.alive||e===own)continue;const d=dist(x,y,e.x,e.y);if(d<115)damage(e,Math.round(60*(1-d/135)),own);}}
 
 /* ============ bot AI (rebuilt) ============ */
 function nearestPk(t,e){let b=null,bd=1e9;for(const p of pks)if(p.on&&p.t===t){const d=dist(e.x,e.y,p.x,p.y);if(d<bd){bd=d;b=p;}}return b;}
-function navTo(e,tx,ty){if(!losBlocked(e.x,e.y,tx,ty)){e.wx=tx;e.wy=ty;return;}
-let best=null,bs=1e9;for(const n of map.nav){if(losBlocked(e.x,e.y,n.x,n.y))continue;const s=dist(e.x,e.y,n.x,n.y)+dist(n.x,n.y,tx,ty);if(s<bs){bs=s;best=n;}}
-if(best){e.wx=best.x;e.wy=best.y;}else{e.wx=e.x;e.wy=e.y;}}
+function navTo(e,tx,ty){
+  const clearance=e.r+2,nodes=map.nav;
+  if(lineFreeOn(map,e.x,e.y,tx,ty,clearance)){e.wx=tx;e.wy=ty;return;}
+  if(!nodes.length){e.wx=e.x;e.wy=e.y;return;}
+
+  // Attach the tank to the closest visible graph node.
+  let si=-1,sd=Infinity;
+  for(let i=0;i<nodes.length;i++){
+    const n=nodes[i],d=dist(e.x,e.y,n.x,n.y);
+    if(d<sd&&lineFreeOn(map,e.x,e.y,n.x,n.y,clearance)){sd=d;si=i;}
+  }
+  if(si<0){e.wx=e.x;e.wy=e.y;return;}
+
+  // Dijkstra from the start node. We then choose the best reachable node
+  // that can see the destination, rather than picking a blocked nearest node.
+  const count=nodes.length,cost=new Array(count).fill(Infinity),prev=new Array(count).fill(-1),done=new Array(count).fill(false);
+  cost[si]=0;
+  for(let pass=0;pass<count;pass++){
+    let cur=-1,best=Infinity;
+    for(let i=0;i<count;i++)if(!done[i]&&cost[i]<best){best=cost[i];cur=i;}
+    if(cur<0)break;
+    done[cur]=true;
+    for(const ni of nodes[cur].links){
+      if(done[ni])continue;
+      const n=nodes[cur],q=nodes[ni];
+      const alt=cost[cur]+dist(n.x,n.y,q.x,q.y);
+      if(alt<cost[ni]){cost[ni]=alt;prev[ni]=cur;}
+    }
+  }
+
+  let gi=-1,goalScore=Infinity,hasVisibleGoal=false;
+  for(let i=0;i<count;i++)if(Number.isFinite(cost[i])){
+    const n=nodes[i],d=dist(n.x,n.y,tx,ty),visible=lineFreeOn(map,n.x,n.y,tx,ty,clearance);
+    const score=visible?d+cost[i]*.002: d+cost[i]*.08+500;
+    if(visible&&!hasVisibleGoal){hasVisibleGoal=true;goalScore=Infinity;}
+    if(visible===hasVisibleGoal&&score<goalScore){goalScore=score;gi=i;}
+  }
+  if(gi<0){e.wx=e.x;e.wy=e.y;return;}
+
+  const path=[];
+  for(let at=gi;at!==-1;at=prev[at]){path.push(at);if(at===si)break;}
+  path.reverse();
+  // Take the furthest safe waypoint visible from the tank. This removes
+  // unnecessary zig-zags while retaining clearance around circular objects.
+  let chosen=path[0];
+  for(let k=path.length-1;k>=0;k--){const n=nodes[path[k]];
+    if(lineFreeOn(map,e.x,e.y,n.x,n.y,clearance)){chosen=path[k];break;}
+  }
+  e.wx=nodes[chosen].x;e.wy=nodes[chosen].y;
+}
 function navAway(e){let best=map.nav[0],bs=-1;const t=e.tgt;
 for(const n of map.nav){const d=t?dist(n.x,n.y,t.x,t.y):0;const s=d-dist(e.x,e.y,n.x,n.y)*.5;if(s>bs){bs=s;best=n;}}
 return{x:best.x,y:best.y};}
+function chooseExploreGoal(e){
+  let options=map.nav.filter(n=>dist(e.x,e.y,n.x,n.y)>150&&dist(e.x,e.y,n.x,n.y)<680);
+  if(!options.length)options=map.nav;
+  if(options.length){const n=options[irand(0,options.length-1)];e.goal={x:n.x,y:n.y};}
+  else e.goal={x:rnd(150,1050),y:rnd(120,680)};
+  e.navT=0;
+}
 function botAI(e,dt){
-const D=DIFFS[e.diff];
-e.aiT-=dt;e.strafeT-=dt;e.navT-=dt;
-if(e.strafeT<=0){e.strafeT=rnd(.8,2);e.strafe*=-1;}
-/* instant re-target when current target dies */
-if(e.tgt&&!e.tgt.alive){e.tgt=null;e.lastSeen=null;e.aiT=Math.min(e.aiT,.05);}
-if(e.aiT<=0){e.aiT=D.react*rnd(.7,1.4);
-/* perception: nearest visible enemy anywhere in the arena */
-let best=null,bd=1e9;
-for(const o of ents)if(o!==e&&o.alive){const d=dist(e.x,e.y,o.x,o.y);if(d<bd&&d<D.view&&!losBlocked(e.x,e.y,o.x,o.y)){bd=d;best=o;}}
-if(best){e.tgt=best;e.lastSeen={x:best.x,y:best.y};e.state='attack';}
-else{
-/* needs: health / ammo */
-const wantHp=e.hp<65;
-const wantWp=(e.weapon==='PISTOL'||(e.ammo!==Infinity&&e.ammo<WEAPONS[e.weapon].ammo*.4));
-let pick=null;
-if(wantHp)pick=nearestPk('H',e);
-if(!pick&&wantWp)pick=nearestPk('W',e);
-if(pick&&dist(e.x,e.y,pick.x,pick.y)<560){e.state='pickup';e.goal={x:pick.x,y:pick.y};}
-else if(e.tgt&&e.tgt.alive&&e.hp<40){e.state='flee';e.goal=navAway(e);}
-else if(e.lastSeen){e.state='search';e.goal={x:e.lastSeen.x,y:e.lastSeen.y};}
-else{e.state='wander';
-/* biased wandering: stay in the fight instead of roaming a far corner */
-if(Math.random()<.6){let bn=null,bb=1e9;
-for(let i=0;i<12;i++){const n=map.nav[irand(0,map.nav.length-1)];const d=dist(e.x,e.y,n.x,n.y);
-if(d>140&&d<560&&d<bb){bb=d;bn=n;}}
-e.goal=bn?{x:bn.x,y:bn.y}:{x:rnd(200,1000),y:rnd(160,640)};}
-else{const n=map.nav[irand(0,map.nav.length-1)];e.goal={x:n.x,y:n.y};}}}}
-if(e.state==='search'&&e.lastSeen)e.goal={x:e.lastSeen.x,y:e.lastSeen.y};
-let mx=0,my=0,wantFire=false;
-const attacking=e.state==='attack'&&e.tgt&&e.tgt.alive;
-if(attacking){
-const t=e.tgt,d=Math.max(1,dist(e.x,e.y,t.x,t.y));
-if(losBlocked(e.x,e.y,t.x,t.y)){e.state='search';e.lastSeen={x:t.x,y:t.y};e.goal={x:t.x,y:t.y};e.navT=0;}
-else{e.lastSeen={x:t.x,y:t.y};
-const w=WEAPONS[e.weapon];let ax=0,ay=0;
-if(d>w.pref+50){ax=(t.x-e.x)/d;ay=(t.y-e.y)/d;}
-else if(d<w.pref-70){ax=(e.x-t.x)/d;ay=(e.y-t.y)/d;}
-ax+=-(t.y-e.y)/d*e.strafe*.75;ay+=(t.x-e.x)/d*e.strafe*.75;
-/* dodge incoming shells */
-for(const b of bl){if(!b.on||b.own===e)continue;
-const bd=dist(b.x,b.y,e.x,e.y);
-if(bd<150){const bs=Math.hypot(b.vx,b.vy)||1;
-const tx=(e.x-b.x)/bd,ty=(e.y-b.y)/bd;
-if((b.vx*tx+b.vy*ty)/bs>.72){ax+=-(b.vy/bs)*1.15;ay+=(b.vx/bs)*1.15;break;}}}
-mx=ax;my=ay;
-/* turret: lead the target and track it independently of the hull */
-const tt=d/w.spd,px=t.x+t.vx*tt*D.lead,py=t.y+t.vy*tt*D.lead;
-const aim=Math.atan2(py-e.y,px-e.x)+(Math.random()-.5)*2*D.err;
-e.tdir=angLerp(e.tdir,aim,clamp(dt*10,0,1));
-const aligned=angDiff(e.tdir,aim)<.35;
-const gate=Math.sin((tGlob+e.i*1.7)*3.4)>-.35;
-wantFire=aligned&&gate&&d<w.range+80;}}
-if(!attacking){
-if(e.goal){
-if(e.navT<=0){e.navT=.6;navTo(e,e.goal.x,e.goal.y);}
-const dg=dist(e.x,e.y,e.wx,e.wy);
-if(dg<28){
-if(dist(e.x,e.y,e.goal.x,e.goal.y)<34){e.goal=null;if(e.state==='search'){e.lastSeen=null;e.state='wander';}}
-else{e.navT=0;navTo(e,e.goal.x,e.goal.y);}}
-if(e.goal){const dg2=dist(e.x,e.y,e.wx,e.wy);
-if(dg2>1){mx=(e.wx-e.x)/dg2;my=(e.wy-e.y)/dg2;}}}
-/* opportunistic grabs on the way */
-if(Math.random()<dt*1.5){
-for(const p of pks){if(!p.on)continue;
-const d=dist(e.x,e.y,p.x,p.y);
-if(d<150&&((p.t==='H'&&e.hp<75)||(p.t==='W'&&(e.weapon==='PISTOL'||(e.ammo!==Infinity&&e.ammo<WEAPONS[e.weapon].ammo*.5))))){e.goal={x:p.x,y:p.y};e.navT=0;break;}}}}
-const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;}
-e.bx=mx;e.by=my;
-/* twin-stick bot: hull steers toward movement; turret already tracks the aim */
-if(ml>.08)e.dir=angLerp(e.dir,Math.atan2(my,mx),clamp(dt*9,0,1));
-if(!attacking)e.tdir=angLerp(e.tdir,e.dir,clamp(dt*6,0,1));
-e.wantsFire=wantFire;}
+  const D=DIFFS[e.diff]||DIFFS[1];
+  e.aiT-=dt;e.strafeT-=dt;e.navT-=dt;
+  if(e.strafeT<=0){e.strafeT=rnd(.7,1.7);e.strafe*=-1;}
+  if(e.tgt&&!e.tgt.alive){e.tgt=null;e.lastSeen=null;e.aiT=Math.min(e.aiT,.05);}
+  if(e.aiT<=0){
+    e.aiT=D.react*rnd(.7,1.25);
+    let best=null,bd=Infinity;
+    for(const o of ents)if(o!==e&&o.alive){const d=dist(e.x,e.y,o.x,o.y);if(d<bd&&d<D.view&&!losBlocked(e.x,e.y,o.x,o.y)){bd=d;best=o;}}
+    if(best){e.tgt=best;e.lastSeen={x:best.x,y:best.y};e.state='attack';e.goal=null;}
+    else{
+      if(e.tgt&&(!e.tgt.alive||losBlocked(e.x,e.y,e.tgt.x,e.tgt.y)))e.tgt=null;
+      const wantHp=e.hp<65;
+      const wantWp=e.weapon==='PISTOL'||(e.ammo!==Infinity&&e.ammo<WEAPONS[e.weapon].ammo*.4);
+      let pick=null;if(wantHp)pick=nearestPk('H',e);if(!pick&&wantWp)pick=nearestPk('W',e);
+      if(pick&&dist(e.x,e.y,pick.x,pick.y)<650){e.state='pickup';e.goal={x:pick.x,y:pick.y};e.navT=0;}
+      else if(e.hp<40&&e.tgt&&e.tgt.alive){e.state='flee';e.goal=navAway(e);e.navT=0;}
+      else if(e.lastSeen&&e.state==='search'){e.goal={x:e.lastSeen.x,y:e.lastSeen.y};}
+      else{e.tgt=null;e.lastSeen=null;e.state='wander';if(!e.goal||Math.random()<.5)chooseExploreGoal(e);}
+    }
+  }
+
+  let mx=0,my=0,wantFire=false;
+  let attacking=e.state==='attack'&&e.tgt&&e.tgt.alive;
+  if(attacking){
+    const t=e.tgt,d=Math.max(1,dist(e.x,e.y,t.x,t.y));
+    if(losBlocked(e.x,e.y,t.x,t.y)){
+      e.state='search';e.lastSeen={x:t.x,y:t.y};e.goal={x:t.x,y:t.y};e.navT=0;e.tgt=null;attacking=false;
+    }else{
+      e.lastSeen={x:t.x,y:t.y};
+      const w=WEAPONS[e.weapon],dx=(t.x-e.x)/d,dy=(t.y-e.y)/d;
+      // Close distance when far away, retreat when crowded, and orbit continuously in range.
+      let radial=d>w.pref+45?1:(d<w.pref-60?-1:.12);
+      mx=dx*radial-dy*e.strafe*.92;
+      my=dy*radial+dx*e.strafe*.92;
+      // Dodge incoming shells without cancelling the normal movement vector.
+      for(const b of bl){if(!b.on||b.own===e)continue;const bd=dist(b.x,b.y,e.x,e.y);if(bd<145){const bs=Math.hypot(b.vx,b.vy)||1,tx=(e.x-b.x)/bd,ty=(e.y-b.y)/bd;if((b.vx*tx+b.vy*ty)/bs>.68){mx+=-(b.vy/bs)*.65;my+=(b.vx/bs)*.65;break;}}}
+      const tt=d/w.spd,px=t.x+t.vx*tt*D.lead,py=t.y+t.vy*tt*D.lead;
+      const aim=Math.atan2(py-e.y,px-e.x)+(Math.random()-.5)*2*D.err;
+      e.tdir=angLerp(e.tdir,aim,clamp(dt*10,0,1));
+      wantFire=angDiff(e.tdir,aim)<.38&&d<w.range+100;
+    }
+  }
+
+  if(!attacking){
+    if(!e.goal&&e.state==='wander')chooseExploreGoal(e);
+    if(e.goal){
+      if(e.navT<=0){e.navT=.28;navTo(e,e.goal.x,e.goal.y);}
+      if(dist(e.x,e.y,e.goal.x,e.goal.y)<32){
+        e.goal=null;
+        if(e.state==='search'){e.lastSeen=null;e.state='wander';}
+        if(e.state==='wander')chooseExploreGoal(e);
+      }else{
+        const d=dist(e.x,e.y,e.wx,e.wy);
+        if(d<24){e.navT=0;navTo(e,e.goal.x,e.goal.y);}
+        const d2=dist(e.x,e.y,e.wx,e.wy);
+        if(d2>1){mx=(e.wx-e.x)/d2;my=(e.wy-e.y)/d2;}
+      }
+    }
+    // Opportunistic pickups while exploring.
+    if(Math.random()<dt*1.5){for(const p of pks){if(!p.on)continue;const d=dist(e.x,e.y,p.x,p.y);
+      if(d<160&&((p.t==='H'&&e.hp<75)||(p.t==='W'&&(e.weapon==='PISTOL'||(e.ammo!==Infinity&&e.ammo<WEAPONS[e.weapon].ammo*.5))))){e.state='pickup';e.goal={x:p.x,y:p.y};e.navT=0;break;}
+    }}
+  }
+  const ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;}
+  // If an AI has no useful steering vector, start a fresh patrol leg rather than idling.
+  if(ml<.035&&e.state==='wander'){chooseExploreGoal(e);const d=dist(e.x,e.y,e.goal.x,e.goal.y);if(d>1){mx=(e.goal.x-e.x)/d;my=(e.goal.y-e.y)/d;}}
+  e.bx=mx;e.by=my;
+  if(ml>.08)e.dir=angLerp(e.dir,Math.atan2(my,mx),clamp(dt*9,0,1));
+  if(!attacking)e.tdir=angLerp(e.tdir,e.dir,clamp(dt*6,0,1));
+  e.wantsFire=wantFire;
+}
 
 /* ============ update ============ */
 function calcCover(e){let n=0,h=0;for(const o of ents)if(o!==e&&o.alive){n++;if(losBlocked(e.x,e.y,o.x,o.y))h++;}return n?h/n:0;}
 function updateEnt(e,dt){
 e.fireCd-=dt;e.flash-=dt;e.hitT-=dt;e.recoil=Math.max(0,e.recoil-dt*6);
 if(!e.alive){e.respT-=dt;if(e.respT<=0)placeEnt(e);return;}
+e.spawnShield=Math.max(0,e.spawnShield-dt);
 e.covT-=dt;if(e.covT<=0){e.covT=.2;e.cover=calcCover(e);}
 if(e.bot)botAI(e,dt);
 else{
@@ -945,23 +1534,23 @@ let mx,my,mg;
 if(e.bot){mx=e.bx;my=e.by;mg=1;}else{mx=e.ix;my=e.iy;mg=e.imag;}
 const sp=170*(e.bot?DIFFS[e.diff].speed:1);
 e.vx=mx*sp*mg;e.vy=my*sp*mg;
-e.x+=e.vx*dt;e.y+=e.vy*dt;
-collideEnt(e);
+moveTank(e,e.vx*dt,e.vy*dt);
 e.moving=Math.hypot(e.vx,e.vy)>20;
 if(e.moving)e.walk+=dt*12;
-/* stuck detection: bump into geometry for too long -> hop to a nearby nav node */
+/* Stuck recovery: re-plan the current route instead of selecting an arbitrary
+   waypoint that may sit on the opposite side of an obstacle. */
 if(e.bot){
 const moved=dist(e.x,e.y,e.lx,e.ly);
 const want=Math.hypot(e.vx,e.vy);
-if(want>60&&moved<want*dt*.35){
+if(want>55&&moved<want*dt*.3){
 e.stuck+=dt;
-if(e.stuck>.55){
-let bn=null,bb=1e9;
-for(const n of map.nav){const d=dist(e.x,e.y,n.x,n.y);if(d>60&&d<300&&d<bb){bb=d;bn=n;}}
-if(bn){e.goal={x:bn.x,y:bn.y};e.navT=0;}
+if(e.stuck>.45){
 e.strafe*=-1;
-e.stuck=-.5;}}
-else e.stuck=Math.min(0,e.stuck+dt*.8);
+if(e.goal){e.navT=0;navTo(e,e.goal.x,e.goal.y);}
+else if(e.tgt&&e.tgt.alive){e.lastSeen={x:e.tgt.x,y:e.tgt.y};e.goal={x:e.tgt.x,y:e.tgt.y};e.state='search';e.tgt=null;e.navT=0;}
+else{e.state='wander';chooseExploreGoal(e);}
+e.stuck=0;}}
+else e.stuck=0;
 e.lx=e.x;e.ly=e.y;}
 /* twin-stick: hull turns toward movement; turret aims independently via FIRE drag */
 if(mg>.05&&!e.bot)e.dir=angLerp(e.dir,Math.atan2(my,mx),clamp(dt*10,0,1));
@@ -1147,10 +1736,17 @@ g.restore();}
 
 /* ============ render: tank ============ */
 function drawTank(e){
+// Spawn protection uses a faint ground glow so the tank remains clear and
+// there is no large circular range/grid marker around it.
+if(e.spawnShield>0){
+const pulse=.10+.05*Math.sin(tGlob*12);
+ctx.save();ctx.globalAlpha=pulse;ctx.fillStyle='#68f5e4';
+ctx.beginPath();ctx.ellipse(e.x,e.y+8,e.r+12, e.r*.48,0,0,TAU);ctx.fill();ctx.restore();
+}
 paintTank(ctx,e.x,e.y,e.dir,e.tdir,e.col,{hit:e.hitT>0,flash:e.flash>0,recoil:e.recoil,moving:e.moving,walk:e.walk});
 ctx.save();
 const c=Math.cos(e.tdir),s=Math.sin(e.tdir);
-if(e.cover>.6){ctx.setLineDash([5,5]);ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,34,0,TAU);ctx.stroke();ctx.setLineDash([]);}
+
 if(opt.aim&&!e.bot){ctx.setLineDash([4,8]);ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=2;
 ctx.beginPath();ctx.moveTo(e.x+c*(e.r+12),e.y+s*(e.r+12));ctx.lineTo(e.x+c*165,e.y+s*165);ctx.stroke();ctx.setLineDash([]);}
 ctx.restore();
@@ -1180,12 +1776,17 @@ ctx.globalAlpha=1;}
 function drawControls(){
 for(let i=0;i<cfg.players;i++){
 const e=humans[i],c=ctl[i];if(!e||!c)continue;
-const far=Math.abs(c.fx-c.jx)>(c.jr+c.fr)*2.2;
-if(!far){
+const controlDistance=Math.hypot(c.fx-c.jx,c.fy-c.jy);
+const compact=controlDistance<=(c.jr+c.fr)*2.2;
+const verticalStack=Math.abs(c.fx-c.jx)<Math.min(c.jr,c.fr)*.25&&Math.abs(c.fy-c.jy)>Math.max(c.jr,c.fr);
+/* Avoid painting a tall tinted slab behind the new 4P vertical control stacks. */
+if(compact&&!verticalStack){
 ctx.globalAlpha=.1;ctx.fillStyle=e.col;
-const cx0=Math.min(c.jx,c.fx)-c.jr-8,cy0=c.jy-c.jr-8;
-const cw=Math.abs(c.fx-c.jx)+c.jr+c.fr+16,ch=c.jr*2+16;
-rr2(cx0,cy0,cw,ch,Math.max(c.jr,c.fr)+8);ctx.fill();
+const x0=Math.min(c.jx-c.jr,c.fx-c.fr)-8;
+const y0=Math.min(c.jy-c.jr,c.fy-c.fr)-8;
+const x1=Math.max(c.jx+c.jr,c.fx+c.fr)+8;
+const y1=Math.max(c.jy+c.jr,c.fy+c.fr)+8;
+rr2(x0,y0,x1-x0,y1-y0,Math.max(c.jr,c.fr)+8);ctx.fill();
 ctx.globalAlpha=1;}
 ctx.strokeStyle=e.col;ctx.lineWidth=3;
 ctx.beginPath();ctx.arc(c.jx,c.jy,c.jr,0,TAU);ctx.stroke();
@@ -1205,43 +1806,50 @@ ctx.moveTo(c.fx,c.fy+c.fr*.32);ctx.lineTo(c.fx,c.fy+c.fr*.68);
 ctx.moveTo(c.fx-c.fr*.68,c.fy);ctx.lineTo(c.fx-c.fr*.32,c.fy);
 ctx.moveTo(c.fx+c.fr*.32,c.fy);ctx.lineTo(c.fx+c.fr*.68,c.fy);ctx.stroke();
 ctx.fillStyle=rc;ctx.beginPath();ctx.arc(c.fx,c.fy,2.2,0,TAU);ctx.fill();
-const topJs=c.jy<VH/2,ty=topJs?c.jy+c.jr+16:c.jy-c.jr-16;
+const topJs=c.jy<VH/2;
+let badgeX=c.jx,badgeY;
+if(cfg.players>=3){
+  /* Keep the weapon/ammo badge beside the stick, out of the gap between
+     joystick and FIRE. Left-side badges face inward to the right and vice versa. */
+  badgeX=c.jx<VW/2?c.jx+c.jr+30:c.jx-c.jr-30;
+  badgeY=c.jy;
+}else badgeY=topJs?c.jy+c.jr+16:c.jy-c.jr-16;
 ctx.globalAlpha=.96;
-ctx.fillStyle='rgba(13,18,34,.9)';rr2(c.jx-22,ty-12,44,24,8);ctx.fill();
-ctx.strokeStyle='rgba(255,255,255,.16)';ctx.lineWidth=1.5;rr2(c.jx-22,ty-12,44,24,8);ctx.stroke();
-drawGunIcon(ctx,e.weapon,c.jx-9,ty,.48);
+ctx.fillStyle='rgba(13,18,34,.9)';rr2(badgeX-22,badgeY-12,44,24,8);ctx.fill();
+ctx.strokeStyle='rgba(255,255,255,.16)';ctx.lineWidth=1.5;rr2(badgeX-22,badgeY-12,44,24,8);ctx.stroke();
+drawGunIcon(ctx,e.weapon,badgeX-9,badgeY,.48);
 if(e.ammo!==Infinity){
 ctx.font=font(10.5);ctx.textAlign='left';ctx.textBaseline='middle';
-ctx.fillStyle=WCOL[e.weapon];ctx.fillText(''+e.ammo,c.jx+8,ty+1);}
+ctx.fillStyle=WCOL[e.weapon];ctx.fillText(''+e.ammo,badgeX+8,badgeY+1);}
 ctx.globalAlpha=1;}}
 function drawHUD(){
 const m2=Math.floor(matchT/60),s2=Math.floor(matchT%60);
-/* Timer centered at top; PAUSE button at top-right via CSS; scores straddle the timer */
+/* One aligned top row: timer and every player score tile share the same size. */
 const cx=VW/2;
-const Y=14;
-ctx.globalAlpha=.96;
-ctx.fillStyle='rgba(13,18,34,.94)';rr2(cx-50,Y,100,32,10);ctx.fill();
-ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1.5;rr2(cx-50,Y,100,32,10);ctx.stroke();
-ctx.globalAlpha=1;
-ctx.font=font(22);ctx.textAlign='center';ctx.textBaseline='middle';
-ctx.fillStyle='#ffe3a8';ctx.fillText(m2+':'+(s2<10?'0':'')+s2,cx,Y+16);
-otextC('FIRST TO '+KTARGET,VW/2,Y+38,10.5,'#93a5c9');
-/* Score chips at top, same row as timer, straddling it */
-const n=ents.length,bw=34,gap=8,y0=Y+14;
+const Y=8;
+const tileW=48,tileH=32,gap=6,centerGap=8;
+const n=ents.length;
 const leftN=n-(n>>1);
+ctx.globalAlpha=.96;
+ctx.fillStyle='rgba(13,18,34,.94)';rr2(cx-tileW/2,Y,tileW,tileH,9);ctx.fill();
+ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1.5;rr2(cx-tileW/2,Y,tileW,tileH,9);ctx.stroke();
+ctx.globalAlpha=1;
+ctx.font=font(14.5);ctx.textAlign='center';ctx.textBaseline='middle';
+ctx.fillStyle='#ffe3a8';ctx.fillText(m2+':'+(s2<10?'0':'')+s2,cx,Y+tileH/2+.5);
 function scoreChip(e,x){
 ctx.globalAlpha=e.alive?1:.35;
-rr2(x,y0,bw,bw,8);
+rr2(x,Y,tileW,tileH,9);
 ctx.fillStyle=e.col;ctx.fill();
 ctx.strokeStyle='#0a0f1e';ctx.lineWidth=2;ctx.stroke();
-ctx.fillStyle='rgba(255,255,255,.28)';rr2(x+3,y0+3,bw-6,7,4);ctx.fill();
-ctx.font=font(13);ctx.textAlign='center';ctx.textBaseline='middle';
-ctx.fillStyle='#fff';ctx.fillText(''+e.kills,x+bw/2,y0+bw/2+3);
+ctx.fillStyle='rgba(255,255,255,.28)';rr2(x+3,Y+3,tileW-6,6,4);ctx.fill();
+ctx.font=font(14);ctx.textAlign='center';ctx.textBaseline='middle';
+ctx.fillStyle='#fff';ctx.fillText(''+e.kills,x+tileW/2,Y+tileH/2+2);
 ctx.globalAlpha=1;}
-let x0=cx-50-(leftN*bw+(leftN-1)*gap)-gap;
-for(let i=0;i<leftN&&i<n;i++){scoreChip(ents[i],x0);x0+=bw+gap;}
-let x0r=cx+50+gap;
-for(let i=leftN;i<n;i++){scoreChip(ents[i],x0r);x0r+=bw+gap;}
+let x0=cx-tileW/2-centerGap-(leftN*tileW+(leftN-1)*gap);
+for(let i=0;i<leftN&&i<n;i++){scoreChip(ents[i],x0);x0+=tileW+gap;}
+let x0r=cx+tileW/2+centerGap;
+for(let i=leftN;i<n;i++){scoreChip(ents[i],x0r);x0r+=tileW+gap;}
+otextC('FIRST TO '+KTARGET,VW/2,Y+tileH+12,9.5,'#93a5c9');
 if(ann.t>0){ctx.globalAlpha=clamp(ann.t,0,1);otextC(ann.txt,VW/2,VH*.28,28,'#ffb545');ctx.globalAlpha=1;}
 if(phase==='count'){const c=Math.min(3,Math.ceil(countT));otextC(''+c,VW/2,VH*.38,60,'#f4f7ff');}
 drawControls();}
@@ -1256,9 +1864,7 @@ ctx.drawImage(mapCv,-MAP_PAD,-MAP_PAD);
 drawPickups();drawBullets();
 for(const e of ents)if(e.alive)drawTank(e);
 for(const e of ents)if(!e.alive){
-ctx.globalAlpha=.5;ctx.setLineDash([4,4]);ctx.strokeStyle=e.col;ctx.lineWidth=2;
-ctx.beginPath();ctx.arc(e.x,e.y,e.r+9,0,TAU);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
-otextC(''+Math.max(1,Math.ceil(e.respT)),e.x,e.y,14,'#fff');}
+ctx.globalAlpha=1;otextC(''+Math.max(1,Math.ceil(e.respT)),e.x,e.y,14,'#fff');}
 drawParticles();
 ctx.setTransform(DPR,0,0,DPR,0,0);
 if(!demo)drawHUD();}
@@ -1267,7 +1873,7 @@ if(!demo)drawHUD();}
 function hTank(g,x,y,dir,col,o){
 o=o||{};
 paintTank(g,x,y,dir,dir,col,{hit:false,flash:o.flash,recoil:0,moving:false,walk:0});
-if(o.cover){g.save();g.setLineDash([5,5]);g.strokeStyle='rgba(255,255,255,.7)';g.lineWidth=2;g.beginPath();g.arc(x,y,34,0,TAU);g.stroke();g.setLineDash([]);g.restore();}
+
 if(o.name||o.bar!==undefined)tankNameBar(g,x,y,o.name||'',o.bar==null?1:o.bar,1);}
 function hJoy(g,x,y,r,col,kx,ky){
 g.globalAlpha=.15;g.fillStyle=col;g.beginPath();g.arc(x,y,r+9,0,TAU);g.fill();g.globalAlpha=1;
@@ -1310,10 +1916,10 @@ g.beginPath();g.arc(540,74,44,-.6,.9);g.stroke();
 g.fillStyle='rgba(255,255,255,.45)';g.beginPath();g.moveTo(540+40*Math.cos(.9),74+40*Math.sin(.9));g.lineTo(540+50*Math.cos(.9),74+50*Math.sin(.9));g.stroke();
 hTank(g,250,150,.5,1.1,'#3f8cff',{name:'BLUE',bar:.8,flash:true});
 hBullet(g,316,172,1.1);hBullet(g,364,182,1.1);hSparks(g,296,166,5,'#ffe08a');}},
-{t:'TAKE COVER',d:'Crates, walls and barrels block shells. Hide behind them - a dashed ring shows when you are fully covered.',
+{t:'TAKE COVER',d:'Crates, walls and barrels block shells. Use them to break enemy line of sight and protect your tank.',
 draw(g){hBase(g);
 hCrate(g,292,100,60,60);
-hTank(g,160,142,0,'#e5484d',{name:'RED',bar:.65,cover:true});
+hTank(g,160,142,0,'#e5484d',{name:'RED',bar:.65});
 hTank(g,500,150,Math.PI,'#3fbf5a',{name:'GREEN',bar:.9});
 hBullet(g,428,150,Math.PI);hBullet(g,378,150,Math.PI);
 hSparks(g,300,142,8,'#ffd28a');}},
@@ -1330,7 +1936,7 @@ hKill(g,236,34,'#e5484d','10');hKill(g,280,34,'#3f8cff','6');hKill(g,324,34,'#3f
 hTank(g,320,176,-Math.PI/2,'#e5484d',{name:'RED',bar:1});
 hRing(g,320,176,34,'#ffb545',.8);hRing(g,320,176,52,'#ffb545',.4);
 hSparks(g,320,150,14,'#ffb545');}},
-{t:'CONTROLS',d:'1P: stick bottom-left, fire bottom-right. 2P: left player drives bottom-left + fires top-left, right player drives top-right + fires bottom-right. 3-4P: stick + fire in your corner. Drag on FIRE to aim.',
+{t:'CONTROLS',d:'1P: stick bottom-left, fire bottom-right. 2P: left player drives bottom-left + fires top-left, right player drives top-right + fires bottom-right. 3P: P1 bottom-left, P2 bottom-right, P3 top-left. 4P: one control station per corner - P1 bottom-left, P2 bottom-right, P3 top-left, P4 top-right. Joystick at the corner, FIRE toward the screen centre. Drag on FIRE to aim.',
 draw(g){
 g.fillStyle='#10162a';rrp(g,8,8,624,244,16);g.fill();
 g.fillStyle='rgba(255,255,255,.05)';rrp(g,26,24,588,212,12);g.fill();
@@ -1395,7 +2001,8 @@ e.spz=zones[i];
 ents.push(e);if(e.human)humans.push(e);});
 cfg.players=humans.length;}
 function startMatch(){
-demo=false;goFull();
+if(!mapUnlocked(cfg.map)){askMapUnlock(cfg.map);return;}
+demo=false;shellPaused=false;goFull();
 map=MAPS[cfg.map];renderMap(map);setupPickups();
 const list=buildRoster();
 const zones=assignZones(list);
@@ -1443,7 +2050,7 @@ showScreen('s-over');
    board instead of an empty one. */
 try{Studio.ads.interstitial(function(){},'chaos-arena.match-end');}catch(e){}
 if(winEnt)Sfx.win();else Sfx.lose();}
-const screens=['s-menu','s-setup','s-howto','s-settings','s-pause','s-over','s-unlock'];
+const screens=['s-menu','s-setup','s-theme','s-howto','s-settings','s-pause','s-over','s-unlock'];
 /* Game completed interstitial - falls through to the over screen where
    the player can rematch/quit, each of which already carries its own ad. */
 function showScreen(id){
@@ -1478,7 +2085,7 @@ if(one)document.querySelectorAll('#bcount1 .pc').forEach(b=>b.classList.toggle('
  $('lblTypes').textContent=one?
 ('YOU ON THE LEFT \u00B7 '+cfg.bots1+' BOT'+(cfg.bots1===1?'':'S')+(cfg.bots1===1?' JOINS':' JOIN')+' THE FIGHT'):
 'P1 IS ALWAYS YOU \u00B7 TAP HUMAN OR BOT FOR THE OTHERS';
-const el=$('slots2');el.innerHTML='';
+const el=$('slots2');el.innerHTML='';el.classList.toggle('four',cfg.n===4);
 for(let i=0;i<cfg.n;i++){
 const d=document.createElement('div');
 d.className='pslot';d.style.borderColor=PCOL[i];
@@ -1522,11 +2129,14 @@ e.fAim=true;
 e.tdir=Math.atan2(dy,dx);}
 function pickControl(x,y){
 let best=null,bd=1e9;
+/* Four-player controls occupy four separate corners. Keep touch zones tight
+   so players cannot accidentally activate a neighbour's station. */
+const touchScale=cfg.players>=3?1.3:2.2;
 for(let i=0;i<cfg.players;i++){
 const c=ctl[i];if(!c)continue;
 const dj=dist(x,y,c.jx,c.jy),df=dist(x,y,c.fx,c.fy);
-if(dj<c.jr*2.2&&dj<bd){bd=dj;best={i,k:'m'};}
-if(df<c.fr*2.3&&df<bd){bd=df;best={i,k:'f'};}}
+if(dj<c.jr*touchScale&&dj<bd){bd=dj;best={i,k:'m'};}
+if(df<c.fr*touchScale&&df<bd){bd=df;best={i,k:'f'};}}
 if(!best&&cfg.players===1){
 const c=ctl[0];
 best={i:0,k:dist(x,y,c.fx,c.fy)<dist(x,y,c.jx,c.jy)?'f':'m'};}
@@ -1563,10 +2173,14 @@ on('b-play',()=>{state='menu';showScreen('s-setup');drawPreviews();});
 on('b-how',()=>{state='menu';showScreen('s-howto');refreshHow();});
 on('b-set',()=>{state='menu';showScreen('s-settings');});
 on('b-back1',()=>showScreen('s-menu'));
+on('b-next-theme',()=>{refreshMapTiles();syncSeg(mapEl,cfg.map);drawPreviews();showScreen('s-theme');});
+on('b-theme-back',()=>showScreen('s-setup'));
+on('b-unlock-no',()=>closeUnlock());
+on('b-unlock-yes',()=>runMapUnlockAd());
 on('b-back2',()=>showScreen('s-menu'));
 on('b-back3',()=>showScreen('s-menu'));
 on('b-start',()=>startMatch());
-on('b-resume',()=>{state='play';showScreen(null);});
+on('b-resume',()=>{shellPaused=false;state='play';showScreen(null);});
 on('b-restart',()=>startMatch());
 on('b-quit',()=>{state='menu';startDemo();showScreen('s-menu');});
 on('b-rematch',()=>{Sfx.unlock();Sfx.click();try{Studio.ads.interstitial(function(){},'chaos-arena.over-rematch');}catch(e){}startMatch();});
@@ -1577,9 +2191,13 @@ function syncSeg(el,v){el.querySelectorAll('.opt').forEach(o=>o.classList.toggle
 const mapEl=$('seg-map');
 syncSeg(mapEl,cfg.map);
 mapEl.addEventListener('click',ev=>{
-const o=ev.target.closest('.opt');if(!o)return;
-Sfx.unlock();Sfx.click();cfg.map=+o.dataset.v;syncSeg(mapEl,cfg.map);
+const o=ev.target.closest('.opt.map');if(!o)return;
+Sfx.unlock();Sfx.click();
+const i=+o.dataset.v;
+if(!mapUnlocked(i)){askMapUnlock(i);return;}
+cfg.map=i;syncSeg(mapEl,cfg.map);
 if(demo)startDemo();});
+refreshMapTiles();
 function tog(id,key){
 const b=$(id);
 b.addEventListener('click',()=>{Sfx.unlock();Sfx.click();opt[key]=!opt[key];
@@ -1594,6 +2212,7 @@ function frame(t){
 requestAnimationFrame(frame);
 const dt=Math.min(.045,(t-lastT)/1000||.016);lastT=t;
 tGlob+=dt;
+tickMapTimers();
 const allowUpdate=state==='play'||(state==='menu'&&demo);
 if(allowUpdate){
   /* In demo/menu mode, throttle the physics update to save CPU on mobile */
@@ -1609,8 +2228,11 @@ startDemo();
 requestAnimationFrame(frame);
 /* ---------- window.Game for the shell ---------- */
 window.Game={
-  pause:function(){ if(state==='play'){ state='pause'; showScreen('s-pause'); } },
-  resume:function(){ state='play'; showScreen(null); },
+  pause:function(){ if(state==='play'){ shellPaused=true; state='pause'; showScreen('s-pause'); } },
+  /* Only undo the pause the shell itself caused. Returning from an ad, the
+     theme panel or any other screen must stay exactly where the player left
+     it - resuming unconditionally is what started the 4-bot demo game. */
+  resume:function(){ if(shellPaused){ shellPaused=false; state='play'; showScreen(null); } },
   setMuted:function(m){ if(!m)Sfx.unlock(); muted=!!m; opt.sound=!m; },
   setSettings:function(st){ /* sound toggle is in opt.sound, handled by setMuted */ },
   destroy:function(){ /* no-op */ }
